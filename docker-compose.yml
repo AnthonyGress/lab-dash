@@ -18,6 +18,4 @@ services:
       image: catalyxcloud/jellyfin-console
       ports:
           - 2022:80
-      environment:
-          - VPN_SERVICE_PROVIDER=private internet access
       restart: unless-stopped
