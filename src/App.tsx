@@ -6,11 +6,7 @@ import { styles } from './styles';
 import './App.css';
 
 function App() {
-    const localIp = window.location.host.split(':')[0];
-
-    console.log(localIp);
-    console.log('env', import.meta.env.VITE_HOST_IP);
-
+    const localIp = import.meta.env.VITE_HOST_IP;
 
     return (
         <>
@@ -18,14 +14,14 @@ function App() {
             <Box sx={styles.center} mt={8}>
                 <Box sx={{ flexGrow: 1 }}>
                     <Grid container spacing={3} sx={styles.center} size={12}>
-                        <LinkButton url={`${localIp}:8080`} app='qBittorrent'/>
-                        <LinkButton url={`${localIp}:5055`} app='Jellyseer'/>
-                        <LinkButton url={`${localIp}:8096`} app='Jellyfin'/>
+                        <LinkButton url={`http://${localIp}:8080`} app='qBittorrent'/>
+                        <LinkButton url={`http://${localIp}:5055`} app='Jellyseer'/>
+                        <LinkButton url={`http://${localIp}:8096`} app='Jellyfin'/>
                     </Grid>
                     <Grid container spacing={3} sx={styles.center} size={12} mt={8}>
-                        <LinkButton url={`${localIp}:7878`} app='Radarr'/>
-                        <LinkButton url={`${localIp}:8989`} app='Sonarr'/>
-                        <LinkButton url={`${localIp}:9696`} app='Prowlarr'/>
+                        <LinkButton url={`http://${localIp}:7878`} app='Radarr'/>
+                        <LinkButton url={`http://${localIp}:8989`} app='Sonarr'/>
+                        <LinkButton url={`http://${localIp}:9696`} app='Prowlarr'/>
                     </Grid>
                 </Box>
             </Box>

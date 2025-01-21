@@ -1,0 +1,27 @@
+{
+  "theme_color": "#8936FF",
+  "background_color": "#000000",
+  "icons": [
+    {
+      "purpose": "maskable",
+      "sizes": "512x512",
+      "src": "icon512_maskable.png",
+      "type": "image/png"
+    },
+    {
+      "purpose": "any",
+      "sizes": "512x512",
+      "src": "icon512_rounded.png",
+      "type": "image/png"
+    }
+  ],
+  "orientation": "any",
+  "display": "standalone",
+  "dir": "auto",
+  "lang": "en-US",
+  "name": "Jellyfin Console",
+  "short_name": "Jellyfin Console",
+  "start_url": "http://localhost:2022",
+  "scope": "http://localhost:2022",
+  "description": "Management console for Jellyfin server setup"
+}

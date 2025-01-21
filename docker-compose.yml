@@ -1,11 +1,23 @@
 version: "3.8"
 
+# services:
+#   app:
+#     build:
+#       context: .
+#       args:
+#         HOST_IP:
+#     ports:
+#       - "2022:80"
 services:
-  react-app:
-    build: .
-    ports:
-      - "2022:2022"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    environment:
-      - VITE_HOST_IP=http://host.docker.internal
+  console:
+      container_name: jellyfin-console
+      build:
+        context: .
+        args:
+         HOST_IP: ${HOST_IP}
+      image: catalyxcloud/jellyfin-console
+      ports:
+          - 2022:80
+      environment:
+          - VPN_SERVICE_PROVIDER=private internet access
+      restart: unless-stopped
