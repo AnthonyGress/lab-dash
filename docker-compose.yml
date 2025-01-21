@@ -1,0 +1,11 @@
+version: "3.8"
+
+services:
+  react-app:
+    build: .
+    ports:
+      - "2022:2022"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - VITE_HOST_IP=http://host.docker.internal
