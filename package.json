@@ -1,5 +1,5 @@
 {
-  "name": "jellyfin-mgmt",
+  "name": "jellyfin-console",
   "private": true,
   "version": "1.0.0",
   "scripts": {

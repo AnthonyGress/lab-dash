@@ -17,13 +17,13 @@ function App() {
 
     return (
         <>
-            <Typography align='center' fontWeight={100} fontSize={'3rem'}>Management Console</Typography>
+            <Typography align='center' fontWeight={100} fontSize={'3rem'}>Jellyfin Console</Typography>
             <Box sx={styles.center} mt={8}>
                 <Box sx={{ flexGrow: 1 }}>
                     <Grid container spacing={3} sx={styles.center} size={12}>
-                        <LinkButton url={`http://${localIp}:8080`} app='qBittorrent'/>
-                        <LinkButton url={`http://${localIp}:5055`} app='Jellyseer'/>
                         <LinkButton url={`http://${localIp}:8096`} app='Jellyfin'/>
+                        <LinkButton url={`http://${localIp}:5055`} app='Jellyseer'/>
+                        <LinkButton url={`http://${localIp}:8080`} app='qBittorrent'/>
                     </Grid>
                     <Grid container spacing={3} sx={styles.center} size={12} mt={8}>
                         <LinkButton url={`http://${localIp}:7878`} app='Radarr'/>

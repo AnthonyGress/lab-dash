@@ -1,6 +1,6 @@
 {
-  "theme_color": "#8936FF",
-  "background_color": "#000000",
+  "theme_color": "#010B24",
+  "background_color": "#242424",
   "icons": [
     {
       "purpose": "maskable",
@@ -21,7 +21,6 @@
   "lang": "en-US",
   "name": "Jellyfin Console",
   "short_name": "Jellyfin Console",
-  "start_url": "http://localhost:2022",
-  "scope": "http://localhost:2022",
-  "description": "Management console for Jellyfin server setup"
+  "start_url": "/",
+  "description": "Management console for Jellyfin services"
 }
