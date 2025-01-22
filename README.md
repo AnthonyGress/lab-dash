@@ -1,7 +1,8 @@
 # Jellyfin Console
 This is an open-source user interface made specifically for managing jellyfin and related services from a single, unified web management console. 
+<img width="1227" alt="jellyfin-console-desktop" src="https://github.com/user-attachments/assets/18cb497b-8295-488e-95a1-4b7aef0ded56" />
+<img width="391" alt="jellyfin-console-mobile" src="https://github.com/user-attachments/assets/1bcdbb4e-c7ae-44a9-8230-37860000f124" />
 
-<img width="707" alt="jellyfin-console" src="https://github.com/user-attachments/assets/845afc94-b8a4-484c-88e2-77cb5486da5a" />
 
 # Docker compose Mac command
 
