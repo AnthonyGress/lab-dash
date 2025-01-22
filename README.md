@@ -22,3 +22,6 @@ docker-compose build --build-arg HOST_IP=$(hostname -I | awk '{print $1}') && do
 npm install
 npm run dev
 ```
+
+# Disclaimer
+This code is provided for informational and educational purposes only. I am not responsible for the actions performed by any users of this code and I am not associated with any of the services/applications mentioned in this project.
