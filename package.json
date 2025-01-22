@@ -8,7 +8,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
     "preview": "vite preview",
-    "docker:build": "docker build . -t catalyxcloud/jellyfin-console --no-cache",
+    "docker:build": "docker build --platform linux/amd64 . -t catalyxcloud/jellyfin-console",
     "docker:run": "docker run --platform=linux/amd64 -p 2022:2022 catalyxcloud/jellyfin-console",
     "docker:push": "docker push catalyxcloud/jellyfin-console",
     "docker:stop": "docker ps -q --filter 'ancestor=catalyx/jellyfin-console' | xargs -r docker stop",

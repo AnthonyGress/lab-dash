@@ -5,8 +5,15 @@ import { LinkButton } from './LinkButton';
 import { styles } from './styles';
 import './App.css';
 
+declare global {
+    interface Window {
+        env?: any;
+    }
+}
+
 function App() {
-    const localIp = import.meta.env.VITE_HOST_IP;
+    const localIp = window.env?.VITE_HOST_IP || "localhost";
+    console.log('local ip:', localIp);
 
     return (
         <>

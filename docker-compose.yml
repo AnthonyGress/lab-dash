@@ -1,21 +1,13 @@
 version: "3.8"
 
-# services:
-#   app:
-#     build:
-#       context: .
-#       args:
-#         HOST_IP:
-#     ports:
-#       - "2022:80"
 services:
   console:
       container_name: jellyfin-console
       build:
         context: .
-        args:
-         HOST_IP: ${HOST_IP}
       image: catalyxcloud/jellyfin-console
+      environment:
+      - HOST_IP=${HOST_IP}
       ports:
           - 2022:80
       restart: unless-stopped
