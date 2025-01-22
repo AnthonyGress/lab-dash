@@ -1,12 +1,12 @@
 import { Box, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 
-import jellyfinIcon from './assets/jellyfin.png';
-import jellyseerIcon from './assets/jellyseerr.png';
-import prowlarrIcon from './assets/prowlarr.png';
-import qbIcon from './assets/qb.png';
-import radarrIcon from './assets/radarr.png';
-import sonarrIcon from './assets/sonarr.png';
+import jellyfinIcon from '../assets/jellyfin.png';
+import jellyseerIcon from '../assets/jellyseerr.png';
+import prowlarrIcon from '../assets/prowlarr.png';
+import qbIcon from '../assets/qb.png';
+import radarrIcon from '../assets/radarr.png';
+import sonarrIcon from '../assets/sonarr.png';
 
 type Props = {
     url: string;
@@ -40,7 +40,7 @@ export const LinkButton = ({ url, app }: Props) => {
     }
 
     return (
-        <Grid>
+        <Grid className='scale'>
             <a href={url} rel='noopener noreferrer' target='_blank'>
                 <Box sx={{ backgroundColor: 'white', borderRadius: 4, p:1 }}>
                     <Box>

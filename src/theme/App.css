@@ -1,0 +1,36 @@
+@font-face {
+  font-family: 'Earth Orbiter';
+  src: url('earthorbiter.ttf') format('truetype'); /* Chrome 4+, Firefox 3.5, Opera 10+, Safari 3—5 */
+}
+
+* {
+  user-select: none;
+  -webkit-user-drag: none;
+  -webkit-user-select: none;
+}
+
+#root {
+  text-align: center;
+  margin: auto;
+}
+
+.signature {
+  font-family: 'Earth Orbiter' !important;
+  font-size: 1.4rem !important;
+}
+
+.scale {
+  transition: all .2s ease-in-out;
+}
+
+@media (pointer: coarse) {
+  a:hover {
+    all: revert-layer;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .scale:hover {
+    transform: scale(1.1);
+  }
+}
