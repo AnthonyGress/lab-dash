@@ -6,6 +6,7 @@ import jellyseerIcon from '../assets/jellyseerr.png';
 import prowlarrIcon from '../assets/prowlarr.png';
 import qbIcon from '../assets/qb.png';
 import radarrIcon from '../assets/radarr.png';
+import readarrIcon from '../assets/readarr.png';
 import sonarrIcon from '../assets/sonarr.png';
 
 type Props = {
@@ -33,6 +34,9 @@ export const LinkButton = ({ url, app }: Props) => {
         break;
     case 'Prowlarr':
         icon = prowlarrIcon;
+        break;
+    case 'Readarr':
+        icon = readarrIcon;
         break;
     default:
         icon = jellyfinIcon;

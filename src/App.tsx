@@ -1,7 +1,7 @@
 import { Box, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 
-import icon from '../public/jellyfin.svg';
+import icon from './assets/jellyfin.svg';
 import { Footer } from './components/Footer';
 import { LinkButton } from './components/LinkButton';
 import { styles } from './theme/styles';
@@ -39,6 +39,7 @@ function App() {
                     <Grid container spacing={3} sx={styles.center} size={12} mt={8}>
                         <LinkButton url={`http://${localIp}:7878`} app='Radarr'/>
                         <LinkButton url={`http://${localIp}:8989`} app='Sonarr'/>
+                        <LinkButton url={`http://${localIp}:8787`} app='Readarr'/>
                         <LinkButton url={`http://${localIp}:9696`} app='Prowlarr'/>
                     </Grid>
                 </Box>
