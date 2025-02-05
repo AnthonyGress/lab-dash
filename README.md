@@ -1,9 +1,9 @@
-# Jellyfin Console
+# Dasharr / Labarr / Commandarr
 This is an open-source user interface made specifically for managing jellyfin and related services from a single, unified web management console. 
-
 
 # Installation
 This only needs docker to be installed. [Install Docker](https://docs.docker.com/engine/install/)
+
 # Usage
 This PWA can be installed as an "app" on your computer/phone as a PWA (Progressive Web App) via chrome browser (or safari on iOS/iPad OS).
 It can be accessed locally via any web browser via `http://localhost:2022` or `192.168.x.x:2022` which should be your servers local IP address.
