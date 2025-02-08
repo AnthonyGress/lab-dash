@@ -56,27 +56,33 @@ export const WeatherWidget: React.FC = () => {
     }, []);
 
     useEffect(() => {
+        const fetchWeather = async () => {
+            setLoading(true);
+            try {
+                const response = await fetch(
+                    `https://api.open-meteo.com/v1/forecast?latitude=${location?.latitude}&longitude=${location?.longitude}&current=temperature_2m,weathercode&daily=temperature_2m_max,weathercode&timezone=auto`
+                );
+                const data: WeatherData = await response.json();
+                console.log(data);
+
+                setWeatherData(data);
+            } catch (error) {
+                console.error('Error fetching weather:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
         if (location) {
             fetchWeather();
         }
+
+        // every 15 min
+        setTimeout(() => {
+            fetchWeather();
+        }, 900);
     }, [location, forecastDays]);
 
-    const fetchWeather = async () => {
-        setLoading(true);
-        try {
-            const response = await fetch(
-                `https://api.open-meteo.com/v1/forecast?latitude=${location?.latitude}&longitude=${location?.longitude}&current=temperature_2m,weathercode&daily=temperature_2m_max,weathercode&timezone=auto`
-            );
-            const data: WeatherData = await response.json();
-            console.log(data);
-
-            setWeatherData(data);
-        } catch (error) {
-            console.error('Error fetching weather:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const convertTemperature = (temp: number) => (isFahrenheit ? Math.round((temp * 9) / 5 + 32) : Math.round(temp));
 
@@ -84,8 +90,8 @@ export const WeatherWidget: React.FC = () => {
         return weatherData &&
         <Box mb={2}>
             <Box sx={styles.center}>
-                <Box>{weatherDescriptions[weatherData.current.weathercode]?.icon}</Box>
-                <Box ml={1} sx={{ fontSize: '2rem' }}>{convertTemperature(weatherData.current.temperature_2m)}°{isFahrenheit ? 'F' : 'C'}</Box>
+                <Box>{weatherDescriptions[weatherData?.current?.weathercode]?.icon}</Box>
+                <Box ml={1} sx={{ fontSize: '2rem' }}>{convertTemperature(weatherData.current?.temperature_2m)}°{isFahrenheit ? 'F' : 'C'}</Box>
             </Box>
             {/* <Box sx={{ fontSize: '1rem' }}>{weatherDescriptions[weatherData.current.weathercode]?.description || 'Unknown'}</Box> */}
         </Box>;
@@ -100,34 +106,34 @@ export const WeatherWidget: React.FC = () => {
     const renderWeatherItem = () => {
         return weatherData && Array.from({ length: forecastDays }, (_, index) => (
             <Grid sx={styles.vcenter} key={index}>
-                <Box>{getDay(weatherData.daily.time[index])}</Box>
-                <Box>{weatherDescriptions[weatherData.daily.weathercode[index]]?.icon}</Box>
-                <Box ml={1} sx={{ fontSize: '1.5rem' }}>{convertTemperature(weatherData.daily.temperature_2m_max[index])}°{isFahrenheit ? 'F' : 'C'}</Box>
-                <Box sx={{ fontSize: '1rem' }}> {weatherDescriptions[weatherData.daily.weathercode[index]]?.description || 'Unknown'}</Box>
+                <Box>{getDay(weatherData.daily?.time[index])}</Box>
+                <Box>{weatherDescriptions[weatherData.daily?.weathercode[index]]?.icon}</Box>
+                <Box ml={1} sx={{ fontSize: '1.5rem' }}>{convertTemperature(weatherData.daily?.temperature_2m_max[index])}°{isFahrenheit ? 'F' : 'C'}</Box>
+                <Box sx={{ fontSize: '1rem' }}> {weatherDescriptions[weatherData.daily?.weathercode[index]]?.description || 'Unknown'}</Box>
             </Grid>
         ));
     };
 
     return (
-        <Card sx={{ ...styles.widgetContainer }}>
-            <CardContent>
-                {loading ? (
-                    <Box sx={styles.center}>
-                        <CircularProgress sx={{ mt: 2 }} />
-                    </Box>
-                ) : weatherData ? (
-                    <Grid sx={styles.vcenter} container>
-                        {/* 1 Day */}
-                        {renderCurrentWeatherItem()}
-                        {/* 5 Day */}
-                        <Grid sx={styles.center} container gap={5}>
-                            { forecastDays > 1 && renderWeatherItem() }
-                        </Grid>
+        // <Card sx={{ ...styles.widgetContainer }}>
+        <CardContent>
+            {loading ? (
+                <Box sx={styles.center}>
+                    <CircularProgress sx={{ mt: 2 }} />
+                </Box>
+            ) : weatherData ? (
+                <Grid sx={styles.vcenter} container>
+                    {/* 1 Day */}
+                    {renderCurrentWeatherItem()}
+                    {/* 5 Day */}
+                    <Grid sx={styles.center} container gap={5}>
+                        { forecastDays > 1 && renderWeatherItem() }
                     </Grid>
-                ) : (
-                    <Typography variant='body2' sx={{ mt: 2 }}>Fetching weather...</Typography>
-                )}
-            </CardContent>
-        </Card>
+                </Grid>
+            ) : (
+                <Typography variant='body2' sx={{ mt: 2 }}>Fetching weather...</Typography>
+            )}
+        </CardContent>
+        // </Card>
     );
 };

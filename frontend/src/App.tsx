@@ -8,6 +8,7 @@ import { ResponsiveAppBar } from './components/ResponsiveAppBar';
 import './theme/App.css';
 import { CenteredModal } from './components/CenteredModal';
 import { AddForm } from './components/forms/AddForm';
+import { DashboardGrid } from './components/dnd/DashboardGrid';
 
 declare global {
     interface Window {
@@ -44,7 +45,8 @@ function App() {
         >
             <ResponsiveAppBar editMode={editMode} setEditMode={setEditMode} setOpenAddModal={setOpenAddModal}/>
             <Box component='main' mt={'4vh'} mb={'4vh'}>
-                <Dashboard config={config}/>
+                {/* <Dashboard config={config}/> */}
+                <DashboardGrid config={config} editMode={editMode}/>
             </Box>
             <CenteredModal open={openAddModal} handleClose={handleClose} title='Add Item' >
                 <AddForm handleClose={handleClose}/>
