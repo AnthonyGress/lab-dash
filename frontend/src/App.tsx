@@ -53,7 +53,6 @@ function App() {
                 setOpenAddModal={setOpenAddModal}
             />
             <Box component='main' mt={'4vh'} mb={'4vh'}>
-                {/* <Dashboard config={config}/> */}
                 <DashboardGrid config={config} editMode={editMode} items={dashboardLayout}/>
             </Box>
             <CenteredModal open={openAddModal} handleClose={handleClose} title='Add Item' >

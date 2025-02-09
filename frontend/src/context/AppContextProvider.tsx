@@ -55,7 +55,7 @@ export const AppContextProvider = ({ children }: Props) => {
     const { Provider } = AppContext;
 
     return (
-        <Provider value={{ dashboardLayout, refreshDashboard, saveLayout, addItem }}>
+        <Provider value={{ dashboardLayout, refreshDashboard, saveLayout, addItem, setDashboardLayout }}>
             {children}
         </Provider>
     );

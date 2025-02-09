@@ -4,7 +4,7 @@ import { DashboardItem, NewItem } from '../types';
 
 export interface IAppContext {
     dashboardLayout: DashboardItem[];
-    // setDashboardLayout: Dispatch<SetStateAction<DashboardItem[]>>
+    setDashboardLayout: Dispatch<SetStateAction<DashboardItem[]>>
     refreshDashboard: () => Promise<void>;
     saveLayout: (items: DashboardItem[]) => void;
     addItem: (itemToAdd: NewItem) => void;

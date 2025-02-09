@@ -19,6 +19,7 @@ import { SortableTimeDateWidget } from './SortableDateTime';
 import { SortableItem } from './SortableItem';
 import { SortableSystemMonitorWidget } from './SortableSystemMonitor';
 import { SortableWeatherWidget } from './SortableWeather';
+import { useAppContext } from '../../context/useAppContext';
 import { DashboardItem, ITEM_TYPE } from '../../types';
 
 type Props = {
@@ -31,7 +32,7 @@ type Props = {
 export const DashboardGrid: React.FC<Props> = ({ editMode, config, items }) => {
     // const [items, setItems] = useState(initialItems);
     const [activeId, setActiveId] = useState<string | null>(null);
-
+    const { setDashboardLayout } = useAppContext();
     const sensors = useSensors(useSensor(PointerSensor));
 
     const handleDragStart = (event: any) => {
@@ -41,7 +42,7 @@ export const DashboardGrid: React.FC<Props> = ({ editMode, config, items }) => {
     const handleDragEnd = (event: any) => {
         const { active, over } = event;
         if (active.id !== over.id) {
-            setItems((prev: any[]) => {
+            setDashboardLayout((prev: any[]) => {
                 const oldIndex = prev.findIndex((item: { id: any; }) => item.id === active.id);
                 const newIndex = prev.findIndex((item: { id: any; }) => item.id === over.id);
                 const newItems = arrayMove(prev, oldIndex, newIndex);
