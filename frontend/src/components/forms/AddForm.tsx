@@ -5,9 +5,11 @@ import { useForm } from 'react-hook-form';
 import { CheckboxButtonGroup, CheckboxElement, FormContainer, SelectElement, TextFieldElement } from 'react-hook-form-mui';
 
 import { BACKEND_URL } from '../../constants/constants';
+import { useAppContext } from '../../context/useAppContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { COLORS, styles } from '../../theme/styles';
 import { theme } from '../../theme/theme';
+import { DashboardItem, NewItem } from '../../types';
 import { IconSearch } from '../IconSearch';
 
 type Props = {
@@ -17,23 +19,41 @@ type Props = {
 const ITEM_TYPE_OPTIONS = [{ id: 'widget', label: 'Widget' }, { id: 'app', label: 'App' }];
 const WIDGET_OPTIONS = [{ id: 'date_time', label: 'Date & Time' }, { id: 'weather', label: 'Weather' }, { id: 'system_monitor', label: 'System Monitor' }];
 
+type FormValues = {
+    shortcutName?: string;
+    itemType: string;
+    url?: string;
+    icon?: {path: string, name: string, source: string};
+    showName?: boolean;
+}
+
 export const AddForm = ({ handleClose }: Props) => {
     const [iconList, setIconList] = useState([]);
     const { formState: { errors } } = useForm();
+    const { dashboardLayout, addItem } = useAppContext();
     const formContext = useForm({
         defaultValues: {
             shortcutName: '',
             itemType: '',
             url: '',
             showName: true,
-            icon: ''
+            icon: null as any
         }
     });
     const isMobile = useIsMobile();
     const selectedItemType = formContext.watch('itemType');
 
-    const handleSubmit = (data: any) => {
+    const handleSubmit = (data: FormValues) => {
         console.log(data);
+        const newItem: NewItem = {
+            label: data.shortcutName,
+            icon: data.icon?.path,
+            url: data.url,
+            type: data.itemType,
+
+        }
+        addItem(newItem);
+
         formContext.reset();
         handleClose();
     };

@@ -2,13 +2,13 @@ import { Box } from '@mui/material';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
 
-import { Dashboard } from './components/Dashboard';
-import { ResponsiveAppBar } from './components/ResponsiveAppBar';
-
-import './theme/App.css';
 import { CenteredModal } from './components/CenteredModal';
-import { AddForm } from './components/forms/AddForm';
 import { DashboardGrid } from './components/dnd/DashboardGrid';
+import { AddForm } from './components/forms/AddForm';
+import { ResponsiveAppBar } from './components/ResponsiveAppBar';
+import './theme/App.css';
+import { useAppContext } from './context/useAppContext';
+import { ITEM_TYPE } from './types';
 
 declare global {
     interface Window {
@@ -20,6 +20,10 @@ function App() {
     const [openAddModal, setOpenAddModal] = useState(false);
     const [editMode, setEditMode] = useState(false);
     const [config, setConfig] = useState<any>();
+    // const [items, setItems] = useState(initialItems);
+    const { dashboardLayout } = useAppContext();
+
+
 
     const handleClose = () => setOpenAddModal(false);
 
@@ -43,10 +47,14 @@ function App() {
             backgroundSize: 'cover'
         }}
         >
-            <ResponsiveAppBar editMode={editMode} setEditMode={setEditMode} setOpenAddModal={setOpenAddModal}/>
+            <ResponsiveAppBar
+                editMode={editMode}
+                setEditMode={setEditMode}
+                setOpenAddModal={setOpenAddModal}
+            />
             <Box component='main' mt={'4vh'} mb={'4vh'}>
                 {/* <Dashboard config={config}/> */}
-                <DashboardGrid config={config} editMode={editMode}/>
+                <DashboardGrid config={config} editMode={editMode} items={dashboardLayout}/>
             </Box>
             <CenteredModal open={openAddModal} handleClose={handleClose} title='Add Item' >
                 <AddForm handleClose={handleClose}/>

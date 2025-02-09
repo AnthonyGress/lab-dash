@@ -1,0 +1,13 @@
+import { createContext, Dispatch, SetStateAction } from 'react';
+
+import { DashboardItem, NewItem } from '../types';
+
+export interface IAppContext {
+    dashboardLayout: DashboardItem[];
+    // setDashboardLayout: Dispatch<SetStateAction<DashboardItem[]>>
+    refreshDashboard: () => Promise<void>;
+    saveLayout: (items: DashboardItem[]) => void;
+    addItem: (itemToAdd: NewItem) => void;
+}
+
+export const AppContext = createContext<IAppContext>(null!);

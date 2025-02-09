@@ -109,7 +109,7 @@ export const WeatherWidget: React.FC = () => {
                 <Box>{getDay(weatherData.daily?.time[index])}</Box>
                 <Box>{weatherDescriptions[weatherData.daily?.weathercode[index]]?.icon}</Box>
                 <Box sx={{ fontSize: '1rem' }}>{convertTemperature(weatherData.daily?.temperature_2m_max[index])}°{isFahrenheit ? 'F' : 'C'}</Box>
-                <Box sx={{ fontSize: '1rem' }}> {weatherDescriptions[weatherData.daily?.weathercode[index]]?.description || 'Unknown'}</Box>
+                {/* <Box sx={{ fontSize: '1rem' }}> {weatherDescriptions[weatherData.daily?.weathercode[index]]?.description || 'Unknown'}</Box> */}
             </Grid>
         ));
     };
