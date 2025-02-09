@@ -1,13 +1,33 @@
-import { Card, CardContent } from '@mui/material';
+import { Card } from '@mui/material';
+import React from 'react';
 
-import { styles } from '../../theme/styles';
+import { COLORS } from '../../theme/styles';
 
-export const WidgetContainer = () => {
+type Props = {
+    children: React.ReactNode;
+    editMode: boolean;
+    isOverlay?: boolean;
+};
+
+export const WidgetContainer: React.FC<Props> = ({ children, editMode, isOverlay = false }) => {
     return (
-        <Card sx={{ ...styles.widgetContainer }}>
-            <CardContent>
-                {''}
-            </CardContent>
+        <Card
+            sx={{
+                width: '90%',
+                minHeight: 200,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: isOverlay ? 'rgba(0, 0, 255, 0.2)' : COLORS.TRANSPARENT_GRAY,
+                border: isOverlay ? '2px dashed blue' : 'none',
+                cursor: editMode ? 'grab' : 'auto',
+                boxShadow: 2,
+                borderRadius: 2,
+                padding: 2,
+            }}
+        >
+            {children}
         </Card>
     );
 };

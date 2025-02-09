@@ -3,8 +3,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Grid2 } from '@mui/material';
 import React from 'react';
 
-
-import { WeatherWidget } from '../widgets/WeatherWidget';
+import { DateTimeWidget } from '../widgets/DateTimeWidget';
 import { WidgetContainer } from '../widgets/WidgetContainer';
 
 type Props = {
@@ -13,7 +12,7 @@ type Props = {
     isOverlay?: boolean;
 };
 
-export const SortableWeatherWidget: React.FC<Props> = ({ id, editMode, isOverlay = false }) => {
+export const SortableTimeDateWidget: React.FC<Props> = ({ id, editMode, isOverlay = false }) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
     return (
@@ -29,7 +28,7 @@ export const SortableWeatherWidget: React.FC<Props> = ({ id, editMode, isOverlay
             }}
         >
             <WidgetContainer editMode={editMode} isOverlay={isOverlay}>
-                <WeatherWidget />
+                <DateTimeWidget />
             </WidgetContainer>
         </Grid2>
     );

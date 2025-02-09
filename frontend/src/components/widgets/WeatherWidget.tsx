@@ -18,24 +18,24 @@ interface WeatherData {
 }
 
 const weatherDescriptions: Record<number, { description: string; icon: JSX.Element }> = {
-    0: { description: 'Clear', icon: <BsSunFill style={{ fontSize: '2.5rem' }}/> },
-    1: { description: 'Mostly clear', icon: <BsSunFill style={{ fontSize: '2.5rem' }}/> },
-    2: { description: 'Partly cloudy', icon: <BsCloudSunFill style={{ fontSize: '2.5rem' }}/> },
-    3: { description: 'Overcast', icon: <BsCloudSunFill style={{ fontSize: '2.5rem' }}/> },
-    45: { description: 'Fog', icon: <BsCloudHaze2Fill style={{ fontSize: '2.5rem' }}/> },
-    48: { description: 'Depositing rime fog', icon: <BsCloudHaze2Fill style={{ fontSize: '2.5rem' }}/> },
-    51: { description: 'Drizzle', icon: <BsCloudDrizzleFill style={{ fontSize: '2.5rem' }}/> },
-    53: { description: 'Drizzle', icon: <BsCloudDrizzleFill style={{ fontSize: '2.5rem' }}/> },
-    55: { description: 'Drizzle', icon: <BsCloudDrizzleFill style={{ fontSize: '2.5rem' }}/> },
-    61: { description: 'Rain', icon: <BsFillCloudRainFill style={{ fontSize: '2.5rem' }}/> },
-    63: { description: 'Rain', icon: <BsFillCloudRainFill style={{ fontSize: '2.5rem' }}/> },
-    65: { description: 'Heavy Rain', icon: <BsCloudRainHeavyFill style={{ fontSize: '2.5rem' }}/> },
-    71: { description: 'Snow', icon: <BsCloudSnowFill style={{ fontSize: '2.5rem' }}/> },
-    73: { description: 'Snow', icon: <BsCloudSnowFill style={{ fontSize: '2.5rem' }}/> },
-    75: { description: 'Heavy Snow', icon: <BsCloudSnowFill style={{ fontSize: '2.5rem' }}/> },
-    80: { description: 'Rain showers', icon: <BsFillCloudRainFill style={{ fontSize: '2.5rem' }}/> },
-    85: { description: 'Snow showers', icon: <BsCloudSnowFill style={{ fontSize: '2.5rem' }}/> },
-    95: { description: 'Thunderstorm', icon: <BsCloudLightningRainFill style={{ fontSize: '2.5rem' }}/> },
+    0: { description: 'Clear', icon: <BsSunFill style={{ fontSize: '2rem' }}/> },
+    1: { description: 'Mostly clear', icon: <BsSunFill style={{ fontSize: '2rem' }}/> },
+    2: { description: 'Partly cloudy', icon: <BsCloudSunFill style={{ fontSize: '2rem' }}/> },
+    3: { description: 'Overcast', icon: <BsCloudSunFill style={{ fontSize: '2rem' }}/> },
+    45: { description: 'Fog', icon: <BsCloudHaze2Fill style={{ fontSize: '2rem' }}/> },
+    48: { description: 'Depositing rime fog', icon: <BsCloudHaze2Fill style={{ fontSize: '2rem' }}/> },
+    51: { description: 'Drizzle', icon: <BsCloudDrizzleFill style={{ fontSize: '2rem' }}/> },
+    53: { description: 'Drizzle', icon: <BsCloudDrizzleFill style={{ fontSize: '2rem' }}/> },
+    55: { description: 'Drizzle', icon: <BsCloudDrizzleFill style={{ fontSize: '2rem' }}/> },
+    61: { description: 'Rain', icon: <BsFillCloudRainFill style={{ fontSize: '2rem' }}/> },
+    63: { description: 'Rain', icon: <BsFillCloudRainFill style={{ fontSize: '2rem' }}/> },
+    65: { description: 'Heavy Rain', icon: <BsCloudRainHeavyFill style={{ fontSize: '2rem' }}/> },
+    71: { description: 'Snow', icon: <BsCloudSnowFill style={{ fontSize: '2rem' }}/> },
+    73: { description: 'Snow', icon: <BsCloudSnowFill style={{ fontSize: '2rem' }}/> },
+    75: { description: 'Heavy Snow', icon: <BsCloudSnowFill style={{ fontSize: '2rem' }}/> },
+    80: { description: 'Rain showers', icon: <BsFillCloudRainFill style={{ fontSize: '2rem' }}/> },
+    85: { description: 'Snow showers', icon: <BsCloudSnowFill style={{ fontSize: '2rem' }}/> },
+    95: { description: 'Thunderstorm', icon: <BsCloudLightningRainFill style={{ fontSize: '2rem' }}/> },
 };
 
 export const WeatherWidget: React.FC = () => {
@@ -78,9 +78,9 @@ export const WeatherWidget: React.FC = () => {
         }
 
         // every 15 min
-        setTimeout(() => {
-            fetchWeather();
-        }, 900);
+        // setTimeout(() => {
+        //     fetchWeather();
+        // }, 900);
     }, [location, forecastDays]);
 
 
@@ -88,10 +88,10 @@ export const WeatherWidget: React.FC = () => {
 
     const renderCurrentWeatherItem = () => {
         return weatherData &&
-        <Box mb={2}>
+        <Box mb={1}>
             <Box sx={styles.center}>
                 <Box>{weatherDescriptions[weatherData?.current?.weathercode]?.icon}</Box>
-                <Box ml={1} sx={{ fontSize: '2rem' }}>{convertTemperature(weatherData.current?.temperature_2m)}°{isFahrenheit ? 'F' : 'C'}</Box>
+                <Box ml={1} sx={{ fontSize: '1.5rem' }}>{convertTemperature(weatherData.current?.temperature_2m)}°{isFahrenheit ? 'F' : 'C'}</Box>
             </Box>
             {/* <Box sx={{ fontSize: '1rem' }}>{weatherDescriptions[weatherData.current.weathercode]?.description || 'Unknown'}</Box> */}
         </Box>;
@@ -108,14 +108,13 @@ export const WeatherWidget: React.FC = () => {
             <Grid sx={styles.vcenter} key={index}>
                 <Box>{getDay(weatherData.daily?.time[index])}</Box>
                 <Box>{weatherDescriptions[weatherData.daily?.weathercode[index]]?.icon}</Box>
-                <Box ml={1} sx={{ fontSize: '1.5rem' }}>{convertTemperature(weatherData.daily?.temperature_2m_max[index])}°{isFahrenheit ? 'F' : 'C'}</Box>
+                <Box sx={{ fontSize: '1rem' }}>{convertTemperature(weatherData.daily?.temperature_2m_max[index])}°{isFahrenheit ? 'F' : 'C'}</Box>
                 <Box sx={{ fontSize: '1rem' }}> {weatherDescriptions[weatherData.daily?.weathercode[index]]?.description || 'Unknown'}</Box>
             </Grid>
         ));
     };
 
     return (
-        // <Card sx={{ ...styles.widgetContainer }}>
         <CardContent>
             {loading ? (
                 <Box sx={styles.center}>
@@ -126,14 +125,13 @@ export const WeatherWidget: React.FC = () => {
                     {/* 1 Day */}
                     {renderCurrentWeatherItem()}
                     {/* 5 Day */}
-                    <Grid sx={styles.center} container gap={5}>
+                    <Grid sx={styles.center} container gap={3}>
                         { forecastDays > 1 && renderWeatherItem() }
                     </Grid>
                 </Grid>
             ) : (
-                <Typography variant='body2' sx={{ mt: 2 }}>Fetching weather...</Typography>
+                <Typography variant='body2' sx={{ mt: 1 }}>Fetching weather...</Typography>
             )}
         </CardContent>
-        // </Card>
     );
 };

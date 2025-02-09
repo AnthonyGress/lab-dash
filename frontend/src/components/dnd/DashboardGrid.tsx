@@ -12,18 +12,34 @@ import {
     rectSwappingStrategy,
     SortableContext,
 } from '@dnd-kit/sortable';
-import { Box, Button, Grid } from '@mui/material';
+import { Box, Button, Grid2 as Grid } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 
+import { SortableTimeDateWidget } from './SortableDateTime';
 import { SortableItem } from './SortableItem';
+import { SortableSystemMonitorWidget } from './SortableSystemMonitor';
+import { SortableWeatherWidget } from './SortableWeather';
 
 // The key for localStorage
 const LOCAL_STORAGE_KEY = 'dashboardLayout';
 
-const initialItems = Array.from({ length: 9 }, (_, index) => ({
-    id: `item-${index + 1}`,
-    label: `Item ${index + 1}`,
-}));
+enum ITEM_TYPE {
+    WEATHER_WIDGET = 'weather-widget',
+    DATE_TIME_WIDGET = 'date-time-widget',
+    SYSTEM_MONITOR_WIDGET = 'system-monitor-widget',
+    APP_SHORTCUT = 'app-shortcut'
+}
+
+const initialItems = [
+    ...Array.from({ length: 15 }, (_, index) => ({
+        id: `item-${index + 1}`,
+        label: `Item ${index + 1}`,
+        type: 'item',
+    })),
+    { id: 'weather-widget', label: 'Weather Widget', type: ITEM_TYPE.WEATHER_WIDGET },
+    { id: 'time-date-widget', label: 'Time & Date Widget', type: ITEM_TYPE.DATE_TIME_WIDGET },
+    { id: 'system-monitor-widget', label: 'System Monitor Widget', type: ITEM_TYPE.SYSTEM_MONITOR_WIDGET },
+];
 
 type Props = {
     editMode: boolean;
@@ -39,9 +55,9 @@ export const DashboardGrid: React.FC<Props> = ({ editMode, config }) => {
     // Load saved layout from localStorage
     useEffect(() => {
         const savedLayout = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (savedLayout) {
-            setItems(JSON.parse(savedLayout).items);
-        }
+        // if (savedLayout) {
+        //     setItems(JSON.parse(savedLayout).items);
+        // }
     }, []);
 
     // Save layout to localStorage
@@ -68,6 +84,15 @@ export const DashboardGrid: React.FC<Props> = ({ editMode, config }) => {
         setActiveId(null);
     };
 
+    const addItem = (label: string, type: string) => {
+        const newItem = {
+            id: `item-${items.length + 1}`, // Generate a unique id
+            label,
+            type, // The type of the new widget, e.g., "item", "weather", etc.
+        };
+        setItems((prevItems) => [...prevItems, newItem]); // Add the new item to the array
+    };
+
     return (
         <DndContext
             sensors={sensors}
@@ -77,10 +102,19 @@ export const DashboardGrid: React.FC<Props> = ({ editMode, config }) => {
         >
             <Box sx={{ width: '90%', height: '100%', margin: 'auto', padding: 2 }}>
                 <SortableContext items={items} strategy={rectSortingStrategy} disabled={!editMode}>
-                    <Grid container spacing={2}>
-                        {items.map((item) => (
-                            <SortableItem key={item.id} id={item.id} label={item.label} editMode={editMode} />
-                        ))}
+                    <Grid container spacing={2} >
+                        {items.map((item) => {
+                            switch (item.type) {
+                            case ITEM_TYPE.WEATHER_WIDGET:
+                                return <SortableWeatherWidget key={item.id} id={item.id} editMode={editMode} />;
+                            case ITEM_TYPE.DATE_TIME_WIDGET:
+                                return <SortableTimeDateWidget key={item.id} id={item.id} editMode={editMode} />;
+                            case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
+                                return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} />;
+                            default:
+                                return <SortableItem key={item.id} id={item.id} label={item.label} editMode={editMode} />;
+                            }
+                        })}
                     </Grid>
                 </SortableContext>
 
