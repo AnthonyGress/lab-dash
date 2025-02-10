@@ -4,19 +4,19 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { CheckboxButtonGroup, CheckboxElement, FormContainer, SelectElement, TextFieldElement } from 'react-hook-form-mui';
 
-import { BACKEND_URL } from '../../constants/constants';
+import { DashApi } from '../../api/dash-api';
 import { useAppContext } from '../../context/useAppContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { COLORS, styles } from '../../theme/styles';
 import { theme } from '../../theme/theme';
-import { DashboardItem, NewItem } from '../../types';
+import { DashboardItem, Icon, ITEM_TYPE, NewItem } from '../../types';
 import { IconSearch } from '../IconSearch';
 
 type Props = {
     handleClose: () => void
 }
 
-const ITEM_TYPE_OPTIONS = [{ id: 'widget', label: 'Widget' }, { id: 'app', label: 'App' }];
+const ITEM_TYPE_OPTIONS = [{ id: 'widget', label: 'Widget' }, { id: ITEM_TYPE.APP_SHORTCUT, label: 'App' }];
 const WIDGET_OPTIONS = [{ id: 'date_time', label: 'Date & Time' }, { id: 'weather', label: 'Weather' }, { id: 'system_monitor', label: 'System Monitor' }];
 
 type FormValues = {
@@ -28,7 +28,7 @@ type FormValues = {
 }
 
 export const AddForm = ({ handleClose }: Props) => {
-    const [iconList, setIconList] = useState([]);
+    const [iconList, setIconList] = useState<Icon[]>([]);
     const { formState: { errors } } = useForm();
     const { dashboardLayout, addItem } = useAppContext();
     const formContext = useForm({
@@ -51,7 +51,7 @@ export const AddForm = ({ handleClose }: Props) => {
             url: data.url,
             type: data.itemType,
 
-        }
+        };
         addItem(newItem);
 
         formContext.reset();
@@ -59,9 +59,9 @@ export const AddForm = ({ handleClose }: Props) => {
     };
 
     const fetchIconList = async () => {
-        const list = await axios.get(`${BACKEND_URL}/icon-list`);
-        console.log(list.data.icons);
-        setIconList(list.data.icons);
+        const list = await DashApi.getIconList();
+        console.log(list);
+        setIconList(list);
     };
 
     useEffect(() => {
@@ -106,7 +106,7 @@ export const AddForm = ({ handleClose }: Props) => {
                                 />
                             </Grid>
 
-                            {selectedItemType === 'app' &&
+                            {selectedItemType === ITEM_TYPE.APP_SHORTCUT &&
                             <>
                                 <Grid>
                                     <TextFieldElement name='shortcutName' label='Shortcut Name' required variant='outlined' sx={{

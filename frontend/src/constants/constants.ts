@@ -1,7 +1,5 @@
 import { ITEM_TYPE } from '../types';
 
-export const BACKEND_URL = 'http://localhost:5000';
-
 export const initialItems = [
     { id: 'weather-widget', label: 'Weather Widget', type: ITEM_TYPE.WEATHER_WIDGET },
     { id: 'time-date-widget', label: 'Time & Date Widget', type: ITEM_TYPE.DATE_TIME_WIDGET },

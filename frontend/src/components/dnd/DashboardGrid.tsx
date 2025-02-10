@@ -21,6 +21,8 @@ import { SortableSystemMonitorWidget } from './SortableSystemMonitor';
 import { SortableWeatherWidget } from './SortableWeather';
 import { useAppContext } from '../../context/useAppContext';
 import { DashboardItem, ITEM_TYPE } from '../../types';
+import { AppShortcut } from '../AppShortcut';
+import { SortableAppShortcut } from './SortableAppShortcut';
 
 type Props = {
     editMode: boolean;
@@ -53,6 +55,8 @@ export const DashboardGrid: React.FC<Props> = ({ editMode, config, items }) => {
         setActiveId(null);
     };
 
+    
+
     return (
         <DndContext
             sensors={sensors}
@@ -71,16 +75,50 @@ export const DashboardGrid: React.FC<Props> = ({ editMode, config, items }) => {
                                 return <SortableTimeDateWidget key={item.id} id={item.id} editMode={editMode} />;
                             case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
                                 return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} />;
+                            case ITEM_TYPE.APP_SHORTCUT:
+                                return <SortableAppShortcut key={item.id} id={item.id} editMode={editMode} url={item.url as string} name={item.label} iconName={item.icon as string}/>;
                             default:
                                 return <SortableItem key={item.id} id={item.id} label={item.label} editMode={editMode} />;
                             }
                         })}
                     </Grid>
                 </SortableContext>
-
+                {/*
                 <DragOverlay>
                     {activeId ? (
                         <SortableItem id={activeId} label={items.find(i => i.id === activeId)?.label || ''} isOverlay editMode={editMode}/>
+                    ) : null}
+                </DragOverlay> */}
+
+                <DragOverlay>
+                    {activeId ? (
+                        items.map((item) => {
+                            if (item.id === activeId) {
+                                switch (item.type) {
+                                case ITEM_TYPE.WEATHER_WIDGET:
+                                    return <SortableWeatherWidget key={item.id} id={item.id} editMode={editMode} isOverlay/>;
+                                case ITEM_TYPE.DATE_TIME_WIDGET:
+                                    return <SortableTimeDateWidget key={item.id} id={item.id} editMode={editMode} isOverlay/>;
+                                case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
+                                    return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} isOverlay/>;
+                                case ITEM_TYPE.APP_SHORTCUT:
+                                    return (
+                                        <SortableAppShortcut
+                                            key={item.id}
+                                            id={item.id}
+                                            url={item.url as string}
+                                            name={item.label}
+                                            iconName={item.icon as string}
+                                            editMode={editMode}
+                                            isOverlay
+                                        />
+                                    );
+                                default:
+                                    return <SortableItem key={item.id} id={item.id} label={item.label} editMode={editMode} />;
+                                }
+                            }
+                            return null;
+                        })
                     ) : null}
                 </DragOverlay>
             </Box>

@@ -19,12 +19,13 @@ export const WidgetContainer: React.FC<Props> = ({ children, editMode, isOverlay
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: isOverlay ? 'rgba(0, 0, 255, 0.2)' : COLORS.TRANSPARENT_GRAY,
-                border: isOverlay ? '2px dashed blue' : 'none',
+                backgroundColor: COLORS.TRANSPARENT_GRAY,
+                border: 'none', // No dashed border for overlay
                 cursor: editMode ? 'grab' : 'auto',
                 boxShadow: 2,
                 borderRadius: 2,
                 padding: 2,
+                opacity: isOverlay ? 0.5 : 1,
             }}
         >
             {children}

@@ -20,3 +20,10 @@ export type NewItem = {
     label?: string;
     type: string;
 }
+
+export type Icon = {
+    path: string;
+    name: string;
+    source?: string;
+    guidelines?: string;
+}

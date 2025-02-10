@@ -5,16 +5,11 @@ import { Controller } from 'react-hook-form';
 import { TextFieldElement } from 'react-hook-form-mui';
 import shortid from 'shortid';
 
-import { BACKEND_URL } from '../constants/constants';
+import { DashApi } from '../api/dash-api';
 import { styles } from '../theme/styles';
 import { theme } from '../theme/theme';
+import { Icon } from '../types';
 import { getIconPath } from '../utils/utils';
-
-interface Icon {
-    path: string;
-    name: string;
-    source?: string;
-}
 
 type Props = {
     control: any;
@@ -27,8 +22,8 @@ export const IconSearch = ({ control, errors }: Props) => {
 
     const fetchIconList = async () => {
         try {
-            const response = await axios.get(`${BACKEND_URL}/icon-list`);
-            setIconList(response.data.icons);
+            const response = await DashApi.getIconList();
+            setIconList(response);
         } catch (error) {
             console.error('Error fetching icon list:', error);
         }
