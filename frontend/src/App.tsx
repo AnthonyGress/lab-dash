@@ -2,9 +2,9 @@ import { Box } from '@mui/material';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
 
-import { CenteredModal } from './components/CenteredModal';
 import { DashboardGrid } from './components/dnd/DashboardGrid';
 import { AddForm } from './components/forms/AddForm';
+import { CenteredModal } from './components/modals/CenteredModal';
 import { ResponsiveAppBar } from './components/ResponsiveAppBar';
 import './theme/App.css';
 import { useAppContext } from './context/useAppContext';

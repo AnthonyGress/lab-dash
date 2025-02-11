@@ -3,6 +3,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Box, Grid2 } from '@mui/material';
 import React from 'react';
 
+import { PlaceholderWidget } from './PlaceholderWidget';
 import { SystemMonitorWidget } from '../widgets/SystemMonitorWidget/SystemMonitorWidget';
 import { WidgetContainer } from '../widgets/WidgetContainer';
 
@@ -11,9 +12,10 @@ type Props = {
     id: string;
     editMode: boolean;
     isOverlay?: boolean;
+    onDelete?: () => void
 };
 
-export const SortableSystemMonitorWidget: React.FC<Props> = ({ id, editMode, isOverlay = false }) => {
+export const SortableSystemMonitorWidget: React.FC<Props> = ({ id, editMode, isOverlay = false, onDelete }) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
     return (
@@ -25,20 +27,14 @@ export const SortableSystemMonitorWidget: React.FC<Props> = ({ id, editMode, isO
             sx={{
                 transition,
                 transform: transform ? CSS.Transform.toString(transform) : undefined,
+                opacity: isOverlay ? .6 : 1
             }}
         >
             {isDragging ? (
-                <Box
-                    sx={{
-                        width: '100%',
-                        height: 200,
-                        backgroundColor: 'rgba(150, 150, 150, 0.3)',
-                        border: '2px dashed gray',
-                        borderRadius: 2,
-                    }}
-                />
+                // <PlaceholderWidget />
+                <></>
             ) : (
-                <WidgetContainer editMode={editMode}>
+                <WidgetContainer editMode={editMode} onDelete={onDelete}>
                     <SystemMonitorWidget />
                 </WidgetContainer>
             )}

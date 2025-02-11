@@ -15,7 +15,7 @@ import {
 import { Box, Button, Grid2 as Grid } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 
-import { SortableTimeDateWidget } from './SortableDateTime';
+import { SortableDateTimeWidget } from './SortableDateTime';
 import { SortableItem } from './SortableItem';
 import { SortableSystemMonitorWidget } from './SortableSystemMonitor';
 import { SortableWeatherWidget } from './SortableWeather';
@@ -23,6 +23,7 @@ import { useAppContext } from '../../context/useAppContext';
 import { DashboardItem, ITEM_TYPE } from '../../types';
 import { AppShortcut } from '../AppShortcut';
 import { SortableAppShortcut } from './SortableAppShortcut';
+import { ConfirmationOptions, PopupManager } from '../modals/PopupManager';
 
 type Props = {
     editMode: boolean;
@@ -55,7 +56,20 @@ export const DashboardGrid: React.FC<Props> = ({ editMode, config, items }) => {
         setActiveId(null);
     };
 
-    
+    const handleDelete = (id: string) => {
+        const options: ConfirmationOptions = {
+            title: 'Delete Item?',
+            confirmAction: () => setDashboardLayout((prev: any[]) => prev.filter((item) => item.id !== id))
+        };
+
+        PopupManager.deleteConfirmation(options);
+    };
+
+    const handleEdit = (id: string) => {
+        console.log(`Editing widget with id: ${id}`);
+        // Implement edit functionality (e.g., open a modal to configure the widget)
+    };
+
 
     return (
         <DndContext
@@ -70,15 +84,25 @@ export const DashboardGrid: React.FC<Props> = ({ editMode, config, items }) => {
                         {items.map((item) => {
                             switch (item.type) {
                             case ITEM_TYPE.WEATHER_WIDGET:
-                                return <SortableWeatherWidget key={item.id} id={item.id} editMode={editMode} />;
+                                return <SortableWeatherWidget key={item.id} id={item.id} editMode={editMode} onDelete={() => handleDelete(item.id)} />;
                             case ITEM_TYPE.DATE_TIME_WIDGET:
-                                return <SortableTimeDateWidget key={item.id} id={item.id} editMode={editMode} />;
+                                return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} onDelete={() => handleDelete(item.id)} />;
                             case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
-                                return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} />;
+                                return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} onDelete={() => handleDelete(item.id)} />;
                             case ITEM_TYPE.APP_SHORTCUT:
-                                return <SortableAppShortcut key={item.id} id={item.id} editMode={editMode} url={item.url as string} name={item.label} iconName={item.icon as string}/>;
+                                return (
+                                    <SortableAppShortcut
+                                        key={item.id}
+                                        id={item.id}
+                                        url={item.url as string}
+                                        name={item.label}
+                                        iconName={item.icon as string}
+                                        editMode={editMode}
+                                        onDelete={() => handleDelete(item.id)}
+                                    />
+                                );
                             default:
-                                return <SortableItem key={item.id} id={item.id} label={item.label} editMode={editMode} />;
+                                return <SortableItem key={item.id} id={item.id} label={item.label} editMode={editMode} onDelete={() => handleDelete(item.id)} />;
                             }
                         })}
                     </Grid>
@@ -98,7 +122,7 @@ export const DashboardGrid: React.FC<Props> = ({ editMode, config, items }) => {
                                 case ITEM_TYPE.WEATHER_WIDGET:
                                     return <SortableWeatherWidget key={item.id} id={item.id} editMode={editMode} isOverlay/>;
                                 case ITEM_TYPE.DATE_TIME_WIDGET:
-                                    return <SortableTimeDateWidget key={item.id} id={item.id} editMode={editMode} isOverlay/>;
+                                    return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} isOverlay/>;
                                 case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
                                     return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} isOverlay/>;
                                 case ITEM_TYPE.APP_SHORTCUT:
@@ -114,7 +138,7 @@ export const DashboardGrid: React.FC<Props> = ({ editMode, config, items }) => {
                                         />
                                     );
                                 default:
-                                    return <SortableItem key={item.id} id={item.id} label={item.label} editMode={editMode} />;
+                                    return <SortableItem key={item.id} id={item.id} label={item.label} editMode={editMode} isOverlay/>;
                                 }
                             }
                             return null;

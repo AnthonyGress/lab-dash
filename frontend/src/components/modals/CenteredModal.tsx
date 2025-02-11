@@ -2,7 +2,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { AppBar, Box, Modal, Toolbar, Tooltip, Typography } from '@mui/material';
 import { ReactNode } from 'react';
 
-import { useWindowDimensions } from '../hooks/useWindowDimensions';
+import { useWindowDimensions } from '../../hooks/useWindowDimensions';
 
 type Props = {
     open: boolean;
