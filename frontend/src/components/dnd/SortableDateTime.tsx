@@ -12,9 +12,10 @@ type Props = {
     editMode: boolean;
     isOverlay?: boolean;
     onDelete?: () => void;
+    onEdit?: () => void;
 };
 
-export const SortableDateTimeWidget: React.FC<Props> = ({ id, editMode, isOverlay = false, onDelete }) => {
+export const SortableDateTimeWidget: React.FC<Props> = ({ id, editMode, isOverlay = false, onDelete, onEdit }) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
     return (
@@ -33,7 +34,7 @@ export const SortableDateTimeWidget: React.FC<Props> = ({ id, editMode, isOverla
                 // <PlaceholderWidget />
                 <></>
             ) : (
-                <WidgetContainer editMode={editMode} onDelete={onDelete}>
+                <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit}>
                     <DateTimeWidget />
                 </WidgetContainer>
             )}

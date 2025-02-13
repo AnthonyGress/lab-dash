@@ -9,5 +9,5 @@ export const styles = {
     vcenter: { display: 'flex', justifyContent: 'center', alignContent: 'center', flexDirection: 'column' },
     center: { display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'row' },
     widgetContainer: { backgroundColor: COLORS.TRANSPARENT_GRAY, borderRadius: '4px', border: `1px solid ${COLORS.BORDER}`, height: '14rem' },
-    shortcutIcon: { p: 2, backgroundColor: COLORS.TRANSPARENT_GRAY, borderRadius: '4px', border: `1px solid ${COLORS.BORDER}`, width: '7rem' }
+    shortcutIcon: { width: '6rem' }
 };

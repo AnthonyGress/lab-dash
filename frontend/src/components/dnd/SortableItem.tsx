@@ -36,9 +36,9 @@ export const SortableItem: React.FC<Props> = ({ id, label, editMode, isOverlay =
                 // <PlaceholderWidget />
                 <></>
             ) : (
-                <WidgetContainer editMode={editMode} onDelete={onDelete}>
+                <WidgetContainer editMode={editMode} onDelete={onDelete} placeholder>
                     <Typography variant='h6' textAlign='center'>
-                        {label}
+                        {/* {label} */}
                     </Typography>
                 </WidgetContainer>
             )}

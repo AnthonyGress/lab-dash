@@ -81,15 +81,15 @@ export const DashboardGrid: React.FC<Props> = ({ editMode, items }) => {
             >
                 <Box sx={{ width: '90%', height: '100%', margin: 'auto', padding: 2 }}>
                     <SortableContext items={items} strategy={rectSortingStrategy} disabled={!editMode}>
-                        <Grid container spacing={2} >
+                        <Grid container spacing={2}>
                             {items.map((item) => {
                                 switch (item.type) {
                                 case ITEM_TYPE.WEATHER_WIDGET:
-                                    return <SortableWeatherWidget key={item.id} id={item.id} editMode={editMode} onDelete={() => handleDelete(item.id)} />;
+                                    return <SortableWeatherWidget key={item.id} id={item.id} editMode={editMode} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
                                 case ITEM_TYPE.DATE_TIME_WIDGET:
-                                    return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} onDelete={() => handleDelete(item.id)} />;
+                                    return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
                                 case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
-                                    return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} onDelete={() => handleDelete(item.id)} />;
+                                    return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
                                 case ITEM_TYPE.APP_SHORTCUT:
                                     return (
                                         <SortableAppShortcut

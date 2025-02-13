@@ -12,18 +12,6 @@ type Props = {
 }
 
 export const AppShortcut = ({ url, name, iconName }: Props) => {
-    const [icon, setIcon] = useState('');
-
-    const getIcon = async () => {
-        const iconRes = await DashApi.getIcon(iconName);
-        console.log(iconRes);
-
-        setIcon(iconRes);
-    };
-
-    getIcon();
-
-
     return (
         <Grid className='scale'>
             <a href={url} rel='noopener noreferrer' target='_blank'>

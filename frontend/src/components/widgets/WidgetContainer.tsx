@@ -9,9 +9,12 @@ type Props = {
     editMode: boolean;
     onEdit?: () => void
     onDelete?: () => void;
+    appShortcut?: boolean;
+    placeholder?: boolean;
+
 };
 
-export const WidgetContainer: React.FC<Props> = ({ children, editMode, onEdit, onDelete }) => {
+export const WidgetContainer: React.FC<Props> = ({ children, editMode, onEdit, onDelete, appShortcut=false, placeholder=false }) => {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
 
@@ -27,23 +30,23 @@ export const WidgetContainer: React.FC<Props> = ({ children, editMode, onEdit, o
     return (
         <Card
             sx={{
-                width: '90%',
-                minHeight: 200,
+                width: appShortcut ? '7rem' : '90%',
+                minHeight: appShortcut ? 'auto' : 200,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: COLORS.TRANSPARENT_GRAY,
-                border: 'none',
-                cursor: editMode ? 'grab' : 'auto',
-                boxShadow: 2,
+                backgroundColor: placeholder ? 'transparent' : COLORS.TRANSPARENT_GRAY,
                 borderRadius: 2,
+                border: placeholder ? 'none' : `1px solid ${COLORS.BORDER}`,
                 padding: 2,
+                cursor: editMode ? 'grab' : 'auto',
+                boxShadow: placeholder ? 0 : 2,
                 position: 'relative',
             }}
         >
             {/* Show menu only in edit mode */}
-            {editMode && (
+            {editMode && !placeholder && (
                 <div
                     onPointerDownCapture={(e) => e.stopPropagation()} // Stop drag from interfering
                     onClick={(e) => e.stopPropagation()} // Prevent drag from triggering on click
@@ -51,8 +54,8 @@ export const WidgetContainer: React.FC<Props> = ({ children, editMode, onEdit, o
                     <IconButton
                         sx={{
                             position: 'absolute',
-                            top: 8,
-                            right: 8,
+                            top: 0,
+                            right: 0,
                         }}
                         onClick={handleMenuOpen}
                     >

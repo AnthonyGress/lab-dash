@@ -22,7 +22,7 @@ export const SortableAppShortcut: React.FC<Props> = ({ id, url, name, iconName, 
 
     return (
         <Grid2
-            size={{ xs: 3 }}
+            size={{ xs: 6 , sm: 4 , md: 4, lg: 2, xl: 4/3 }}
             ref={!isOverlay ? setNodeRef : undefined}
             {...(!isOverlay ? attributes : {})}
             {...(!isOverlay ? listeners : {})}
@@ -43,7 +43,7 @@ export const SortableAppShortcut: React.FC<Props> = ({ id, url, name, iconName, 
                 // />
                 <></>
             ) : (
-                <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit}>
+                <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit} appShortcut>
                     <AppShortcut url={url} name={name} iconName={iconName} />
                 </WidgetContainer>
             )}
