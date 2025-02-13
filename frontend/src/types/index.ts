@@ -10,12 +10,13 @@ export type DashboardItem = {
     label: string;
     type: string;
     url?: string;
-    icon?: string;
+    icon?: { path: string; name: string, source?: string };
+    showName?: boolean;
 }
 
 export type NewItem = {
     name?: string;
-    icon?: string;
+    icon?: { path: string; name: string };
     url?: string;
     label?: string;
     type: string;

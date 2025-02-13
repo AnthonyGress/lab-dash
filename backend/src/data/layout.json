@@ -1,0 +1,102 @@
+[
+  {
+    "id": "weather-widget",
+    "label": "Weather Widget",
+    "type": "weather-widget"
+  },
+  {
+    "id": "item-2",
+    "label": "Item 2",
+    "type": "item"
+  },
+  {
+    "id": "time-date-widget",
+    "label": "Time & Date Widget",
+    "type": "date-time-widget"
+  },
+  {
+    "id": "item-1",
+    "label": "Item 1",
+    "type": "item"
+  },
+  {
+    "id": "system-monitor-widget",
+    "label": "System Monitor Widget",
+    "type": "system-monitor-widget"
+  },
+  {
+    "id": "item-3",
+    "label": "Item 3",
+    "type": "item"
+  },
+  {
+    "id": "item-4",
+    "label": "Item 4",
+    "type": "item"
+  },
+  {
+    "id": "item-5",
+    "label": "Item 5",
+    "type": "item"
+  },
+  {
+    "id": "item-6",
+    "label": "Item 6",
+    "type": "item"
+  },
+  {
+    "id": "item-7",
+    "label": "Item 7",
+    "type": "item"
+  },
+  {
+    "id": "item-8",
+    "label": "Item 8",
+    "type": "item"
+  },
+  {
+    "id": "item-9",
+    "label": "Item 9",
+    "type": "item"
+  },
+  {
+    "id": "item-10",
+    "label": "Item 10",
+    "type": "item"
+  },
+  {
+    "id": "item-11",
+    "label": "Item 11",
+    "type": "item"
+  },
+  {
+    "id": "item-12",
+    "label": "Item 12",
+    "type": "item"
+  },
+  {
+    "id": "item-13",
+    "label": "Item 13",
+    "type": "item"
+  },
+  {
+    "id": "item-14",
+    "label": "Item 14",
+    "type": "item"
+  },
+  {
+    "id": "item-15",
+    "label": "Item 15",
+    "type": "item"
+  },
+  {
+    "id": "item-19",
+    "label": "PiHole",
+    "icon": {
+      "path": "./assets/pihole.svg",
+      "name": "Pi-hole"
+    },
+    "url": "http://192.168.1.34:7006/admin",
+    "type": "app-shortcut"
+  }
+]

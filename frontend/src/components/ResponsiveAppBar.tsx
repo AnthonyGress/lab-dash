@@ -13,6 +13,8 @@ import Typography from '@mui/material/Typography';
 import { MouseEvent, useState } from 'react';
 
 import { Logo } from './Logo';
+import { DashApi } from '../api/dash-api';
+import { useAppContext } from '../context/useAppContext';
 import { COLORS, styles } from '../theme/styles';
 
 const pages: string[] = [];
@@ -28,16 +30,18 @@ type Props = {
 export const ResponsiveAppBar = ({ editMode, setEditMode, customTitle, setOpenAddModal }: Props) => {
     const [title, setTitle] = useState(customTitle || 'Lab Dash');
     const [anchorElMenu, setAnchorElMenu] = useState<null | HTMLElement>(null);
+    const { dashboardLayout, saveLayout } = useAppContext();
 
     const handleEdit = () => {
         handleCloseMenu();
         setEditMode(true);
     };
 
-    const handleEditComplete = () => {
+    const handleSave = async () => {
         handleCloseMenu();
         setEditMode(false);
         setOpenAddModal(false);
+        saveLayout(dashboardLayout);
     };
 
     const handleOpenMenu = (event: MouseEvent<HTMLElement>) => {
@@ -91,7 +95,7 @@ export const ResponsiveAppBar = ({ editMode, setEditMode, customTitle, setOpenAd
                     <Box sx={{ flexGrow: 0, display: 'flex' }}>
                         <Box>
                             {editMode &&
-                                <Button onClick={handleEditComplete} variant='contained'>
+                                <Button onClick={handleSave} variant='contained'>
                                     Save Edits
                                 </Button>
                             }

@@ -1,6 +1,7 @@
 import { ReactNode, useState } from 'react';
 
 import { AppContext } from './AppContext';
+import { DashApi } from '../api/dash-api';
 import { initialItems } from '../constants/constants';
 import { DashboardItem, NewItem } from '../types';
 
@@ -8,31 +9,31 @@ type Props = {
     children: ReactNode
 };
 
-const LOCAL_STORAGE_KEY = 'dashboardLayout';
-
 export const AppContextProvider = ({ children }: Props) => {
     const [dashboardLayout, setDashboardLayout] = useState<DashboardItem[]>(initialItems);
 
     const getSavedLayout = async () => {
         console.log('getSavedLayout');
 
-        const savedLayout = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (savedLayout) {
-            setDashboardLayout(JSON.parse(savedLayout));
+        const res = await DashApi.getLayout();
+
+        if (res) {
+            setDashboardLayout(res);
+            return res;
         }
         return [];
     };
 
     // Save layout to localStorage
-    const saveLayout = (items: DashboardItem[]) => {
-        const jsonData = JSON.stringify({ items });
-        localStorage.setItem(LOCAL_STORAGE_KEY, jsonData);
+    const saveLayout = async (items: DashboardItem[]) => {
+        const res = await DashApi.saveLayout(items);
+        console.log(res);
     };
 
     const refreshDashboard = async () => {
         try {
             console.log('updating dashboard');
-            const savedLayout = getSavedLayout();
+            const savedLayout = await getSavedLayout();
             console.log('Updated dashboard:', savedLayout);
         } catch (error) {
             console.error('Failed to refresh portfolio:', error);
@@ -51,11 +52,18 @@ export const AppContextProvider = ({ children }: Props) => {
         setDashboardLayout((prevItems: any) => [...prevItems, newItem]);
     };
 
+    const updateItem = (id: string, updatedData: Partial<NewItem>) => {
+        setDashboardLayout((prevLayout) =>
+            prevLayout.map((item) =>
+                item.id === id ? { ...item, ...updatedData } : item
+            )
+        );
+    };
 
     const { Provider } = AppContext;
 
     return (
-        <Provider value={{ dashboardLayout, refreshDashboard, saveLayout, addItem, setDashboardLayout }}>
+        <Provider value={{ dashboardLayout, refreshDashboard, saveLayout, addItem, setDashboardLayout, updateItem }}>
             {children}
         </Provider>
     );

@@ -8,6 +8,7 @@ export interface IAppContext {
     refreshDashboard: () => Promise<void>;
     saveLayout: (items: DashboardItem[]) => void;
     addItem: (itemToAdd: NewItem) => void;
+    updateItem: (id: string, updatedData: Partial<NewItem>) => void;
 }
 
 export const AppContext = createContext<IAppContext>(null!);

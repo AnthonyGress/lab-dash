@@ -14,6 +14,8 @@ import { IconSearch } from '../IconSearch';
 
 type Props = {
     handleClose: () => void
+    existingItem?: DashboardItem | null;
+
 }
 
 const ITEM_TYPE_OPTIONS = [{ id: 'widget', label: 'Widget' }, { id: ITEM_TYPE.APP_SHORTCUT, label: 'App' }];
@@ -23,36 +25,41 @@ type FormValues = {
     shortcutName?: string;
     itemType: string;
     url?: string;
-    icon?: {path: string, name: string, source: string};
+    icon?: { path: string; name: string; source?: string } | null;
     showName?: boolean;
-}
+};
 
-export const AddForm = ({ handleClose }: Props) => {
+export const AddForm = ({ handleClose, existingItem }: Props) => {
     const [iconList, setIconList] = useState<Icon[]>([]);
     const { formState: { errors } } = useForm();
-    const { dashboardLayout, addItem } = useAppContext();
+    const { dashboardLayout, addItem, updateItem } = useAppContext();
     const formContext = useForm({
         defaultValues: {
-            shortcutName: '',
-            itemType: '',
-            url: '',
-            showName: true,
-            icon: null as any
+            shortcutName: existingItem?.label || '',
+            itemType: existingItem?.type || '',
+            url: existingItem?.url || '',
+            showName: existingItem?.showName ?? true,
+            icon: existingItem?.icon
+                ? { path: existingItem.icon.path, name: existingItem.icon.name, source: existingItem.icon.source || '' }
+                : null // Ensure correct structure
         }
     });
     const isMobile = useIsMobile();
     const selectedItemType = formContext.watch('itemType');
 
     const handleSubmit = (data: FormValues) => {
-        console.log(data);
-        const newItem: NewItem = {
+        const updatedItem: NewItem = {
             label: data.shortcutName,
-            icon: data.icon?.path,
+            icon: data.icon ? { path: data.icon.path, name: data.icon.name } : undefined, // Save both name & path
             url: data.url,
             type: data.itemType,
-
         };
-        addItem(newItem);
+
+        if (existingItem) {
+            updateItem(existingItem.id, updatedItem);
+        } else {
+            addItem(updatedItem);
+        }
 
         formContext.reset();
         handleClose();

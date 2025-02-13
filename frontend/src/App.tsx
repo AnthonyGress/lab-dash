@@ -21,20 +21,12 @@ function App() {
     const [editMode, setEditMode] = useState(false);
     const [config, setConfig] = useState<any>();
     // const [items, setItems] = useState(initialItems);
-    const { dashboardLayout } = useAppContext();
-
-
+    const { dashboardLayout, refreshDashboard } = useAppContext();
 
     const handleClose = () => setOpenAddModal(false);
 
     useEffect(() => {
-        const fetchData = async () => {
-            const response = await axios.get('/config/config.json');
-            console.log('config', response.data);
-            setConfig(response.data);
-        };
-
-        fetchData();
+        refreshDashboard();
     }, []);
 
     return (
@@ -53,7 +45,7 @@ function App() {
                 setOpenAddModal={setOpenAddModal}
             />
             <Box component='main' mt={'4vh'} mb={'4vh'}>
-                <DashboardGrid config={config} editMode={editMode} items={dashboardLayout}/>
+                <DashboardGrid editMode={editMode} items={dashboardLayout}/>
             </Box>
             <CenteredModal open={openAddModal} handleClose={handleClose} title='Add Item' >
                 <AddForm handleClose={handleClose}/>
