@@ -21,7 +21,7 @@
       "path": "./assets/pihole.svg",
       "name": "Pi-hole"
     },
-    "url": "http://192.168.1.34:7006/admin",
+    "url": "test",
     "type": "app-shortcut"
   },
   {
