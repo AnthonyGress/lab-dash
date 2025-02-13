@@ -17,7 +17,7 @@ export const AppContextProvider = ({ children }: Props) => {
 
         const res = await DashApi.getLayout();
 
-        if (res) {
+        if (res && res.length > 0) {
             setDashboardLayout(res);
             return res;
         }
