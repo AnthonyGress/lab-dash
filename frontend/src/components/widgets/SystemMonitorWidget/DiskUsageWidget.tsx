@@ -1,26 +1,37 @@
 import { Box, Stack, Tooltip, Typography } from '@mui/material';
 import React from 'react';
 
+import { theme } from '../../../theme/theme';
+
 export interface DiskUsageBarProps {
   totalSpace: number; // Total disk space in GB
   usedSpace: number;  // Used disk space in GB
+  usedPercentage: number;
 }
 
 // Helper function to format space dynamically (GB or TB)
 const formatSpace = (space: number): string => {
-    return space >= 1000 ? `${(space / 1000).toFixed(2)} TB` : `${space.toFixed(2)} GB`;
+    if (space > 0) {
+        return space >= 1000 ? `${(space / 1000)} TB` : `${space} GB`;
+    }
+
+    return '0 GB';
 };
 
-export const DiskUsageBar: React.FC<DiskUsageBarProps> = ({ totalSpace, usedSpace }) => {
-    const usedPercentage = (usedSpace / totalSpace) * 100;
+export const DiskUsageBar: React.FC<DiskUsageBarProps> = ({ totalSpace, usedSpace, usedPercentage }) => {
     const freeSpace = totalSpace - usedSpace;
     const freePercentage = 100 - usedPercentage;
 
     return (
-        <Box sx={{ width: '100%', padding: 2 }}>
-            <Typography variant='body1' gutterBottom>
-        Disk Usage: {formatSpace(usedSpace)} / {formatSpace(totalSpace)}
-            </Typography>
+        <Box sx={{ width: '100%' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant='body1' gutterBottom>
+                        Disk Usage: {usedPercentage.toFixed(1)}%
+                </Typography>
+                <Typography variant='body1' gutterBottom>
+                    {formatSpace(usedSpace)} / {formatSpace(totalSpace)}
+                </Typography>
+            </Box>
 
             <Stack direction='row' sx={{ position: 'relative', height: 12, borderRadius: 6, overflow: 'hidden' }}>
                 {/* Used Space Tooltip */}
@@ -28,7 +39,7 @@ export const DiskUsageBar: React.FC<DiskUsageBarProps> = ({ totalSpace, usedSpac
                     <Box
                         sx={{
                             width: `${usedPercentage}%`,
-                            backgroundColor: usedPercentage > 80 ? '#d32f2f' : '#1976d2',
+                            backgroundColor: theme.palette.primary.main,
                             height: '100%',
                             cursor: 'pointer',
                         }}
@@ -47,10 +58,6 @@ export const DiskUsageBar: React.FC<DiskUsageBarProps> = ({ totalSpace, usedSpac
                     />
                 </Tooltip>
             </Stack>
-
-            <Typography variant='body2' align='center' sx={{ mt: 1 }}>
-                {usedPercentage.toFixed(1)}% Used
-            </Typography>
         </Box>
     );
 };

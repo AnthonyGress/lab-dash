@@ -1,6 +1,8 @@
 import si, { Systeminformation } from 'systeminformation';
 
-export const getSystemInfo = async () => {
+import { SysteminformationResponse } from '../types/system-information-response';
+
+export const getSystemInfo = async (): Promise<SysteminformationResponse | null> => {
     try {
         const results = await Promise.allSettled([
             si.cpu(),

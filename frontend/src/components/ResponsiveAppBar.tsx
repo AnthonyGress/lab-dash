@@ -30,11 +30,17 @@ type Props = {
 export const ResponsiveAppBar = ({ editMode, setEditMode, customTitle, setOpenAddModal }: Props) => {
     const [title, setTitle] = useState(customTitle || 'Lab Dash');
     const [anchorElMenu, setAnchorElMenu] = useState<null | HTMLElement>(null);
-    const { dashboardLayout, saveLayout } = useAppContext();
+    const { dashboardLayout, saveLayout, refreshDashboard } = useAppContext();
 
     const handleEdit = () => {
         handleCloseMenu();
         setEditMode(true);
+    };
+
+    const handleEditCancel = () => {
+        handleCloseMenu();
+        setEditMode(false);
+        refreshDashboard();
     };
 
     const handleSave = async () => {
@@ -95,9 +101,14 @@ export const ResponsiveAppBar = ({ editMode, setEditMode, customTitle, setOpenAd
                     <Box sx={{ flexGrow: 0, display: 'flex' }}>
                         <Box>
                             {editMode &&
+                            <>
+                                <Button onClick={handleEditCancel} variant='outlined' sx={{ mr: 2 }}>
+                                    Cancel
+                                </Button>
                                 <Button onClick={handleSave} variant='contained'>
                                     Save Edits
                                 </Button>
+                            </>
                             }
                             {editMode && <Tooltip title='Add New'>
                                 <IconButton onClick={() => setOpenAddModal(true)}>

@@ -1,11 +1,10 @@
 import axios from 'axios';
+import { StatusCodes } from 'http-status-codes';
 
 import { DashboardItem, Icon } from '../types';
 import { BACKEND_URL } from '../utils/utils';
 
 export class DashApi {
-
-
     public static async getIconList(): Promise<Icon[]> {
         const res = await axios.get(`${BACKEND_URL}/icon-list`);
 
@@ -28,5 +27,16 @@ export class DashApi {
         const res = await axios.post(`${BACKEND_URL}/api/layout`, layout);
 
         return res.data;
+    }
+
+    public static async getSystemInformation(): Promise<any> {
+        const res = await axios.get(`${BACKEND_URL}/api/system`);
+
+        if (res.status === StatusCodes.OK) {
+            return res.data.body;
+        }
+
+        return null;
+
     }
 }
