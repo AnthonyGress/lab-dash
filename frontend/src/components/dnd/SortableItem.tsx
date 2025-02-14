@@ -3,8 +3,6 @@ import { CSS } from '@dnd-kit/utilities';
 import { Box, Grid2, Typography } from '@mui/material';
 import React from 'react';
 
-import { PlaceholderWidget } from './PlaceholderWidget';
-import { COLORS } from '../../theme/styles';
 import { WidgetContainer } from '../widgets/WidgetContainer';
 
 type Props = {
@@ -25,23 +23,16 @@ export const SortableItem: React.FC<Props> = ({ id, label, editMode, isOverlay =
             {...(!isOverlay ? attributes : {})}
             {...(!isOverlay ? listeners : {})}
             sx={{
-                // opacity: isDragging ? 0.6 : 1,
                 opacity: isOverlay ? .6 : 1,
                 transition,
                 transform: transform ? CSS.Transform.toString(transform) : undefined,
             }}
         >
-            {isDragging ? (
-                // Placeholder box when dragging
-                // <PlaceholderWidget />
-                <></>
-            ) : (
-                <WidgetContainer editMode={editMode} onDelete={onDelete} placeholder>
-                    <Typography variant='h6' textAlign='center'>
-                        {/* {label} */}
-                    </Typography>
-                </WidgetContainer>
-            )}
+            <WidgetContainer editMode={editMode} onDelete={onDelete} placeholder>
+                <Typography variant='h6' textAlign='center'>
+                    {/* {label} */}
+                </Typography>
+            </WidgetContainer>
         </Grid2>
     );
 };

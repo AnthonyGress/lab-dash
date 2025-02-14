@@ -1,9 +1,8 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Box, Grid2 } from '@mui/material';
+import { Grid2 } from '@mui/material';
 import React from 'react';
 
-import { PlaceholderWidget } from './PlaceholderWidget';
 import { DateTimeWidget } from '../widgets/DateTimeWidget';
 import { WidgetContainer } from '../widgets/WidgetContainer';
 
@@ -30,14 +29,9 @@ export const SortableDateTimeWidget: React.FC<Props> = ({ id, editMode, isOverla
                 opacity: isOverlay ? .6 : 1
             }}
         >
-            {isDragging ? (
-                // <PlaceholderWidget />
-                <></>
-            ) : (
-                <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit}>
-                    <DateTimeWidget />
-                </WidgetContainer>
-            )}
+            <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit}>
+                <DateTimeWidget />
+            </WidgetContainer>
         </Grid2>
     );
 };

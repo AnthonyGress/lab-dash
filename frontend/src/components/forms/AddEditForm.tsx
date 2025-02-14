@@ -1,8 +1,7 @@
-import { Alert, Box, Button, Grid2 as Grid, Typography } from '@mui/material';
-import axios from 'axios';
+import { Box, Button, Grid2 as Grid } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { CheckboxButtonGroup, CheckboxElement, FormContainer, SelectElement, TextFieldElement } from 'react-hook-form-mui';
+import {  CheckboxElement, FormContainer, SelectElement, TextFieldElement } from 'react-hook-form-mui';
 
 import { DashApi } from '../../api/dash-api';
 import { useAppContext } from '../../context/useAppContext';
@@ -29,7 +28,7 @@ type FormValues = {
     showName?: boolean;
 };
 
-export const AddForm = ({ handleClose, existingItem }: Props) => {
+export const AddEditForm = ({ handleClose, existingItem }: Props) => {
     const [iconList, setIconList] = useState<Icon[]>([]);
     const { formState: { errors } } = useForm();
     const { dashboardLayout, addItem, updateItem } = useAppContext();
@@ -85,7 +84,6 @@ export const AddForm = ({ handleClose, existingItem }: Props) => {
                 <Box
                     sx={{
                         p: 3,
-                        // border: '1px solid #ccc',
                         borderRadius: '8px',
                         boxShadow: 3,
                         backgroundColor: COLORS.GRAY,

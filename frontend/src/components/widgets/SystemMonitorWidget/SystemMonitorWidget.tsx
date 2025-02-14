@@ -1,16 +1,23 @@
-import { Box, Grid2 as Grid } from '@mui/material';
-import { StatusCodes } from 'http-status-codes';
+import { Box, Grid2 as Grid, IconButton, Paper, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
+import { IoInformationCircleOutline } from 'react-icons/io5';
+
 
 import { DiskUsageBar } from './DiskUsageWidget';
 import { GaugeWidget } from './GaugeWidget';
 import { DashApi } from '../../../api/dash-api';
 import { useIsMobile } from '../../../hooks/useIsMobile';
+import { COLORS } from '../../../theme/styles';
+import { theme } from '../../../theme/theme';
+import { convertBytesToGB, convertSecondsToUptime } from '../../../utils/utils';
+import { CenteredModal } from '../../modals/CenteredModal';
 
 export const SystemMonitorWidget = () => {
     const [systemInformation, setSystemInformation] = useState<any>();
     const [memoryInformation, setMemoryInformation] = useState<any>(0);
     const [diskInformation, setDiskInformation] = useState<any>();
+    const [openSystemModal, setOpenSystemModal] = useState(false);
+
     const isMobile = useIsMobile();
 
     // Helper function to format space dynamically (GB or TB)
@@ -60,10 +67,8 @@ export const SystemMonitorWidget = () => {
             console.log(mainDisk);
 
             // Get total and used space in GB
-            const totalSpaceGB = (mainDisk.size / 1e9)?.toFixed(2); // Convert bytes to GB
-            const usedSpaceGB = (mainDisk.used / 1e9)?.toFixed(2); // Convert bytes to GB
-
-            console.log(`Main Disk: ${mainDisk.mount} | Total: ${totalSpaceGB} GB | Used: ${usedSpaceGB} GB`);
+            const totalSpaceGB = (mainDisk.size / 1e9)?.toFixed(0); // Convert bytes to GB
+            const usedSpaceGB = (mainDisk.used / 1e9)?.toFixed(0); // Convert bytes to GB
 
             setDiskInformation({
                 mount: mainDisk.mount,
@@ -96,6 +101,21 @@ export const SystemMonitorWidget = () => {
 
     return (
         <Grid container justifyContent={'center'} gap={2} sx={{ display: 'flex', width: '100%', flexDirection: isMobile ? 'column' : 'row' }}>
+            <div
+                onPointerDownCapture={(e) => e.stopPropagation()} // Stop drag from interfering
+                onClick={(e) => e.stopPropagation()} // Prevent drag from triggering on click
+            >
+                <IconButton
+                    sx={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                    }}
+                    onClick={() => setOpenSystemModal(true)}
+                >
+                    <IoInformationCircleOutline style={{ color: theme.palette.text.primary, fontSize: '1.75rem' }}/>
+                </IconButton>
+            </div>
             <Grid>
                 <GaugeWidget title='CPU' value={systemInformation?.cpu?.currentLoad ? Math.round(systemInformation?.cpu?.currentLoad) : 0} size={135}/>
             </Grid>
@@ -106,6 +126,19 @@ export const SystemMonitorWidget = () => {
                 <GaugeWidget title='RAM' value={memoryInformation} size={135}/>
             </Grid>
             <DiskUsageBar totalSpace={diskInformation?.totalSpace ? diskInformation?.totalSpace : 0} usedSpace={diskInformation?.usedSpace ? diskInformation?.usedSpace : 0} usedPercentage={diskInformation?.usedPercentage ? diskInformation?.usedPercentage : 0}/>
+            <CenteredModal open={openSystemModal} handleClose={() => setOpenSystemModal(false)} title='System Information' width={isMobile ? '90vw' :'30vw'} height='35vh'>
+                <Box component={Paper} p={2} sx={{ backgroundColor: COLORS.GRAY }} elevation={0}>
+                    <Typography>Processor: {systemInformation?.cpu?.physicalCores} Core {systemInformation?.cpu?.manufacturer} {systemInformation?.cpu?.brand}</Typography>
+                    <Typography>Architecture: {systemInformation?.system?.arch} </Typography>
+                    <Typography>Memory: {convertBytesToGB(systemInformation?.memory?.total)} </Typography>
+                    <Typography>OS: {systemInformation?.system?.distro} {systemInformation?.system?.codename} {systemInformation?.system?.release}</Typography>
+                    <Typography>Kernel: {systemInformation?.system?.kernel}</Typography>
+                    <Typography>Uptime: {convertSecondsToUptime(systemInformation?.system?.uptime)}</Typography>
+                    <Typography>Disk Mount: {diskInformation?.mount}</Typography>
+                    <Typography>Disk Usage: {`${diskInformation?.usedPercentage.toFixed(0)}%`}</Typography>
+                    <Typography>Disk Total: {`${diskInformation?.totalSpace} GB`}</Typography>
+                </Box>
+            </CenteredModal>
             {/* <DiskUsageBar totalSpace={1200} usedSpace={50} usedPercentage={50}/> */}
         </Grid>
     );

@@ -1,8 +1,9 @@
 import axios from 'axios';
 import { StatusCodes } from 'http-status-codes';
 
+import { BACKEND_URL } from '../constants/constants';
 import { DashboardItem, Icon } from '../types';
-import { BACKEND_URL } from '../utils/utils';
+
 
 export class DashApi {
     public static async getIconList(): Promise<Icon[]> {

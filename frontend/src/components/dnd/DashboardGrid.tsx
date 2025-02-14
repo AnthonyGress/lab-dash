@@ -21,18 +21,16 @@ import { SortableSystemMonitorWidget } from './SortableSystemMonitor';
 import { SortableWeatherWidget } from './SortableWeather';
 import { useAppContext } from '../../context/useAppContext';
 import { DashboardItem, ITEM_TYPE } from '../../types';
-import { AddForm } from '../forms/AddForm';
+import { AddEditForm } from '../forms/AddEditForm';
 import { CenteredModal } from '../modals/CenteredModal';
 import { ConfirmationOptions, PopupManager } from '../modals/PopupManager';
 
 type Props = {
     editMode: boolean;
     items: DashboardItem[],
-    // setItems: (arg: any) => any
 }
 
 export const DashboardGrid: React.FC<Props> = ({ editMode, items }) => {
-    // const [items, setItems] = useState(initialItems);
     const [activeId, setActiveId] = useState<string | null>(null);
     const [selectedItem, setSelectedItem] = useState<DashboardItem | null>(null);
     const [openEditModal, setOpenEditModal] = useState(false);
@@ -52,7 +50,6 @@ export const DashboardGrid: React.FC<Props> = ({ editMode, items }) => {
                 const newItems = arrayMove(prev, oldIndex, newIndex);
                 return newItems;
             });
-            // saveLayout();
         }
         setActiveId(null);
     };
@@ -144,8 +141,9 @@ export const DashboardGrid: React.FC<Props> = ({ editMode, items }) => {
                 </Box>
             </DndContext>
             <CenteredModal open={openEditModal} handleClose={() => setOpenEditModal(false)} title='Edit Item' >
-                <AddForm handleClose={() => setOpenEditModal(false)} existingItem={selectedItem}/>
+                <AddEditForm handleClose={() => setOpenEditModal(false)} existingItem={selectedItem}/>
             </CenteredModal>
+
         </>
     );
 };

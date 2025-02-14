@@ -11,9 +11,15 @@ dotenv.config();
 
 const app: Application = express();
 const PORT = process.env.PORT || 5000;
+const ENV = process.env.NODE_ENV;
 
-const iconsPath = path.join(__dirname, '../node_modules/@loganmarchione/homelab-svg-assets/assets');
-const iconListPath = path.join(__dirname, '../node_modules/@loganmarchione/homelab-svg-assets/icons.json');
+const iconsPath = ENV === 'production'
+    ? path.join(__dirname, './node_modules/@loganmarchione/homelab-svg-assets/assets')
+    : path.join(__dirname, '../node_modules/@loganmarchione/homelab-svg-assets/assets');
+    
+const iconListPath = ENV === 'production'
+    ? path.join(__dirname, './node_modules/@loganmarchione/homelab-svg-assets/icons.json')
+    : path.join(__dirname, '../node_modules/@loganmarchione/homelab-svg-assets/icons.json');
 
 console.log('Serving icons from:', iconsPath);
 

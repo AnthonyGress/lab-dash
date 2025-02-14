@@ -10,3 +10,5 @@ export const initialItems = [
         type: 'item',
     })),
 ];
+
+export const BACKEND_URL = 'http://localhost:5000';

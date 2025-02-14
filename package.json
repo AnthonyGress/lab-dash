@@ -4,7 +4,16 @@
   "description": "This is an open-source user interface made specifically for managing jellyfin and related services from a single, unified web management console.",
   "main": "index.js",
   "scripts": {
-    "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\""
+    "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
+    "docker:build:dev": "docker build . -t anthonygress/lab-dash",
+    "docker:build": "docker build --platform linux/amd64 . -t anthonygress/lab-dash",
+    "docker:run": "docker run --platform=linux/amd64 -p 2022:80 -p 5000:5000 anthonygress/lab-dash",
+    "docker:run:dev": "docker run -p 2022:80 -p 5000:5000 anthonygress/lab-dash",
+    "docker:push": "docker push catalyxcloud/jellyfin-console",
+    "docker:stop": "docker ps -q --filter 'ancestor=catalyx/jellyfin-console' | xargs -r docker stop",
+    "docker:rm": "docker ps -a -q --filter 'ancestor=catalyx/jellyfin-console' | xargs -r docker rm",
+    "docker:clean": "npm run docker:stop && npm run docker:rm",
+    "docker:restart": "npm run docker:stop && npm run docker:rm && npm run docker:run"
   },
   "keywords": [],
   "author": "",
@@ -12,8 +21,5 @@
   "devDependencies": {
     "@types/shortid": "^2.2.0",
     "concurrently": "^9.1.2"
-  },
-  "dependencies": {
-    "shortid": "^2.2.17"
   }
 }

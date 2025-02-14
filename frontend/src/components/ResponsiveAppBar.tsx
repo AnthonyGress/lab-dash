@@ -11,11 +11,13 @@ import Toolbar from '@mui/material/Toolbar';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { MouseEvent, useState } from 'react';
+import React from 'react';
 
 import { Logo } from './Logo';
-import { DashApi } from '../api/dash-api';
 import { useAppContext } from '../context/useAppContext';
 import { COLORS, styles } from '../theme/styles';
+import { AddEditForm } from './forms/AddEditForm';
+import { CenteredModal } from './modals/CenteredModal';
 
 const pages: string[] = [];
 // const settings = ['Edit', 'Account', 'Dashboard', 'Logout'];
@@ -24,13 +26,16 @@ type Props = {
     customTitle?: string;
     editMode: boolean;
     setEditMode: React.Dispatch<React.SetStateAction<boolean>>
-    setOpenAddModal: React.Dispatch<React.SetStateAction<boolean>>
+    // setOpenAddModal: React.Dispatch<React.SetStateAction<boolean>>
 }
 
-export const ResponsiveAppBar = ({ editMode, setEditMode, customTitle, setOpenAddModal }: Props) => {
-    const [title, setTitle] = useState(customTitle || 'Lab Dash');
+export const ResponsiveAppBar = ({ editMode, setEditMode, customTitle }: Props) => {
+    const [title, setTitle] = useState(customTitle || 'Lab Stack');
     const [anchorElMenu, setAnchorElMenu] = useState<null | HTMLElement>(null);
+    const [openAddModal, setOpenAddModal] = useState(false);
+
     const { dashboardLayout, saveLayout, refreshDashboard } = useAppContext();
+    const handleClose = () => setOpenAddModal(false);
 
     const handleEdit = () => {
         handleCloseMenu();
@@ -146,6 +151,9 @@ export const ResponsiveAppBar = ({ editMode, setEditMode, customTitle, setOpenAd
                     </Box>
                 </Toolbar>
             </Container>
+            <CenteredModal open={openAddModal} handleClose={handleClose} title='Add Item'>
+                <AddEditForm handleClose={handleClose}/>
+            </CenteredModal>
         </AppBar>
     );
 };

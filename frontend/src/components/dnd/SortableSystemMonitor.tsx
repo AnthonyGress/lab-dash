@@ -1,9 +1,8 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Box, Grid2 } from '@mui/material';
+import { Grid2 } from '@mui/material';
 import React from 'react';
 
-import { PlaceholderWidget } from './PlaceholderWidget';
 import { SystemMonitorWidget } from '../widgets/SystemMonitorWidget/SystemMonitorWidget';
 import { WidgetContainer } from '../widgets/WidgetContainer';
 
@@ -32,14 +31,9 @@ export const SortableSystemMonitorWidget: React.FC<Props> = ({ id, editMode, isO
                 opacity: isOverlay ? .6 : 1
             }}
         >
-            {isDragging ? (
-                // <PlaceholderWidget />
-                <></>
-            ) : (
-                <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit}>
-                    <SystemMonitorWidget />
-                </WidgetContainer>
-            )}
+            <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit}>
+                <SystemMonitorWidget />
+            </WidgetContainer>
         </Grid2>
     );
 };

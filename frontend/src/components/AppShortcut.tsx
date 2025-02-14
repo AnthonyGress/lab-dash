@@ -1,7 +1,5 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material';
-import { useState } from 'react';
 
-import { DashApi } from '../api/dash-api';
 import { styles } from '../theme/styles';
 import { getIconPath } from '../utils/utils';
 

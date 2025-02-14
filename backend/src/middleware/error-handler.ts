@@ -6,7 +6,7 @@ export const errorHandler = (
     error: CustomError,
     req: Request,
     res: Response,
-    next: NextFunction
+    _next: NextFunction
 ) => {
     console.error(`🔥 Error: ${error.message}`);
 

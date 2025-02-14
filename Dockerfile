@@ -1,17 +1,15 @@
-# Stage 1: Build the React app (Frontend)
-FROM --platform=linux/amd64 node:lts-slim AS build
-WORKDIR /
-COPY ./ ./
+# Build the React app (Frontend)
+FROM --platform=linux/amd64 node:lts-slim AS frontend-build
+WORKDIR /usr/src/app
+COPY ./frontend ./
 RUN npm install
-RUN npm run build
+RUN npm run build:dev
 
-# final server runtime
-FROM nginx:alpine AS deploy
-ENV HOST_IP=$HOST_IP
-COPY --from=build /dist /usr/share/nginx/html
-COPY --from=build /src/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
 
-# Start Nginx with the environment injection script
-CMD ["/entrypoint.sh"]
+# Deploy (Frontend)
+FROM nginx:alpine AS frontend-deploy
+COPY --from=frontend-build /usr/src/app/dist /usr/share/nginx/html
 EXPOSE 80
+# RUN npm i --omit-dev
+CMD ["nginx", "-g", "daemon off;"]
+
