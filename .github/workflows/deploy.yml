@@ -1,13 +1,16 @@
-name: ci
+name: deploy
 
 on:
   push:
     branches: [ main ]
-permissions:
-      packages: write
 
 jobs:
-  login:
+  publish:
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout git repo
