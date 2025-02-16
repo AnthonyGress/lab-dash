@@ -26,7 +26,7 @@ export const BlankAppShortcut: React.FC<Props> = ({ id, editMode, isOverlay = fa
             {...(!isOverlay ? listeners : {})}
             sx={{
                 transition,
-                transform: transform ? CSS.Transform.toString(transform) : undefined,
+                transform: transform ? CSS.Translate.toString(transform) : undefined,
             }}
         >
             <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit} appShortcut placeholder>

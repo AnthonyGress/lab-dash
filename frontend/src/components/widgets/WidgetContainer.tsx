@@ -40,7 +40,7 @@ export const WidgetContainer: React.FC<Props> = ({ children, editMode, onEdit, o
                 justifyContent: 'center',
                 backgroundColor: placeholder ? 'transparent' : COLORS.TRANSPARENT_GRAY,
                 borderRadius: 2,
-                border: placeholder && editMode ? `2px solid ${COLORS.BORDER}` : !placeholder ? `1px solid ${COLORS.BORDER}` : 'none',
+                border: placeholder && editMode ? `0px solid ${COLORS.BORDER}` : !placeholder ? `1px solid ${COLORS.BORDER}` : 'none',
                 padding: 2,
                 cursor: editMode ? 'grab' : 'auto',
                 boxShadow: placeholder ? 0 : 2,

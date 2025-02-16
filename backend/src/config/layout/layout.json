@@ -5,14 +5,14 @@
     "type": "weather-widget"
   },
   {
-    "id": "time-date-widget",
-    "label": "Time & Date Widget",
-    "type": "date-time-widget"
-  },
-  {
     "id": "system-monitor-widget",
     "label": "System Monitor Widget",
     "type": "system-monitor-widget"
+  },
+  {
+    "id": "time-date-widget",
+    "label": "Time & Date Widget",
+    "type": "date-time-widget"
   },
   {
     "id": "item-lrvsKFhfU",

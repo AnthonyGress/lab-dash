@@ -28,7 +28,7 @@ export const SortableWeatherWidget: React.FC<Props> = ({ id, editMode, isOverlay
             {...(!isOverlay ? listeners : {})}
             sx={{
                 transition,
-                transform: transform ? CSS.Transform.toString(transform) : undefined,
+                transform: transform ? CSS.Translate.toString(transform) : undefined,
                 opacity: isOverlay ? .6 : 1,
             }}
         >

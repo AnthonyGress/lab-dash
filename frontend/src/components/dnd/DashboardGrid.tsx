@@ -74,7 +74,6 @@ export const DashboardGrid: React.FC<Props> = ({ editMode, items }) => {
         <>
             <DndContext
                 sensors={sensors}
-                collisionDetection={closestCenter}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
             >

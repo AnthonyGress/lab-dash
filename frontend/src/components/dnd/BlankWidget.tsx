@@ -26,7 +26,7 @@ export const BlankWidget: React.FC<Props> = ({ id, label, editMode, isOverlay = 
             sx={{
                 opacity: isOverlay ? .6 : 1,
                 transition,
-                transform: transform ? CSS.Transform.toString(transform) : undefined,
+                transform: transform ? CSS.Translate.toString(transform) : undefined,
             }}
         >
             <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit} placeholder>

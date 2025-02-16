@@ -118,7 +118,7 @@ export const WeatherWidget: React.FC = () => {
         <Box mb={1}>
             <Box sx={styles.center}>
                 <Box>{weatherDescriptions[weatherData?.current?.weathercode]?.icon}</Box>
-                <Box ml={1} sx={{ fontSize: '1.5rem' }}>{convertTemperature(weatherData.current?.temperature_2m)}°</Box>
+                <Box ml={1} sx={{ fontSize: '1.5rem' }}>{convertTemperature(weatherData.current?.temperature_2m)}°{isFahrenheit ? 'F' : 'C'}</Box>
             </Box>
             {/* <Box sx={{ fontSize: '1rem' }}>{weatherDescriptions[weatherData.current.weathercode]?.description || 'Unknown'}</Box> */}
         </Box>;
@@ -176,7 +176,7 @@ export const WeatherWidget: React.FC = () => {
                                 {weatherInfo.icon}
                             </Box>
                             <Box sx={{ fontSize: { sm: '1.25rem', xl: '1.5rem' } }}>
-                                {convertTemperature(weatherData.daily?.temperature_2m_max[index])}°
+                                {convertTemperature(weatherData.daily?.temperature_2m_max[index])}°{isFahrenheit ? 'F' : 'C'}
                             </Box>
                         </Box>
                     </Tooltip>
