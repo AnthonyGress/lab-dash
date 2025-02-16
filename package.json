@@ -1,7 +1,7 @@
 {
-  "name": "labarr",
+  "name": "lab-dash",
   "version": "1.0.0",
-  "description": "This is an open-source user interface made specifically for managing jellyfin and related services from a single, unified web management console.",
+  "description": "This is an open-source user interface designed to manage your server and homelab",
   "main": "index.js",
   "scripts": {
     "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",

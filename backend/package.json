@@ -1,5 +1,5 @@
 {
-  "name": "backend",
+  "name": "lab-dash-backend",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
