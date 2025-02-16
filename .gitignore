@@ -23,4 +23,4 @@ dist-ssr
 *.sln
 *.sw?
 build
-backend/src/config/layout.json
+backend/src/config/layout/layout.json
