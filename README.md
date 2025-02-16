@@ -1,5 +1,5 @@
-# Dasharr / Labarr / Commandarr
-This is an open-source user interface made specifically for managing jellyfin and related services from a single, unified web management console. 
+# Lab Dash
+This is an open-source user interface designed to be your locally hosted homepage for your homelab/server. 
 
 # Installation
 This only needs docker to be installed. [Install Docker](https://docs.docker.com/engine/install/)

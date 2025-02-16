@@ -19,8 +19,8 @@
   "display": "standalone",
   "dir": "auto",
   "lang": "en-US",
-  "name": "Jellyfin Console",
-  "short_name": "Jellyfin Console",
+  "name": "Lab Dash",
+  "short_name": "Lab Dash",
   "start_url": "/",
-  "description": "Management console for Jellyfin services"
+  "description": "Management console for your homelab services"
 }

@@ -17,8 +17,8 @@ type Props = {
 
 }
 
-const ITEM_TYPE_OPTIONS = [{ id: 'widget', label: 'Widget' }, { id: ITEM_TYPE.APP_SHORTCUT, label: 'App' }];
-const WIDGET_OPTIONS = [{ id: 'date_time', label: 'Date & Time' }, { id: 'weather', label: 'Weather' }, { id: 'system_monitor', label: 'System Monitor' }];
+const ITEM_TYPE_OPTIONS = [{ id: 'widget', label: 'Widget' }, { id: ITEM_TYPE.APP_SHORTCUT, label: 'App' }, { id: ITEM_TYPE.BLANK_APP, label: 'Blank App' }, { id: ITEM_TYPE.BLANK_WIDGET, label: 'Blank Widget' }];
+const WIDGET_OPTIONS = [{ id: ITEM_TYPE.DATE_TIME_WIDGET, label: 'Date & Time' }, { id: ITEM_TYPE.WEATHER_WIDGET, label: 'Weather' }, { id: ITEM_TYPE.SYSTEM_MONITOR_WIDGET, label: 'System Monitor' }];
 
 type FormValues = {
     shortcutName?: string;
@@ -26,6 +26,7 @@ type FormValues = {
     url?: string;
     icon?: { path: string; name: string; source?: string } | null;
     showName?: boolean;
+    widgetType?: string;
 };
 
 export const AddEditForm = ({ handleClose, existingItem }: Props) => {
@@ -47,11 +48,13 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
     const selectedItemType = formContext.watch('itemType');
 
     const handleSubmit = (data: FormValues) => {
+        console.log(data);
+
         const updatedItem: NewItem = {
             label: data.shortcutName,
-            icon: data.icon ? { path: data.icon.path, name: data.icon.name } : undefined, // Save both name & path
+            icon: data.icon ? { path: data.icon.path, name: data.icon.name } : undefined,
             url: data.url,
-            type: data.itemType,
+            type: data.itemType === 'widget' && data.widgetType ? data.widgetType : data.itemType
         };
 
         if (existingItem) {
@@ -154,7 +157,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                             {
                                 selectedItemType === 'widget' &&
                                 <Grid>
-                                    <SelectElement label='Widget' name='widget' options={WIDGET_OPTIONS} required fullWidth sx={{
+                                    <SelectElement label='Widget' name='widgetType' options={WIDGET_OPTIONS} required fullWidth sx={{
                                         '& .MuiOutlinedInput-root': {
                                             '& fieldset': {
                                                 borderColor: 'text.primary',

@@ -14,9 +14,10 @@ import {
 import { Box, Grid2 as Grid } from '@mui/material';
 import React, { useState } from 'react';
 
+import { BlankAppShortcut } from './BlankAppShortcut';
 import { SortableAppShortcut } from './SortableAppShortcut';
 import { SortableDateTimeWidget } from './SortableDateTime';
-import { SortableItem } from './SortableItem';
+import { BlankWidget } from './BlankWidget';
 import { SortableSystemMonitorWidget } from './SortableSystemMonitor';
 import { SortableWeatherWidget } from './SortableWeather';
 import { useAppContext } from '../../context/useAppContext';
@@ -76,7 +77,7 @@ export const DashboardGrid: React.FC<Props> = ({ editMode, items }) => {
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
             >
-                <Box sx={{ width: '90%', height: '100%', margin: 'auto', padding: 2 }}>
+                <Box sx={{ width: '95%', height: '92%', margin: 'auto', padding: 2, mb: 4 }}>
                     <SortableContext items={items} strategy={rectSortingStrategy} disabled={!editMode}>
                         <Grid container spacing={2}>
                             {items.map((item) => {
@@ -100,8 +101,10 @@ export const DashboardGrid: React.FC<Props> = ({ editMode, items }) => {
                                             onEdit={() => handleEdit(item)}
                                         />
                                     );
+                                case ITEM_TYPE.BLANK_APP:
+                                    return <BlankAppShortcut key={item.id} id={item.id} editMode={editMode} onDelete={() => handleDelete(item.id)} />;
                                 default:
-                                    return <SortableItem key={item.id} id={item.id} label={item.label} editMode={editMode} onDelete={() => handleDelete(item.id)} />;
+                                    return <BlankWidget key={item.id} id={item.id} label={item.label} editMode={editMode} onDelete={() => handleDelete(item.id)} />;
                                 }
                             })}
                         </Grid>
@@ -130,8 +133,10 @@ export const DashboardGrid: React.FC<Props> = ({ editMode, items }) => {
                                                 isOverlay
                                             />
                                         );
+                                    case ITEM_TYPE.BLANK_APP:
+                                        return <BlankAppShortcut key={item.id} id={item.id} editMode={editMode} isOverlay/>;
                                     default:
-                                        return <SortableItem key={item.id} id={item.id} label={item.label} editMode={editMode} isOverlay/>;
+                                        return <BlankWidget key={item.id} id={item.id} label={item.label} editMode={editMode} isOverlay/>;
                                     }
                                 }
                                 return null;

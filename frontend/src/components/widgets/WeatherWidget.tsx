@@ -18,7 +18,7 @@ interface WeatherData {
 }
 
 const weatherDescriptions: Record<number, { description: string; icon: JSX.Element }> = {
-    0: { description: 'Clear', icon: <BsSunFill style={{ fontSize: '2.5rem' }}/> },
+    0: { description: 'Clear', icon: <BsSunFill style={{ fontSize: '2.5rem' }} /> },
     1: { description: 'Mostly clear', icon: <BsSunFill style={{ fontSize: '2.5rem' }}/> },
     2: { description: 'Partly cloudy', icon: <BsCloudSunFill style={{ fontSize: '2.5rem' }}/> },
     3: { description: 'Overcast', icon: <BsCloudSunFill style={{ fontSize: '2.5rem' }}/> },
@@ -91,7 +91,7 @@ export const WeatherWidget: React.FC = () => {
         <Box mb={1}>
             <Box sx={styles.center}>
                 <Box>{weatherDescriptions[weatherData?.current?.weathercode]?.icon}</Box>
-                <Box ml={1} sx={{ fontSize: '1.5rem' }}>{convertTemperature(weatherData.current?.temperature_2m)}°{isFahrenheit ? 'F' : 'C'}</Box>
+                <Box ml={1} sx={{ fontSize: '1.5rem' }}>{convertTemperature(weatherData.current?.temperature_2m)}°</Box>
             </Box>
             {/* <Box sx={{ fontSize: '1rem' }}>{weatherDescriptions[weatherData.current.weathercode]?.description || 'Unknown'}</Box> */}
         </Box>;
@@ -108,7 +108,7 @@ export const WeatherWidget: React.FC = () => {
             <Grid sx={styles.vcenter} key={index}>
                 <Box>{getDay(weatherData.daily?.time[index])}</Box>
                 <Box>{weatherDescriptions[weatherData.daily?.weathercode[index]]?.icon}</Box>
-                <Box sx={{ fontSize: '1.5rem' }}>{convertTemperature(weatherData.daily?.temperature_2m_max[index])}°{isFahrenheit ? 'F' : 'C'}</Box>
+                <Box sx={{ fontSize: { sm: '1.25rem', xl: '1.5rem' } }}>{convertTemperature(weatherData.daily?.temperature_2m_max[index])}°</Box>
                 {/* <Box sx={{ fontSize: '1rem' }}> {weatherDescriptions[weatherData.daily?.weathercode[index]]?.description || 'Unknown'}</Box> */}
             </Grid>
         ));
@@ -125,7 +125,7 @@ export const WeatherWidget: React.FC = () => {
                     {/* 1 Day */}
                     {renderCurrentWeatherItem()}
                     {/* 5 Day */}
-                    <Grid sx={styles.center} container gap={5}>
+                    <Grid sx={styles.center} container gap={4}>
                         { forecastDays > 1 && renderWeatherItem() }
                     </Grid>
                 </Grid>

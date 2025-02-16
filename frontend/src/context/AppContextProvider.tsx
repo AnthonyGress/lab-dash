@@ -1,4 +1,5 @@
 import { ReactNode, useState } from 'react';
+import shortid from 'shortid';
 
 import { AppContext } from './AppContext';
 import { DashApi } from '../api/dash-api';
@@ -42,8 +43,10 @@ export const AppContextProvider = ({ children }: Props) => {
 
 
     const addItem = (itemToAdd: NewItem) => {
+        console.log('add item');
+
         const newItem = {
-            id: `item-${dashboardLayout.length + 1}`,
+            id: `item-${shortid.generate()}`,
             label: itemToAdd.label,
             icon: itemToAdd.icon,
             url: itemToAdd.url,

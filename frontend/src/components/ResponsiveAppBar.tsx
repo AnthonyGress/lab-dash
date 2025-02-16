@@ -30,7 +30,7 @@ type Props = {
 }
 
 export const ResponsiveAppBar = ({ editMode, setEditMode, customTitle }: Props) => {
-    const [title, setTitle] = useState(customTitle || 'Lab Stack');
+    const [title, setTitle] = useState(customTitle || 'Lab Dash');
     const [anchorElMenu, setAnchorElMenu] = useState<null | HTMLElement>(null);
     const [openAddModal, setOpenAddModal] = useState(false);
 

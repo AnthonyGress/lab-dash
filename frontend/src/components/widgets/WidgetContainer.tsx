@@ -31,14 +31,14 @@ export const WidgetContainer: React.FC<Props> = ({ children, editMode, onEdit, o
         <Card
             sx={{
                 width: appShortcut ? '7rem' : '90%',
-                minHeight: appShortcut ? 'auto' : 200,
+                minHeight: appShortcut ? '6rem' : 200,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
                 backgroundColor: placeholder ? 'transparent' : COLORS.TRANSPARENT_GRAY,
                 borderRadius: 2,
-                border: placeholder ? 'none' : `1px solid ${COLORS.BORDER}`,
+                border: placeholder && editMode ? `2px solid ${COLORS.BORDER}` : !placeholder ? `1px solid ${COLORS.BORDER}` : 'none',
                 padding: 2,
                 cursor: editMode ? 'grab' : 'auto',
                 boxShadow: placeholder ? 0 : 2,
@@ -46,7 +46,7 @@ export const WidgetContainer: React.FC<Props> = ({ children, editMode, onEdit, o
             }}
         >
             {/* Show menu only in edit mode */}
-            {editMode && !placeholder && (
+            {editMode && (
                 <div
                     onPointerDownCapture={(e) => e.stopPropagation()} // Stop drag from interfering
                     onClick={(e) => e.stopPropagation()} // Prevent drag from triggering on click

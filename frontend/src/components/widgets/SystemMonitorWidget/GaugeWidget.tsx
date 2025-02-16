@@ -10,7 +10,7 @@ import { FaTemperatureQuarter } from 'react-icons/fa6';
 interface GaugeWidgetProps {
   value: number; // The gauge value (0-100)
   title: string;
-  size: number;
+  size?: number;
   temperature?: boolean;
 }
 
@@ -18,14 +18,17 @@ export const GaugeWidget: React.FC<GaugeWidgetProps> = ({ value, title, size, te
     return (
         <Box position='relative' display='inline-flex'>
             {/* Gauge Chart */}
-            <Gauge value={value} valueMax={100} width={size} height={size} startAngle={-150} endAngle={150} cornerRadius='50%' sx={(theme) => (
+            <Gauge value={value} valueMax={100} startAngle={-150} endAngle={150} cornerRadius='50%' sx={(theme) => (
                 { '& .MuiGauge-valueText': { display: 'none' },
                     [`& .${gaugeClasses.valueArc}`]: {
                         fill: 'primary.main',
                     },
                     [`& .${gaugeClasses.referenceArc}`]: {
                         fill: theme.palette.text.disabled,
-                    }, })
+                    },
+                    width: { sm: 128, xl: 135 },
+                    height: { sm: 130, xl: 135 }
+                })
             } />
             {/* Center Content */}
             <Box
@@ -57,7 +60,7 @@ export const GaugeWidget: React.FC<GaugeWidgetProps> = ({ value, title, size, te
                 }}
             >
                 {/* <FaMicrochip size={24} color='white' /> */}
-                <Typography fontSize={16} fontWeight='bold'>
+                <Typography fontSize={15} fontWeight='bold'>
                     {title}
                 </Typography>
             </Box>

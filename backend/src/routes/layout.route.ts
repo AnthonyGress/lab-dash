@@ -5,7 +5,7 @@ import path from 'path';
 
 export const layoutRoute = Router();
 
-const LAYOUT_FILE = path.join(__dirname, '../data/layout.json');
+const LAYOUT_FILE = path.join(__dirname, '../config/layout/layout.json');
 
 // GET - Retrieve the saved layout JSON from disk
 layoutRoute.get('/', async (_req: Request, res: Response): Promise<void> => {

@@ -1,10 +1,11 @@
 {
-  "name": "jellyfin-console",
+  "name": "labarr",
   "version": "1.0.0",
   "description": "This is an open-source user interface made specifically for managing jellyfin and related services from a single, unified web management console.",
   "main": "index.js",
   "scripts": {
     "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
+    "preinstall": "cd ./backend && npm install && cd .. && cd ./frontend && npm install",
     "docker:build:dev": "docker build . -t anthonygress/lab-dash",
     "docker:build": "docker build --platform linux/amd64 . -t anthonygress/lab-dash",
     "docker:run": "docker run --platform=linux/amd64 -p 2022:80 -p 5000:5000 anthonygress/lab-dash",
@@ -19,7 +20,6 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@types/shortid": "^2.2.0",
     "concurrently": "^9.1.2"
   }
 }

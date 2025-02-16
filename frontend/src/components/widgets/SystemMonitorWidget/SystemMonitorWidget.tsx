@@ -100,7 +100,7 @@ export const SystemMonitorWidget = () => {
     }, []);
 
     return (
-        <Grid container justifyContent={'center'} gap={2} sx={{ display: 'flex', width: '100%', flexDirection: isMobile ? 'column' : 'row' }}>
+        <Grid container justifyContent={'space-evenly'} gap={0} sx={{ display: 'flex', width: '100%' }}>
             <div
                 onPointerDownCapture={(e) => e.stopPropagation()} // Stop drag from interfering
                 onClick={(e) => e.stopPropagation()} // Prevent drag from triggering on click
@@ -117,13 +117,13 @@ export const SystemMonitorWidget = () => {
                 </IconButton>
             </div>
             <Grid>
-                <GaugeWidget title='CPU' value={systemInformation?.cpu?.currentLoad ? Math.round(systemInformation?.cpu?.currentLoad) : 0} size={135}/>
+                <GaugeWidget title='CPU' value={systemInformation?.cpu?.currentLoad ? Math.round(systemInformation?.cpu?.currentLoad) : 0} />
             </Grid>
             <Grid>
-                <GaugeWidget title='TEMP' value={systemInformation?.cpu?.main ? Math.round(systemInformation?.cpu?.main) : 0} size={135} temperature/>
+                <GaugeWidget title='TEMP' value={systemInformation?.cpu?.main ? Math.round(systemInformation?.cpu?.main) : 0} temperature/>
             </Grid>
             <Grid>
-                <GaugeWidget title='RAM' value={memoryInformation} size={135}/>
+                <GaugeWidget title='RAM' value={memoryInformation} />
             </Grid>
             <DiskUsageBar totalSpace={diskInformation?.totalSpace ? diskInformation?.totalSpace : 0} usedSpace={diskInformation?.usedSpace ? diskInformation?.usedSpace : 0} usedPercentage={diskInformation?.usedPercentage ? diskInformation?.usedPercentage : 0}/>
             <CenteredModal open={openSystemModal} handleClose={() => setOpenSystemModal(false)} title='System Information' width={isMobile ? '90vw' :'30vw'} height='35vh'>
@@ -136,7 +136,7 @@ export const SystemMonitorWidget = () => {
                     <Typography>Uptime: {convertSecondsToUptime(systemInformation?.system?.uptime)}</Typography>
                     <Typography>Disk Mount: {diskInformation?.mount}</Typography>
                     <Typography>Disk Usage: {`${diskInformation?.usedPercentage.toFixed(0)}%`}</Typography>
-                    <Typography>Disk Total: {`${diskInformation?.totalSpace} GB`}</Typography>
+                    <Typography>Disk Total: {`${diskInformation?.totalSpace}`}</Typography>
                 </Box>
             </CenteredModal>
             {/* <DiskUsageBar totalSpace={1200} usedSpace={50} usedPercentage={50}/> */}

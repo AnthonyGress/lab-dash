@@ -35,7 +35,7 @@ function App() {
             <Box component='main' sx={{
                 flexGrow: 1,
                 overflowY: 'auto',
-                padding: '2vh 4vw',
+                padding: '2vh 0vw',
                 height: 'calc(100vh - 8vh)',
             }}>
                 <DashboardGrid editMode={editMode} items={dashboardLayout}/>

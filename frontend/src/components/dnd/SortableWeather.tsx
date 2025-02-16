@@ -22,7 +22,7 @@ export const SortableWeatherWidget: React.FC<Props> = ({ id, editMode, isOverlay
 
     return (
         <Grid2
-            size={{ xs: 12, md: 6, lg: 6, xl: 4 }}
+            size={{ xs: 12, md: 6, lg: 4, xl: 4 }}
             ref={!isOverlay ? setNodeRef : undefined}
             {...(!isOverlay ? attributes : {})}
             {...(!isOverlay ? listeners : {})}
@@ -32,15 +32,9 @@ export const SortableWeatherWidget: React.FC<Props> = ({ id, editMode, isOverlay
                 opacity: isOverlay ? .6 : 1
             }}
         >
-            {isDragging ? (
-                // <PlaceholderWidget />
-                <></>
-
-            ) : (
-                <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit}>
-                    <WeatherWidget />
-                </WidgetContainer>
-            )}
+            <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit}>
+                <WeatherWidget />
+            </WidgetContainer>
         </Grid2>
     );
 };
