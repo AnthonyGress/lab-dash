@@ -88,7 +88,7 @@ export const ResponsiveAppBar = ({ editMode, setEditMode, customTitle }: Props) 
 
                     {/* Mobile */}
                     <Logo sx={{ display: { xs: 'flex', md: 'none' }, ml: 2, mr: 2 }} />
-                    <Typography
+                    {!editMode && <Typography
                         variant='h5'
                         noWrap
                         sx={{
@@ -101,25 +101,25 @@ export const ResponsiveAppBar = ({ editMode, setEditMode, customTitle }: Props) 
                             textDecoration: 'none',
                         }}
                     >{title}
-                    </Typography>
+                    </Typography>}
 
                     <Box sx={{ flexGrow: 0, display: 'flex' }}>
                         <Box>
                             {editMode &&
-                            <>
+                            <Box sx={{ display: 'flex', width: '100%' }}>
                                 <Button onClick={handleEditCancel} variant='outlined' sx={{ mr: 2 }}>
                                     Cancel
                                 </Button>
                                 <Button onClick={handleSave} variant='contained'>
                                     Save Edits
                                 </Button>
-                            </>
+                                <Tooltip title='Add New'>
+                                    <IconButton onClick={() => setOpenAddModal(true)}>
+                                        <Add sx={{ color: 'white', fontSize: '2rem' }}/>
+                                    </IconButton>
+                                </Tooltip>
+                            </Box>
                             }
-                            {editMode && <Tooltip title='Add New'>
-                                <IconButton onClick={() => setOpenAddModal(true)}>
-                                    <Add sx={{ color: 'white', fontSize: '2rem' }}/>
-                                </IconButton>
-                            </Tooltip>}
                         </Box>
                         <Tooltip title='Open settings'>
                             <IconButton onClick={handleOpenMenu}>

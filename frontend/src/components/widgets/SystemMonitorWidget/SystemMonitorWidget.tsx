@@ -128,15 +128,15 @@ export const SystemMonitorWidget = () => {
             <DiskUsageBar totalSpace={diskInformation?.totalSpace ? diskInformation?.totalSpace : 0} usedSpace={diskInformation?.usedSpace ? diskInformation?.usedSpace : 0} usedPercentage={diskInformation?.usedPercentage ? diskInformation?.usedPercentage : 0}/>
             <CenteredModal open={openSystemModal} handleClose={() => setOpenSystemModal(false)} title='System Information' width={isMobile ? '90vw' :'30vw'} height='35vh'>
                 <Box component={Paper} p={2} sx={{ backgroundColor: COLORS.GRAY }} elevation={0}>
-                    <Typography>Processor: {systemInformation?.cpu?.physicalCores} Core {systemInformation?.cpu?.manufacturer} {systemInformation?.cpu?.brand}</Typography>
-                    <Typography>Architecture: {systemInformation?.system?.arch} </Typography>
-                    <Typography>Memory: {convertBytesToGB(systemInformation?.memory?.total)} </Typography>
-                    <Typography>OS: {systemInformation?.system?.distro} {systemInformation?.system?.codename} {systemInformation?.system?.release}</Typography>
-                    <Typography>Kernel: {systemInformation?.system?.kernel}</Typography>
-                    <Typography>Uptime: {convertSecondsToUptime(systemInformation?.system?.uptime)}</Typography>
-                    <Typography>Disk Mount: {diskInformation?.mount}</Typography>
-                    <Typography>Disk Usage: {`${diskInformation?.usedPercentage.toFixed(0)}%`}</Typography>
-                    <Typography>Disk Total: {`${diskInformation?.totalSpace}`}</Typography>
+                    <Typography><b>Processor:</b> {systemInformation?.cpu?.physicalCores} Core {systemInformation?.cpu?.manufacturer} {systemInformation?.cpu?.brand}</Typography>
+                    <Typography><b>Architecture:</b> {systemInformation?.system?.arch} </Typography>
+                    <Typography><b>Memory:</b> {convertBytesToGB(systemInformation?.memory?.total)} </Typography>
+                    <Typography><b>OS:</b> {systemInformation?.system?.distro} {systemInformation?.system?.codename} {systemInformation?.system?.release}</Typography>
+                    <Typography><b>Kernel:</b> {systemInformation?.system?.kernel}</Typography>
+                    <Typography><b>Uptime:</b> {convertSecondsToUptime(systemInformation?.system?.uptime)}</Typography>
+                    <Typography><b>Disk Mount:</b> {diskInformation?.mount}</Typography>
+                    <Typography><b>Disk Usage:</b> {`${diskInformation?.usedPercentage.toFixed(0)}%`}</Typography>
+                    <Typography><b>Disk Total:</b> {`${diskInformation?.totalSpace} GB`}</Typography>
                 </Box>
             </CenteredModal>
             {/* <DiskUsageBar totalSpace={1200} usedSpace={50} usedPercentage={50}/> */}
