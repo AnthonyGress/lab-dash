@@ -1,7 +1,7 @@
 # Build the React app (Frontend)
 FROM --platform=linux/amd64 node:lts-slim AS frontend-build
 WORKDIR /usr/src/app
-COPY ./frontend ./
+COPY ./ ./
 RUN npm install
 RUN npm run build:dev
 

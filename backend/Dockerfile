@@ -1,7 +1,7 @@
 # Build (Backend)
 FROM --platform=linux/amd64 node:lts-slim AS backend-build
 WORKDIR /usr/src/app
-COPY ./backend ./
+COPY ./ ./
 RUN npm install --omit-optional
 RUN npm run build
 

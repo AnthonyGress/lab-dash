@@ -7,7 +7,16 @@
     "start": "node ./dist/index.js",
     "build": "tsc -p . && cp ./package.json ./dist/package.json",
     "lint": "eslint .",
-    "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix"
+    "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
+    "docker:build:dev": "docker build . -t ghcr.io/anthonygress/lab-dash-backend:latest",
+    "docker:build": "docker build --platform linux/amd64 . -t ghcr.io/anthonygress/lab-dash-backend:latest",
+    "docker:run": "docker run --platform=linux/amd64 -p 2022:80 -p 5000:5000 ghcr.io/anthonygress/lab-dash-backend:latest",
+    "docker:run:dev": "docker run -p 2022:80 -p 5000:5000 ghcr.io/anthonygress/lab-dash-backend:latest",
+    "docker:push": "docker push ghcr.io/anthonygress/lab-dash-backend:latest",
+    "docker:stop": "docker ps -q --filter 'ancestor=ghcr.io/anthonygress/lab-dash-backend:latest' | xargs -r docker stop",
+    "docker:rm": "docker ps -a -q --filter 'ancestor=ghcr.io/anthonygress/lab-dash-backend:latest' | xargs -r docker rm",
+    "docker:clean": "npm run docker:stop && npm run docker:rm",
+    "docker:restart": "npm run docker:stop && npm run docker:rm && npm run docker:run"
   },
   "keywords": [],
   "author": "",
