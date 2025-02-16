@@ -4,8 +4,8 @@ import express, { Application } from 'express';
 import helmet from 'helmet';
 import path from 'path';
 
-import { errorHandler } from './middleware/error-handler';
-import routes from './routes';
+import { errorHandler } from './src/middleware/error-handler';
+import routes from './src/routes';
 
 dotenv.config();
 
@@ -16,7 +16,7 @@ const ENV = process.env.NODE_ENV;
 const iconsPath = ENV === 'production'
     ? path.join(__dirname, './node_modules/@loganmarchione/homelab-svg-assets/assets')
     : path.join(__dirname, '../node_modules/@loganmarchione/homelab-svg-assets/assets');
-    
+
 const iconListPath = ENV === 'production'
     ? path.join(__dirname, './node_modules/@loganmarchione/homelab-svg-assets/icons.json')
     : path.join(__dirname, '../node_modules/@loganmarchione/homelab-svg-assets/icons.json');
