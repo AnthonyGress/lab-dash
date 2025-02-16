@@ -29,7 +29,7 @@ export const SortableWeatherWidget: React.FC<Props> = ({ id, editMode, isOverlay
             sx={{
                 transition,
                 transform: transform ? CSS.Transform.toString(transform) : undefined,
-                opacity: isOverlay ? .6 : 1
+                opacity: isOverlay ? .6 : 1,
             }}
         >
             <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit}>

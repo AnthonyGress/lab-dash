@@ -15,12 +15,13 @@ import { Box, Grid2 as Grid } from '@mui/material';
 import React, { useState } from 'react';
 
 import { BlankAppShortcut } from './BlankAppShortcut';
+import { BlankWidget } from './BlankWidget';
 import { SortableAppShortcut } from './SortableAppShortcut';
 import { SortableDateTimeWidget } from './SortableDateTime';
-import { BlankWidget } from './BlankWidget';
 import { SortableSystemMonitorWidget } from './SortableSystemMonitor';
 import { SortableWeatherWidget } from './SortableWeather';
 import { useAppContext } from '../../context/useAppContext';
+import { styles } from '../../theme/styles';
 import { DashboardItem, ITEM_TYPE } from '../../types';
 import { AddEditForm } from '../forms/AddEditForm';
 import { CenteredModal } from '../modals/CenteredModal';
@@ -77,9 +78,9 @@ export const DashboardGrid: React.FC<Props> = ({ editMode, items }) => {
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
             >
-                <Box sx={{ width: '95%', height: '92%', margin: 'auto', padding: 2, mb: 4 }}>
-                    <SortableContext items={items} strategy={rectSortingStrategy} disabled={!editMode}>
-                        <Grid container spacing={2}>
+                <SortableContext items={items} strategy={rectSortingStrategy} disabled={!editMode}>
+                    <Box sx={{ width: '100%', overflow: 'hidden' }}>
+                        <Grid container spacing={2} sx={{ width: '100%', margin: 0, flexWrap: 'wrap', p:2 }}>
                             {items.map((item) => {
                                 switch (item.type) {
                                 case ITEM_TYPE.WEATHER_WIDGET:
@@ -108,47 +109,46 @@ export const DashboardGrid: React.FC<Props> = ({ editMode, items }) => {
                                 }
                             })}
                         </Grid>
-                    </SortableContext>
+                    </Box>
+                </SortableContext>
 
-                    <DragOverlay>
-                        {activeId ? (
-                            items.map((item) => {
-                                if (item.id === activeId) {
-                                    switch (item.type) {
-                                    case ITEM_TYPE.WEATHER_WIDGET:
-                                        return <SortableWeatherWidget key={item.id} id={item.id} editMode={editMode} isOverlay/>;
-                                    case ITEM_TYPE.DATE_TIME_WIDGET:
-                                        return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} isOverlay/>;
-                                    case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
-                                        return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} isOverlay/>;
-                                    case ITEM_TYPE.APP_SHORTCUT:
-                                        return (
-                                            <SortableAppShortcut
-                                                key={item.id}
-                                                id={item.id}
-                                                url={item.url as string}
-                                                name={item.label}
-                                                iconName={item.icon?.path || ''}
-                                                editMode={editMode}
-                                                isOverlay
-                                            />
-                                        );
-                                    case ITEM_TYPE.BLANK_APP:
-                                        return <BlankAppShortcut key={item.id} id={item.id} editMode={editMode} isOverlay/>;
-                                    default:
-                                        return <BlankWidget key={item.id} id={item.id} label={item.label} editMode={editMode} isOverlay/>;
-                                    }
+                <DragOverlay>
+                    {activeId ? (
+                        items.map((item) => {
+                            if (item.id === activeId) {
+                                switch (item.type) {
+                                case ITEM_TYPE.WEATHER_WIDGET:
+                                    return <SortableWeatherWidget key={item.id} id={item.id} editMode={editMode} isOverlay/>;
+                                case ITEM_TYPE.DATE_TIME_WIDGET:
+                                    return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} isOverlay/>;
+                                case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
+                                    return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} isOverlay/>;
+                                case ITEM_TYPE.APP_SHORTCUT:
+                                    return (
+                                        <SortableAppShortcut
+                                            key={item.id}
+                                            id={item.id}
+                                            url={item.url as string}
+                                            name={item.label}
+                                            iconName={item.icon?.path || ''}
+                                            editMode={editMode}
+                                            isOverlay
+                                        />
+                                    );
+                                case ITEM_TYPE.BLANK_APP:
+                                    return <BlankAppShortcut key={item.id} id={item.id} editMode={editMode} isOverlay/>;
+                                default:
+                                    return <BlankWidget key={item.id} id={item.id} label={item.label} editMode={editMode} isOverlay/>;
                                 }
-                                return null;
-                            })
-                        ) : null}
-                    </DragOverlay>
-                </Box>
+                            }
+                            return null;
+                        })
+                    ) : null}
+                </DragOverlay>
             </DndContext>
-            <CenteredModal open={openEditModal} handleClose={() => setOpenEditModal(false)} title='Edit Item' >
+            <CenteredModal open={openEditModal} handleClose={() => setOpenEditModal(false)} title='Edit Item'>
                 <AddEditForm handleClose={() => setOpenEditModal(false)} existingItem={selectedItem}/>
             </CenteredModal>
-
         </>
     );
 };

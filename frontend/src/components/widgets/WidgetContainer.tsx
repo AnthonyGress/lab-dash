@@ -30,8 +30,10 @@ export const WidgetContainer: React.FC<Props> = ({ children, editMode, onEdit, o
     return (
         <Card
             sx={{
-                width: appShortcut ? '7rem' : '90%',
-                minHeight: appShortcut ? '6rem' : 200,
+                width: '100%',
+                maxWidth: '100%',
+                flexGrow: 1,
+                minHeight: appShortcut ? '6rem' : '14rem',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -43,6 +45,8 @@ export const WidgetContainer: React.FC<Props> = ({ children, editMode, onEdit, o
                 cursor: editMode ? 'grab' : 'auto',
                 boxShadow: placeholder ? 0 : 2,
                 position: 'relative',
+                overflow: 'hidden', // Prevents content from spilling out
+                boxSizing: 'border-box', // Ensures padding doesn’t increase size
             }}
         >
             {/* Show menu only in edit mode */}
