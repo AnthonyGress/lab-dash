@@ -88,7 +88,7 @@ export const WeatherWidget: React.FC = () => {
             setLoading(true);
             try {
                 let data;
-                if (!location) {
+                if (!location?.latitude || !location.longitude) {
                     console.log('no location');
 
                     data = await DashApi.getWeather();

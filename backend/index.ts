@@ -20,7 +20,6 @@ console.log('Serving icons from:', iconsPath);
 
 // Middleware
 app.use(cors());
-// app.use(helmet({ crossOriginOpenerPolicy: false, hsts: false }));
 app.use(express.json());
 
 // Routes
