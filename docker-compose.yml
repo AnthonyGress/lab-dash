@@ -4,8 +4,6 @@ services:
       build: ./frontend
       container_name: lab-dash-frontend
       image: ghcr.io/anthonygress/lab-dash-frontend:latest
-      environment:
-        - VITE_API_URL=http://lab-dash-backend:5000
       ports:
         - 2022:80
       extra_hosts:
