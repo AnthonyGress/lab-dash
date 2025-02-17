@@ -6,7 +6,9 @@ services:
       networks:
         - app_network
       ports:
-          - 2022:80
+        - 2022:80
+      extra_hosts:
+        - "host.docker.internal:host-gateway"
       restart: unless-stopped
   lab-dash-backend:
       container_name: lab-dash-backend
