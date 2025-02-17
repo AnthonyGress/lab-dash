@@ -1,6 +1,6 @@
 # Build the React app (Frontend)
 FROM --platform=linux/amd64 node:lts-slim AS frontend-build
-ENV VITE_API_URL=http://lab-dash-backend:5000
+ENV VITE_API_URL=http://host.docker.internal:5000
 WORKDIR /usr/src/app
 COPY ./ ./
 RUN npm install
