@@ -24,7 +24,7 @@ const iconListPath = ENV === 'production'
 console.log('Serving icons from:', iconsPath);
 
 // Middleware
-app.use(cors());
+app.use(cors({ origin: 'localhost' }));
 app.use(helmet({
     crossOriginResourcePolicy: false,
 }));
