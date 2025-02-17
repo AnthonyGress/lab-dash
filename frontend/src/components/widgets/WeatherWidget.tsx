@@ -85,14 +85,21 @@ export const WeatherWidget: React.FC = () => {
 
     useEffect(() => {
         const fetchWeather = async () => {
-            if (!location) return;
             setLoading(true);
             try {
-                const data = await DashApi.getWeather(location.latitude, location.longitude);
-                console.log('Weather data:', data);
+                let data;
+                if (!location) {
+                    console.log('no location');
+
+                    data = await DashApi.getWeather();
+                    console.log('Weather data:', data);
+                } else {
+                    data = await DashApi.getWeather(location.latitude, location.longitude);
+                    console.log('Weather data:', data);
+                }
                 setWeatherData(data);
             } catch (error) {
-                console.error('Error fetching weather:', error);
+                console.log('Error fetching weather:', error);
             } finally {
                 setLoading(false);
             }

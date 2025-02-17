@@ -13,35 +13,48 @@ export const weatherRoute = Router();
  */
 weatherRoute.get('/', async (req: Request, res: Response): Promise<void> => {
     try {
-        const { latitude, longitude } = req.query;
+        let latitude, longitude;
+        // Extract client IP (supports proxies)
+        if (!req.query.latitude && !req.query.longitude) {
+            const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
-        if (!latitude || !longitude) {
-            res.status(StatusCodes.BAD_REQUEST).json({
-                message: 'Please provide both latitude and longitude as query parameters.'
-            });
+            console.log(`Fetching location for IP: ${ip}`);
+
+            // Fetch geolocation data using ip-api.com
+            const geoResponse = await axios.get(`http://ip-api.com/json/${ip}`);
+            const { lat, lon, city, country, status } = geoResponse.data;
+            latitude = lat;
+            longitude = lon;
+
+            if (status !== 'success') {
+                res.status(400).json({ error: 'Unable to determine location from IP' });
+                console.error(`Error fetching weather: ${ip}`);
+                return;
+            }
+            console.log(`Determined location: ${city}, ${country} (${lat}, ${lon})`);
+        } else {
+            latitude = req.query.latitude;
+            longitude = req.query.longitude;
         }
 
-        // Construct the Open-Meteo API URL:
-        const apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weathercode,windspeed_10m&daily=temperature_2m_max,temperature_2m_min,weathercode,sunrise,sunset&timezone=auto`;
 
-        // Fetch data from the Open-Meteo API using Axios
-        const { data, status } = await axios.get(apiUrl);
+        // Fetch weather data from Open-Meteo
+        const weatherResponse = await axios.get('https://api.open-meteo.com/v1/forecast', {
+            params: {
+                latitude: latitude,
+                longitude: longitude,
+                current: 'temperature_2m,weathercode,windspeed_10m',
+                daily: 'temperature_2m_max,temperature_2m_min,weathercode,sunrise,sunset',
+                timezone: 'auto'
+            }
+        });
+        console.log(weatherResponse.data);
 
-        // If status is not 200, treat it as an error
-        if (status !== StatusCodes.OK) {
-            res.status(StatusCodes.BAD_REQUEST).json({
-                message: 'Failed to fetch data from Open-Meteo'
-            });
-        }
-
-        // Return the JSON data from Open-Meteo
-        res.status(StatusCodes.OK).json(data);
+        res.json(
+            weatherResponse.data
+        );
 
     } catch (error) {
-        // Handle unexpected errors (e.g., network issues)
-        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-            message: 'Error fetching weather data',
-            error: (error as Error).message,
-        });
+        console.error('Error fetching weather:', error);
     }
 });

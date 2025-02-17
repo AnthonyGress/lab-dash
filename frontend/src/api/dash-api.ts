@@ -40,7 +40,7 @@ export class DashApi {
         return null;
     }
 
-    public static async getWeather(latitude: number, longitude: number): Promise<any> {
+    public static async getWeather(latitude?: number, longitude?: number): Promise<any> {
         const res = await axios.get(`${BACKEND_URL}/api/weather`, {
             params: {
                 latitude,
