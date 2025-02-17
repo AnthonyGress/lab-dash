@@ -18,7 +18,8 @@ weatherRoute.get('/', async (req: Request, res: Response): Promise<void> => {
         let latitude, longitude;
         // Extract client IP (supports proxies)
         if (!req.query.latitude && !req.query.longitude) {
-            const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+            const ipResponse = await axios.get('https://api64.ipify.org?format=json');
+            const ip = ipResponse.data.ip;
 
             console.log(`Fetching location for IP: ${ip}`);
 
