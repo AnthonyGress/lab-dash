@@ -4,7 +4,6 @@ import { Box, Grid2 } from '@mui/material';
 import React from 'react';
 
 import { styles } from '../../theme/styles';
-import { AppShortcut } from '../AppShortcut';
 import { WidgetContainer } from '../widgets/WidgetContainer';
 
 type Props = {

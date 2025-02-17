@@ -3,9 +3,6 @@ import { CSS } from '@dnd-kit/utilities';
 import { Box, Grid2 } from '@mui/material';
 import React from 'react';
 
-
-import { PlaceholderWidget } from './PlaceholderWidget';
-import { DateTimeWidget } from '../widgets/DateTimeWidget';
 import { WeatherWidget } from '../widgets/WeatherWidget';
 import { WidgetContainer } from '../widgets/WidgetContainer';
 

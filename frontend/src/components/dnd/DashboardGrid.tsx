@@ -1,5 +1,4 @@
 import {
-    closestCenter,
     DndContext,
     DragOverlay,
     PointerSensor,
@@ -21,7 +20,6 @@ import { SortableDateTimeWidget } from './SortableDateTime';
 import { SortableSystemMonitorWidget } from './SortableSystemMonitor';
 import { SortableWeatherWidget } from './SortableWeather';
 import { useAppContext } from '../../context/useAppContext';
-import { styles } from '../../theme/styles';
 import { DashboardItem, ITEM_TYPE } from '../../types';
 import { AddEditForm } from '../forms/AddEditForm';
 import { CenteredModal } from '../modals/CenteredModal';
