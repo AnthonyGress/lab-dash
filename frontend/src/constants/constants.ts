@@ -11,4 +11,4 @@ export const initialItems = [
     })),
 ];
 
-export const BACKEND_URL = 'http://lab-dash-backend:5000';
+export const BACKEND_URL = 'http://host.docker.internal:5000';
