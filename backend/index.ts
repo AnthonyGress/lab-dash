@@ -10,7 +10,7 @@ import routes from './src/routes';
 dotenv.config();
 
 const app: Application = express();
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT) || 5000;
 const ENV = process.env.NODE_ENV;
 
 const iconsPath = path.join(__dirname, './node_modules/@loganmarchione/homelab-svg-assets/assets');
@@ -38,6 +38,6 @@ app.use('/api', routes);
 app.use(errorHandler);
 
 // Start Server
-app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server running on port ${PORT}, accessible via LAN`);
 });
