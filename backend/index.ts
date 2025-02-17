@@ -20,9 +20,10 @@ const iconListPath = path.join(__dirname, './node_modules/@loganmarchione/homela
 console.log('Serving icons from:', iconsPath);
 
 // Middleware
-app.use(cors({  origin: ['http://localhost:2022', 'http://lab-stack-frontend:2022'],
+app.use(cors({
+    origin: '*',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true,
+    credentials: false,
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(helmet());
