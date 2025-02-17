@@ -6,8 +6,6 @@ services:
       image: ghcr.io/anthonygress/lab-dash-frontend:latest
       environment:
         - VITE_API_URL=http://lab-dash-backend:5000
-      networks:
-        - app_network
       ports:
         - 2022:80
       extra_hosts:
@@ -17,11 +15,6 @@ services:
       build: ./backend
       container_name: lab-dash-backend
       image: ghcr.io/anthonygress/lab-dash-backend:latest
-      networks:
-        - app_network
       ports:
         - 5000:5000
       restart: unless-stopped
-networks:
-  app_network:
-    driver: bridge
