@@ -1,8 +1,11 @@
 ---
 services:
   lab-dash-frontend:
+      build: ./frontend
       container_name: lab-dash-frontend
       image: ghcr.io/anthonygress/lab-dash-frontend:latest
+      environment:
+        - VITE_API_URL=http://lab-dash-backend:5000
       networks:
         - app_network
       ports:
@@ -11,6 +14,7 @@ services:
         - "host.docker.internal:host-gateway"
       restart: unless-stopped
   lab-dash-backend:
+      build: ./backend
       container_name: lab-dash-backend
       image: ghcr.io/anthonygress/lab-dash-backend:latest
       networks:

@@ -11,4 +11,7 @@ export const initialItems = [
     })),
 ];
 
-export const BACKEND_URL = 'http://host.docker.internal:5000';
+export const BACKEND_URL = import.meta.env?.VITE_API_URL || 'http://localhost:5000';
+console.log(BACKEND_URL);
+
+// export const BACKEND_URL = 'http://localhost:5000';

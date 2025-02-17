@@ -44,9 +44,9 @@ export const SystemMonitorWidget = () => {
 
     const getMainDiskInfo = async (systemData: any) => {
         try {
-            const disks = systemData.disk;
+            const disks = systemData?.disk;
 
-            if (!disks.length) {
+            if (!disks || !disks.length) {
                 throw new Error('No disks found');
             }
             // Filter out network shares or unwanted mounts (e.g., "//network-share")
