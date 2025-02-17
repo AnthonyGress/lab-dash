@@ -1,13 +1,12 @@
-version: "3.8"
-
+---
 services:
-  console:
-      container_name: jellyfin-console
-      build:
-        context: .
-      image: catalyxcloud/jellyfin-console
-      environment:
-      - HOST_IP=${HOST_IP}
+  lab-dash-frontend:
+      container_name: lab-dash-frontend
+      image: ghcr.io/anthonygress/lab-dash-frontend:latest
       ports:
           - 2022:80
+      restart: unless-stopped
+  lab-dash-backend:
+      container_name: lab-dash-backend
+      image: ghcr.io/anthonygress/lab-dash-backend:latest
       restart: unless-stopped
