@@ -12,6 +12,8 @@ export const weatherRoute = Router();
  *   GET /weather?latitude=27.87&longitude=-82.626
  */
 weatherRoute.get('/', async (req: Request, res: Response): Promise<void> => {
+    console.log('get weather');
+
     try {
         let latitude, longitude;
         // Extract client IP (supports proxies)

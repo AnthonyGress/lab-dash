@@ -105,9 +105,7 @@ export const WeatherWidget: React.FC = () => {
             }
         };
 
-        if (location) {
-            fetchWeather();
-        }
+        fetchWeather();
 
         // every 15 min
         // setTimeout(() => {
