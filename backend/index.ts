@@ -25,7 +25,7 @@ app.use(cors({
     credentials: false,
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(helmet());
+app.use(helmet({ crossOriginOpenerPolicy: false }));
 app.use(express.json());
 
 // Routes
