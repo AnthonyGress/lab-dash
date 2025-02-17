@@ -22,11 +22,7 @@ weatherRoute.get('/', async (req: Request, res: Response): Promise<void> => {
         }
 
         // Construct the Open-Meteo API URL:
-        const apiUrl = 'https://api.open-meteo.com/v1/forecast' +
-            `?latitude=${latitude}&longitude=${longitude}` +
-            '&current=temperature_2m,weathercode,windspeed_10m' +
-            '&daily=temperature_2m_max,temperature_2m_min,weathercode,sunrise,sunset' +
-            '&timezone=auto';
+        const apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weathercode,windspeed_10m&daily=temperature_2m_max,temperature_2m_min,weathercode,sunrise,sunset&timezone=auto`;
 
         // Fetch data from the Open-Meteo API using Axios
         const { data, status } = await axios.get(apiUrl);

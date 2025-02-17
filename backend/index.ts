@@ -11,7 +11,6 @@ dotenv.config();
 
 const app: Application = express();
 const PORT = Number(process.env.PORT) || 2022;
-const ENV = process.env.NODE_ENV;
 
 const iconsPath = path.join(__dirname, './node_modules/@loganmarchione/homelab-svg-assets/assets');
 const iconListPath = path.join(__dirname, './node_modules/@loganmarchione/homelab-svg-assets/icons.json');

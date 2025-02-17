@@ -5,6 +5,6 @@ services:
       image: ghcr.io/anthonygress/lab-dash:latest
       ports:
         - 2022:2022
-      volumes:
-        - /docker/lab-dash/config:/config
+      # volumes:
+        # - /docker/lab-dash/config:/config
       restart: unless-stopped
