@@ -11,4 +11,4 @@ export const initialItems = [
     })),
 ];
 
-export const BACKEND_URL = 'http://localhost:5000';
+export const BACKEND_URL = 'http://lab-dash-backend:5000';
