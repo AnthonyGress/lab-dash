@@ -5,14 +5,14 @@ import path from 'path';
 
 export const layoutRoute = Router();
 
-const LAYOUT_FILE = path.join(__dirname, '../config/layout/layout.json');
+const CONFIG_FILE = path.join(__dirname, '../config/config.json');
 
 // GET - Retrieve the saved layout JSON from disk
 layoutRoute.get('/', async (_req: Request, res: Response): Promise<void> => {
     try {
-        const data = await fs.readFile(LAYOUT_FILE, 'utf-8');
+        const data = await fs.readFile(CONFIG_FILE, 'utf-8');
         const layout = JSON.parse(data);
-        res.status(StatusCodes.OK).json(layout);
+        res.status(StatusCodes.OK).json(layout.layout);
     } catch (error) {
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
             message: 'Error reading layout file',
@@ -30,8 +30,8 @@ layoutRoute.post('/', async (req: Request, res: Response): Promise<void> => {
             res.status(StatusCodes.BAD_REQUEST).json({ message: 'Invalid layout data' });
             return;
         }
-
-        await fs.writeFile(LAYOUT_FILE, JSON.stringify(layout, null, 2), 'utf-8');
+        // TODO: write only layout section
+        await fs.writeFile(CONFIG_FILE, JSON.stringify({ layout: layout }, null, 2), 'utf-8');
         res.status(StatusCodes.OK).json({ message: 'Layout saved successfully' });
     } catch (error) {
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
