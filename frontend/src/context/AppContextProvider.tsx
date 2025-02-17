@@ -25,7 +25,6 @@ export const AppContextProvider = ({ children }: Props) => {
         return [];
     };
 
-    // Save layout to localStorage
     const saveLayout = async (items: DashboardItem[]) => {
         const res = await DashApi.saveLayout(items);
         console.log(res);
@@ -37,7 +36,7 @@ export const AppContextProvider = ({ children }: Props) => {
             const savedLayout = await getSavedLayout();
             console.log('Updated dashboard:', savedLayout);
         } catch (error) {
-            console.error('Failed to refresh portfolio:', error);
+            console.error('Failed to refresh dashboard:', error);
         }
     };
 
