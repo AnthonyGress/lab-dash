@@ -27,8 +27,11 @@ export const SystemMonitorWidget = () => {
 
     const getRamPercentage = (systemData: any) => {
         let totalPercentage = 0;
-        if (systemData?.memory?.total && systemData?.memory?.used) {
-            totalPercentage = Math.round((systemData.memory.used / systemData.memory.total) * 100);
+
+        console.log(convertBytesToGB(systemData?.memory?.active));
+
+        if (systemData?.memory?.total && systemData?.memory?.active) {
+            totalPercentage = Math.round((systemData.memory.active / systemData.memory.total) * 100);
         }
         setMemoryInformation(totalPercentage);
     };

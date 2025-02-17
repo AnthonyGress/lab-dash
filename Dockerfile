@@ -11,7 +11,7 @@ WORKDIR /usr/src/app
 COPY ./frontend ./
 RUN npm install
 ENV NODE_ENV=production
-RUN npm run build:dev
+RUN npm run build
 
 # Deploy (Backend)
 FROM --platform=linux/amd64 node:lts-slim AS backend-deploy

@@ -12,13 +12,14 @@ interface GaugeWidgetProps {
   title: string;
   size?: number;
   temperature?: boolean;
+  total?: number;
 }
 
-export const GaugeWidget: React.FC<GaugeWidgetProps> = ({ value, title, size, temperature }) => {
+export const GaugeWidget: React.FC<GaugeWidgetProps> = ({ value, title, size, temperature, total }) => {
     return (
         <Box position='relative' display='inline-flex'>
             {/* Gauge Chart */}
-            <Gauge value={value} valueMax={100} startAngle={-150} endAngle={150} cornerRadius='50%' sx={(theme) => (
+            <Gauge value={value} valueMax={total ? total : 100} startAngle={-150} endAngle={150} cornerRadius='50%' sx={(theme) => (
                 { '& .MuiGauge-valueText': { display: 'none' },
                     [`& .${gaugeClasses.valueArc}`]: {
                         fill: 'primary.main',
