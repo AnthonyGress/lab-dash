@@ -19,12 +19,7 @@ const iconListPath = path.join(__dirname, './node_modules/@loganmarchione/homela
 console.log('Serving icons from:', iconsPath);
 
 // Middleware
-app.use(cors({
-    origin: '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: false,
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(cors());
 app.use(helmet({ crossOriginOpenerPolicy: false }));
 app.use(express.json());
 
