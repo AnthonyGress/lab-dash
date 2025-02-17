@@ -31,14 +31,9 @@ jobs:
       - name: Install
         run: npm install
 
-      - name: Build & Push Frontend
+      - name: Build & Push Docker Image
         run: |
-          cd frontend && npm run docker:build
-          npm run docker:push
-
-      - name: Build & Push Backend
-        run: |
-          cd backend && npm run docker:build
+          npm run docker:build
           npm run docker:push
 
 

@@ -10,6 +10,7 @@ import { BsCloudHaze2Fill } from 'react-icons/bs';
 import { BsSunFill } from 'react-icons/bs';
 
 
+import { DashApi } from '../../api/dash-api';
 import { styles } from '../../theme/styles';
 
 interface WeatherData {
@@ -84,14 +85,11 @@ export const WeatherWidget: React.FC = () => {
 
     useEffect(() => {
         const fetchWeather = async () => {
+            if (!location) return;
             setLoading(true);
             try {
-                const response = await fetch(
-                    `https://api.open-meteo.com/v1/forecast?latitude=${location?.latitude}&longitude=${location?.longitude}&current=temperature_2m,weathercode,windspeed_10m&daily=temperature_2m_max,temperature_2m_min,weathercode,sunrise,sunset&timezone=auto`
-                );
-                const data: WeatherData = await response.json();
-                console.log(data);
-
+                const data = await DashApi.getWeather(location.latitude, location.longitude);
+                console.log('Weather data:', data);
                 setWeatherData(data);
             } catch (error) {
                 console.error('Error fetching weather:', error);

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon",
+    "dev": "PORT=5000 nodemon",
     "start": "node ./index.js",
     "build": "tsc -p . && cp ./package.json ./dist/package.json",
     "lint": "eslint .",
@@ -24,6 +24,7 @@
   "description": "",
   "dependencies": {
     "@loganmarchione/homelab-svg-assets": "^0.4.7",
+    "axios": "^1.7.9",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",

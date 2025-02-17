@@ -9,7 +9,7 @@ systemRoute.get('/', async (_req: Request, res: Response) => {
     const response = await getSystemInfo();
 
     if (response) {
-        res.json({ body: response });
+        res.json(response);
     } else {
         res
             .status(StatusCodes.INTERNAL_SERVER_ERROR)

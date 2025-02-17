@@ -10,7 +10,7 @@ import routes from './src/routes';
 dotenv.config();
 
 const app: Application = express();
-const PORT = Number(process.env.PORT) || 5000;
+const PORT = Number(process.env.PORT) || 2022;
 const ENV = process.env.NODE_ENV;
 
 const iconsPath = path.join(__dirname, './node_modules/@loganmarchione/homelab-svg-assets/assets');
@@ -33,6 +33,12 @@ app.use(express.json());
 app.use('/icon-list', express.static(iconListPath));
 app.use('/icons', express.static(iconsPath));
 app.use('/api', routes);
+
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 // Global Error Handler
 app.use(errorHandler);

@@ -64,8 +64,6 @@ export const SystemMonitorWidget = () => {
                 current.size > prev.size ? current : prev
             );
 
-            console.log(mainDisk);
-
             // Get total and used space in GB
             const totalSpaceGB = (mainDisk.size / 1e9)?.toFixed(0); // Convert bytes to GB
             const usedSpaceGB = (mainDisk.used / 1e9)?.toFixed(0); // Convert bytes to GB

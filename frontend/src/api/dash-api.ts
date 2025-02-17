@@ -34,10 +34,25 @@ export class DashApi {
         const res = await axios.get(`${BACKEND_URL}/api/system`);
 
         if (res.status === StatusCodes.OK) {
-            return res.data.body;
+            return res.data;
         }
 
         return null;
+    }
 
+    public static async getWeather(latitude: number, longitude: number): Promise<any> {
+        const res = await axios.get(`${BACKEND_URL}/api/weather`, {
+            params: {
+                latitude,
+                longitude
+            }
+        });
+
+        if (res.status === StatusCodes.OK) {
+            return res.data;
+        }
+
+        // Handle unexpected status codes
+        throw new Error(`Weather API request failed: ${res.statusText}`);
     }
 }
