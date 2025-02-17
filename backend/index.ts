@@ -13,21 +13,19 @@ const app: Application = express();
 const PORT = process.env.PORT || 5000;
 const ENV = process.env.NODE_ENV;
 
-const iconsPath = ENV === 'production'
-    ? path.join(__dirname, './node_modules/@loganmarchione/homelab-svg-assets/assets')
-    : path.join(__dirname, '../node_modules/@loganmarchione/homelab-svg-assets/assets');
+const iconsPath = path.join(__dirname, './node_modules/@loganmarchione/homelab-svg-assets/assets');
+const iconListPath = path.join(__dirname, './node_modules/@loganmarchione/homelab-svg-assets/icons.json');
 
-const iconListPath = ENV === 'production'
-    ? path.join(__dirname, './node_modules/@loganmarchione/homelab-svg-assets/icons.json')
-    : path.join(__dirname, '../node_modules/@loganmarchione/homelab-svg-assets/icons.json');
 
 console.log('Serving icons from:', iconsPath);
 
 // Middleware
-app.use(cors({ origin: 'localhost' }));
-app.use(helmet({
-    crossOriginResourcePolicy: false,
+app.use(cors({  origin: ['http://localhost:2022', 'http://lab-stack-frontend:2022'],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
+app.use(helmet());
 app.use(express.json());
 
 // Routes

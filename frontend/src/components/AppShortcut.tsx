@@ -15,7 +15,7 @@ export const AppShortcut = ({ url, name, iconName }: Props) => {
             <a href={url} rel='noopener noreferrer' target='_blank'>
                 <Box>
                     <Box sx={styles.shortcutIcon}>
-                        <img src={getIconPath(iconName)} alt={name} width={'65%'}/>
+                        <img src={getIconPath(iconName)} alt={name} width={'65%'} crossOrigin='anonymous'/>
                         <Box>
                             <Typography fontSize={'1.2rem'}>{name}</Typography>
                         </Box>

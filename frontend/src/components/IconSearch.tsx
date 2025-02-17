@@ -58,7 +58,7 @@ export const IconSearch = ({ control, errors }: Props) => {
                         value={selectedIcon} // Use the selectedIcon state
                         renderOption={(props, option) => (
                             <Box component='li' {...props} sx={{ display: 'flex', alignItems: 'center' }} key={shortid.generate()}>
-                                <img src={getIconPath(option.path)} alt={option.name} width={24} style={{ marginRight: 8 }} key={shortid.generate()}/>
+                                <img src={getIconPath(option.path)} alt={option.name} width={24} style={{ marginRight: 8 }} key={shortid.generate()} crossOrigin='anonymous'/>
                                 <Typography variant='body2' key={shortid.generate()}>{option.name}</Typography>
                             </Box>
                         )}
@@ -84,7 +84,7 @@ export const IconSearch = ({ control, errors }: Props) => {
                                 />
                                 {selectedIcon &&
             <Box ml={1}>
-                <img src={getIconPath(selectedIcon.path)} alt={selectedIcon.name} width={25} />
+                <img src={getIconPath(selectedIcon.path)} alt={selectedIcon.name} width={25} crossOrigin='anonymous'/>
             </Box>
                                 }
                             </Box>
