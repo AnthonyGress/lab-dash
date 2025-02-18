@@ -103,8 +103,8 @@ export const SystemMonitorWidget = () => {
     return (
         <Grid container justifyContent={'space-evenly'} gap={0} sx={{ display: 'flex', width: '100%' }}>
             <div
-                onPointerDownCapture={(e) => e.stopPropagation()} // Stop drag from interfering
-                onClick={(e) => e.stopPropagation()} // Prevent drag from triggering on click
+                onPointerDownCapture={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
             >
                 <IconButton
                     sx={{

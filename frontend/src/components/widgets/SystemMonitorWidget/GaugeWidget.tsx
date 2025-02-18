@@ -28,7 +28,9 @@ export const GaugeWidget: React.FC<GaugeWidgetProps> = ({ value, title, size, te
                         fill: theme.palette.text.disabled,
                     },
                     width: { xs: 108, xl: 135 },
-                    height: { xs: 135, xl: 135 }
+                    height: { xs: 135, xl: 135 },
+                    pointerEvents: 'none', // Allows scrolling through the SVG
+                    touchAction: 'none',
                 })
             } />
             {/* Center Content */}
