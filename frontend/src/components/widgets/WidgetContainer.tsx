@@ -1,7 +1,8 @@
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-import { Card, IconButton, Menu, MenuItem } from '@mui/material';
-import React, { useState } from 'react';
+import { Box, Card, IconButton, Menu, MenuItem, Tooltip } from '@mui/material';
+import React, { useEffect, useState } from 'react';
 
+import { useServiceStatus } from '../../hooks/useServiceStatus';
 import { COLORS } from '../../theme/styles';
 
 type Props = {
@@ -11,12 +12,26 @@ type Props = {
     onDelete?: () => void;
     appShortcut?: boolean;
     placeholder?: boolean;
+    url?: string
 
 };
 
-export const WidgetContainer: React.FC<Props> = ({ children, editMode, onEdit, onDelete, appShortcut=false, placeholder=false }) => {
+export const WidgetContainer: React.FC<Props> = ({ children, editMode, onEdit, onDelete, appShortcut=false, placeholder=false, url }) => {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
+
+    const isOnline = useServiceStatus(url);
+
+    let dotColor = 'gray';
+    let tooltipText = 'Unknown';
+
+    if (isOnline === true) {
+        dotColor = 'green';
+        tooltipText = 'Online';
+    } else if (isOnline === false) {
+        dotColor = 'red';
+        tooltipText = 'Offline';
+    }
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
         event.stopPropagation(); // Stop drag from triggering
@@ -72,6 +87,28 @@ export const WidgetContainer: React.FC<Props> = ({ children, editMode, onEdit, o
                 </div>
             )}
             {children}
+            {url && (
+                <Tooltip title={tooltipText} arrow placement='top' slotProps={{
+                    tooltip: {
+                        sx: {
+                            fontSize: 14,
+                        },
+                    },
+                }}>
+                    <Box
+                        sx={{
+                            position: 'absolute',
+                            bottom: 5,
+                            right: 5,
+                            width: 12,
+                            height: 12,
+                            borderRadius: '50%',
+                            backgroundColor: dotColor,
+                            cursor: 'pointer'
+                        }}
+                    />
+                </Tooltip>
+            )}
         </Card>
     );
 };

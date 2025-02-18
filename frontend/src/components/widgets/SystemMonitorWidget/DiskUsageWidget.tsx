@@ -35,7 +35,13 @@ export const DiskUsageBar: React.FC<DiskUsageBarProps> = ({ totalSpace, usedSpac
 
             <Stack direction='row' sx={{ position: 'relative', height: 12, borderRadius: 6, overflow: 'hidden' }}>
                 {/* Used Space Tooltip */}
-                <Tooltip title={`Used: ${formatSpace(usedSpace)}`} arrow>
+                <Tooltip title={`Used: ${formatSpace(usedSpace)}`} arrow slotProps={{
+                    tooltip: {
+                        sx: {
+                            fontSize: 14,
+                        },
+                    },
+                }}>
                     <Box
                         sx={{
                             width: `${usedPercentage}%`,
@@ -47,7 +53,13 @@ export const DiskUsageBar: React.FC<DiskUsageBarProps> = ({ totalSpace, usedSpac
                 </Tooltip>
 
                 {/* Free Space Tooltip */}
-                <Tooltip title={`Free: ${formatSpace(freeSpace)}`} arrow>
+                <Tooltip title={`Free: ${formatSpace(freeSpace)}`} arrow slotProps={{
+                    tooltip: {
+                        sx: {
+                            fontSize: 14,
+                        },
+                    },
+                }}>
                     <Box
                         sx={{
                             width: `${freePercentage}%`,

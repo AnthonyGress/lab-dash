@@ -15,9 +15,13 @@
 }
 
 html, body {
-  user-select: none !important;
-  -webkit-user-select: none !important;
-  -webkit-user-drag: none !important;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+}
+
+div {
+  -webkit-tap-highlight-color: transparent;
 }
 
 a {
