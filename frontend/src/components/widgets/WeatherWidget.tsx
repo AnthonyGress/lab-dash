@@ -180,7 +180,7 @@ export const WeatherWidget: React.FC = () => {
                             </Box>
                             <Box sx={{ fontSize: { sm: '1.25rem', xl: '1.5rem' } }}>
                                 {convertTemperature(weatherData.daily?.temperature_2m_max[index])}°
-                                {/* {isFahrenheit ? 'F' : 'C'} */}
+                                {isFahrenheit ? 'F' : 'C'}
                             </Box>
                         </Box>
                     </Tooltip>
@@ -200,7 +200,7 @@ export const WeatherWidget: React.FC = () => {
                     {/* 1 Day */}
                     {renderCurrentWeatherItem()}
                     {/* 5 Day */}
-                    <Grid sx={styles.center} container gap={{ xs: 4, md: 5 }}>
+                    <Grid container gap={{ xs: 3 }}>
                         { forecastDays > 1 && renderWeatherItem() }
                     </Grid>
                 </Grid>
