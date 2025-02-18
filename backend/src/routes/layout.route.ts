@@ -20,7 +20,7 @@ const loadConfig = () => {
 layoutRoute.get('/', async (_req: Request, res: Response): Promise<void> => {
     try {
         const config = loadConfig();
-        console.log('loading layout', config);
+        console.log('loading layout');
 
         res.status(StatusCodes.OK).json(config.layout);
     } catch (error) {
