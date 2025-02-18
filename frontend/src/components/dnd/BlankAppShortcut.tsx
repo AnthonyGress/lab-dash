@@ -19,7 +19,7 @@ export const BlankAppShortcut: React.FC<Props> = ({ id, editMode, isOverlay = fa
 
     return (
         <Grid2
-            size={{ xs: 6 , sm: 4 , md: 4, lg: 4/3, xl: 4/3 }}
+            size={{ xs: 4 , sm: 4 , md: 4, lg: 4/3, xl: 4/3 }}
             ref={!isOverlay ? setNodeRef : undefined}
             {...(!isOverlay ? attributes : {})}
             {...(!isOverlay ? listeners : {})}
