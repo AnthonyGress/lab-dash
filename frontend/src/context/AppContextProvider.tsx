@@ -34,10 +34,18 @@ export const AppContextProvider = ({ children }: Props) => {
     const saveLayout = async (items: DashboardItem[]) => {
         console.log('saving layout');
 
-        const res = await DashApi.getLayout();
-        const updatedLayout: DashboardLayout = isMobile
-            ? { ...res, mobile: items }
-            : { ...res, desktop: items };
+        const existingLayout = await DashApi.getLayout();
+
+        let updatedLayout: DashboardLayout;
+
+        if (existingLayout.mobile.length > 3) {
+            // has no prev mobile layout, duplicate desktop
+            updatedLayout = isMobile
+                ? { ...existingLayout, mobile: items }
+                : { ...existingLayout, desktop: items };
+        } else {
+            updatedLayout = { desktop: items, mobile: items };
+        }
 
         console.log('Saving updated layout:', updatedLayout);
         await DashApi.saveLayout(updatedLayout);
