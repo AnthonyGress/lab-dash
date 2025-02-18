@@ -1,5 +1,4 @@
 import { Box, Grid2 as Grid, Typography, useMediaQuery } from '@mui/material';
-import { useEffect, useState } from 'react';
 
 import { styles } from '../theme/styles';
 import { theme } from '../theme/theme';
@@ -12,35 +11,8 @@ type Props = {
 }
 
 export const AppShortcut = ({ url, name, iconName }: Props) => {
-    const [isOnline, setIsOnline] = useState<boolean | null>(null);
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-    useEffect(() => {
-        const checkStatus = async () => {
-            try {
-                const response = await fetch(url);
-                setIsOnline(response.ok);
-            } catch (error) {
-                setIsOnline(false);
-            }
-        };
-
-        // Initial check
-        checkStatus();
-
-        // Poll every 15 seconds
-        const timer = setInterval(checkStatus, 60000);
-
-        return () => clearInterval(timer);
-    }, [url]);
-
-    // Determine dot color
-    let dotColor = 'gray'; // unknown
-    if (isOnline === true) {
-        dotColor = 'green';
-    } else if (isOnline === false) {
-        dotColor = 'red';
-    }
     return (
         <Grid className='scale'>
             <a href={url} rel='noopener noreferrer' target='_blank'>
