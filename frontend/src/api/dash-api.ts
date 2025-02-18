@@ -57,4 +57,15 @@ export class DashApi {
         // Handle unexpected status codes
         throw new Error(`Weather API request failed: ${res.statusText}`);
     }
+
+    public static async checkServiceHealth(url: string): Promise<'online' | 'offline'> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/health`, { params: { url } });
+
+            return res.data.status;
+        } catch (error) {
+            console.error('Failed to check service health:', error);
+            return 'offline';
+        }
+    }
 }

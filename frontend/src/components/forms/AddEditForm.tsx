@@ -18,7 +18,14 @@ type Props = {
 
 }
 
-const ITEM_TYPE_OPTIONS = [{ id: 'widget', label: 'Widget' }, { id: ITEM_TYPE.APP_SHORTCUT, label: 'App' }, { id: ITEM_TYPE.BLANK_APP, label: 'Blank App' }, { id: ITEM_TYPE.BLANK_WIDGET, label: 'Blank Widget' }];
+const ITEM_TYPE_OPTIONS = [
+    { id: 'widget', label: 'Widget' },
+    { id: ITEM_TYPE.APP_SHORTCUT, label: 'App' },
+    { id: ITEM_TYPE.BLANK_APP, label: 'Blank App' },
+    { id: ITEM_TYPE.BLANK_WIDGET, label: 'Blank Widget' },
+    { id: ITEM_TYPE.BLANK_ROW, label: 'Blank Row' },
+];
+
 const WIDGET_OPTIONS = [{ id: ITEM_TYPE.DATE_TIME_WIDGET, label: 'Date & Time' }, { id: ITEM_TYPE.WEATHER_WIDGET, label: 'Weather' }, { id: ITEM_TYPE.SYSTEM_MONITOR_WIDGET, label: 'System Monitor' }];
 
 type FormValues = {
@@ -26,7 +33,7 @@ type FormValues = {
     itemType: string;
     url?: string;
     icon?: { path: string; name: string; source?: string } | null;
-    showName?: boolean;
+    showLabel?: boolean;
     widgetType?: string;
 };
 
@@ -39,7 +46,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             shortcutName: existingItem?.label || '',
             itemType: existingItem?.type || '',
             url: existingItem?.url || '',
-            showName: existingItem?.showName ?? true,
+            showLabel: existingItem?.showLabel,
             icon: existingItem?.icon
                 ? { path: existingItem.icon.path, name: existingItem.icon.name, source: existingItem.icon.source || '' }
                 : null // Ensure correct structure
@@ -52,10 +59,11 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
         console.log(data);
 
         const updatedItem: NewItem = {
-            label: data.shortcutName,
+            label: data.shortcutName || '',
             icon: data.icon ? { path: data.icon.path, name: data.icon.name } : undefined,
             url: data.url,
-            type: data.itemType === 'widget' && data.widgetType ? data.widgetType : data.itemType
+            type: data.itemType === 'widget' && data.widgetType ? data.widgetType : data.itemType,
+            showLabel: data.showLabel
         };
 
         if (existingItem) {
@@ -151,7 +159,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                 </Grid>
                                 <Grid>
                                     <IconSearch control={formContext.control} errors={errors}/>
-                                    <CheckboxElement label='Show Name' name='showName' sx={{ ml: 1, color: 'white' }}/>
+                                    <CheckboxElement label='Show Name' name='showLabel' sx={{ ml: 1, color: 'white' }}/>
                                 </Grid>
                             </>
                             }
@@ -177,7 +185,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                     />
                                 </Grid>
                             }
-                            <Button variant='contained' type='submit'>Add</Button>
+                            <Button variant='contained' type='submit'>{existingItem ? 'Update' : 'Add'}</Button>
                         </Grid>
                     </FormContainer>
                 </Box>

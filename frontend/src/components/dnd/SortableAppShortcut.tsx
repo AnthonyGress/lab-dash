@@ -15,9 +15,10 @@ type Props = {
     isOverlay?: boolean;
     onDelete?: () => void;
     onEdit?: () => void;
+    showLabel?: boolean;
 };
 
-export const SortableAppShortcut: React.FC<Props> = ({ id, url, name, iconName, editMode, isOverlay = false, onDelete, onEdit }) => {
+export const SortableAppShortcut: React.FC<Props> = ({ id, url, name, iconName, editMode, isOverlay = false, onDelete, onEdit, showLabel }) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
     return (
@@ -32,7 +33,7 @@ export const SortableAppShortcut: React.FC<Props> = ({ id, url, name, iconName, 
             }}
         >
             <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit} appShortcut url={url}>
-                <AppShortcut url={url} name={name} iconName={iconName} />
+                <AppShortcut url={url} name={name} iconName={iconName} showLabel={showLabel}/>
             </WidgetContainer>
         </Grid2>
     );

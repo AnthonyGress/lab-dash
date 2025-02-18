@@ -11,6 +11,7 @@ import { BsSunFill } from 'react-icons/bs';
 
 
 import { DashApi } from '../../api/dash-api';
+import { FIFTEEN_MIN_IN_MS } from '../../constants/constants';
 import { styles } from '../../theme/styles';
 
 interface WeatherData {
@@ -85,6 +86,8 @@ export const WeatherWidget: React.FC = () => {
 
     useEffect(() => {
         const fetchWeather = async () => {
+            console.log('fetching weatjer');
+
             setLoading(true);
             try {
                 let data;
@@ -108,9 +111,11 @@ export const WeatherWidget: React.FC = () => {
         fetchWeather();
 
         // every 15 min
-        // setTimeout(() => {
-        //     fetchWeather();
-        // }, 900);
+        const interval = setInterval(() => {
+            fetchWeather();
+        }, FIFTEEN_MIN_IN_MS); // Fetch every 15 minutes
+
+        return () => clearInterval(interval); // Cleanup on unmount
     }, [location, forecastDays]);
 
 

@@ -12,14 +12,15 @@ type Props = {
     editMode: boolean;
     onDelete?: () => void;
     onEdit?: () => void;
+    row?: boolean;
 };
 
-export const BlankWidget: React.FC<Props> = ({ id, label, editMode, isOverlay = false, onDelete, onEdit }) => {
+export const BlankWidget: React.FC<Props> = ({ id, label, editMode, isOverlay = false, onDelete, onEdit, row }) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
     return (
         <Grid2
-            size={{ xs: 12, md: 6, lg: 4 }} // Match size with widgets
+            size={{ xs: 12, md: row ? 12 : 6, lg: row ? 12 : 4 }} // Match size with widgets
             ref={!isOverlay ? setNodeRef : undefined}
             {...(!isOverlay ? attributes : {})}
             {...(!isOverlay ? listeners : {})}

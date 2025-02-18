@@ -64,12 +64,13 @@ export const AppContextProvider = ({ children }: Props) => {
     const addItem = (itemToAdd: NewItem) => {
         console.log('add item');
 
-        const newItem = {
+        const newItem: DashboardItem = {
             id: `item-${shortid.generate()}`,
             label: itemToAdd.label,
             icon: itemToAdd.icon,
             url: itemToAdd.url,
             type: itemToAdd.type,
+            showLabel: itemToAdd.showLabel
         };
         setDashboardLayout((prevItems: any) => [...prevItems, newItem]);
     };

@@ -5,15 +5,16 @@ export enum ITEM_TYPE {
     APP_SHORTCUT = 'app-shortcut',
     BLANK_APP = 'blank-app',
     BLANK_WIDGET = 'blank-widget',
-
+    BLANK_ROW = 'blank-row'
 }
 
 export type NewItem = {
     name?: string;
     icon?: { path: string; name: string };
     url?: string;
-    label?: string;
+    label: string;
     type: string;
+    showLabel?: boolean;
 }
 
 export type Icon = {
@@ -41,6 +42,6 @@ export type DashboardItem = {
     type: string;
     url?: string;
     icon?: { path: string; name: string; source?: string; };
-    showName?: boolean;
+    showLabel?: boolean;
 };
 

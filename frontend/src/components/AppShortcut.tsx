@@ -8,9 +8,10 @@ type Props = {
     url: string;
     name: string;
     iconName: string;
+    showLabel?: boolean;
 }
 
-export const AppShortcut = ({ url, name, iconName }: Props) => {
+export const AppShortcut = ({ url, name, iconName, showLabel }: Props) => {
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     return (
@@ -19,9 +20,9 @@ export const AppShortcut = ({ url, name, iconName }: Props) => {
                 <Box>
                     <Box sx={styles.shortcutIcon}>
                         <img src={getIconPath(iconName)} alt={name} width={isMobile ? '50%' : '65%'} crossOrigin='anonymous'/>
-                        <Box>
+                        {showLabel && <Box>
                             <Typography fontSize={isMobile ? '1rem' : '1.2rem'}>{name}</Typography>
-                        </Box>
+                        </Box>}
                     </Box>
                 </Box>
             </a>

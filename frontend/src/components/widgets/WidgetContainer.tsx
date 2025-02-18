@@ -100,8 +100,8 @@ export const WidgetContainer: React.FC<Props> = ({ children, editMode, onEdit, o
                             position: 'absolute',
                             bottom: 5,
                             right: 5,
-                            width: 12,
-                            height: 12,
+                            width: 10,
+                            height: 10,
                             borderRadius: '50%',
                             backgroundColor: dotColor,
                             cursor: 'pointer'
