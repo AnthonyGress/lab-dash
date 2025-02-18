@@ -20,7 +20,9 @@ export function useServiceStatus(
         async function checkStatus() {
             try {
                 if (!pingUrl) return;
-                const response = await fetch(pingUrl);
+                const response = await fetch(pingUrl, { method: 'GET', mode: 'no-cors' });
+                console.log(response);
+
                 setIsOnline(response.ok);
             } catch {
                 setIsOnline(false);
