@@ -18,6 +18,8 @@ html, body {
   user-select: none;
   -webkit-user-select: none;
   -webkit-user-drag: none;
+  overflow: hidden;
+  height: 100%;
 }
 
 div {

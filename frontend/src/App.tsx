@@ -36,7 +36,8 @@ function App() {
                 flexGrow: 1,
                 overflowY: 'auto',
                 padding: '2vh 0vw',
-                height: 'calc(100vh - 8vh)',
+                WebkitOverflowScrolling: 'touch',
+                // height: 'calc(100vh - 8vh)',
             }}>
                 <DashboardGrid editMode={editMode} items={dashboardLayout}/>
             </Box>
