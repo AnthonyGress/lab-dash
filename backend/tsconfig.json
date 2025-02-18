@@ -12,7 +12,6 @@
   },
   "include": [
     "index.ts",
-    "./src/config/config.json",
-    "../shared"
+    "./src/config/config.json"
   ]
 }

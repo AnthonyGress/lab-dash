@@ -1,7 +1,6 @@
 import { createContext, Dispatch, SetStateAction } from 'react';
 
-import { DashboardItem } from '../../../shared/types/dashboard-item';
-import { NewItem } from '../types';
+import { DashboardItem, NewItem } from '../types';
 
 export interface IAppContext {
     dashboardLayout: DashboardItem[];

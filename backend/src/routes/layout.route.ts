@@ -4,6 +4,7 @@ import fs from 'fs/promises';
 import StatusCodes from 'http-status-codes';
 import path from 'path';
 
+import { Config } from '../types';
 export const layoutRoute = Router();
 
 const CONFIG_FILE = path.join(__dirname, '../config/config.json');
@@ -36,7 +37,7 @@ layoutRoute.post('/', async (req: Request, res: Response): Promise<void> => {
         console.log('saving layout body', req.body);
 
         const { desktop, mobile } = req.body;
-        const config = loadConfig();
+        const config: Config = loadConfig();
 
         console.log('config', config);
         config.layout.desktop = desktop && desktop.length > 0 ? desktop : config.layout.desktop;

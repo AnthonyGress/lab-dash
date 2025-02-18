@@ -3,12 +3,10 @@ import { ReactNode, useState } from 'react';
 import shortid from 'shortid';
 
 import { AppContext } from './AppContext';
-import { DashboardLayout } from '../../../shared/types/config';
-import { DashboardItem } from '../../../shared/types/dashboard-item';
 import { DashApi } from '../api/dash-api';
 import { initialItems } from '../constants/constants';
 import { theme } from '../theme/theme';
-import { NewItem } from '../types';
+import { DashboardItem, DashboardLayout, NewItem } from '../types';
 
 type Props = {
     children: ReactNode
@@ -25,7 +23,9 @@ export const AppContextProvider = ({ children }: Props) => {
 
         if (res) {
             const selectedLayout = isMobile ? res.mobile : res.desktop;
-            setDashboardLayout(selectedLayout);
+            if (selectedLayout.length > 0) {
+                setDashboardLayout(selectedLayout);
+            }
             return selectedLayout;
         }
         return [];

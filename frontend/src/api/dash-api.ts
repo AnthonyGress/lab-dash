@@ -1,10 +1,8 @@
 import axios from 'axios';
 import { StatusCodes } from 'http-status-codes';
 
-import { DashboardLayout } from '../../../shared/types/config';
-import { DashboardItem } from '../../../shared/types/dashboard-item';
 import { BACKEND_URL } from '../constants/constants';
-import { Icon } from '../types';
+import { DashboardItem, DashboardLayout, Icon } from '../types';
 
 
 export class DashApi {
