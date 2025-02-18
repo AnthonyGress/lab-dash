@@ -32,26 +32,26 @@ const getDay = (dateString: string) => {
 };
 
 const weatherDescriptions: Record<number, { description: string; icon: JSX.Element }> = {
-    0: { description: 'Clear', icon: <BsSunFill style={{ fontSize: '2.3rem' }} /> },
-    1: { description: 'Mostly clear', icon: <BsSunFill style={{ fontSize: '2.3rem' }}/> },
-    2: { description: 'Partly cloudy', icon: <BsCloudSunFill style={{ fontSize: '2.3rem' }}/> },
-    3: { description: 'Overcast', icon: <BsCloudSunFill style={{ fontSize: '2.3rem' }}/> },
-    45: { description: 'Fog', icon: <BsCloudHaze2Fill style={{ fontSize: '2.3rem' }}/> },
-    48: { description: 'Depositing rime fog', icon: <BsCloudHaze2Fill style={{ fontSize: '2.3rem' }}/> },
-    51: { description: 'Drizzle', icon: <BsCloudDrizzleFill style={{ fontSize: '2.3rem' }}/> },
-    53: { description: 'Drizzle', icon: <BsCloudDrizzleFill style={{ fontSize: '2.3rem' }}/> },
-    55: { description: 'Drizzle', icon: <BsCloudDrizzleFill style={{ fontSize: '2.3rem' }}/> },
-    61: { description: 'Rain', icon: <BsFillCloudRainFill style={{ fontSize: '2.3rem' }}/> },
-    63: { description: 'Rain', icon: <BsFillCloudRainFill style={{ fontSize: '2.3rem' }}/> },
-    65: { description: 'Heavy Rain', icon: <BsCloudRainHeavyFill style={{ fontSize: '2.3rem' }}/> },
-    71: { description: 'Snow', icon: <BsCloudSnowFill style={{ fontSize: '2.3rem' }}/> },
-    73: { description: 'Snow', icon: <BsCloudSnowFill style={{ fontSize: '2.3rem' }}/> },
-    75: { description: 'Heavy Snow', icon: <BsCloudSnowFill style={{ fontSize: '2.3rem' }}/> },
-    80: { description: 'Rain showers', icon: <BsFillCloudRainFill style={{ fontSize: '2.3rem' }}/> },
-    81: { description: 'Moderate Rain Showers', icon: <BsCloudRainHeavyFill style={{ fontSize: '2.3rem' }}/> },
-    82: { description: 'Heavy Rain Showers', icon: <BsCloudRainHeavyFill style={{ fontSize: '2.3rem' }}/> },
-    85: { description: 'Snow showers', icon: <BsCloudSnowFill style={{ fontSize: '2.3rem' }}/> },
-    95: { description: 'Thunderstorm', icon: <BsCloudLightningRainFill style={{ fontSize: '2.3rem' }}/> },
+    0: { description: 'Clear', icon: <BsSunFill style={{ fontSize: '2.4rem' }} /> },
+    1: { description: 'Mostly clear', icon: <BsSunFill style={{ fontSize: '2.4rem' }}/> },
+    2: { description: 'Partly cloudy', icon: <BsCloudSunFill style={{ fontSize: '2.4rem' }}/> },
+    3: { description: 'Overcast', icon: <BsCloudSunFill style={{ fontSize: '2.4rem' }}/> },
+    45: { description: 'Fog', icon: <BsCloudHaze2Fill style={{ fontSize: '2.4rem' }}/> },
+    48: { description: 'Depositing rime fog', icon: <BsCloudHaze2Fill style={{ fontSize: '2.4rem' }}/> },
+    51: { description: 'Drizzle', icon: <BsCloudDrizzleFill style={{ fontSize: '2.4rem' }}/> },
+    53: { description: 'Drizzle', icon: <BsCloudDrizzleFill style={{ fontSize: '2.4rem' }}/> },
+    55: { description: 'Drizzle', icon: <BsCloudDrizzleFill style={{ fontSize: '2.4rem' }}/> },
+    61: { description: 'Rain', icon: <BsFillCloudRainFill style={{ fontSize: '2.4rem' }}/> },
+    63: { description: 'Rain', icon: <BsFillCloudRainFill style={{ fontSize: '2.4rem' }}/> },
+    65: { description: 'Heavy Rain', icon: <BsCloudRainHeavyFill style={{ fontSize: '2.4rem' }}/> },
+    71: { description: 'Snow', icon: <BsCloudSnowFill style={{ fontSize: '2.4rem' }}/> },
+    73: { description: 'Snow', icon: <BsCloudSnowFill style={{ fontSize: '2.4rem' }}/> },
+    75: { description: 'Heavy Snow', icon: <BsCloudSnowFill style={{ fontSize: '2.4rem' }}/> },
+    80: { description: 'Rain showers', icon: <BsFillCloudRainFill style={{ fontSize: '2.4rem' }}/> },
+    81: { description: 'Moderate Rain Showers', icon: <BsCloudRainHeavyFill style={{ fontSize: '2.4rem' }}/> },
+    82: { description: 'Heavy Rain Showers', icon: <BsCloudRainHeavyFill style={{ fontSize: '2.4rem' }}/> },
+    85: { description: 'Snow showers', icon: <BsCloudSnowFill style={{ fontSize: '2.4rem' }}/> },
+    95: { description: 'Thunderstorm', icon: <BsCloudLightningRainFill style={{ fontSize: '2.4rem' }}/> },
 };
 
 export const WeatherWidget: React.FC = () => {
@@ -130,7 +130,7 @@ export const WeatherWidget: React.FC = () => {
     const renderWeatherItem = () => {
         return weatherData && Array.from({ length: forecastDays }, (_, index) => {
             const weatherCode = weatherData.daily?.weathercode[index];
-            const weatherInfo = weatherDescriptions[weatherCode] || { description: 'Unknown', icon: <BsCloudSunFill style={{ fontSize: '2.3rem' }} /> };
+            const weatherInfo = weatherDescriptions[weatherCode] || { description: 'Unknown', icon: <BsCloudSunFill style={{ fontSize: '2.4rem' }} /> };
             const date = new Date(weatherData.daily?.time[index]).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
             const sunrise = weatherData.daily?.sunrise[index] || 'N/A';
             const sunset = weatherData.daily?.sunset[index] || 'N/A';
@@ -179,7 +179,8 @@ export const WeatherWidget: React.FC = () => {
                                 {weatherInfo.icon}
                             </Box>
                             <Box sx={{ fontSize: { sm: '1.25rem', xl: '1.5rem' } }}>
-                                {convertTemperature(weatherData.daily?.temperature_2m_max[index])}°{isFahrenheit ? 'F' : 'C'}
+                                {convertTemperature(weatherData.daily?.temperature_2m_max[index])}°
+                                {/* {isFahrenheit ? 'F' : 'C'} */}
                             </Box>
                         </Box>
                     </Tooltip>
