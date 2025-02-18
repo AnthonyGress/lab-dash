@@ -25,6 +25,7 @@
     "noUncheckedSideEffectImports": true,
   },
   "include": [
-    "./src"
+    "./src",
+    "../shared"
   ]
 }

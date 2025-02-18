@@ -1,10 +1,14 @@
+import { useMediaQuery } from '@mui/material';
 import { ReactNode, useState } from 'react';
 import shortid from 'shortid';
 
 import { AppContext } from './AppContext';
+import { DashboardLayout } from '../../../shared/types/config';
+import { DashboardItem } from '../../../shared/types/dashboard-item';
 import { DashApi } from '../api/dash-api';
 import { initialItems } from '../constants/constants';
-import { DashboardItem, NewItem } from '../types';
+import { theme } from '../theme/theme';
+import { NewItem } from '../types';
 
 type Props = {
     children: ReactNode
@@ -12,22 +16,31 @@ type Props = {
 
 export const AppContextProvider = ({ children }: Props) => {
     const [dashboardLayout, setDashboardLayout] = useState<DashboardItem[]>(initialItems);
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     const getSavedLayout = async () => {
-        console.log('getSavedLayout');
+        console.log('Fetching saved layout');
 
-        const res = await DashApi.getLayout();
+        const res = await DashApi.getLayout(); // Retrieves { desktop: [], mobile: [] }
 
-        if (res && res.length > 0) {
-            setDashboardLayout(res);
-            return res;
+        if (res) {
+            const selectedLayout = isMobile ? res.mobile : res.desktop;
+            setDashboardLayout(selectedLayout);
+            return selectedLayout;
         }
         return [];
     };
 
     const saveLayout = async (items: DashboardItem[]) => {
-        const res = await DashApi.saveLayout(items);
-        console.log(res);
+        console.log('saving layout');
+
+        const res = await DashApi.getLayout();
+        const updatedLayout: DashboardLayout = isMobile
+            ? { ...res, mobile: items }
+            : { ...res, desktop: items };
+
+        console.log('Saving updated layout:', updatedLayout);
+        await DashApi.saveLayout(updatedLayout);
     };
 
     const refreshDashboard = async () => {
@@ -39,7 +52,6 @@ export const AppContextProvider = ({ children }: Props) => {
             console.error('Failed to refresh dashboard:', error);
         }
     };
-
 
     const addItem = (itemToAdd: NewItem) => {
         console.log('add item');

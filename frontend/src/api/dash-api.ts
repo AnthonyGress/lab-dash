@@ -1,8 +1,10 @@
 import axios from 'axios';
 import { StatusCodes } from 'http-status-codes';
 
+import { DashboardLayout } from '../../../shared/types/config';
+import { DashboardItem } from '../../../shared/types/dashboard-item';
 import { BACKEND_URL } from '../constants/constants';
-import { DashboardItem, Icon } from '../types';
+import { Icon } from '../types';
 
 
 export class DashApi {
@@ -18,16 +20,18 @@ export class DashApi {
         return res.data;
     }
 
-    public static async getLayout(): Promise<DashboardItem[]> {
+    public static async getLayout(): Promise<DashboardLayout> {
         const res = await axios.get(`${BACKEND_URL}/api/layout`);
 
         return res.data;
     }
 
-    public static async saveLayout(layout: DashboardItem[]): Promise<void> {
-        const res = await axios.post(`${BACKEND_URL}/api/layout`, layout);
-
-        return res.data;
+    public static async saveLayout(layout: { desktop: DashboardItem[], mobile: DashboardItem[] }): Promise<void> {
+        try {
+            await axios.post(`${BACKEND_URL}/api/layout`, layout);
+        } catch (error) {
+            console.error('Failed to save layout:', error);
+        }
     }
 
     public static async getSystemInformation(): Promise<any> {
