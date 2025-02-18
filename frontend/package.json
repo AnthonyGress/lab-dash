@@ -41,7 +41,7 @@
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@types/shortid": "^2.2.0",
-    "@vitejs/plugin-react-swc": "^3.5.0",
+    "@vitejs/plugin-react-swc": "^3.8.0",
     "eslint": "^9.19.0",
     "eslint-plugin-import": "^2.28.1",
     "eslint-plugin-react": "^7.37.4",
@@ -51,6 +51,6 @@
     "http-status-codes": "^2.3.0",
     "typescript": "~5.6.2",
     "typescript-eslint": "^8.18.2",
-    "vite": "^6.0.5"
+    "vite": "^6.1.0"
   }
 }
