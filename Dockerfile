@@ -15,10 +15,12 @@ RUN npm run build
 
 # Deploy (Backend)
 FROM --platform=linux/amd64 node:lts-slim AS backend-deploy
-WORKDIR /usr/src/app
+WORKDIR /app
 ENV NODE_ENV=production
 EXPOSE 2022
-COPY --from=backend-build /usr/src/app/dist ./
+COPY --from=backend-build /usr/src/app/dist/config ../config
+COPY --from=backend-build /usr/src/app/dist/index.js ./
+COPY --from=backend-build /usr/src/app/dist/package.json ./
 COPY --from=frontend-build /usr/src/app/dist ./public
 RUN npm i --omit-dev --omit-optional
 CMD [ "node", "index.js" ]

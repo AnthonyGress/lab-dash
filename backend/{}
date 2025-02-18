@@ -1,0 +1,109 @@
+{
+  "layout": [
+    {
+      "id": "weather-widget",
+      "label": "Weather Widget",
+      "type": "weather-widget"
+    },
+    {
+      "id": "system-monitor-widget",
+      "label": "System Monitor Widget",
+      "type": "system-monitor-widget"
+    },
+    {
+      "id": "time-date-widget",
+      "label": "Time & Date Widget",
+      "type": "date-time-widget"
+    },
+    {
+      "id": "item-1",
+      "label": "Item 1",
+      "type": "blank-app"
+    },
+    {
+      "id": "item-2",
+      "label": "Item 2",
+      "type": "blank-app"
+    },
+    {
+      "id": "item-3",
+      "label": "Item 3",
+      "type": "blank-app"
+    },
+    {
+      "id": "item-4",
+      "label": "Item 4",
+      "type": "blank-app"
+    },
+    {
+      "id": "item-5",
+      "label": "Item 5",
+      "type": "blank-app"
+    },
+    {
+      "id": "item-6",
+      "label": "Item 6",
+      "type": "blank-app"
+    },
+    {
+      "id": "item-7",
+      "label": "Item 7",
+      "type": "blank-app"
+    },
+    {
+      "id": "item-8",
+      "label": "Item 8",
+      "type": "blank-app"
+    },
+    {
+      "id": "item-9",
+      "label": "Item 9",
+      "type": "blank-app"
+    },
+    {
+      "id": "item-10",
+      "label": "Item 10",
+      "type": "blank-app"
+    },
+    {
+      "id": "item-11",
+      "label": "Item 11",
+      "type": "blank-app"
+    },
+    {
+      "id": "item-12",
+      "label": "Item 12",
+      "type": "blank-app"
+    },
+    {
+      "id": "item-13",
+      "label": "Item 13",
+      "type": "blank-app"
+    },
+    {
+      "id": "item-14",
+      "label": "Item 14",
+      "type": "blank-app"
+    },
+    {
+      "id": "item-15",
+      "label": "Item 15",
+      "type": "blank-app"
+    },
+    {
+      "id": "item-16",
+      "label": "Item 16",
+      "type": "blank-app"
+    },
+    {
+      "id": "item-17",
+      "label": "Item 17",
+      "type": "blank-app"
+    },
+    {
+      "id": "item-18",
+      "label": "Item 18",
+      "type": "blank-app"
+    }
+  ]
+}
