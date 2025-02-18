@@ -19,7 +19,7 @@ weatherRoute.get('/', async (req: Request, res: Response): Promise<void> => {
             const ipResponse = await axios.get('https://api64.ipify.org?format=json');
             const ip = ipResponse.data.ip;
 
-            console.log(`Fetching location for IP: ${ip}`);
+            console.log('Fetching location by ip');
 
             // Fetch geolocation data using ip-api.com
             const geoResponse = await axios.get(`http://ip-api.com/json/${ip}`);
