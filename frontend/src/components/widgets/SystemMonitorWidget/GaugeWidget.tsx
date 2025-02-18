@@ -27,8 +27,8 @@ export const GaugeWidget: React.FC<GaugeWidgetProps> = ({ value, title, size, te
                     [`& .${gaugeClasses.referenceArc}`]: {
                         fill: theme.palette.text.disabled,
                     },
-                    width: { sm: 128, xl: 135 },
-                    height: { sm: 130, xl: 135 }
+                    width: { xs: 108, xl: 135 },
+                    height: { xs: 135, xl: 135 }
                 })
             } />
             {/* Center Content */}
