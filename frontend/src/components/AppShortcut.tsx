@@ -1,7 +1,8 @@
-import { Box, Grid2 as Grid, Typography } from '@mui/material';
+import { Box, Grid2 as Grid, Typography, useMediaQuery } from '@mui/material';
 import { useEffect, useState } from 'react';
 
 import { styles } from '../theme/styles';
+import { theme } from '../theme/theme';
 import { getIconPath } from '../utils/utils';
 
 type Props = {
@@ -12,6 +13,7 @@ type Props = {
 
 export const AppShortcut = ({ url, name, iconName }: Props) => {
     const [isOnline, setIsOnline] = useState<boolean | null>(null);
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     useEffect(() => {
         const checkStatus = async () => {
@@ -27,7 +29,7 @@ export const AppShortcut = ({ url, name, iconName }: Props) => {
         checkStatus();
 
         // Poll every 15 seconds
-        const timer = setInterval(checkStatus, 15000);
+        const timer = setInterval(checkStatus, 60000);
 
         return () => clearInterval(timer);
     }, [url]);
@@ -44,9 +46,9 @@ export const AppShortcut = ({ url, name, iconName }: Props) => {
             <a href={url} rel='noopener noreferrer' target='_blank'>
                 <Box>
                     <Box sx={styles.shortcutIcon}>
-                        <img src={getIconPath(iconName)} alt={name} width={'65%'} crossOrigin='anonymous'/>
+                        <img src={getIconPath(iconName)} alt={name} width={isMobile ? '50%' : '65%'} crossOrigin='anonymous'/>
                         <Box>
-                            <Typography fontSize={'1.2rem'}>{name}</Typography>
+                            <Typography fontSize={isMobile ? '1rem' : '1.2rem'}>{name}</Typography>
                         </Box>
                     </Box>
                 </Box>
