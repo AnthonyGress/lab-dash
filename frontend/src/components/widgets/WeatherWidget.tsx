@@ -195,7 +195,7 @@ export const WeatherWidget: React.FC = () => {
     };
 
     return (
-        <CardContent sx={{ p: 0 }}>
+        <CardContent sx={{ p: 1 }}>
             {loading ? (
                 <Box sx={styles.center}>
                     <CircularProgress sx={{ mt: 2 }} />

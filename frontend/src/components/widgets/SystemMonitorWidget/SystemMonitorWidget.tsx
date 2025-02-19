@@ -117,16 +117,20 @@ export const SystemMonitorWidget = () => {
                     <IoInformationCircleOutline style={{ color: theme.palette.text.primary, fontSize: '1.75rem' }}/>
                 </IconButton>
             </div>
-            <Grid>
-                <GaugeWidget title='CPU' value={systemInformation?.cpu?.currentLoad ? Math.round(systemInformation?.cpu?.currentLoad) : 0} />
+            <Grid container gap={2} mt={-1}>
+                <Grid>
+                    <GaugeWidget title='CPU' value={systemInformation?.cpu?.currentLoad ? Math.round(systemInformation?.cpu?.currentLoad) : 0} />
+                </Grid>
+                <Grid>
+                    <GaugeWidget title='TEMP' value={systemInformation?.cpu?.main ? Math.round(systemInformation?.cpu?.main) : 0} temperature/>
+                </Grid>
+                <Grid>
+                    <GaugeWidget title='RAM' value={memoryInformation} />
+                </Grid>
             </Grid>
-            <Grid>
-                <GaugeWidget title='TEMP' value={systemInformation?.cpu?.main ? Math.round(systemInformation?.cpu?.main) : 0} temperature/>
-            </Grid>
-            <Grid>
-                <GaugeWidget title='RAM' value={memoryInformation} />
-            </Grid>
-            <DiskUsageBar totalSpace={diskInformation?.totalSpace ? diskInformation?.totalSpace : 0} usedSpace={diskInformation?.usedSpace ? diskInformation?.usedSpace : 0} usedPercentage={diskInformation?.usedPercentage ? diskInformation?.usedPercentage : 0}/>
+            <Box p={1} width={'92%'} mt={-1}>
+                <DiskUsageBar totalSpace={diskInformation?.totalSpace ? diskInformation?.totalSpace : 0} usedSpace={diskInformation?.usedSpace ? diskInformation?.usedSpace : 0} usedPercentage={diskInformation?.usedPercentage ? diskInformation?.usedPercentage : 0}/>
+            </Box>
             <CenteredModal open={openSystemModal} handleClose={() => setOpenSystemModal(false)} title='System Information' width={isMobile ? '90vw' :'30vw'} height='35vh'>
                 <Box component={Paper} p={2} sx={{ backgroundColor: COLORS.GRAY }} elevation={0}>
                     <Typography><b>Processor:</b> {systemInformation?.cpu?.physicalCores} Core {systemInformation?.cpu?.manufacturer} {systemInformation?.cpu?.brand}</Typography>
