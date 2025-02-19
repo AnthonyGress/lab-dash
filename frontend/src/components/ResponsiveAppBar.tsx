@@ -64,7 +64,7 @@ export const ResponsiveAppBar = ({ editMode, setEditMode, customTitle }: Props) 
     };
 
     return (
-        <AppBar position='fixed' sx={{ backgroundColor: COLORS.TRANSPARENT_GRAY }}>
+        <AppBar position='fixed' sx={{ backgroundColor: COLORS.TRANSPARENT_GRAY, backdropFilter: 'blur(6px)' }}>
             <Container sx={{ margin: 0, padding: 0, minWidth: '100%' }}>
                 <Toolbar disableGutters sx={{ justifyContent: 'space-between' }}>
                     {/* Desktop */}
