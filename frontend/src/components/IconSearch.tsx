@@ -1,4 +1,4 @@
-import { Autocomplete, Box, IconButton, TextField, Typography } from '@mui/material';
+import { Autocomplete, Box, createFilterOptions, IconButton, TextField, Typography } from '@mui/material';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Controller } from 'react-hook-form';
@@ -49,6 +49,10 @@ export const IconSearch = ({ control, errors }: Props) => {
                     <Autocomplete
                         {...field}
                         options={iconList}
+                        filterOptions={createFilterOptions({
+                            matchFrom: 'any',
+                            limit: 100,
+                        })}
                         getOptionLabel={(option) => option?.name ?? ''}
                         isOptionEqualToValue={(option, value) => option.name === value?.name}
                         onChange={(_, newValue) => {
