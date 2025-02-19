@@ -1,5 +1,6 @@
 import {
     closestCenter,
+    closestCorners,
     DndContext,
     DragOverlay,
     PointerSensor,
@@ -11,8 +12,8 @@ import {
     rectSortingStrategy,
     SortableContext,
 } from '@dnd-kit/sortable';
-import { Box, Grid2 as Grid, useMediaQuery } from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import { Box, Grid2 as Grid } from '@mui/material';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { BlankAppShortcut } from './BlankAppShortcut';
 import { BlankWidget } from './BlankWidget';
@@ -21,7 +22,6 @@ import { SortableDateTimeWidget } from './SortableDateTime';
 import { SortableSystemMonitorWidget } from './SortableSystemMonitor';
 import { SortableWeatherWidget } from './SortableWeather';
 import { useAppContext } from '../../context/useAppContext';
-import { theme } from '../../theme/theme';
 import { DashboardItem, ITEM_TYPE } from '../../types';
 import { AddEditForm } from '../forms/AddEditForm';
 import { CenteredModal } from '../modals/CenteredModal';
@@ -37,7 +37,13 @@ export const DashboardGrid: React.FC<Props> = ({ editMode, items }) => {
     const [selectedItem, setSelectedItem] = useState<DashboardItem | null>(null);
     const [openEditModal, setOpenEditModal] = useState(false);
     const { setDashboardLayout } = useAppContext();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const isMobile = useMemo(() => {
+        return (
+            'ontouchstart' in window ||
+            navigator.maxTouchPoints > 0 ||
+            window.matchMedia('(pointer: coarse)').matches
+        );
+    }, []);
 
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: {
         delay: isMobile ? 100 : 0, // Prevents accidental drags
@@ -100,7 +106,7 @@ export const DashboardGrid: React.FC<Props> = ({ editMode, items }) => {
                 sensors={sensors}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
-                collisionDetection={closestCenter}
+                collisionDetection={closestCorners}
             >
                 <SortableContext items={items} strategy={rectSortingStrategy} disabled={!editMode}>
                     <Box sx={{ width: '100%', overflow: 'hidden' }}>
