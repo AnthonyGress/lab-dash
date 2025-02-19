@@ -11,7 +11,7 @@ import {
     rectSortingStrategy,
     SortableContext,
 } from '@dnd-kit/sortable';
-import { Box, Grid2 as Grid } from '@mui/material';
+import { Box, Grid2 as Grid, useMediaQuery } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 
 import { BlankAppShortcut } from './BlankAppShortcut';
@@ -21,6 +21,7 @@ import { SortableDateTimeWidget } from './SortableDateTime';
 import { SortableSystemMonitorWidget } from './SortableSystemMonitor';
 import { SortableWeatherWidget } from './SortableWeather';
 import { useAppContext } from '../../context/useAppContext';
+import { theme } from '../../theme/theme';
 import { DashboardItem, ITEM_TYPE } from '../../types';
 import { AddEditForm } from '../forms/AddEditForm';
 import { CenteredModal } from '../modals/CenteredModal';
@@ -36,8 +37,10 @@ export const DashboardGrid: React.FC<Props> = ({ editMode, items }) => {
     const [selectedItem, setSelectedItem] = useState<DashboardItem | null>(null);
     const [openEditModal, setOpenEditModal] = useState(false);
     const { setDashboardLayout } = useAppContext();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: {
-        delay: 100, // Prevents accidental drags
+        delay: isMobile ? 100 : 0, // Prevents accidental drags
         tolerance: 5, // Ensures drag starts after small movement
     } }));
     const [isDragging, setIsDragging] = useState(false);
