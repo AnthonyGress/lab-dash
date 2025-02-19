@@ -48,6 +48,15 @@ export const theme = createTheme({
                 },
             },
         },
+        MuiAutocomplete: {
+            styleOverrides: {
+                paper: {
+                    '& .MuiAutocomplete-noOptions': {
+                        color: '#C9C9C9',
+                    },
+                },
+            },
+        },
     },
 });
 

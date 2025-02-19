@@ -111,7 +111,7 @@ export const ResponsiveAppBar = ({ editMode, setEditMode, customTitle }: Props) 
                                     Cancel
                                 </Button>
                                 <Button onClick={handleSave} variant='contained'>
-                                    Save Edits
+                                    Done
                                 </Button>
                                 <Tooltip title='Add New'>
                                     <IconButton onClick={() => setOpenAddModal(true)}>

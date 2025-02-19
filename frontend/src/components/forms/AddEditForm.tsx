@@ -116,7 +116,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                         '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
                                     },
                                     width: '100%',
-                                    minWidth: isMobile ? '60vw' :'20vw'
+                                    minWidth: isMobile ? '65vw' :'20vw'
                                 }}
                                 slotProps={{
                                     inputLabel:

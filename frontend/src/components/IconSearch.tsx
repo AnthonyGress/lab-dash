@@ -48,7 +48,7 @@ export const IconSearch = ({ control, errors }: Props) => {
                 render={({ field, fieldState }) => (
                     <Autocomplete
                         {...field}
-                        options={iconList}
+                        options={[]}
                         getOptionLabel={(option) => option?.name ?? ''}
                         isOptionEqualToValue={(option, value) => option.name === value?.name}
                         onChange={(_, newValue) => {
@@ -90,20 +90,17 @@ export const IconSearch = ({ control, errors }: Props) => {
 
                                         },
                                     }}
-                                    slotProps={{
-                                        inputLabel:
-                        { style: { color: theme.palette.text.primary } }
-                                    }}
+                                    slotProps={{ inputLabel: { style: { color: theme.palette.text.primary } } }}
                                 />
                                 {selectedIcon &&
-            <Box ml={1}>
-                <img src={getIconPath(selectedIcon.path)} alt={selectedIcon.name} width={25} crossOrigin='anonymous'/>
-            </Box>
+                                    <Box ml={1}>
+                                        <img src={getIconPath(selectedIcon.path)} alt={selectedIcon.name} width={25} crossOrigin='anonymous'/>
+                                    </Box>
                                 }
                             </Box>
                         )}
                         noOptionsText='No icons found'
-                        slotProps={{ listbox: { style: { maxHeight: '25vh' } } }}
+                        slotProps={{ listbox: { sx: { maxHeight: '25vh',  } } }}
                     />
                 )}
             />

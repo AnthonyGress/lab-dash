@@ -31,6 +31,7 @@ export const SortableAppShortcut: React.FC<Props> = ({ id, url, name, iconName, 
                 transition,
                 transform: transform ? CSS.Translate.toString(transform) : undefined,
                 pointerEvents: isDragging ? 'none' : 'auto',
+                opacity: isOverlay ? .6 : 1,
                 visibility: isDragging ? 'hidden' : 'visible'
             }}
         >
