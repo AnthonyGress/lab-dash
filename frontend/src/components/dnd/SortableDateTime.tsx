@@ -26,7 +26,8 @@ export const SortableDateTimeWidget: React.FC<Props> = ({ id, editMode, isOverla
             sx={{
                 transition,
                 transform: transform ? CSS.Translate.toString(transform) : undefined,
-                opacity: isOverlay ? .6 : 1
+                opacity: isOverlay ? .6 : 1,
+                visibility: isDragging ? 'hidden' : 'visible',
             }}
         >
             <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit}>

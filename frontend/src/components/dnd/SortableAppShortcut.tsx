@@ -31,6 +31,7 @@ export const SortableAppShortcut: React.FC<Props> = ({ id, url, name, iconName, 
                 transition,
                 transform: transform ? CSS.Translate.toString(transform) : undefined,
                 pointerEvents: isDragging ? 'none' : 'auto',
+                visibility: isDragging ? 'hidden' : 'visible'
             }}
         >
             <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit} appShortcut url={url}>
