@@ -37,3 +37,8 @@ export const convertSecondsToUptime = (seconds: number): string => {
 
     return result.length > 0 ? result.join(', ') : '0 minutes';
 };
+
+export const isValidHttpUrl = (url: string) => {
+    const httpHttpsPattern = /^https?:\/\/\S+$/i;
+    return httpHttpsPattern.test(url);
+};

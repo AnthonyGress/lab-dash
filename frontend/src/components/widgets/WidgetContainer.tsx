@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 
 import { useServiceStatus } from '../../hooks/useServiceStatus';
 import { COLORS } from '../../theme/styles';
+import { isValidHttpUrl } from '../../utils/utils';
 
 type Props = {
     children: React.ReactNode;
@@ -89,7 +90,7 @@ export const WidgetContainer: React.FC<Props> = ({ children, editMode, onEdit, o
 
             {children}
 
-            {url && (
+            {url && isValidHttpUrl(url) && (
                 <Tooltip title={tooltipText} arrow placement='top' slotProps={{
                     tooltip: {
                         sx: {
