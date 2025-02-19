@@ -1,4 +1,5 @@
 import {
+    closestCenter,
     DndContext,
     DragOverlay,
     PointerSensor,
@@ -11,7 +12,7 @@ import {
     SortableContext,
 } from '@dnd-kit/sortable';
 import { Box, Grid2 as Grid } from '@mui/material';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { BlankAppShortcut } from './BlankAppShortcut';
 import { BlankWidget } from './BlankWidget';
@@ -35,10 +36,15 @@ export const DashboardGrid: React.FC<Props> = ({ editMode, items }) => {
     const [selectedItem, setSelectedItem] = useState<DashboardItem | null>(null);
     const [openEditModal, setOpenEditModal] = useState(false);
     const { setDashboardLayout } = useAppContext();
-    const sensors = useSensors(useSensor(PointerSensor));
+    const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: {
+        delay: 100, // Prevents accidental drags
+        tolerance: 5, // Ensures drag starts after small movement
+    } }));
+    const [isDragging, setIsDragging] = useState(false);
 
     const handleDragStart = (event: any) => {
         setActiveId(event.active.id);
+        setIsDragging(true);
     };
 
     const handleDragEnd = (event: any) => {
@@ -52,6 +58,7 @@ export const DashboardGrid: React.FC<Props> = ({ editMode, items }) => {
             });
         }
         setActiveId(null);
+        setIsDragging(false);
     };
 
     const handleDelete = (id: string) => {
@@ -68,12 +75,29 @@ export const DashboardGrid: React.FC<Props> = ({ editMode, items }) => {
         setOpenEditModal(true);
     };
 
+
+    useEffect(() => {
+        const disableScroll = (event: TouchEvent) => {
+            event.preventDefault();
+        };
+
+        if (isDragging) {
+            document.addEventListener('touchmove', disableScroll, { passive: false });
+        } else {
+            document.removeEventListener('touchmove', disableScroll);
+        }
+
+        return () => {
+            document.removeEventListener('touchmove', disableScroll);
+        };
+    }, [isDragging]);
     return (
         <>
             <DndContext
                 sensors={sensors}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
+                collisionDetection={closestCenter}
             >
                 <SortableContext items={items} strategy={rectSortingStrategy} disabled={!editMode}>
                     <Box sx={{ width: '100%', overflow: 'hidden' }}>

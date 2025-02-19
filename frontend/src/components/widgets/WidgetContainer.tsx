@@ -48,7 +48,7 @@ export const WidgetContainer: React.FC<Props> = ({ children, editMode, onEdit, o
                 width: '100%',
                 maxWidth: '100%',
                 flexGrow: 1,
-                minHeight: appShortcut ? '6rem' : { xs: '8rem', sm: '8rem', md: '14rem' },
+                minHeight: appShortcut ? '6rem' : { xs: '14rem' },
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -86,7 +86,9 @@ export const WidgetContainer: React.FC<Props> = ({ children, editMode, onEdit, o
                     </Menu>
                 </div>
             )}
+
             {children}
+
             {url && (
                 <Tooltip title={tooltipText} arrow placement='top' slotProps={{
                     tooltip: {
