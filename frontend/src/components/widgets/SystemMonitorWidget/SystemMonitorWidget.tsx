@@ -101,7 +101,7 @@ export const SystemMonitorWidget = () => {
     }, []);
 
     return (
-        <Grid container justifyContent={'space-evenly'} gap={0} sx={{ display: 'flex', width: '100%' }}>
+        <Grid container gap={0} sx={{ display: 'flex', width: '100%', justifyContent: 'center' }}>
             <div
                 onPointerDownCapture={(e) => e.stopPropagation()}
                 onClick={(e) => e.stopPropagation()}
