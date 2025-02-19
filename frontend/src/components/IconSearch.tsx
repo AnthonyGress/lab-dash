@@ -51,7 +51,7 @@ export const IconSearch = ({ control, errors }: Props) => {
                         options={iconList}
                         filterOptions={createFilterOptions({
                             matchFrom: 'any',
-                            limit: 100,
+                            limit: 50,
                         })}
                         getOptionLabel={(option) => option?.name ?? ''}
                         isOptionEqualToValue={(option, value) => option.name === value?.name}
