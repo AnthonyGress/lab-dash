@@ -6,7 +6,7 @@ import { TextFieldElement } from 'react-hook-form-mui';
 import shortid from 'shortid';
 
 import { DashApi } from '../api/dash-api';
-import { styles } from '../theme/styles';
+import { COLORS, styles } from '../theme/styles';
 import { theme } from '../theme/theme';
 import { Icon } from '../types';
 import { getIconPath } from '../utils/utils';
@@ -56,8 +56,15 @@ export const IconSearch = ({ control, errors }: Props) => {
                             setSelectedIcon(newValue);
                         }}
                         value={selectedIcon} // Use the selectedIcon state
-                        renderOption={(props, option) => (
-                            <Box component='li' {...props} sx={{ display: 'flex', alignItems: 'center' }} key={shortid.generate()}>
+                        renderOption={(props, option, { selected }) => (
+                            <Box component='li' {...props}   sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                '&:hover': {
+                                    backgroundColor: `${COLORS.GRAY} !important`, // 🔥 Force override
+
+                                },
+                            }} key={shortid.generate()}>
                                 <img src={getIconPath(option.path)} alt={option.name} width={24} style={{ marginRight: 8 }} key={shortid.generate()} crossOrigin='anonymous'/>
                                 <Typography variant='body2' key={shortid.generate()}>{option.name}</Typography>
                             </Box>
@@ -73,9 +80,15 @@ export const IconSearch = ({ control, errors }: Props) => {
                                     helperText={fieldState?.error?.message}
                                     sx={{
                                         '& .MuiOutlinedInput-root': {
-                                            '& fieldset': { borderColor: 'text.primary' },
+                                            '& fieldset': { borderColor: theme.palette.text.primary }, // Default border color
+                                            '&:hover fieldset': { borderColor: theme.palette.primary.main }, // On hover
+                                            '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main }, // On focus
+                                            '&.MuiInputBase-root.MuiOutlinedInput-root.Mui-error fieldset': {
+                                                borderColor: theme.palette.error.main, // Ensure error state doesn't turn black
+                                            },
+                                            '.MuiSvgIcon-root ': { fill: theme.palette.text.primary },
+
                                         },
-                                        '.MuiSvgIcon-root ': { fill: theme.palette.text.primary },
                                     }}
                                     slotProps={{
                                         inputLabel:

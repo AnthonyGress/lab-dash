@@ -4,12 +4,11 @@
 }
 
 * {
-  -webkit-touch-callout: none !important; /* Disable iOS long-press menu */
+  -webkit-touch-callout: none !important;
   -webkit-user-select: none !important; /* Prevent text selection */
   user-select: none !important;
   -webkit-tap-highlight-color: transparent !important; /* Remove blue highlight */
   touch-action: manipulation !important; /* Prevents long-press actions */
-  pointer-events: auto !important; /* Ensures interaction works correctly */
 }
 
 html, body {
@@ -38,7 +37,6 @@ a, img {
   -webkit-touch-callout: none !important;
   pointer-events: none !important;
 }
-
 
 #root {
   text-align: center;

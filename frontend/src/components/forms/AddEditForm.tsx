@@ -111,10 +111,12 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                         },
                                         '.MuiSvgIcon-root ': {
                                             fill: theme.palette.text.primary,
-                                        }
+                                        },
+                                        '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                        '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
                                     },
                                     width: '100%',
-                                    minWidth: isMobile ? '50vw' :'20vw'
+                                    minWidth: isMobile ? '60vw' :'20vw'
                                 }}
                                 slotProps={{
                                     inputLabel:
@@ -131,7 +133,9 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                         '& .MuiOutlinedInput-root': {
                                             '& fieldset': {
                                                 borderColor: 'text.primary',
-                                            }
+                                            },
+                                            '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                            '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
                                         },
                                     }}
                                     autoComplete='off'
@@ -147,7 +151,9 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                         '& .MuiOutlinedInput-root': {
                                             '& fieldset': {
                                                 borderColor: 'text.primary',
-                                            }
+                                            },
+                                            '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                            '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
                                         },
                                     }}
                                     autoComplete='off'
@@ -159,7 +165,9 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                 </Grid>
                                 <Grid>
                                     <IconSearch control={formContext.control} errors={errors}/>
-                                    <CheckboxElement label='Show Name' name='showLabel' sx={{ ml: 1, color: 'white' }}/>
+                                </Grid>
+                                <Grid>
+                                    <CheckboxElement label='Show Name' name='showLabel' sx={{ ml: 1, color: 'white', '& .MuiSvgIcon-root': { fontSize: 30 },  }}/>
                                 </Grid>
                             </>
                             }
@@ -173,7 +181,9 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                             },
                                             '.MuiSvgIcon-root ': {
                                                 fill: theme.palette.text.primary,
-                                            }
+                                            },
+                                            '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                            '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
                                         },
                                         width: '100%',
                                         minWidth: isMobile ? '50vw' :'20vw'

@@ -67,7 +67,7 @@ export const CenteredModal = ({ open, handleClose, children, width, height, titl
     }, [open]);
 
     return (
-        <Modal open={open} aria-labelledby='modal'>
+        <Modal open={open} aria-labelledby='modal' disableEnforceFocus disableAutoFocus>
             <Box sx={style}>
                 {/* AppBar with Title and Close Button */}
                 <AppBar position='static' sx={{ height: 50, borderRadius: '8px 8px 0 0' }} elevation={0}>
