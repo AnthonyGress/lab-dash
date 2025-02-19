@@ -47,33 +47,17 @@ export const CenteredModal = ({ open, handleClose, children, width, height, titl
     };
 
     useEffect(() => {
-        const preventScroll = (e: TouchEvent) => {
-            const listBox = document.querySelector('.MuiAutocomplete-listbox');
-            if (listBox && listBox.contains(e.target as Node)) {
-                // Allow scrolling within the Autocomplete listbox
-                return;
-            }
-            e.preventDefault(); // Prevent touch scroll outside of the allowed area
-        };
-
         if (open) {
             document.body.style.overflow = 'hidden';
             document.documentElement.style.overflow = 'hidden';
-
-            // Only block touchmove outside of the modal's scrollable area
-            document.addEventListener('touchmove', preventScroll, { passive: false });
         } else {
             document.body.style.overflow = '';
             document.documentElement.style.overflow = '';
-
-            document.removeEventListener('touchmove', preventScroll);
         }
 
         return () => {
             document.body.style.overflow = '';
             document.documentElement.style.overflow = '';
-
-            document.removeEventListener('touchmove', preventScroll);
         };
     }, [open]);
 

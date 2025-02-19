@@ -5,8 +5,6 @@
 
 * {
   -webkit-touch-callout: none !important;
-  -webkit-user-select: none !important; /* Prevent text selection */
-  user-select: none !important;
   -webkit-tap-highlight-color: transparent !important; /* Remove blue highlight */
   touch-action: manipulation !important; /* Prevents long-press actions */
 }
