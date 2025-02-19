@@ -1,7 +1,5 @@
 import CloseIcon from '@mui/icons-material/Close';
-import { AppBar, Box, Modal, Toolbar, Tooltip, Typography, useMediaQuery } from '@mui/material';
-import zIndex from '@mui/material/styles/zIndex';
-import console from 'console';
+import { AppBar, Backdrop, Box, Modal, styled, Toolbar, Tooltip, Typography, useMediaQuery } from '@mui/material';
 import { ReactNode, useEffect } from 'react';
 
 import { useWindowDimensions } from '../../hooks/useWindowDimensions';
@@ -16,6 +14,11 @@ type Props = {
     width?: string
     height?: string
 }
+
+const CustomBackdrop = styled(Backdrop)(() => ({
+    touchAction: 'none !important',
+    overflow: 'hidden !important'
+}));
 
 export const CenteredModal = ({ open, handleClose, children, width, height, title }: Props) => {
     const windowDimensions = useWindowDimensions();
@@ -46,23 +49,9 @@ export const CenteredModal = ({ open, handleClose, children, width, height, titl
         overflow: 'hidden'
     };
 
-    useEffect(() => {
-        if (open) {
-            document.body.style.overflow = 'hidden';
-            document.documentElement.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = '';
-            document.documentElement.style.overflow = '';
-        }
-
-        return () => {
-            document.body.style.overflow = '';
-            document.documentElement.style.overflow = '';
-        };
-    }, [open]);
-
     return (
-        <Modal open={open} aria-labelledby='modal' disableEnforceFocus disableAutoFocus>
+        <Modal open={open} aria-labelledby='modal' disableEnforceFocus disableAutoFocus slots={{ backdrop: CustomBackdrop }}
+        >
             <Box sx={style}>
                 {/* AppBar with Title and Close Button */}
                 <AppBar position='static' sx={{ height: '3rem', borderRadius: '8px 8px 0 0' }} elevation={0}>
