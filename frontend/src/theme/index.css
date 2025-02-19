@@ -22,6 +22,12 @@ html, body {
   height: 100%;
 }
 
+a, img {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+}
+
 div {
   -webkit-tap-highlight-color: transparent;
 }
