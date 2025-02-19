@@ -156,10 +156,18 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                             '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
                                         },
                                     }}
+                                    rules={{
+                                        validate: (value) =>
+                                            value.includes('://') || 'Invalid url. Ex "http://192.168.x.x" or "unifi-network://"',
+                                    }}
                                     autoComplete='off'
                                     slotProps={{
                                         inputLabel:
-                            { style: { color: theme.palette.text.primary } }
+                            { style: { color: theme.palette.text.primary } },
+                                        formHelperText: { sx: {
+                                            whiteSpace: 'normal',
+                                            maxWidth: '16vw',
+                                        }, }
                                     }}
                                     />
                                 </Grid>
