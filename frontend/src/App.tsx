@@ -18,14 +18,7 @@ function App() {
     return (
         <Box sx={{
             display: 'flex',
-            flexDirection: 'column',
-            height: '100vh',
-            width: '100vw',
-            overflow: 'hidden',
-            backgroundImage: 'url(/space.jpeg)',
-            backgroundRepeat: 'no-repeat',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
+            flexDirection: 'column'
         }}
         >
             <ResponsiveAppBar
@@ -34,10 +27,8 @@ function App() {
             />
             <Box component='main' sx={{
                 flexGrow: 1,
-                overflowY: 'auto',
                 padding: '2vh 0vw',
-                WebkitOverflowScrolling: 'touch',
-                // height: 'calc(100vh - 8vh)',
+                mt: '64px'
             }}>
                 <DashboardGrid editMode={editMode} items={dashboardLayout}/>
             </Box>

@@ -18,8 +18,16 @@ html, body {
   user-select: none;
   -webkit-user-select: none;
   -webkit-user-drag: none;
-  overflow: hidden;
-  height: 100%;
+  overflow-x: hidden; /* Prevent horizontal scroll */
+  -webkit-overflow-scrolling: touch; /* iOS smooth scrolling */
+  width: 100vw; /* Ensure no extra space */
+  background: url('/space4k-min.webp');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-attachment: scroll; /* Prevents distortion on mobile */
+  image-rendering: crisp-edges;
+  image-rendering: -webkit-optimize-contrast;
 }
 
 a, img {

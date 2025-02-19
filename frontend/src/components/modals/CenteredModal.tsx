@@ -1,7 +1,8 @@
 import CloseIcon from '@mui/icons-material/Close';
 import { AppBar, Box, Modal, Toolbar, Tooltip, Typography } from '@mui/material';
 import zIndex from '@mui/material/styles/zIndex';
-import { ReactNode } from 'react';
+import console from 'console';
+import { ReactNode, useEffect } from 'react';
 
 import { useWindowDimensions } from '../../hooks/useWindowDimensions';
 
@@ -40,6 +41,30 @@ export const CenteredModal = ({ open, handleClose, children, width, height, titl
         boxShadow: 24,
         overflow: 'hidden'
     };
+
+    useEffect(() => {
+        const preventScroll = (e: TouchEvent) => e.preventDefault();
+
+        if (open) {
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
+
+            // Disable touch scroll for mobile
+            document.addEventListener('touchmove', preventScroll, { passive: false });
+        } else {
+            document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
+
+            document.removeEventListener('touchmove', preventScroll);
+        }
+
+        return () => {
+            document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
+
+            document.removeEventListener('touchmove', preventScroll);
+        };
+    }, [open]);
 
     return (
         <Modal open={open} aria-labelledby='modal'>

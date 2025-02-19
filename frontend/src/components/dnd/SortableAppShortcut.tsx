@@ -34,7 +34,7 @@ export const SortableAppShortcut: React.FC<Props> = ({ id, url, name, iconName, 
             }}
         >
             <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit} appShortcut url={url}>
-                <AppShortcut url={url} name={name} iconName={iconName} showLabel={showLabel}/>
+                <AppShortcut url={url} name={name} iconName={iconName} showLabel={showLabel} editMode={editMode}/>
             </WidgetContainer>
         </Grid2>
     );

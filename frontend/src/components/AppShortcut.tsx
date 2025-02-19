@@ -9,17 +9,25 @@ type Props = {
     name: string;
     iconName: string;
     showLabel?: boolean;
+    editMode?: boolean;
 }
 
-export const AppShortcut = ({ url, name, iconName, showLabel }: Props) => {
+export const AppShortcut = ({ url, name, iconName, showLabel, editMode }: Props) => {
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+    const handleClick = (event: React.MouseEvent) => {
+        if (editMode) {
+            event.preventDefault(); // Prevent navigation in edit mode
+            event.stopPropagation(); // Prevent drag interference
+        }
+    };
+
     return (
-        <Grid className='scale'>
-            <a href={url} rel='noopener noreferrer' target='_blank'>
+        <Grid className='scale' onMouseDown={handleClick}>
+            <a href={url} rel='noopener noreferrer' target='_blank' onClick={handleClick}>
                 <Box>
                     <Box sx={styles.shortcutIcon}>
-                        <img src={getIconPath(iconName)} alt={name} width={isMobile ? '50%' : '65%'} crossOrigin='anonymous'/>
+                        <img src={getIconPath(iconName)} alt={name} width={isMobile ? '50%' : '65%'} crossOrigin='anonymous' draggable='false'/>
                         {showLabel && <Box>
                             <Typography fontSize={isMobile ? '1rem' : '1.2rem'}>{name}</Typography>
                         </Box>}
