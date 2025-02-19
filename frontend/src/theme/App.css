@@ -3,9 +3,52 @@
   src: url('earthorbiter.ttf') format('truetype'); /* Chrome 4+, Firefox 3.5, Opera 10+, Safari 3—5 */
 }
 
+* {
+  -webkit-touch-callout: none !important; /* Disable iOS long-press menu */
+  -webkit-user-select: none !important; /* Prevent text selection */
+  user-select: none !important;
+  -webkit-tap-highlight-color: transparent !important; /* Remove blue highlight */
+  touch-action: manipulation !important; /* Prevents long-press actions */
+  pointer-events: auto !important; /* Ensures interaction works correctly */
+}
+
+html, body {
+  user-select: none !important;
+  -ms-user-select: none;
+  -moz-user-select: -moz-none;
+  -webkit-user-select: none !important;
+  -webkit-user-drag: none !important;
+  overflow-x: hidden; /* Prevent horizontal scroll */
+  -webkit-overflow-scrolling: touch; /* iOS smooth scrolling */
+  width: 100vw; /* Ensure no extra space */
+  background: url('/space4k-min.webp');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-attachment: scroll; /* Prevents distortion on mobile */
+  image-rendering: crisp-edges;
+  image-rendering: -webkit-optimize-contrast;
+  -webkit-touch-callout: none !important;
+}
+
+a, img {
+  -webkit-user-drag: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -webkit-touch-callout: none !important;
+  pointer-events: none !important;
+}
+
+
 #root {
   text-align: center;
   margin: auto;
+  user-select: none !important;
+  -ms-user-select: none;
+  -moz-user-select: -moz-none;
+  -webkit-user-select: none !important;
+  -webkit-user-drag: none !important;
+  -webkit-touch-callout: none !important;
 }
 
 .signature {

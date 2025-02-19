@@ -11,31 +11,6 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-}
-
-html, body {
-  user-select: noselect !important;
-  -ms-user-select: none;
-  -moz-user-select: -moz-none;
-  -webkit-user-select: none !important;
-  -webkit-user-drag: none !important;
-  overflow-x: hidden; /* Prevent horizontal scroll */
-  -webkit-overflow-scrolling: touch; /* iOS smooth scrolling */
-  width: 100vw; /* Ensure no extra space */
-  background: url('/space4k-min.webp');
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-position: center;
-  background-attachment: scroll; /* Prevents distortion on mobile */
-  image-rendering: crisp-edges;
-  image-rendering: -webkit-optimize-contrast;
-}
-
-a, img {
-  -webkit-user-drag: none;
-  user-select: none;
-  -webkit-user-select: none;
 }
 
 div {
