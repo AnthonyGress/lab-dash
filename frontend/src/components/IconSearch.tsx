@@ -48,7 +48,7 @@ export const IconSearch = ({ control, errors }: Props) => {
                 render={({ field, fieldState }) => (
                     <Autocomplete
                         {...field}
-                        options={[]}
+                        options={iconList}
                         getOptionLabel={(option) => option?.name ?? ''}
                         isOptionEqualToValue={(option, value) => option.name === value?.name}
                         onChange={(_, newValue) => {
