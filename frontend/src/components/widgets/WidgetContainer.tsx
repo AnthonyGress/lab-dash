@@ -13,10 +13,10 @@ type Props = {
     appShortcut?: boolean;
     placeholder?: boolean;
     url?: string
-
+    rowPlaceholder?: boolean;
 };
 
-export const WidgetContainer: React.FC<Props> = ({ children, editMode, onEdit, onDelete, appShortcut=false, placeholder=false, url }) => {
+export const WidgetContainer: React.FC<Props> = ({ children, editMode, onEdit, onDelete, appShortcut=false, placeholder=false, url, rowPlaceholder }) => {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
 
@@ -48,7 +48,7 @@ export const WidgetContainer: React.FC<Props> = ({ children, editMode, onEdit, o
                 width: '100%',
                 maxWidth: '100%',
                 flexGrow: 1,
-                minHeight: appShortcut ? '6rem' : { xs: '14rem' },
+                minHeight: appShortcut || rowPlaceholder ? '6rem' : { xs: '14rem' },
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',

@@ -55,13 +55,13 @@ export const IconSearch = ({ control, errors }: Props) => {
                             field.onChange(newValue);
                             setSelectedIcon(newValue);
                         }}
-                        value={selectedIcon} // Use the selectedIcon state
-                        renderOption={(props, option, { selected }) => (
+                        value={selectedIcon}
+                        renderOption={(props, option) => (
                             <Box component='li' {...props}   sx={{
                                 display: 'flex',
                                 alignItems: 'center',
                                 '&:hover': {
-                                    backgroundColor: `${COLORS.GRAY} !important`, // 🔥 Force override
+                                    backgroundColor: `${COLORS.GRAY} !important`
 
                                 },
                             }} key={shortid.generate()}>
@@ -80,11 +80,11 @@ export const IconSearch = ({ control, errors }: Props) => {
                                     helperText={fieldState?.error?.message}
                                     sx={{
                                         '& .MuiOutlinedInput-root': {
-                                            '& fieldset': { borderColor: theme.palette.text.primary }, // Default border color
-                                            '&:hover fieldset': { borderColor: theme.palette.primary.main }, // On hover
-                                            '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main }, // On focus
+                                            '& fieldset': { borderColor: theme.palette.text.primary },
+                                            '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                            '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
                                             '&.MuiInputBase-root.MuiOutlinedInput-root.Mui-error fieldset': {
-                                                borderColor: theme.palette.error.main, // Ensure error state doesn't turn black
+                                                borderColor: theme.palette.error.main,
                                             },
                                             '.MuiSvgIcon-root ': { fill: theme.palette.text.primary },
 

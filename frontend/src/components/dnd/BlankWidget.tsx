@@ -30,7 +30,7 @@ export const BlankWidget: React.FC<Props> = ({ id, label, editMode, isOverlay = 
                 transform: transform ? CSS.Translate.toString(transform) : undefined,
             }}
         >
-            <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit} placeholder>
+            <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit} placeholder rowPlaceholder={row}>
                 <Typography variant='h6' textAlign='center'>
                     {/* {label} */}
                 </Typography>
