@@ -33,6 +33,7 @@
     "react-hook-form": "^7.54.2",
     "react-hook-form-mui": "^7.5.0",
     "react-icons": "^5.4.0",
+    "react-virtualized": "^9.22.6",
     "shortid": "^2.2.17",
     "sweetalert2": "^11.16.0"
   },
@@ -40,6 +41,7 @@
     "@types/node": "^22.10.7",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
+    "@types/react-virtualized": "^9.22.2",
     "@types/shortid": "^2.2.0",
     "@vitejs/plugin-react-swc": "^3.8.0",
     "eslint": "^9.19.0",

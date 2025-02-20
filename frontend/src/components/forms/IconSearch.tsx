@@ -5,11 +5,12 @@ import { Controller } from 'react-hook-form';
 import { TextFieldElement } from 'react-hook-form-mui';
 import shortid from 'shortid';
 
-import { DashApi } from '../api/dash-api';
-import { COLORS, styles } from '../theme/styles';
-import { theme } from '../theme/theme';
-import { Icon } from '../types';
-import { getIconPath } from '../utils/utils';
+import { VirtualizedListbox } from './VirtualizedListBox';
+import { DashApi } from '../../api/dash-api';
+import { COLORS, styles } from '../../theme/styles';
+import { theme } from '../../theme/theme';
+import { Icon } from '../../types';
+import { getIconPath } from '../../utils/utils';
 
 type Props = {
     control: any;
@@ -53,6 +54,7 @@ export const IconSearch = ({ control, errors }: Props) => {
                             matchFrom: 'any',
                             limit: 50,
                         })}
+                        ListboxComponent={VirtualizedListbox}
                         getOptionLabel={(option) => option?.name ?? ''}
                         isOptionEqualToValue={(option, value) => option.name === value?.name}
                         onChange={(_, newValue) => {
@@ -104,7 +106,7 @@ export const IconSearch = ({ control, errors }: Props) => {
                             </Box>
                         )}
                         noOptionsText='No icons found'
-                        slotProps={{ listbox: { sx: { maxHeight: '25vh',  } } }}
+                        // slotProps={{ listbox: { sx: { maxHeight: '25vh',  } } }}
                     />
                 )}
             />

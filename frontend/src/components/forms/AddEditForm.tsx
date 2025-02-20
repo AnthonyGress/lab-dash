@@ -4,13 +4,13 @@ import { useForm } from 'react-hook-form';
 import {  CheckboxElement, FormContainer, SelectElement, TextFieldElement } from 'react-hook-form-mui';
 
 
+import { IconSearch } from './IconSearch';
 import { DashApi } from '../../api/dash-api';
 import { useAppContext } from '../../context/useAppContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { COLORS, styles } from '../../theme/styles';
 import { theme } from '../../theme/theme';
 import { DashboardItem, Icon, ITEM_TYPE, NewItem } from '../../types';
-import { IconSearch } from '../IconSearch';
 
 type Props = {
     handleClose: () => void
