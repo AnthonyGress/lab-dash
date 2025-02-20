@@ -205,7 +205,7 @@ export const WeatherWidget: React.FC = () => {
                     {/* 1 Day */}
                     {renderCurrentWeatherItem()}
                     {/* 5 Day */}
-                    <Grid container gap={{ xs: 3, sm: 2, md: 3, lg: 5 }} sx={{ px: 2 }}>
+                    <Grid container gap={{ xs: 3, sm: 2, md: 4, lg: 4 }} sx={{ px: 1 }}>
                         { forecastDays > 1 && renderWeatherItem() }
                     </Grid>
                 </Grid>
