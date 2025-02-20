@@ -15,11 +15,6 @@ type Props = {
     height?: string
 }
 
-const CustomBackdrop = styled(Backdrop)(() => ({
-    touchAction: 'none !important',
-    overflow: 'hidden !important'
-}));
-
 export const CenteredModal = ({ open, handleClose, children, width, height, title }: Props) => {
     const windowDimensions = useWindowDimensions();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -50,8 +45,7 @@ export const CenteredModal = ({ open, handleClose, children, width, height, titl
     };
 
     return (
-        <Modal open={open} aria-labelledby='modal'
-        >
+        <Modal open={open} aria-labelledby='modal' disableEnforceFocus>
             <Box sx={style}>
                 {/* AppBar with Title and Close Button */}
                 <AppBar position='static' sx={{ height: '3rem', borderRadius: '8px 8px 0 0' }} elevation={0}>

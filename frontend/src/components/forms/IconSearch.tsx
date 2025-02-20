@@ -54,6 +54,8 @@ export const IconSearch = ({ control, errors }: Props) => {
                             matchFrom: 'any',
                             limit: 50,
                         })}
+                        disablePortal
+                        blurOnSelect={true}
                         ListboxComponent={VirtualizedListbox}
                         getOptionLabel={(option) => option?.name ?? ''}
                         isOptionEqualToValue={(option, value) => option.name === value?.name}

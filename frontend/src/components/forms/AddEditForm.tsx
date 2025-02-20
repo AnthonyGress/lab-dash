@@ -38,7 +38,6 @@ type FormValues = {
 };
 
 export const AddEditForm = ({ handleClose, existingItem }: Props) => {
-    const [iconList, setIconList] = useState<Icon[]>([]);
     const { formState: { errors } } = useForm();
     const { dashboardLayout, addItem, updateItem } = useAppContext();
     const  isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -77,16 +76,6 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
         formContext.reset();
         handleClose();
     };
-
-    const fetchIconList = async () => {
-        const list = await DashApi.getIconList();
-        console.log(list);
-        setIconList(list);
-    };
-
-    useEffect(() => {
-        fetchIconList();
-    }, []);
 
     return (
         <Grid
