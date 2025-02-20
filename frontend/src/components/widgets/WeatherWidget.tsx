@@ -123,7 +123,7 @@ export const WeatherWidget: React.FC = () => {
 
     const renderCurrentWeatherItem = () => {
         return weatherData &&
-        <Box mb={1}>
+        <Box mt={2}>
             <Box sx={styles.center}>
                 <Box>{weatherDescriptions[weatherData?.current?.weathercode]?.icon}</Box>
                 <Box ml={1} sx={{ fontSize: '1.5rem' }}>{convertTemperature(weatherData.current?.temperature_2m)}°{isFahrenheit ? 'F' : 'C'}</Box>
@@ -195,17 +195,17 @@ export const WeatherWidget: React.FC = () => {
     };
 
     return (
-        <CardContent sx={{ p: 1 }}>
+        <CardContent sx={{ padding: 0, }}>
             {loading ? (
                 <Box sx={styles.center}>
                     <CircularProgress sx={{ mt: 2 }} />
                 </Box>
             ) : weatherData ? (
-                <Grid sx={styles.vcenter} container>
+                <Grid>
                     {/* 1 Day */}
                     {renderCurrentWeatherItem()}
                     {/* 5 Day */}
-                    <Grid container gap={{ xs: 3 }}>
+                    <Grid container gap={{ xs: 3, sm: 2, md: 5 }} sx={{ px: 2 }}>
                         { forecastDays > 1 && renderWeatherItem() }
                     </Grid>
                 </Grid>

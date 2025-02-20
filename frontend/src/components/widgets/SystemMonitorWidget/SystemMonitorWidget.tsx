@@ -111,6 +111,7 @@ export const SystemMonitorWidget = () => {
                         position: 'absolute',
                         top: 0,
                         left: 0,
+                        zIndex: 99
                     }}
                     onClick={() => setOpenSystemModal(true)}
                 >

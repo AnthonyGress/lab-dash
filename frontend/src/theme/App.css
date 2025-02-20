@@ -10,12 +10,6 @@
 }
 
 html, body {
-  user-select: none !important;
-  -ms-user-select: none;
-  -moz-user-select: -moz-none;
-  -webkit-user-select: none !important;
-  -webkit-user-drag: none !important;
-  overflow-x: hidden; /* Prevent horizontal scroll */
   -webkit-overflow-scrolling: touch; /* iOS smooth scrolling */
   width: 100vw; /* Ensure no extra space */
   background: url('/space4k-min.webp');
@@ -33,7 +27,6 @@ a, img {
   user-select: none !important;
   -webkit-user-select: none !important;
   -webkit-touch-callout: none !important;
-  pointer-events: none !important;
 }
 
 #root {

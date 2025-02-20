@@ -1,10 +1,8 @@
 import { Box, Typography } from '@mui/material';
 import { Gauge, gaugeClasses } from '@mui/x-charts/Gauge';
 import React from 'react';
-import { FaMemory } from 'react-icons/fa';
-import { FaServer } from 'react-icons/fa';
-import { FaMicrochip } from 'react-icons/fa6';
-import { FaTemperatureQuarter } from 'react-icons/fa6';
+
+import { theme } from '../../../theme/theme';
 
 
 interface GaugeWidgetProps {
@@ -16,10 +14,11 @@ interface GaugeWidgetProps {
 }
 
 export const GaugeWidget: React.FC<GaugeWidgetProps> = ({ value, title, size, temperature, total }) => {
+
     return (
         <Box position='relative' display='inline-flex'>
             {/* Gauge Chart */}
-            <Gauge value={value} valueMax={total ? total : 100} startAngle={-150} endAngle={150} cornerRadius='50%' sx={(theme) => (
+            <Gauge value={value} valueMax={total ? total : 100} startAngle={-150} endAngle={150} cornerRadius='50%' sx={
                 { '& .MuiGauge-valueText': { display: 'none' },
                     [`& .${gaugeClasses.valueArc}`]: {
                         fill: 'primary.main',
@@ -27,11 +26,11 @@ export const GaugeWidget: React.FC<GaugeWidgetProps> = ({ value, title, size, te
                     [`& .${gaugeClasses.referenceArc}`]: {
                         fill: theme.palette.text.disabled,
                     },
-                    width: { xs: 108, xl: 135 },
-                    height: { xs: 135, xl: 135 },
+                    width: { xs: 108, sm: 80, md: 108, xl: 135 },
+                    height: { xs: 135, sm: 120, md: 130, xl: 135 },
                     pointerEvents: 'none', // Allows scrolling through the SVG
                     touchAction: 'none',
-                })
+                }
             } />
             {/* Center Content */}
             <Box
@@ -46,13 +45,13 @@ export const GaugeWidget: React.FC<GaugeWidgetProps> = ({ value, title, size, te
                     flexDirection: 'column',
                 }}
             >
-                <Typography variant='h6' fontWeight='bold'>
+                <Typography fontSize={{ xs: 20, sm: 17, md: 22, lg: 20 }} fontWeight='bold'>
                     {value}{temperature ? '°C': '%'}
                 </Typography>
             </Box>
             <Box
                 position='absolute'
-                top='85%'
+                top='86%'
                 left='50%'
                 sx={{
                     transform: 'translate(-50%, -50%)',

@@ -21,7 +21,7 @@ export const SortableSystemMonitorWidget: React.FC<Props> = ({ id, editMode, isO
 
     return (
         <Grid2
-            size={{ xs: 12, md: 6, lg: 4, xl: 4 }}
+            size={{ xs: 12, sm: 6, md: 6, lg: 4, xl: 4 }}
             ref={!isOverlay ? setNodeRef : undefined}
             {...(!isOverlay ? attributes : {})}
             {...(!isOverlay ? listeners : {})}

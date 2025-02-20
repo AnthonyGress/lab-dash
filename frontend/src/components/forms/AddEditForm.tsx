@@ -1,4 +1,4 @@
-import { Box, Button, Grid2 as Grid } from '@mui/material';
+import { Box, Button, Grid2 as Grid, useMediaQuery } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import {  CheckboxElement, FormContainer, SelectElement, TextFieldElement } from 'react-hook-form-mui';
@@ -41,6 +41,8 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
     const [iconList, setIconList] = useState<Icon[]>([]);
     const { formState: { errors } } = useForm();
     const { dashboardLayout, addItem, updateItem } = useAppContext();
+    const  isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
     const formContext = useForm({
         defaultValues: {
             shortcutName: existingItem?.label || '',
@@ -52,7 +54,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                 : null // Ensure correct structure
         }
     });
-    const isMobile = useIsMobile();
+
     const selectedItemType = formContext.watch('itemType');
 
     const handleSubmit = (data: FormValues) => {
@@ -203,7 +205,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                     />
                                 </Grid>
                             }
-                            <Button variant='contained' type='submit'>{existingItem ? 'Update' : 'Add'}</Button>
+                            <Button variant='contained' type='submit' sx={{ minHeight: '3rem' }}>{existingItem ? 'Update' : 'Add'}</Button>
                         </Grid>
                     </FormContainer>
                 </Box>

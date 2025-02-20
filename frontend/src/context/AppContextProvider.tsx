@@ -14,7 +14,7 @@ type Props = {
 
 export const AppContextProvider = ({ children }: Props) => {
     const [dashboardLayout, setDashboardLayout] = useState<DashboardItem[]>(initialItems);
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const  isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     const getSavedLayout = async () => {
         console.log('Fetching saved layout');

@@ -1,6 +1,6 @@
 import { Add } from '@mui/icons-material';
 import MenuIcon from '@mui/icons-material/Menu';
-import { Button } from '@mui/material';
+import { Button, useMediaQuery } from '@mui/material';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
@@ -18,6 +18,7 @@ import { useAppContext } from '../context/useAppContext';
 import { COLORS, styles } from '../theme/styles';
 import { AddEditForm } from './forms/AddEditForm';
 import { CenteredModal } from './modals/CenteredModal';
+import { theme } from '../theme/theme';
 
 const pages: string[] = [];
 // const settings = ['Edit', 'Account', 'Dashboard', 'Logout'];
@@ -33,6 +34,7 @@ export const ResponsiveAppBar = ({ editMode, setEditMode, customTitle }: Props) 
     const [title, setTitle] = useState(customTitle || 'Lab Dash');
     const [anchorElMenu, setAnchorElMenu] = useState<null | HTMLElement>(null);
     const [openAddModal, setOpenAddModal] = useState(false);
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     const { dashboardLayout, saveLayout, refreshDashboard } = useAppContext();
     const handleClose = () => setOpenAddModal(false);
@@ -66,7 +68,7 @@ export const ResponsiveAppBar = ({ editMode, setEditMode, customTitle }: Props) 
     return (
         <AppBar position='fixed' sx={{ backgroundColor: COLORS.TRANSPARENT_GRAY, backdropFilter: 'blur(6px)' }}>
             <Container sx={{ margin: 0, padding: 0, minWidth: '100%' }}>
-                <Toolbar disableGutters sx={{ justifyContent: 'space-between' }}>
+                <Toolbar disableGutters sx={{ justifyContent: 'space-between', width: '100%' }}>
                     {/* Desktop */}
                     <Box sx={styles.center}>
                         <Logo sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }}/>
@@ -75,6 +77,7 @@ export const ResponsiveAppBar = ({ editMode, setEditMode, customTitle }: Props) 
                             noWrap
                             sx={{
                                 mr: 2,
+                                flexGrow: 1,
                                 display: { xs: 'none', md: 'flex' },
                                 fontFamily: 'Earth Orbiter',
                                 letterSpacing: '.1rem',
@@ -88,7 +91,7 @@ export const ResponsiveAppBar = ({ editMode, setEditMode, customTitle }: Props) 
 
                     {/* Mobile */}
                     <Logo sx={{ display: { xs: 'flex', md: 'none' }, ml: 2, mr: 2 }} />
-                    {!editMode && <Typography
+                    {<Typography
                         variant='h5'
                         noWrap
                         sx={{
@@ -100,7 +103,8 @@ export const ResponsiveAppBar = ({ editMode, setEditMode, customTitle }: Props) 
                             color: 'inherit',
                             textDecoration: 'none',
                         }}
-                    >{title}
+                    >
+                        {(!editMode && isMobile) && title}
                     </Typography>}
 
                     <Box sx={{ flexGrow: 0, display: 'flex' }}>

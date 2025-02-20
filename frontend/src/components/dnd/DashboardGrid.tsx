@@ -21,6 +21,7 @@ import { SortableDateTimeWidget } from './SortableDateTime';
 import { SortableSystemMonitorWidget } from './SortableSystemMonitor';
 import { SortableWeatherWidget } from './SortableWeather';
 import { useAppContext } from '../../context/useAppContext';
+import { styles } from '../../theme/styles';
 import { DashboardItem, ITEM_TYPE } from '../../types';
 import { AddEditForm } from '../forms/AddEditForm';
 import { CenteredModal } from '../modals/CenteredModal';
@@ -99,6 +100,7 @@ export const DashboardGrid: React.FC<Props> = ({ editMode, items }) => {
             document.removeEventListener('touchmove', disableScroll);
         };
     }, [isDragging]);
+
     return (
         <>
             <DndContext
@@ -108,8 +110,8 @@ export const DashboardGrid: React.FC<Props> = ({ editMode, items }) => {
                 collisionDetection={closestCorners}
             >
                 <SortableContext items={items} strategy={rectSortingStrategy} disabled={!editMode}>
-                    <Box sx={{ width: '100%', overflow: 'hidden' }}>
-                        <Grid container spacing={2} sx={{ width: '100%', margin: 0, flexWrap: 'wrap', p:2 }}>
+                    <Box sx={{ width: '100%', ...styles.center }}>
+                        <Grid container sx={{ width: '100%', px: 2, py: 2 }} spacing={2}>
                             {items.map((item) => {
                                 switch (item.type) {
                                 case ITEM_TYPE.WEATHER_WIDGET:
