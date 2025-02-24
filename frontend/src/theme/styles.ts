@@ -1,7 +1,10 @@
 export enum COLORS {
     GRAY = '#2e2e2e',
     DARK_GRAY = '#242424',
+    LIGHT_GRAY = '#c9c9c9',
+    PURPLE = '#734CDE',
     TRANSPARENT_GRAY = 'rgba(46,46,46, .7)',
+    TRANSPARENT_DARK_GRAY = 'rgba(46,46,46, .9)',
     BORDER = '#424242'
 }
 

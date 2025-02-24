@@ -1,39 +1,20 @@
-import { Box } from '@mui/material';
-import { useEffect, useState } from 'react';
+import './theme/App.css';
+import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 
 import { DashboardGrid } from './components/dnd/DashboardGrid';
-import { ResponsiveAppBar } from './components/ResponsiveAppBar';
-import { useAppContext } from './context/useAppContext';
-import './theme/App.css';
+import { WithNav } from './components/navbar/WithNav';
+import { SettingsPage } from './components/SettingsPage';
 
-function App() {
-    const [editMode, setEditMode] = useState(false);
-    const { dashboardLayout, refreshDashboard } = useAppContext();
-
-
-    useEffect(() => {
-        refreshDashboard();
-    }, []);
+export const App = () => {
 
     return (
-        <Box sx={{
-            display: 'flex',
-            flexDirection: 'column'
-        }}
-        >
-            <ResponsiveAppBar
-                editMode={editMode}
-                setEditMode={setEditMode}
-            />
-            <Box component='main' sx={{
-                flexGrow: 1,
-                padding: '2vh 0vw',
-                mt: '64px'
-            }}>
-                <DashboardGrid editMode={editMode} items={dashboardLayout}/>
-            </Box>
-        </Box>
+        <Router>
+            <Routes>
+                <Route element={<WithNav />}>
+                    <Route path='/' element={<DashboardGrid />}/>
+                    <Route path='/settings' element={<SettingsPage />}/>
+                </Route>
+            </Routes>
+        </Router>
     );
-}
-
-export default App;
+};

@@ -21,6 +21,7 @@ console.log('Serving icons from:', iconsPath);
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/icon-list', express.static(iconListPath));
@@ -38,5 +39,5 @@ app.use(errorHandler);
 
 // Start Server
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Server running on port ${PORT}, accessible via LAN`);
+    console.log(`Server running on port ${PORT}, accessible via LAN`);
 });

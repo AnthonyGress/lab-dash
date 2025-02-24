@@ -24,3 +24,4 @@ dist-ssr
 *.sw?
 build
 backend/src/config/config.json
+backend/src/public/uploads

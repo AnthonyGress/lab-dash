@@ -27,16 +27,14 @@ import { AddEditForm } from '../forms/AddEditForm';
 import { CenteredModal } from '../modals/CenteredModal';
 import { ConfirmationOptions, PopupManager } from '../modals/PopupManager';
 
-type Props = {
-    editMode: boolean;
-    items: DashboardItem[],
-}
 
-export const DashboardGrid: React.FC<Props> = ({ editMode, items }) => {
+export const DashboardGrid: React.FC = () => {
     const [activeId, setActiveId] = useState<string | null>(null);
     const [selectedItem, setSelectedItem] = useState<DashboardItem | null>(null);
     const [openEditModal, setOpenEditModal] = useState(false);
-    const { setDashboardLayout } = useAppContext();
+    const { dashboardLayout, setDashboardLayout, refreshDashboard, editMode } = useAppContext();
+    const items = dashboardLayout;
+
     const isMobile = useMemo(() => {
         return (
             'ontouchstart' in window ||
@@ -100,6 +98,10 @@ export const DashboardGrid: React.FC<Props> = ({ editMode, items }) => {
             document.removeEventListener('touchmove', disableScroll);
         };
     }, [isDragging]);
+
+    useEffect(() => {
+        refreshDashboard();
+    }, []);
 
     return (
         <>

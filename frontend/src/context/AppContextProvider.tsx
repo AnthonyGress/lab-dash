@@ -14,6 +14,7 @@ type Props = {
 
 export const AppContextProvider = ({ children }: Props) => {
     const [dashboardLayout, setDashboardLayout] = useState<DashboardItem[]>(initialItems);
+    const [editMode, setEditMode] = useState(false);
     const  isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     const getSavedLayout = async () => {
@@ -86,7 +87,7 @@ export const AppContextProvider = ({ children }: Props) => {
     const { Provider } = AppContext;
 
     return (
-        <Provider value={{ dashboardLayout, refreshDashboard, saveLayout, addItem, setDashboardLayout, updateItem }}>
+        <Provider value={{ dashboardLayout, refreshDashboard, saveLayout, addItem, setDashboardLayout, updateItem, editMode, setEditMode }}>
             {children}
         </Provider>
     );

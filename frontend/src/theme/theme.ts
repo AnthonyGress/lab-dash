@@ -6,7 +6,10 @@ export const theme = createTheme({
     typography: {
         button: {
             textTransform: 'none'
-        }
+        },
+        caption: {
+            color: COLORS.LIGHT_GRAY, // Change caption text color globally (e.g., orange)
+        },
     },
     palette: {
         primary: {
@@ -54,6 +57,43 @@ export const theme = createTheme({
                     '& .MuiAutocomplete-noOptions': {
                         color: '#C9C9C9',
                     },
+                },
+            },
+        },
+        MuiListItem: {
+            styleOverrides: {
+                root: {
+                    '&:hover': {
+                        backgroundColor: COLORS.GRAY, // Change this to your preferred hover color
+                    },
+                },
+            },
+        },
+        MuiTextField: {
+            styleOverrides: {
+                root: {
+                    '& .MuiOutlinedInput-root': {
+                        '& fieldset': {
+                            borderColor: COLORS.LIGHT_GRAY,
+                        },
+                        '&:hover fieldset': { borderColor: COLORS.PURPLE },
+                        '&.Mui-focused fieldset': { borderColor: COLORS.PURPLE },
+                    },
+                }
+            },
+            defaultProps: {
+                slotProps: {
+                    inputLabel: {
+                        style: { color: 'inherit' },
+                    },
+                },
+            },
+        },
+        MuiPaper: {
+            styleOverrides: {
+                root: {
+                    backgroundColor: COLORS.TRANSPARENT_DARK_GRAY,
+                    backdropFilter: 'blur(6px)',
                 },
             },
         },

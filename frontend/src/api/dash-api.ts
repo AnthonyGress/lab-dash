@@ -68,4 +68,22 @@ export class DashApi {
             return 'offline';
         }
     }
+
+    public static async uploadBackgroundImage(file: string): Promise<any> {
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const res = await axios({
+                method: 'POST',
+                url: `${BACKEND_URL}/api/system/upload`,
+                data: formData,
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            return res;
+        } catch (error) {
+            console.error('Failed to upload image:', error);
+        }
+    }
 }
