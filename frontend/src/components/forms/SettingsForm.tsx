@@ -21,14 +21,18 @@ export const SettingsForm = () => {
     const handleSubmit = async (data: any) => {
         console.log(data);
 
-        if (data.selectedFile instanceof File) { // ✅ Ensure it's a File object
+        if (data.selectedFile instanceof File) {
             const res = await DashApi.uploadBackgroundImage(data.selectedFile);
             console.log(res);
 
-            // TODO: set in config
+            if (res?.filePath) {
+                const configRes = await DashApi.saveConfig({ backgroundImage: res.filePath });
+            }
         }
 
-        // TODO: set title in config/app context
+        if (data.title) {
+            const configRes = await DashApi.saveConfig({ title: data.title });
+        }
     };
 
     return (

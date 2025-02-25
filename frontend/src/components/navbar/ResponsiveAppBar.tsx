@@ -11,7 +11,7 @@ import Typography from '@mui/material/Typography';
 import { useState } from 'react';
 import React from 'react';
 import { FaGear, FaHouse, FaWrench } from 'react-icons/fa6';
-import { NavLink } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 
 import { useAppContext } from '../../context/useAppContext';
 import { COLORS, styles } from '../../theme/styles';
@@ -69,24 +69,26 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                 <Container sx={{ margin: 0, padding: 0, minWidth: '100%' }}>
                     <Toolbar disableGutters sx={{ justifyContent: 'space-between', width: '100%' }}>
                         {/* Desktop */}
-                        <Box sx={styles.center}>
-                            <Logo sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }}/>
-                            <Typography
-                                variant='h5'
-                                noWrap
-                                sx={{
-                                    mr: 2,
-                                    flexGrow: 1,
-                                    display: { xs: 'none', md: 'flex' },
-                                    fontFamily: 'Earth Orbiter',
-                                    letterSpacing: '.1rem',
-                                    color: 'inherit',
-                                    textDecoration: 'none',
-                                }}
-                            >
-                                {title}
-                            </Typography>
-                        </Box>
+                        <Link to='/'>
+                            <Box sx={styles.center}>
+                                <Logo sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }}/>
+                                <Typography
+                                    variant='h5'
+                                    noWrap
+                                    sx={{
+                                        mr: 2,
+                                        flexGrow: 1,
+                                        display: { xs: 'none', md: 'flex' },
+                                        fontFamily: 'Earth Orbiter',
+                                        letterSpacing: '.1rem',
+                                        color: 'inherit',
+                                        textDecoration: 'none',
+                                    }}
+                                >
+                                    {title}
+                                </Typography>
+                            </Box>
+                        </Link>
 
                         {/* Mobile */}
                         <Logo sx={{ display: { xs: 'flex', md: 'none' }, ml: 2, mr: 2 }} />
@@ -124,7 +126,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                             </Box>
                                 }
                             </Box>
-                            <Tooltip title='Open settings'>
+                            <Tooltip title='Menu'>
                                 <IconButton onClick={handleOpenDrawer}>
                                     <MenuIcon sx={{ color: 'white', fontSize: '2rem' }}/>
                                 </IconButton>

@@ -109,13 +109,13 @@ export const SystemMonitorWidget = () => {
                 <IconButton
                     sx={{
                         position: 'absolute',
-                        top: 0,
-                        left: 0,
+                        top: -5,
+                        left: -5,
                         zIndex: 99
                     }}
                     onClick={() => setOpenSystemModal(true)}
                 >
-                    <IoInformationCircleOutline style={{ color: theme.palette.text.primary, fontSize: '1.75rem' }}/>
+                    <IoInformationCircleOutline style={{ color: theme.palette.text.primary, fontSize: '1.5rem' }}/>
                 </IconButton>
             </div>
             <Grid container gap={2} mt={-1}>

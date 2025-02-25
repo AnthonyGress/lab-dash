@@ -28,12 +28,21 @@ export type Config = {
     layout: {
         desktop: DashboardItem[];
         mobile: DashboardItem[];
-    }
+    },
+    title?: string;
+    backgroundImage?: string;
+}
+
+export type UploadImageResponse = {
+    message: string;
+    filePath: string;
 }
 
 export type DashboardLayout = {
-    desktop: DashboardItem[];
-    mobile: DashboardItem[];
+    layout: {
+        desktop: DashboardItem[];
+        mobile: DashboardItem[];
+    }
 }
 
 export type DashboardItem = {

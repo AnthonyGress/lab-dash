@@ -20,7 +20,7 @@ export const BlankWidget: React.FC<Props> = ({ id, label, editMode, isOverlay = 
 
     return (
         <Grid2
-            size={{ xs: 12, sm: row ? 12 : 6, md: row ? 12 : 6, lg: row ? 12 : 4 }} // Match size with widgets
+            size={{ xs: 12, sm: row ? 6 : 6, md: row ? 12 : 6, lg: row ? 12 : 4 }} // Match size with widgets
             ref={!isOverlay ? setNodeRef : undefined}
             {...(!isOverlay ? attributes : {})}
             {...(!isOverlay ? listeners : {})}
@@ -28,7 +28,7 @@ export const BlankWidget: React.FC<Props> = ({ id, label, editMode, isOverlay = 
                 opacity: isOverlay ? .6 : 1,
                 transition,
                 transform: transform ? CSS.Translate.toString(transform) : undefined,
-                visibility: isDragging ? 'hidden' : 'visible'
+                visibility: isDragging ? 'hidden' : 'visible',
             }}
         >
             <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit} placeholder rowPlaceholder={row}>

@@ -58,7 +58,6 @@ const weatherDescriptions: Record<number, { description: string; icon: JSX.Eleme
 export const WeatherWidget: React.FC = () => {
     const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
-    const [loading, setLoading] = useState(false);
     const [forecastDays, setForecastDays] = useState(5);
     const [isFahrenheit, setIsFahrenheit] = useState(true);
     const [openTooltipIndex, setOpenTooltipIndex] = useState<number | null>(null);
@@ -88,7 +87,6 @@ export const WeatherWidget: React.FC = () => {
         const fetchWeather = async () => {
             console.log('fetching weatjer');
 
-            setLoading(true);
             try {
                 let data;
                 if (!location?.latitude || !location.longitude) {
@@ -103,8 +101,6 @@ export const WeatherWidget: React.FC = () => {
                 setWeatherData(data);
             } catch (error) {
                 console.log('Error fetching weather:', error);
-            } finally {
-                setLoading(false);
             }
         };
 
@@ -196,11 +192,7 @@ export const WeatherWidget: React.FC = () => {
 
     return (
         <CardContent sx={{ padding: 0, }}>
-            {loading ? (
-                <Box sx={styles.center}>
-                    <CircularProgress sx={{ mt: 2 }} />
-                </Box>
-            ) : weatherData ? (
+            {weatherData ? (
                 <Grid>
                     {/* 1 Day */}
                     {renderCurrentWeatherItem()}

@@ -64,7 +64,7 @@ export const theme = createTheme({
             styleOverrides: {
                 root: {
                     '&:hover': {
-                        backgroundColor: COLORS.GRAY, // Change this to your preferred hover color
+                        backgroundColor: COLORS.LIGHT_GRAY_HOVER, // Change this to your preferred hover color
                     },
                 },
             },

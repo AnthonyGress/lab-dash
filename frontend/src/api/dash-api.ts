@@ -2,7 +2,7 @@ import axios from 'axios';
 import { StatusCodes } from 'http-status-codes';
 
 import { BACKEND_URL } from '../constants/constants';
-import { DashboardItem, DashboardLayout, Icon } from '../types';
+import { Config, DashboardItem, DashboardLayout, Icon, UploadImageResponse } from '../types';
 
 
 export class DashApi {
@@ -18,15 +18,15 @@ export class DashApi {
         return res.data;
     }
 
-    public static async getLayout(): Promise<DashboardLayout> {
-        const res = await axios.get(`${BACKEND_URL}/api/layout`);
+    public static async getConfig(): Promise<Config> {
+        const res = await axios.get(`${BACKEND_URL}/api/config`);
 
         return res.data;
     }
 
-    public static async saveLayout(layout: { desktop: DashboardItem[], mobile: DashboardItem[] }): Promise<void> {
+    public static async saveConfig(config: Partial<Config>): Promise<void> {
         try {
-            await axios.post(`${BACKEND_URL}/api/layout`, layout);
+            await axios.post(`${BACKEND_URL}/api/config`, config);
         } catch (error) {
             console.error('Failed to save layout:', error);
         }
@@ -69,7 +69,7 @@ export class DashApi {
         }
     }
 
-    public static async uploadBackgroundImage(file: string): Promise<any> {
+    public static async uploadBackgroundImage(file: string): Promise<UploadImageResponse | null> {
         try {
             const formData = new FormData();
             formData.append('file', file);
@@ -81,9 +81,13 @@ export class DashApi {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
-            return res;
+            console.log('image res', res);
+
+
+            return res.data;
         } catch (error) {
             console.error('Failed to upload image:', error);
+            return null;
         }
     }
 }

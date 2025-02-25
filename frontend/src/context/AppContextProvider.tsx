@@ -20,10 +20,10 @@ export const AppContextProvider = ({ children }: Props) => {
     const getSavedLayout = async () => {
         console.log('Fetching saved layout');
 
-        const res = await DashApi.getLayout(); // Retrieves { desktop: [], mobile: [] }
+        const res = await DashApi.getConfig(); // Retrieves { desktop: [], mobile: [] }
 
         if (res) {
-            const selectedLayout = isMobile ? res.mobile : res.desktop;
+            const selectedLayout = isMobile ? res.layout.mobile : res.layout.desktop;
             if (selectedLayout.length > 0) {
                 setDashboardLayout(selectedLayout);
             }
@@ -33,23 +33,26 @@ export const AppContextProvider = ({ children }: Props) => {
     };
 
     const saveLayout = async (items: DashboardItem[]) => {
-        console.log('saving layout');
 
-        const existingLayout = await DashApi.getLayout();
+        const existingLayout = await DashApi.getConfig();
+        console.log('saving layout', );
 
         let updatedLayout: DashboardLayout;
 
-        if (existingLayout.mobile.length > 3) {
+        if (existingLayout.layout.mobile.length > 3) {
+            console.log('saving mobile layout', items);
+
             // has no prev mobile layout, duplicate desktop
             updatedLayout = isMobile
-                ? { ...existingLayout, mobile: items }
-                : { ...existingLayout, desktop: items };
+                ? { layout: { ...existingLayout.layout, mobile: items } }
+                : { layout: { ...existingLayout.layout, desktop: items } };
         } else {
-            updatedLayout = { desktop: items, mobile: items };
+            console.log('desktop + mobile', items);
+            updatedLayout = { layout: { desktop: items, mobile: items } };
         }
 
         console.log('Saving updated layout:', updatedLayout);
-        await DashApi.saveLayout(updatedLayout);
+        await DashApi.saveConfig(updatedLayout);
     };
 
     const refreshDashboard = async () => {

@@ -23,7 +23,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@loganmarchione/homelab-svg-assets": "^0.4.7",
+    "@loganmarchione/homelab-svg-assets": "^0.4.8",
     "axios": "^1.7.9",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",

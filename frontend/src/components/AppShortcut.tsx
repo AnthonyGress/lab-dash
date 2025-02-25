@@ -16,28 +16,42 @@ export const AppShortcut = ({ url, name, iconName, showLabel, editMode }: Props)
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     return (
-        <Grid className='scale'>
+        <>
             {
                 editMode
-                    ? <Box>
-                        <Box sx={styles.shortcutIcon}>
-                            <img src={getIconPath(iconName)} alt={name} width={isMobile ? '50%' : '65%'} crossOrigin='anonymous' draggable='false' />
+                    ?
+                    <Box sx={{ ...styles.center }} className='scale'>
+                        <Box sx={{ width: { xs: '50%', sm: '40%', md: '55%', lg: '50%', xl: '35%' } }}>
+                            <img
+                                src={getIconPath(iconName)}
+                                alt={name}
+                                width='100%' // Ensure it scales within the Box
+                                crossOrigin='anonymous'
+                                draggable='false'
+                            />
+                        </Box>
+                        {showLabel && <Box>
+                            <Typography fontSize={isMobile ? '1rem' : '1.2rem'}>{name}</Typography>
+                        </Box>}
+                    </Box>
+                    : <a href={url} rel='noopener noreferrer' target='_blank' style={{ width: '100%', height: '100%' }}>
+                        <Box sx={{ ...styles.center }} className='scale'>
+                            <Box sx={{ width: { xs: '50%', sm: '40%', md: '55%', lg: '50%', xl: '35%' } }}>
+                                <img
+                                    src={getIconPath(iconName)}
+                                    alt={name}
+                                    width='100%' // Ensure it scales within the Box
+                                    crossOrigin='anonymous'
+                                    draggable='false'
+                                />
+                            </Box>
                             {showLabel && <Box>
                                 <Typography fontSize={isMobile ? '1rem' : '1.2rem'}>{name}</Typography>
                             </Box>}
                         </Box>
-                    </Box>
-                    : <a href={url} rel='noopener noreferrer' target='_blank'>
-                        <Box>
-                            <Box sx={styles.shortcutIcon}>
-                                <img src={getIconPath(iconName)} alt={name} width={isMobile ? '50%' : '65%'} crossOrigin='anonymous' draggable='false' />
-                                {showLabel && <Box>
-                                    <Typography fontSize={isMobile ? '1rem' : '1.2rem'}>{name}</Typography>
-                                </Box>}
-                            </Box>
-                        </Box>
                     </a>
             }
-        </Grid>
+        </>
+
     );
 };

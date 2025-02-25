@@ -113,7 +113,7 @@ export const DashboardGrid: React.FC = () => {
             >
                 <SortableContext items={items} strategy={rectSortingStrategy} disabled={!editMode}>
                     <Box sx={{ width: '100%', ...styles.center }}>
-                        <Grid container sx={{ width: '100%', px: 2, py: 2 }} spacing={2}>
+                        <Grid container sx={{ width: '100%', px: 2, }} spacing={2}>
                             {items.map((item) => {
                                 switch (item.type) {
                                 case ITEM_TYPE.WEATHER_WIDGET:

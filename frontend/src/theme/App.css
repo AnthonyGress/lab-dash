@@ -11,15 +11,17 @@
 
 html, body {
   width: 100vw; /* Ensure no extra space */
-  background: url('/space4k-min.webp');
+  /* background: url('/space4k-min.webp'); */
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center;
-  background-attachment: scroll; /* Prevents distortion on mobile */
+  background-attachment: scroll;
   image-rendering: crisp-edges;
-  image-rendering: -webkit-optimize-contrast;
+  /* image-rendering: -webkit-optimize-contrast; */
   -webkit-touch-callout: none !important;
-  -webkit-overflow-scrolling: touch; /* iOS smooth scrolling */
+  /* -webkit-overflow-scrolling: touch; iOS smooth scrolling */
+  overflow-x: hidden;
+  scrollbar-gutter: auto;
 }
 
 a, img {
@@ -54,3 +56,4 @@ a, img {
     transform: scale(1.05);
   }
 }
+

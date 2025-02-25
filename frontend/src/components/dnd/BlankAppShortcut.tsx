@@ -32,7 +32,7 @@ export const BlankAppShortcut: React.FC<Props> = ({ id, editMode, isOverlay = fa
         >
             <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit} appShortcut placeholder>
                 {/* <AppShortcut url={url} name={name} iconName={iconName} /> */}
-                <Box sx={{ ...styles.shortcutIcon, height: '6rem' }}/>
+                <Box sx={{ width: { xs: '50%', sm: '40%', md: '55%', lg: '50%', xl: '35%' } }} />
             </WidgetContainer>
         </Grid2>
     );
