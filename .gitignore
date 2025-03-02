@@ -25,3 +25,4 @@ dist-ssr
 build
 backend/src/config/config.json
 backend/src/public/uploads
+backend/public/uploads/*
