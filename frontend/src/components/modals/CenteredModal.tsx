@@ -76,7 +76,7 @@ export const CenteredModal = ({ open, handleClose, children, width, height, titl
                 <Box
                     sx={{
                         maxHeight: height ? height : '80vh',
-                        overflow: 'auto',
+                        overflowY: 'auto', /* Enables scrolling inside modal */
                         py: 4,
                         display: 'flex',
                         justifyContent: 'center',

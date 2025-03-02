@@ -109,11 +109,18 @@ export const DashboardGrid: React.FC = () => {
                 sensors={sensors}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
-                collisionDetection={closestCorners}
+                // collisionDetection={closestCorners}
             >
                 <SortableContext items={items} strategy={rectSortingStrategy} disabled={!editMode}>
-                    <Box sx={{ width: '100%', ...styles.center }}>
-                        <Grid container sx={{ width: '100%', px: 2, }} spacing={2}>
+                    <Box sx={{ width: '100%', maxWidth: '100vw', boxSizing: 'border-box' }}>
+                        <Grid container sx={{
+                            width: '100%',
+                            maxWidth: '100%',
+                            boxSizing: 'border-box',
+                            overflowX: 'clip',
+                            px: 2,
+                            paddingBottom: 4
+                        }} spacing={2}>
                             {items.map((item) => {
                                 switch (item.type) {
                                 case ITEM_TYPE.WEATHER_WIDGET:

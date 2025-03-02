@@ -4,21 +4,21 @@ import StatusCodes from 'http-status-codes';
 import multer, { StorageEngine } from 'multer';
 import path from 'path';
 
+import { UPLOAD_DIRECTORY } from '../constants/constants';
 import { getSystemInfo } from '../system-monitor';
 import { CustomError } from '../types/custom-error';
 
 export const systemRoute: Router = Router();
 
 // Ensure the upload directory exists
-const uploadDir: string = path.join(__dirname, '..', 'public', 'uploads');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
+if (!fs.existsSync(UPLOAD_DIRECTORY)) {
+    fs.mkdirSync(UPLOAD_DIRECTORY, { recursive: true });
 }
 
 // Configure Multer storage for file uploads
 const storage: StorageEngine = multer.diskStorage({
     destination: (_req, _file, cb) => {
-        cb(null, uploadDir);
+        cb(null, UPLOAD_DIRECTORY);
     },
     filename: (_req, file, cb) => {
         cb(null, file.originalname);
@@ -60,6 +60,6 @@ systemRoute.post('/upload', upload.single('file'), (req: Request, res: Response)
 
     res.status(StatusCodes.OK).json({
         message: 'File uploaded successfully',
-        filePath: `/uploads/${req.file?.filename}`,
+        filePath: req.file?.originalname,
     });
 });

@@ -17,11 +17,11 @@ html, body {
   background-position: center;
   background-attachment: scroll;
   image-rendering: crisp-edges;
-  /* image-rendering: -webkit-optimize-contrast; */
   -webkit-touch-callout: none !important;
-  /* -webkit-overflow-scrolling: touch; iOS smooth scrolling */
+}
+
+body {
   overflow-x: hidden;
-  scrollbar-gutter: auto;
 }
 
 a, img {
@@ -49,6 +49,31 @@ a, img {
 
 .scale {
   transition: all .15s ease-in-out;
+}
+
+@keyframes shake {
+  0% { transform: translate(0.3px, 0.3px) rotate(0deg); }
+  10% { transform: translate(-0.3px, -0.5px) rotate(-0.2deg); }
+  20% { transform: translate(-0.7px, 0px) rotate(0.2deg); }
+  30% { transform: translate(0.7px, 0.5px) rotate(0deg); }
+  40% { transform: translate(0.3px, -0.3px) rotate(0.2deg); }
+  50% { transform: translate(-0.3px, 0.5px) rotate(-0.2deg); }
+  60% { transform: translate(-0.7px, 0.3px) rotate(0deg); }
+  70% { transform: translate(0.7px, 0.3px) rotate(-0.2deg); }
+  80% { transform: translate(-0.3px, -0.3px) rotate(0.2deg); }
+  90% { transform: translate(0.3px, 0.5px) rotate(0deg); }
+  100% { transform: translate(0.3px, -0.5px) rotate(-0.2deg); }
+}
+
+.wiggle-container {
+  animation: shake 1s infinite ease-in-out;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  pointer-events: none; /* Allows smooth scrolling */
+  transform-origin: center;
+  will-change: transform;
+  contain: layout;
 }
 
 @media (hover: hover) and (pointer: fine) {

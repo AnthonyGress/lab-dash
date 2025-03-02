@@ -6,13 +6,21 @@ import { FormContainer, TextFieldElement, useForm } from 'react-hook-form-mui';
 import { FileInput } from './FileInput';
 import { DashApi } from '../../api/dash-api';
 import { BACKEND_URL } from '../../constants/constants';
+import { useAppContext } from '../../context/useAppContext';
 import { styles } from '../../theme/styles';
+import { Config } from '../../types';
+
+type FormValues = {
+    selectedFile: File | null,
+    title: string;
+}
 
 export const SettingsForm = () => {
-    const formContext = useForm({
+    const { config, updateConfig } = useAppContext();
+    const formContext = useForm<FormValues>({
         defaultValues: {
             selectedFile: null as File | null,
-            title: ''
+            title: config?.title || ''
         }
     });
 
@@ -21,18 +29,25 @@ export const SettingsForm = () => {
     const handleSubmit = async (data: any) => {
         console.log(data);
 
+        const updatedConfig: Partial<Config> = {};
+
         if (data.selectedFile instanceof File) {
-            const res = await DashApi.uploadBackgroundImage(data.selectedFile);
-            console.log(res);
-
-            if (res?.filePath) {
-                const configRes = await DashApi.saveConfig({ backgroundImage: res.filePath });
-            }
+            updatedConfig.backgroundImage = data.selectedFile;
         }
 
-        if (data.title) {
-            const configRes = await DashApi.saveConfig({ title: data.title });
+        if (data.title.trim()) {
+            updatedConfig.title = data.title;
+        } else {
+            updatedConfig.title = 'Lab Dash';
         }
+
+        if (Object.keys(updatedConfig).length > 0) {
+            await updateConfig(updatedConfig); // Update only the provided fields
+        }
+    };
+
+    const resetBackground = async () => {
+        await updateConfig({ backgroundImage: '' });
     };
 
     return (
@@ -67,6 +82,7 @@ export const SettingsForm = () => {
                         </Tooltip>
                     )}
                 </Box>
+                <Box><Button variant='contained' onClick={resetBackground}>Reset Background</Button></Box>
                 <Box mt={4} sx={styles.center} mb={2}>
                     <Button variant='contained' type='submit'>Save</Button>
                 </Box>

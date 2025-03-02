@@ -4,6 +4,7 @@ import express, { Application } from 'express';
 import helmet from 'helmet';
 import path from 'path';
 
+import { UPLOAD_DIRECTORY } from './src/constants/constants';
 import { errorHandler } from './src/middleware/error-handler';
 import routes from './src/routes';
 
@@ -26,6 +27,7 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/icon-list', express.static(iconListPath));
 app.use('/icons', express.static(iconsPath));
+app.use('/uploads', express.static(UPLOAD_DIRECTORY));
 app.use('/api', routes);
 
 app.use(express.static(path.join(__dirname, 'public')));

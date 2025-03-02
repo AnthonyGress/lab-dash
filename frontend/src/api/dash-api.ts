@@ -69,7 +69,7 @@ export class DashApi {
         }
     }
 
-    public static async uploadBackgroundImage(file: string): Promise<UploadImageResponse | null> {
+    public static async uploadBackgroundImage(file: File): Promise<UploadImageResponse | null> {
         try {
             const formData = new FormData();
             formData.append('file', file);

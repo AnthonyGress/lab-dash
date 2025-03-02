@@ -8,7 +8,8 @@ import Container from '@mui/material/Container';
 import Toolbar from '@mui/material/Toolbar';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { useState } from 'react';
+import { title } from 'process';
+import { useEffect, useState } from 'react';
 import React from 'react';
 import { FaGear, FaHouse, FaWrench } from 'react-icons/fa6';
 import { Link, NavLink } from 'react-router-dom';
@@ -34,10 +35,9 @@ type Props = {
 }
 
 export const ResponsiveAppBar = ({ children }: Props) => {
-    const [title, setTitle] = useState('Lab Dash');
     const [openDrawer, setOpenDrawer] = useState(false);
     const [openAddModal, setOpenAddModal] = useState(false);
-    const { dashboardLayout, saveLayout, refreshDashboard, editMode, setEditMode } = useAppContext();
+    const { dashboardLayout, saveLayout, refreshDashboard, editMode, setEditMode, config } = useAppContext();
 
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const handleClose = () => setOpenAddModal(false);
@@ -63,9 +63,11 @@ export const ResponsiveAppBar = ({ children }: Props) => {
         setOpenDrawer(false);
     };
 
+
     return (
         <>
-            <AppBar position='fixed' sx={{ backgroundColor: COLORS.TRANSPARENT_GRAY, backdropFilter: 'blur(6px)' }}>
+            <AppBar position='fixed' sx={{ backgroundColor: COLORS.TRANSPARENT_GRAY, backdropFilter: 'blur(6px)',width: '100vw', maxWidth: '100%', overflowX: 'hidden'
+            }}>
                 <Container sx={{ margin: 0, padding: 0, minWidth: '100%' }}>
                     <Toolbar disableGutters sx={{ justifyContent: 'space-between', width: '100%' }}>
                         {/* Desktop */}
@@ -85,7 +87,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                         textDecoration: 'none',
                                     }}
                                 >
-                                    {title}
+                                    {config?.title || 'Lab Dash'}
                                 </Typography>
                             </Box>
                         </Link>
@@ -105,7 +107,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                 textDecoration: 'none',
                             }}
                         >
-                            {(!editMode && isMobile) && title}
+                            {(!editMode && isMobile) && config?.title || 'Lab Dash'}
                         </Typography>}
 
                         <Box sx={{ flexGrow: 0, display: 'flex' }}>
@@ -131,30 +133,9 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                     <MenuIcon sx={{ color: 'white', fontSize: '2rem' }}/>
                                 </IconButton>
                             </Tooltip>
-                            {/* <Menu
-                            sx={{ mt: '45px' }}
-                            id='menu-appbar'
-                            anchorEl={anchorElMenu}
-                            anchorOrigin={{
-                                vertical: 'top',
-                                horizontal: 'right',
-                            }}
-                            keepMounted
-                            transformOrigin={{
-                                vertical: 'top',
-                                horizontal: 'right',
-                            }}
-                            open={Boolean(anchorElMenu)}
-                            onClose={handleCloseMenu}
-                        >
 
-                            <MenuItem onClick={handleEdit}>
-                                <Typography sx={{ textAlign: 'center' }}>Edit</Typography>
-                            </MenuItem>
-
-                        </Menu> */}
                             <Drawer open={openDrawer} onClose={handleCloseDrawer} anchor='right'>
-                                <Box sx={{ width: 250 }} role='presentation' onClick={handleCloseDrawer}>
+                                <Box sx={{ width: 225 }} role='presentation' onClick={handleCloseDrawer}>
                                     <DrawerHeader>
                                         <IconButton onClick={handleCloseDrawer}>
                                             <CloseIcon sx={{ fontSize: 34, color: 'text.primary' }} />
@@ -207,8 +188,8 @@ export const ResponsiveAppBar = ({ children }: Props) => {
             >
                 <Box component='main' sx={{
                     flexGrow: 1,
-                    padding: '2vh 0vw',
-                    mt: '64px'
+                    mt: '64px',
+                    paddingTop: '2rem',
                 }}>
                 </Box>
                 {children}

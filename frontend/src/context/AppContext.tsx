@@ -1,6 +1,6 @@
 import { createContext, Dispatch, SetStateAction } from 'react';
 
-import { DashboardItem, NewItem } from '../types';
+import { Config, DashboardItem, NewItem } from '../types';
 
 export interface IAppContext {
     dashboardLayout: DashboardItem[];
@@ -11,6 +11,8 @@ export interface IAppContext {
     updateItem: (id: string, updatedData: Partial<NewItem>) => void;
     editMode: boolean;
     setEditMode: Dispatch<SetStateAction<boolean>>;
+    config: Config | undefined;
+    updateConfig: (partialConfig: Partial<Config>) => Promise<void>
 }
 
 export const AppContext = createContext<IAppContext>(null!);
