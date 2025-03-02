@@ -21,7 +21,7 @@ const storage: StorageEngine = multer.diskStorage({
         cb(null, UPLOAD_DIRECTORY);
     },
     filename: (_req, file, cb) => {
-        cb(null, file.originalname);
+        cb(null, file.originalname.trim().replaceAll(' ', '_'));
     },
 });
 
@@ -60,6 +60,6 @@ systemRoute.post('/upload', upload.single('file'), (req: Request, res: Response)
 
     res.status(StatusCodes.OK).json({
         message: 'File uploaded successfully',
-        filePath: req.file?.originalname,
+        filePath: req.file?.originalname.trim().replaceAll(' ', '_'),
     });
 });
