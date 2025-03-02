@@ -12,6 +12,7 @@ export const getSystemInfo = async (): Promise<SysteminformationResponse | null>
             Promise.resolve(si.time()), // synchronous
             si.fsSize(),
             si.mem(),
+            si.memLayout()
         ]);
 
         // extract values
@@ -21,14 +22,18 @@ export const getSystemInfo = async (): Promise<SysteminformationResponse | null>
         const os = results[3].status === 'fulfilled' ? (results[3].value as Systeminformation.OsData) : null;
         const uptime = results[4].status === 'fulfilled' ? (results[4].value as Systeminformation.TimeData) : null;
         const disk = results[5].status === 'fulfilled' ? (results[5].value as Systeminformation.FsSizeData[]) : null;
-        const memory = results[6].status === 'fulfilled' ? (results[6].value as Systeminformation.MemData) : null;
+        const memoryInfo = results[6].status === 'fulfilled' ? (results[6].value as Systeminformation.MemData) : null;
+        const memoryLayout = results[7].status === 'fulfilled' ? (results[7].value as Systeminformation.MemLayoutData[]) : null;
 
         // construct return objects
         const cpu = cpuInfo
             ? { ...cpuInfo, ...cpuTemp, currentLoad: currentLoad?.currentLoad || 0 }
             : null;
         const system = os ? { ...os, ...uptime } : null;
-
+        const totalInstalled = memoryLayout && memoryLayout.length > 0
+            ? memoryLayout.reduce((total, slot) => total + slot.size, 0) / (1024 ** 3)
+            : 0;
+        const memory = memoryLayout && memoryInfo && { ...memoryInfo, totalInstalled };
         return { cpu, system, memory, disk };
     } catch (e) {
         console.error('Error fetching system info:', e);

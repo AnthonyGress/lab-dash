@@ -136,7 +136,7 @@ export const SystemMonitorWidget = () => {
                 <Box component={Paper} p={2} sx={{ backgroundColor: COLORS.GRAY }} elevation={0}>
                     <Typography><b>Processor:</b> {systemInformation?.cpu?.physicalCores} Core {systemInformation?.cpu?.manufacturer} {systemInformation?.cpu?.brand}</Typography>
                     <Typography><b>Architecture:</b> {systemInformation?.system?.arch} </Typography>
-                    <Typography><b>Memory:</b> {convertBytesToGB(systemInformation?.memory?.total)} </Typography>
+                    <Typography><b>Memory:</b> {`${systemInformation?.memory?.totalInstalled} GB`} </Typography>
                     <Typography><b>OS:</b> {systemInformation?.system?.distro} {systemInformation?.system?.codename} {systemInformation?.system?.release}</Typography>
                     <Typography><b>Kernel:</b> {systemInformation?.system?.kernel}</Typography>
                     <Typography><b>Uptime:</b> {convertSecondsToUptime(systemInformation?.system?.uptime)}</Typography>
