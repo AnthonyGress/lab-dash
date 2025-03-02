@@ -20,7 +20,7 @@ export const AppShortcut = ({ url, name, iconName, showLabel, editMode }: Props)
             {
                 editMode
                     ?
-                    <Box sx={{ ...styles.center }} className='scale'>
+                    <Box sx={{ ...styles.center, width: '100%', height: '100%' }} className='scale'>
                         <Box sx={{ width: { xs: '50%', sm: '40%', md: '55%', lg: '50%', xl: '35%' } }}>
                             <img
                                 src={getIconPath(iconName)}

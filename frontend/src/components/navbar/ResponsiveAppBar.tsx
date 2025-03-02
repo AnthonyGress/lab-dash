@@ -130,7 +130,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                             </Box>
                             <Tooltip title='Menu'>
                                 <IconButton onClick={handleOpenDrawer}>
-                                    <MenuIcon sx={{ color: 'white', fontSize: '2rem' }}/>
+                                    <MenuIcon sx={{ color: 'white', fontSize: '2rem', marginRight: '1rem' }}/>
                                 </IconButton>
                             </Tooltip>
 
