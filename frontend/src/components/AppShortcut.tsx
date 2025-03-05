@@ -21,7 +21,7 @@ export const AppShortcut = ({ url, name, iconName, showLabel, editMode }: Props)
                 editMode
                     ?
                     <Box sx={{ ...styles.center, width: '100%', height: '100%' }} className='scale'>
-                        <Box sx={{ width: { xs: '50%', sm: '40%', md: '55%', lg: '50%', xl: '35%' } }}>
+                        <Box sx={{ width: { xs: '50%', sm: '35%', md: '45%', lg: '40%', xl: '30%' }, ...styles.vcenter, height: '100%' }}>
                             <img
                                 src={getIconPath(iconName)}
                                 alt={name}
@@ -29,25 +29,26 @@ export const AppShortcut = ({ url, name, iconName, showLabel, editMode }: Props)
                                 crossOrigin='anonymous'
                                 draggable='false'
                             />
-                        </Box>
-                        {showLabel && <Box>
-                            <Typography fontSize={isMobile ? '1rem' : '1.2rem'}>{name}</Typography>
-                        </Box>}
-                    </Box>
-                    : <a href={url} rel='noopener noreferrer' target='_blank' style={{ width: '100%', height: '100%' }}>
-                        <Box sx={{ ...styles.center }} className='scale'>
-                            <Box sx={{ width: { xs: '50%', sm: '40%', md: '55%', lg: '50%', xl: '35%' } }}>
-                                <img
-                                    src={getIconPath(iconName)}
-                                    alt={name}
-                                    width='100%' // Ensure it scales within the Box
-                                    crossOrigin='anonymous'
-                                    draggable='false'
-                                />
-                            </Box>
                             {showLabel && <Box>
                                 <Typography fontSize={isMobile ? '1rem' : '1.2rem'}>{name}</Typography>
                             </Box>}
+                        </Box>
+                    </Box>
+                    : <a href={url} rel='noopener noreferrer' target='_blank' style={{ width: '100%', height: '100%' }}>
+                        <Box sx={{ ...styles.center }} className='scale'>
+                            <Box sx={{ width: { xs: '50%', sm: '35%', md: '45%', lg: '40%', xl: '30%' }, ...styles.vcenter, height: '100%' }}>
+                                <img
+                                    src={getIconPath(iconName)}
+                                    alt={name}
+                                    width='100%'
+                                    crossOrigin='anonymous'
+                                    draggable='false'
+                                />
+                                {showLabel && <Box>
+                                    <Typography fontSize={isMobile ? '1rem' : '1.2rem'}>{name}</Typography>
+                                </Box>
+                                }
+                            </Box>
                         </Box>
                     </a>
             }

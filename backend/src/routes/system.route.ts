@@ -7,6 +7,7 @@ import path from 'path';
 import { UPLOAD_DIRECTORY } from '../constants/constants';
 import { getSystemInfo } from '../system-monitor';
 import { CustomError } from '../types/custom-error';
+import { removeExistingFiles } from '../utils/utils';
 
 export const systemRoute: Router = Router();
 
@@ -53,13 +54,29 @@ systemRoute.get('/', async (_req: Request, res: Response) => {
     }
 });
 
-systemRoute.post('/upload', upload.single('file'), (req: Request, res: Response) => {
+systemRoute.post('/upload', upload.single('file'), (req: Request, res: Response, next: NextFunction) => {
     if (!req.file) {
         res.status(StatusCodes.BAD_REQUEST).json({ message: 'No file uploaded' });
     }
 
-    res.status(StatusCodes.OK).json({
-        message: 'File uploaded successfully',
-        filePath: req.file?.originalname.trim().replaceAll(' ', '_'),
-    });
+    try {
+        // Remove all existing files except the current uploaded file
+        removeExistingFiles(req.file?.filename);
+
+        res.status(StatusCodes.OK).json({
+            message: 'File uploaded successfully',
+            filePath: req.file?.originalname.trim().replaceAll(' ', '_'),
+        });
+    } catch (error) {
+        // If there's an error after file upload, delete the uploaded file
+        if (req.file) {
+            try {
+                fs.unlinkSync(req.file.path);
+            } catch (unlinkError) {
+                console.error('Error removing uploaded file:', unlinkError);
+            }
+        }
+
+        next(error);
+    }
 });
