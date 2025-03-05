@@ -114,13 +114,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                             <Box>
                                 {editMode &&
                             <Box sx={{ display: 'flex', width: '100%' }}>
-                                <Button onClick={handleEditCancel} variant='outlined' sx={{ mr: 2 }}>
-                                    Cancel
-                                </Button>
-                                <Button onClick={handleSave} variant='contained'>
-                                    Done
-                                </Button>
-                                <Tooltip title='Add New'>
+                                <Tooltip title='Add Item' placement='left'>
                                     <IconButton onClick={() => setOpenAddModal(true)}>
                                         <Add sx={{ color: 'white', fontSize: '2rem' }}/>
                                     </IconButton>
@@ -128,11 +122,9 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                             </Box>
                                 }
                             </Box>
-                            <Tooltip title='Menu'>
-                                <IconButton onClick={handleOpenDrawer}>
-                                    <MenuIcon sx={{ color: 'white', fontSize: '2rem', marginRight: '1rem' }}/>
-                                </IconButton>
-                            </Tooltip>
+                            <IconButton onClick={handleOpenDrawer}>
+                                <MenuIcon sx={{ color: 'white', fontSize: '2rem', marginRight: '1rem' }}/>
+                            </IconButton>
 
                             <Drawer open={openDrawer} onClose={handleCloseDrawer} anchor='right'>
                                 <Box sx={{ width: 225 }} role='presentation' onClick={handleCloseDrawer}>
@@ -192,6 +184,12 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                     paddingTop: '2rem',
                 }}>
                 </Box>
+                {editMode &&
+                <Box position='absolute' sx={{ top: { xs: '64px', md: '68px' }, zIndex: 99, display: 'flex', justifyContent: 'flex-end', width: '100%', px: 3, gap: 2 }}>
+                    <Button variant='contained' onClick={handleEditCancel} sx={{ backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT, color: 'black', borderRadius: '999px', height: '1.5rem', width: '4.5rem' }}>Cancel</Button>
+                    <Button variant='contained' onClick={handleSave}  sx={{ backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT, color: 'black', borderRadius: '999px', height: '1.5rem', width: '4.5rem' }}>Done</Button>
+                </Box>
+                }
                 {children}
             </Box>
         </>

@@ -42,11 +42,6 @@ a, img {
   -webkit-touch-callout: none !important;
 }
 
-.signature {
-  font-family: 'Earth Orbiter' !important;
-  font-size: 1.4rem !important;
-}
-
 .scale {
   transition: all .15s ease-in-out;
 }

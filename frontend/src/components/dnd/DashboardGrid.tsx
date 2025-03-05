@@ -41,7 +41,7 @@ export const DashboardGrid: React.FC = () => {
             navigator.maxTouchPoints > 0 ||
             window.matchMedia('(pointer: coarse)').matches
         );
-    }, []);
+    }, []); 
 
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: {
         delay: isMobile ? 100 : 0, // Prevents accidental drags

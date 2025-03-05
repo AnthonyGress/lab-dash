@@ -31,7 +31,8 @@ export const AppShortcut = ({ url, name, iconName, showLabel, editMode }: Props)
                             />
                             {showLabel && <Box>
                                 <Typography fontSize={isMobile ? '1rem' : '1.2rem'}>{name}</Typography>
-                            </Box>}
+                            </Box>
+                            }
                         </Box>
                     </Box>
                     : <a href={url} rel='noopener noreferrer' target='_blank' style={{ width: '100%', height: '100%' }}>
