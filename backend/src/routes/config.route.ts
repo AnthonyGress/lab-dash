@@ -21,7 +21,6 @@ configRoute.get('/', async (_req: Request, res: Response): Promise<void> => {
     try {
         const config = loadConfig();
         console.log('loading layout');
-
         res.status(StatusCodes.OK).json(config);
     } catch (error) {
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({

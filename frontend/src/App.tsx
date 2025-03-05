@@ -1,21 +1,15 @@
 import './theme/App.css';
 import { GlobalStyles } from '@mui/material';
-import { useEffect, useState } from 'react';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 
-import { DashApi } from './api/dash-api';
-import { DashboardGrid } from './components/dnd/DashboardGrid';
 import { WithNav } from './components/navbar/WithNav';
-import { SettingsPage } from './components/SettingsPage';
+import { DashboardPage } from './components/pages/DashboardPage';
+import { SettingsPage } from './components/pages/SettingsPage';
 import { BACKEND_URL } from './constants/constants';
 import { useAppContext } from './context/useAppContext';
 
 export const App = () => {
-    const { refreshDashboard, config } = useAppContext();
-
-    useEffect(() => {
-        refreshDashboard();
-    }, []);
+    const { config } = useAppContext();
 
     const backgroundImage = config?.backgroundImage
         ? `url('${BACKEND_URL}/uploads/${config?.backgroundImage}')`
@@ -42,7 +36,7 @@ export const App = () => {
             <Router>
                 <Routes>
                     <Route element={<WithNav />}>
-                        <Route path='/' element={<DashboardGrid />}/>
+                        <Route path='/' element={<DashboardPage />}/>
                         <Route path='/settings' element={<SettingsPage />}/>
                     </Route>
                 </Routes>

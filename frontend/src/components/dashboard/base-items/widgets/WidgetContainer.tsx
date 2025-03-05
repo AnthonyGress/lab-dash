@@ -1,11 +1,10 @@
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { Box, Card, IconButton, Menu, MenuItem, Tooltip } from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
-import { useServiceStatus } from '../../hooks/useServiceStatus';
-import { COLORS } from '../../theme/styles';
-import { isValidHttpUrl } from '../../utils/utils';
-import { WiggleWrapper } from '../dnd/WiggleWrapper';
+import { useServiceStatus } from '../../../../hooks/useServiceStatus';
+import { COLORS } from '../../../../theme/styles';
+import { isValidHttpUrl } from '../../../../utils/utils';
 
 type Props = {
     children: React.ReactNode;

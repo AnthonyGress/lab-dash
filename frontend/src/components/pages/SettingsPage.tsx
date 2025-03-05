@@ -1,7 +1,7 @@
 import { Box, Paper } from '@mui/material';
 
-import { SettingsForm } from './forms/SettingsForm';
-import { styles } from '../theme/styles';
+import { styles } from '../../theme/styles';
+import { SettingsForm } from '../forms/SettingsForm';
 
 export const SettingsPage = () => {
     return (

@@ -20,6 +20,7 @@ import { theme } from '../../theme/theme';
 import { AddEditForm } from '../forms/AddEditForm';
 import { Logo } from '../Logo';
 import { CenteredModal } from '../modals/CenteredModal';
+import { GlobalSearch } from '../search/GlobalSearch';
 
 const DrawerHeader = styled('div')(() => ({
     display: 'flex',
@@ -181,14 +182,17 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                 <Box component='main' sx={{
                     flexGrow: 1,
                     mt: '64px',
-                    paddingTop: '2rem',
+                    paddingTop: '3rem',
                 }}>
                 </Box>
-                {editMode &&
-                <Box position='absolute' sx={{ top: { xs: '64px', md: '68px' }, zIndex: 99, display: 'flex', justifyContent: 'flex-end', width: '100%', px: 3, gap: 2 }}>
-                    <Button variant='contained' onClick={handleEditCancel} sx={{ backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT, color: 'black', borderRadius: '999px', height: '1.5rem', width: '4.5rem' }}>Cancel</Button>
-                    <Button variant='contained' onClick={handleSave}  sx={{ backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT, color: 'black', borderRadius: '999px', height: '1.5rem', width: '4.5rem' }}>Done</Button>
-                </Box>
+                {editMode
+                    ? <Box position='absolute' sx={{ top: { xs: '66px', md: '70px' }, zIndex: 99, display: 'flex', justifyContent: 'flex-end', width: '100%', px: 3, gap: 2 }}>
+                        <Button variant='contained' onClick={handleEditCancel} sx={{ backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT, color: 'black', borderRadius: '999px', height: '1.7rem', width: '4.5rem' }}>Cancel</Button>
+                        <Button variant='contained' onClick={handleSave}  sx={{ backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT, color: 'black', borderRadius: '999px', height: '1.7rem', width: '4.5rem' }}>Done</Button>
+                    </Box>
+                    : <Box position='absolute' sx={{ top: { xs: '49px', md: '55px' }, zIndex: 99, display: 'flex', justifyContent: 'center', width: '100%' }}>
+                        <GlobalSearch />
+                    </Box>
                 }
                 {children}
             </Box>

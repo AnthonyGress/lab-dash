@@ -5,12 +5,13 @@ import { IoInformationCircleOutline } from 'react-icons/io5';
 
 import { DiskUsageBar } from './DiskUsageWidget';
 import { GaugeWidget } from './GaugeWidget';
-import { DashApi } from '../../../api/dash-api';
-import { useIsMobile } from '../../../hooks/useIsMobile';
-import { COLORS } from '../../../theme/styles';
-import { theme } from '../../../theme/theme';
-import { convertBytesToGB, convertSecondsToUptime } from '../../../utils/utils';
-import { CenteredModal } from '../../modals/CenteredModal';
+import { DashApi } from '../../../../../api/dash-api';
+import { useIsMobile } from '../../../../../hooks/useIsMobile';
+import { COLORS } from '../../../../../theme/styles';
+import { theme } from '../../../../../theme/theme';
+import { convertSecondsToUptime } from '../../../../../utils/utils';
+import { CenteredModal } from '../../../../modals/CenteredModal';
+
 
 export const SystemMonitorWidget = () => {
     const [systemInformation, setSystemInformation] = useState<any>();

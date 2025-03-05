@@ -1,7 +1,9 @@
 import { Box, Stack, Tooltip, Typography } from '@mui/material';
 import React from 'react';
 
-import { theme } from '../../../theme/theme';
+import { theme } from '../../../../../theme/theme';
+
+
 
 export interface DiskUsageBarProps {
   totalSpace: number; // Total disk space in GB

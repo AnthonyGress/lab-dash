@@ -2,7 +2,9 @@ import { Box, Typography } from '@mui/material';
 import { Gauge, gaugeClasses } from '@mui/x-charts/Gauge';
 import React from 'react';
 
-import { theme } from '../../../theme/theme';
+import { theme } from '../../../../../theme/theme';
+
+
 
 
 interface GaugeWidgetProps {

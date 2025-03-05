@@ -9,10 +9,9 @@ import { BsCloudRainHeavyFill } from 'react-icons/bs';
 import { BsCloudHaze2Fill } from 'react-icons/bs';
 import { BsSunFill } from 'react-icons/bs';
 
-
-import { DashApi } from '../../api/dash-api';
-import { FIFTEEN_MIN_IN_MS } from '../../constants/constants';
-import { styles } from '../../theme/styles';
+import { DashApi } from '../../../../api/dash-api';
+import { FIFTEEN_MIN_IN_MS } from '../../../../constants/constants';
+import { styles } from '../../../../theme/styles';
 
 interface WeatherData {
     current: { temperature_2m: number; weathercode: number; windspeed_10m: number };

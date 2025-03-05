@@ -14,18 +14,18 @@ import {
 import { Box, Grid2 as Grid } from '@mui/material';
 import React, { useEffect, useMemo, useState } from 'react';
 
-import { BlankAppShortcut } from './BlankAppShortcut';
-import { BlankWidget } from './BlankWidget';
-import { SortableAppShortcut } from './SortableAppShortcut';
-import { SortableDateTimeWidget } from './SortableDateTime';
-import { SortableSystemMonitorWidget } from './SortableSystemMonitor';
-import { SortableWeatherWidget } from './SortableWeather';
+
+import { SortableAppShortcut } from './sortable-items/apps/SortableAppShortcut';
+import { SortableDateTimeWidget } from './sortable-items/widgets/SortableDateTime';
+import { SortableSystemMonitorWidget } from './sortable-items/widgets/SortableSystemMonitor';
+import { SortableWeatherWidget } from './sortable-items/widgets/SortableWeather';
 import { useAppContext } from '../../context/useAppContext';
-import { styles } from '../../theme/styles';
 import { DashboardItem, ITEM_TYPE } from '../../types';
 import { AddEditForm } from '../forms/AddEditForm';
 import { CenteredModal } from '../modals/CenteredModal';
 import { ConfirmationOptions, PopupManager } from '../modals/PopupManager';
+import { BlankAppShortcut } from './base-items/apps/BlankAppShortcut';
+import { BlankWidget } from './base-items/widgets/BlankWidget';
 
 
 export const DashboardGrid: React.FC = () => {
@@ -41,7 +41,7 @@ export const DashboardGrid: React.FC = () => {
             navigator.maxTouchPoints > 0 ||
             window.matchMedia('(pointer: coarse)').matches
         );
-    }, []); 
+    }, []);
 
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: {
         delay: isMobile ? 100 : 0, // Prevents accidental drags

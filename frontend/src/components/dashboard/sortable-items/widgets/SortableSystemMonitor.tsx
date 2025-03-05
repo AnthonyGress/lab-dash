@@ -3,9 +3,8 @@ import { CSS } from '@dnd-kit/utilities';
 import { Grid2 } from '@mui/material';
 import React from 'react';
 
-import { SystemMonitorWidget } from '../widgets/SystemMonitorWidget/SystemMonitorWidget';
-import { WidgetContainer } from '../widgets/WidgetContainer';
-
+import { SystemMonitorWidget } from '../../base-items/widgets/SystemMonitorWidget/SystemMonitorWidget';
+import { WidgetContainer } from '../../base-items/widgets/WidgetContainer';
 
 type Props = {
     id: string;

@@ -1,8 +1,8 @@
 import { Box, Grid2 as Grid, Typography, useMediaQuery } from '@mui/material';
 
-import { styles } from '../theme/styles';
-import { theme } from '../theme/theme';
-import { getIconPath } from '../utils/utils';
+import { styles } from '../../../../theme/styles';
+import { theme } from '../../../../theme/theme';
+import { getIconPath } from '../../../../utils/utils';
 
 type Props = {
     url: string;

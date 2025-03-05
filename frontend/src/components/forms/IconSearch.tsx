@@ -69,7 +69,7 @@ export const IconSearch = ({ control, errors }: Props) => {
                                 display: 'flex',
                                 alignItems: 'center',
                                 '&:hover': {
-                                    backgroundColor: `${COLORS.GRAY} !important`
+                                    backgroundColor: `${COLORS.LIGHT_GRAY_HOVER} !important`
 
                                 },
                             }} key={shortid.generate()}>
