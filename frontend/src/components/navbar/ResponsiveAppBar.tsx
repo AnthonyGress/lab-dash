@@ -92,6 +92,9 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                 </Typography>
                             </Box>
                         </Link>
+                        <Box sx={{ width: '100%', display: { xs: 'none', md: 'block' } }}>
+                            <GlobalSearch />
+                        </Box>
 
                         {/* Mobile */}
                         <Logo sx={{ display: { xs: 'flex', md: 'none' }, ml: 2, mr: 2 }} />
@@ -190,7 +193,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                         <Button variant='contained' onClick={handleEditCancel} sx={{ backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT, color: 'black', borderRadius: '999px', height: '1.7rem', width: '4.5rem' }}>Cancel</Button>
                         <Button variant='contained' onClick={handleSave}  sx={{ backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT, color: 'black', borderRadius: '999px', height: '1.7rem', width: '4.5rem' }}>Done</Button>
                     </Box>
-                    : <Box position='absolute' sx={{ top: { xs: '49px', md: '55px' }, zIndex: 99, display: 'flex', justifyContent: 'center', width: '100%' }}>
+                    : <Box position='absolute' sx={{ top: { xs: '49px', md: '55px' }, zIndex: 99, display: { xs: 'flex', md: 'none' }, justifyContent: 'center', width: '100%' }} mt={.5}>
                         <GlobalSearch />
                     </Box>
                 }

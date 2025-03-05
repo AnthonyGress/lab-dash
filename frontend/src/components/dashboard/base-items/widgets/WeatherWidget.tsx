@@ -1,4 +1,4 @@
-import { Box, Button, Card, CardContent, CircularProgress, Grid2 as Grid, Tooltip, Typography } from '@mui/material';
+import { Box, Button, Card, CardContent, CircularProgress, Grid2 as Grid, Skeleton, Tooltip, Typography } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { BsCloudLightningRainFill } from 'react-icons/bs';
 import { BsCloudSunFill } from 'react-icons/bs';
@@ -123,7 +123,6 @@ export const WeatherWidget: React.FC = () => {
                 <Box>{weatherDescriptions[weatherData?.current?.weathercode]?.icon}</Box>
                 <Box ml={1} sx={{ fontSize: '1.5rem' }}>{convertTemperature(weatherData.current?.temperature_2m)}°{isFahrenheit ? 'F' : 'C'}</Box>
             </Box>
-            {/* <Box sx={{ fontSize: '1rem' }}>{weatherDescriptions[weatherData.current.weathercode]?.description || 'Unknown'}</Box> */}
         </Box>;
     };
 
@@ -190,8 +189,14 @@ export const WeatherWidget: React.FC = () => {
     };
 
     return (
-        <CardContent sx={{ padding: 0, }}>
-            {weatherData ? (
+        <CardContent sx={{
+            padding: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
+        }}>
+            {!weatherData ? (
                 <Grid>
                     {/* 1 Day */}
                     {renderCurrentWeatherItem()}
@@ -201,7 +206,26 @@ export const WeatherWidget: React.FC = () => {
                     </Grid>
                 </Grid>
             ) : (
-                <Typography variant='body2' sx={{ mt: 1 }}>Fetching weather...</Typography>
+                <Box
+                    sx={{
+                        width: '100%',
+                        height: '100%',
+                        aspectRatio: '16/9',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minHeight: { xs: 150, sm: 150, md: 150 },
+                    }}
+                >
+                    <Skeleton
+                        variant='rounded'
+                        sx={{
+                            width: '100%',
+                            height: '80%',
+                            maxWidth: '100%'
+                        }}
+                    />
+                </Box>
             )}
         </CardContent>
     );

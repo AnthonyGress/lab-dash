@@ -1,5 +1,5 @@
 import CloseIcon from '@mui/icons-material/Close';
-import { Autocomplete, Box, InputAdornment, TextField } from '@mui/material';
+import { Autocomplete, Box, InputAdornment, TextField, Typography } from '@mui/material';
 import { nanoid } from 'nanoid';
 import { Dispatch, SetStateAction } from 'react';
 import { FaSearch } from 'react-icons/fa';
@@ -44,7 +44,7 @@ export const SearchBar = ({
     };
 
     return (
-        <Box mt={2} sx={styles.center}>
+        <Box sx={styles.center}>
             <Autocomplete
                 freeSolo
                 value={null}
@@ -96,8 +96,7 @@ export const SearchBar = ({
                             sx={{
                                 '&:hover': {
                                     backgroundColor: `${COLORS.LIGHT_GRAY_HOVER} !important`,
-                                },
-                                height: '2rem'
+                                }
                             }}
                         >
                             {option.icon && (
@@ -108,56 +107,73 @@ export const SearchBar = ({
                                     key={nanoid()}
                                 />
                             )}
-                            {option.label}
+                            <Typography key={nanoid()}>{option.label}</Typography>
                         </Box>
                     );
                 }}
                 // (6) Render the search input
                 renderInput={(params) => (
-                    <TextField
-                        {...params}
-                        placeholder={placeholder}
-                        InputProps={{
-                            ...params.InputProps,
-                            startAdornment: (
-                                <InputAdornment position='start' sx={{ color: 'text.primary' }}>
-                                    <FaSearch />
-                                </InputAdornment>
-                            ),
-                            type: 'text',
-                            sx: { height: '60%' },
-                        }}
-                        sx={{
-                            width: { xs: '100%',
-                                sm: '50%',
-                                md: '50%',
-                                lg: '32.8%',
-                                xl: '32.8%'
-                            },
-                            height: '60px',
-                            '& .MuiOutlinedInput-root': {
-                                backgroundColor: COLORS.TRANSPARENT_GRAY,
+                    <Box sx={{ width: '100%', ...styles.center }}>
+                        <TextField
+                            {...params}
+                            placeholder={placeholder}
+                            InputProps={{
+                                ...params.InputProps,
+                                startAdornment: (
+                                    <InputAdornment position='start' sx={{ color: 'text.primary' }}>
+                                        <FaSearch />
+                                    </InputAdornment>
+                                ),
+                                type: 'text',
+                                sx: { height: '60%' },
+                            }}
+                            sx={{
+                                width: { xs: '100%',
+                                    sm: '50%',
+                                    md: '50%',
+                                    lg: '32.8%',
+                                    xl: '32.8%'
+                                },
+                                height: '60px',
+                                '& .MuiOutlinedInput-root': {
+                                    backgroundColor: { xs: COLORS.TRANSPARENT_GRAY, md: 'transparent' },
+                                    borderRadius: 2,
+                                    backdropFilter: { xs: 'blur(6px)', md: 'none' },
+                                    // (Optional) Include the -webkit- prefix for Safari support:
+                                    WebkitBackdropFilter: { xs: 'blur(6px)', md: 'none' },
+                                },
+                                '& .MuiOutlinedInput-notchedOutline': {
+                                    border: `1px solid ${COLORS.BORDER} !important`,
+                                },
+                                '&:hover .MuiOutlinedInput-notchedOutline': {
+                                    border: `1px solid ${COLORS.BORDER}  !important`,
+                                },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                    border: `1px solid ${COLORS.BORDER}  !important`,
+                                },
                                 borderRadius: 2,
-                                backdropFilter: 'blur(6px)',
-                                // (Optional) Include the -webkit- prefix for Safari support:
-                                WebkitBackdropFilter: 'blur(6px)',
-                            },
-                            '& .MuiOutlinedInput-notchedOutline': {
-                                border: `1px solid ${COLORS.BORDER} !important`,
-                            },
-                            '&:hover .MuiOutlinedInput-notchedOutline': {
-                                border: `1px solid ${COLORS.BORDER}  !important`,
-                            },
-                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                border: `1px solid ${COLORS.BORDER}  !important`,
-                            },
-                            borderRadius: 2,
-
-
-                        }}
-                    />
+                                display: 'flex',
+                                justifyContent: 'center',
+                            }}
+                        />
+                    </Box>
                 )}
                 sx={{ width: '100%', px: 2 }}
+                slotProps={{
+                    listbox: {
+                        sx: {
+                            '& .MuiAutocomplete-option': {
+                                minHeight: 'unset',
+                                lineHeight: '1',
+                                height: {
+                                    xs: '1.5rem',
+                                    sm: '2rem',
+                                },
+                            },
+                        },
+                    },
+
+                }}
             />
         </Box>
     );
