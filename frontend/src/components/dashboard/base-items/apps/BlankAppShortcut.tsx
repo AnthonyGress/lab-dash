@@ -19,7 +19,7 @@ export const BlankAppShortcut: React.FC<Props> = ({ id, editMode, isOverlay = fa
 
     return (
         <Grid2
-            size={{ xs: 4 , sm: 3 , md: 5/3, lg: 4/3, xl: 4/3 }}
+            size={{ xs: 4 , sm: 4 , md: 2, lg: 4/3, xl: 4/3 }}
             ref={!isOverlay ? setNodeRef : undefined}
             {...(!isOverlay ? attributes : {})}
             {...(!isOverlay ? listeners : {})}
@@ -32,7 +32,7 @@ export const BlankAppShortcut: React.FC<Props> = ({ id, editMode, isOverlay = fa
         >
             <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit} appShortcut placeholder>
                 {/* <AppShortcut url={url} name={name} iconName={iconName} /> */}
-                <Box sx={{ width: { xs: '50%', sm: '40%', md: '55%', lg: '50%', xl: '35%' } }} />
+                <Box sx={{ width: { xs: '45%', sm: '40%', md: '55%', lg: '50%', xl: '35%' } }} />
             </WidgetContainer>
         </Grid2>
     );

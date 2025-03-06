@@ -117,7 +117,7 @@ export const DashboardGrid: React.FC = () => {
                             width: '100%',
                             maxWidth: '100%',
                             boxSizing: 'border-box',
-                            overflowX: 'clip',
+                            // overflowX: 'clip',
                             px: 2,
                             paddingBottom: 4
                         }} spacing={2}>

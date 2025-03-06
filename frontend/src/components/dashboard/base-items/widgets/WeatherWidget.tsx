@@ -196,7 +196,7 @@ export const WeatherWidget: React.FC = () => {
             justifyContent: 'center',
             height: '100%',
         }}>
-            {!weatherData ? (
+            {weatherData ? (
                 <Grid>
                     {/* 1 Day */}
                     {renderCurrentWeatherItem()}

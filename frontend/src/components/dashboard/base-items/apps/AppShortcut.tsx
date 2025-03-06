@@ -21,7 +21,7 @@ export const AppShortcut = ({ url, name, iconName, showLabel, editMode }: Props)
                 editMode
                     ?
                     <Box sx={{ ...styles.center, width: '100%', height: '100%' }} className='scale'>
-                        <Box sx={{ width: { xs: '50%', sm: '35%', md: '45%', lg: '40%', xl: '30%' }, ...styles.vcenter, height: '100%' }}>
+                        <Box sx={{ width: { xs: '45%', sm: '30%', md: '45%', lg: '40%', xl: '30%' }, ...styles.vcenter, height: '100%' }}>
                             <img
                                 src={getIconPath(iconName)}
                                 alt={name}
@@ -37,7 +37,7 @@ export const AppShortcut = ({ url, name, iconName, showLabel, editMode }: Props)
                     </Box>
                     : <a href={url} rel='noopener noreferrer' target='_blank' style={{ width: '100%', height: '100%' }}>
                         <Box sx={{ ...styles.center }} className='scale'>
-                            <Box sx={{ width: { xs: '50%', sm: '35%', md: '45%', lg: '40%', xl: '30%' }, ...styles.vcenter, height: '100%' }}>
+                            <Box sx={{ width: { xs: '45%', sm: '25%', md: '45%', lg: '40%', xl: '30%' }, ...styles.vcenter, height: '100%' }}>
                                 <img
                                     src={getIconPath(iconName)}
                                     alt={name}

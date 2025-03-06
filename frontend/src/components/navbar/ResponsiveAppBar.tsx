@@ -25,7 +25,7 @@ import { GlobalSearch } from '../search/GlobalSearch';
 const DrawerHeader = styled('div')(() => ({
     display: 'flex',
     alignItems: 'center',
-    padding: theme.spacing(0, 2),
+    padding: theme.spacing(0, 4),
     // necessary for content to be below app bar
     ...theme.mixins.toolbar,
     justifyContent: 'flex-end',
@@ -73,7 +73,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                     <Toolbar disableGutters sx={{ justifyContent: 'space-between', width: '100%' }}>
                         {/* Desktop */}
                         <Link to='/'>
-                            <Box sx={styles.center}>
+                            <Box sx={{ width: { xs: '100%', md: '200px' }, ...styles.center }}>
                                 <Logo sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }}/>
                                 <Typography
                                     variant='h5'
@@ -114,21 +114,19 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                             {(!editMode && isMobile) && config?.title || 'Lab Dash'}
                         </Typography>}
 
-                        <Box sx={{ flexGrow: 0, display: 'flex' }}>
-                            <Box>
+                        <Box sx={{ display: 'flex' }}>
+                            <Box sx={{ display: 'flex', width: { md: '200px' }, flexGrow: 1, justifyContent: 'flex-end' }}>
                                 {editMode &&
-                            <Box sx={{ display: 'flex', width: '100%' }}>
                                 <Tooltip title='Add Item' placement='left'>
                                     <IconButton onClick={() => setOpenAddModal(true)}>
                                         <Add sx={{ color: 'white', fontSize: '2rem' }}/>
                                     </IconButton>
                                 </Tooltip>
-                            </Box>
                                 }
+                                <IconButton onClick={handleOpenDrawer}>
+                                    <MenuIcon sx={{ color: 'white', fontSize: '2rem', marginRight: '1rem' }}/>
+                                </IconButton>
                             </Box>
-                            <IconButton onClick={handleOpenDrawer}>
-                                <MenuIcon sx={{ color: 'white', fontSize: '2rem', marginRight: '1rem' }}/>
-                            </IconButton>
 
                             <Drawer open={openDrawer} onClose={handleCloseDrawer} anchor='right'>
                                 <Box sx={{ width: 225 }} role='presentation' onClick={handleCloseDrawer}>
@@ -193,7 +191,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                         <Button variant='contained' onClick={handleEditCancel} sx={{ backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT, color: 'black', borderRadius: '999px', height: '1.7rem', width: '4.5rem' }}>Cancel</Button>
                         <Button variant='contained' onClick={handleSave}  sx={{ backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT, color: 'black', borderRadius: '999px', height: '1.7rem', width: '4.5rem' }}>Done</Button>
                     </Box>
-                    : <Box position='absolute' sx={{ top: { xs: '49px', md: '55px' }, zIndex: 99, display: { xs: 'flex', md: 'none' }, justifyContent: 'center', width: '100%' }} mt={.5}>
+                    : <Box position='absolute' sx={{ top: { xs: '49px', sm: '55px' }, zIndex: 99, display: { xs: 'flex', md: 'none' }, justifyContent: 'center', width: '100%' }} mt={.5}>
                         <GlobalSearch />
                     </Box>
                 }

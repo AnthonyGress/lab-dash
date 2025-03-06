@@ -79,6 +79,7 @@ export const WidgetContainer: React.FC<Props> = ({ children, editMode, onEdit, o
                             position: 'absolute',
                             top: 0,
                             right: 0,
+                            zIndex: 99
                         }}
                         onClick={handleMenuOpen}
                     >
