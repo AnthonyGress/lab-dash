@@ -41,8 +41,6 @@ export const ResponsiveAppBar = ({ children }: Props) => {
     const location = useLocation();
     const navigate = useNavigate();
     const currentPath = location.pathname;
-    console.log(currentPath);
-
 
     const handleClose = () => setOpenAddModal(false);
 
@@ -74,8 +72,8 @@ export const ResponsiveAppBar = ({ children }: Props) => {
             }}>
                 <Container sx={{ margin: 0, padding: 0, minWidth: '100%' }}>
                     <Toolbar disableGutters sx={{ justifyContent: 'space-between', width: '100%' }}>
-                        {/* Desktop */}
                         <Link to='/'>
+                            {/* Desktop */}
                             <Box sx={{ width: { xs: '100%', md: '200px' }, ...styles.center }}>
                                 <Logo sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }}/>
                                 <Typography
@@ -93,6 +91,23 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                 >
                                     {config?.title || 'Lab Dash'}
                                 </Typography>
+                                {/* Mobile */}
+                                <Logo sx={{ display: { xs: 'flex', md: 'none' }, ml: 2, mr: 2 }} />
+                                <Typography
+                                    variant='h5'
+                                    noWrap
+                                    sx={{
+                                        mr: 2,
+                                        flexGrow: 1,
+                                        display: { xs: 'flex', md: 'none' },
+                                        fontFamily: 'Earth Orbiter',
+                                        letterSpacing: '.1rem',
+                                        color: 'inherit',
+                                        textDecoration: 'none',
+                                    }}
+                                >
+                                    {(!editMode && isMobile) && config?.title || 'Lab Dash'}
+                                </Typography>
                             </Box>
                         </Link>
                         { currentPath === '/' &&
@@ -100,23 +115,6 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                 <GlobalSearch />
                             </Box>
                         }
-                        {/* Mobile */}
-                        <Logo sx={{ display: { xs: 'flex', md: 'none' }, ml: 2, mr: 2 }} />
-                        {<Typography
-                            variant='h5'
-                            noWrap
-                            sx={{
-                                mr: 2,
-                                flexGrow: 1,
-                                display: { xs: 'flex', md: 'none' },
-                                fontFamily: 'Earth Orbiter',
-                                letterSpacing: '.1rem',
-                                color: 'inherit',
-                                textDecoration: 'none',
-                            }}
-                        >
-                            {(!editMode && isMobile) && config?.title || 'Lab Dash'}
-                        </Typography>}
 
                         <Box sx={{ display: 'flex' }}>
                             <Box sx={{ display: 'flex', width: { md: '200px' }, flexGrow: 1, justifyContent: 'flex-end' }}>
