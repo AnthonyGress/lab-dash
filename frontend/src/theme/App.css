@@ -1,6 +1,6 @@
 @font-face {
   font-family: 'Earth Orbiter';
-  src: url('earthorbiter.ttf') format('truetype'); /* Chrome 4+, Firefox 3.5, Opera 10+, Safari 3—5 */
+  src: url('earthorbiter.ttf') format('truetype');
 }
 
 * {
@@ -10,7 +10,7 @@
 }
 
 html, body {
-  width: 100vw; /* Ensure no extra space */
+  width: 100vw;
   /* background: url('/space4k-min.webp'); */
   background-size: cover;
   background-repeat: no-repeat;

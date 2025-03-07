@@ -58,11 +58,11 @@ export const SettingsForm = () => {
                 </Box>
                 <Box sx={styles.vcenter} mb={2} mt={2}>
                     <Box width={'100%'}>
-                        <TextFieldElement name='title' label='Custom Title' variant='outlined' sx={{ width: '40%' }}/>
+                        <TextFieldElement name='title' label='Custom Title' variant='outlined' sx={{ width: { xs: '80%', md: '40%' } }}/>
                     </Box>
                 </Box>
                 <Box width={'100%'} sx={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <FileInput name='selectedFile' label='Background Image' width='40%' />
+                    <FileInput name='selectedFile' label='Background Image' sx={{ width: { xs: '80%' , md: '40%' } }}/>
 
                     {/* Close Icon (✖) to clear the file */}
                     {selectedFile && (
@@ -71,12 +71,12 @@ export const SettingsForm = () => {
                                 onClick={() => formContext.resetField('selectedFile')}
                                 sx={{
                                     position: 'absolute',
-                                    right: 'calc(30% - 30px)', // ✅ Adjust position to stay inside the input field
+                                    right: 'calc(30% - 30px)',
                                     top: '50% - 20px',
-                                    transform: 'translateY(-50%)', // ✅ Ensures vertical centering
+                                    transform: 'translateY(-50%)',
                                     cursor: 'pointer',
                                     fontSize: 26,
-                                    color: 'rgba(255, 255, 255, 0.7)', // ✅ Adjust color for visibility
+                                    color: 'rgba(255, 255, 255, 0.7)',
                                 }}
                             />
                         </Tooltip>

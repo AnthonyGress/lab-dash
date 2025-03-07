@@ -8,9 +8,7 @@ import Container from '@mui/material/Container';
 import Toolbar from '@mui/material/Toolbar';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { title } from 'process';
-import { useEffect, useState } from 'react';
-import React from 'react';
+import React, { useState } from 'react';
 import { FaGear, FaHouse, FaWrench } from 'react-icons/fa6';
 import { Link, NavLink } from 'react-router-dom';
 
@@ -26,7 +24,6 @@ const DrawerHeader = styled('div')(() => ({
     display: 'flex',
     alignItems: 'center',
     padding: theme.spacing(0, 4),
-    // necessary for content to be below app bar
     ...theme.mixins.toolbar,
     justifyContent: 'flex-end',
 }));

@@ -25,21 +25,17 @@ export const SearchBar = ({
     setSearchValue,
     autocompleteOptions = []
 }: Props) => {
-    // Called whenever user selects an option OR when freeSolo is used and user presses Enter
     const handleChange = (_event: any, newValue: SearchOption | string | null) => {
         if (!newValue) return;
 
         if (typeof newValue === 'string') {
-            // This is a freeSolo string – the user typed something not in the list and pressed Enter
             window.open(`https://www.google.com/search?q=${encodeURIComponent(newValue)}`, '_blank');
         } else {
-            // It's a SearchOption object
             if (newValue.url) {
                 window.open(newValue.url, '_blank');
             }
         }
 
-        // Optionally clear the search after selecting:
         setSearchValue('');
     };
 
@@ -53,14 +49,11 @@ export const SearchBar = ({
                 getOptionLabel={(option) =>
                     typeof option === 'string' ? option : option.label
                 }
-                // (3) Control the text in the input
                 inputValue={searchValue}
                 onInputChange={(_event, newInputValue) => {
                     setSearchValue(newInputValue);
                 }}
-                // (4) Filter: if no matches, add a "Google Search" item
                 filterOptions={(options, state) => {
-                    // Basic local filter
                     const filtered = options.filter((option) =>
                         option.label.toLowerCase().includes(state.inputValue.toLowerCase())
                     );
@@ -76,10 +69,8 @@ export const SearchBar = ({
 
                     return filtered;
                 }}
-                // (5) Called when user selects from dropdown or uses freeSolo
                 onChange={handleChange}
                 renderOption={(props, option) => {
-                    // If it's a string, just show it
                     if (typeof option === 'string') {
                         return (
                             <li {...props} key={nanoid()}>
@@ -87,7 +78,6 @@ export const SearchBar = ({
                             </li>
                         );
                     }
-                    // Otherwise, show icon + label
                     return (
                         <Box
                             component='li'
@@ -111,7 +101,6 @@ export const SearchBar = ({
                         </Box>
                     );
                 }}
-                // (6) Render the search input
                 renderInput={(params) => (
                     <Box sx={{ width: '100%', ...styles.center }}>
                         <TextField
@@ -125,14 +114,14 @@ export const SearchBar = ({
                                     </InputAdornment>
                                 ),
                                 type: 'text',
-                                sx: { height: '60%' },
+                                sx: { height: '70%' },
                             }}
                             sx={{
                                 width: { xs: '100%',
                                     sm: '50%',
-                                    md: '50%',
-                                    lg: '32.8%',
-                                    xl: '32.8%'
+                                    md: '70%',
+                                    lg: '55%',
+                                    xl: '40%'
                                 },
                                 height: '60px',
                                 '& .MuiOutlinedInput-root': {
@@ -166,7 +155,7 @@ export const SearchBar = ({
                                 minHeight: 'unset',
                                 lineHeight: '1',
                                 height: {
-                                    xs: '1.5rem',
+                                    xs: '2.5rem',
                                     sm: '2rem',
                                 },
                             },

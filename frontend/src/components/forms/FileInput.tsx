@@ -1,3 +1,4 @@
+import { SxProps } from '@mui/material';
 import { MuiFileInput } from 'mui-file-input';
 import { Controller } from 'react-hook-form-mui';
 import { FaFileUpload } from 'react-icons/fa';
@@ -9,9 +10,10 @@ type Props = {
     label?: string;
     accept?: string;
     width?: string;
+    sx: SxProps
 }
 
-export const FileInput = ({ name, label, accept='image/png, image/jpeg, image/jpg, image/gif, image/webp', width }: Props) => {
+export const FileInput = ({ name, label, accept='image/png, image/jpeg, image/jpg, image/gif, image/webp', width, sx }: Props) => {
     return (
         <Controller
             name={name}
@@ -35,7 +37,7 @@ export const FileInput = ({ name, label, accept='image/png, image/jpeg, image/jp
                         },
                         startAdornment: <FaFileUpload style={{ marginLeft: 5, color: theme.palette.text.primary }}/>
                     }}
-                    sx={{ width: width || '100%' }}
+                    sx={{ width: width || '100%', ...sx }}
                     placeholder='Select a File'
                     fullWidth={!width}
                 />

@@ -1,10 +1,8 @@
 import { Box } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import { SearchBar } from './SearchBar';
 import { useAppContext } from '../../context/useAppContext';
-import { styles } from '../../theme/styles';
 import { DashboardItem } from '../../types';
 import { getIconPath } from '../../utils/utils';
 
