@@ -155,8 +155,7 @@ export const SearchBar = ({
                                 minHeight: 'unset',
                                 lineHeight: '1.5',
                                 height: {
-                                    xs: '3rem',
-                                    sm: '2.5rem',
+                                    xs: '3rem'
                                 }
                             },
                         },
