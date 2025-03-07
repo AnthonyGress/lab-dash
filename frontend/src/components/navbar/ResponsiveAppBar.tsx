@@ -10,7 +10,7 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import React, { useState } from 'react';
 import { FaGear, FaHouse, FaWrench } from 'react-icons/fa6';
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAppContext } from '../../context/useAppContext';
 import { COLORS, styles } from '../../theme/styles';
@@ -39,6 +39,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
 
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const location = useLocation();
+    const navigate = useNavigate();
     const currentPath = location.pathname;
     console.log(currentPath);
 
@@ -151,14 +152,17 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                             </ListItem>
                                         </NavLink>
                                         <ListItem disablePadding>
-                                            <ListItemButton onClick={() => setEditMode(true)}>
+                                            <ListItemButton onClick={() => {
+                                                setEditMode(true);
+                                                if (currentPath !== '/') navigate('/');
+                                            }}>
                                                 <ListItemIcon>
                                                     {<FaWrench style={{ color: theme.palette.text.primary, fontSize: 22 }}/> }
                                                 </ListItemIcon>
                                                 <ListItemText primary={'Edit Dashboard'} />
                                             </ListItemButton>
                                         </ListItem>
-                                        <NavLink to='/settings' style={{ width: '100%', color: 'white' }}>
+                                        <NavLink to='/settings' style={{ width: '100%', color: 'white' }} onClick={() => setEditMode(false)}>
                                             <ListItem disablePadding>
                                                 <ListItemButton>
                                                     <ListItemIcon>
