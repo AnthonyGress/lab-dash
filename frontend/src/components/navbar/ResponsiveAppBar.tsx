@@ -10,7 +10,7 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import React, { useState } from 'react';
 import { FaGear, FaHouse, FaWrench } from 'react-icons/fa6';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 
 import { useAppContext } from '../../context/useAppContext';
 import { COLORS, styles } from '../../theme/styles';
@@ -38,6 +38,11 @@ export const ResponsiveAppBar = ({ children }: Props) => {
     const { dashboardLayout, saveLayout, refreshDashboard, editMode, setEditMode, config } = useAppContext();
 
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const location = useLocation();
+    const currentPath = location.pathname;
+    console.log(currentPath);
+
+
     const handleClose = () => setOpenAddModal(false);
 
     const handleEditCancel = () => {
@@ -89,10 +94,11 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                 </Typography>
                             </Box>
                         </Link>
-                        <Box sx={{ width: '100%', display: { xs: 'none', md: 'block' } }}>
-                            <GlobalSearch />
-                        </Box>
-
+                        { currentPath === '/' &&
+                            <Box sx={{ width: '100%', display: { xs: 'none', md: 'block' } }}>
+                                <GlobalSearch />
+                            </Box>
+                        }
                         {/* Mobile */}
                         <Logo sx={{ display: { xs: 'flex', md: 'none' }, ml: 2, mr: 2 }} />
                         {<Typography
@@ -183,14 +189,16 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                     paddingTop: '3rem',
                 }}>
                 </Box>
-                {editMode
-                    ? <Box position='absolute' sx={{ top: { xs: '66px', md: '70px' }, zIndex: 99, display: 'flex', justifyContent: 'flex-end', width: '100%', px: 3, gap: 2 }}>
-                        <Button variant='contained' onClick={handleEditCancel} sx={{ backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT, color: 'black', borderRadius: '999px', height: '1.7rem', width: '4.5rem' }}>Cancel</Button>
-                        <Button variant='contained' onClick={handleSave}  sx={{ backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT, color: 'black', borderRadius: '999px', height: '1.7rem', width: '4.5rem' }}>Done</Button>
-                    </Box>
-                    : <Box position='absolute' sx={{ top: { xs: '49px', sm: '55px' }, zIndex: 99, display: { xs: 'flex', md: 'none' }, justifyContent: 'center', width: '100%' }} mt={.5}>
-                        <GlobalSearch />
-                    </Box>
+                {
+                    editMode
+                        ? <Box position='absolute' sx={{ top: { xs: '66px', md: '70px' }, zIndex: 99, display: 'flex', justifyContent: 'flex-end', width: '100%', px: 3, gap: 2 }}>
+                            <Button variant='contained' onClick={handleEditCancel} sx={{ backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT, color: 'black', borderRadius: '999px', height: '1.7rem', width: '4.5rem' }}>Cancel</Button>
+                            <Button variant='contained' onClick={handleSave}  sx={{ backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT, color: 'black', borderRadius: '999px', height: '1.7rem', width: '4.5rem' }}>Done</Button>
+                        </Box>
+                        :
+                        currentPath === '/' && <Box position='absolute' sx={{ top: { xs: '49px', sm: '55px' }, zIndex: 99, display: { xs: 'flex', md: 'none' }, justifyContent: 'center', width: '100%' }} mt={.5}>
+                            <GlobalSearch />
+                        </Box>
                 }
                 {children}
             </Box>

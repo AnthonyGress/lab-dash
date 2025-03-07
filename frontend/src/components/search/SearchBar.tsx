@@ -93,11 +93,11 @@ export const SearchBar = ({
                                 <img
                                     src={option.icon}
                                     alt=''
-                                    style={{ width: 25, height: 25, marginRight: 10 }}
+                                    style={{ width: 30, height: 30, marginRight: 14 }}
                                     key={nanoid()}
                                 />
                             )}
-                            <Typography key={nanoid()}>{option.label}</Typography>
+                            <Typography key={nanoid()} fontSize={18}>{option.label}</Typography>
                         </Box>
                     );
                 }}
@@ -153,11 +153,11 @@ export const SearchBar = ({
                         sx: {
                             '& .MuiAutocomplete-option': {
                                 minHeight: 'unset',
-                                lineHeight: '1',
+                                lineHeight: '1.5',
                                 height: {
-                                    xs: '2.5rem',
-                                    sm: '2rem',
-                                },
+                                    xs: '3rem',
+                                    sm: '2.5rem',
+                                }
                             },
                         },
                     },
