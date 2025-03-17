@@ -42,6 +42,11 @@ a, img {
   -webkit-touch-callout: none !important;
 }
 
+.swal2-container {
+  z-index: 9999999 !important;
+  user-select: auto;
+}
+
 .scale {
   transition: all .15s ease-in-out;
 }

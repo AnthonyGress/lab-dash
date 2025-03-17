@@ -38,6 +38,7 @@ export type Config = {
     backgroundImage?: string;
     search?: boolean;
     searchProvider?: SearchProvider;
+    isSetupComplete?: boolean;
 }
 
 export type UploadImageResponse = {

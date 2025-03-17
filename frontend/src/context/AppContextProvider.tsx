@@ -1,5 +1,5 @@
 import { useMediaQuery } from '@mui/material';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import shortid from 'shortid';
 
 import { AppContext } from './AppContext';
@@ -18,6 +18,110 @@ export const AppContextProvider = ({ children }: Props) => {
     const [editMode, setEditMode] = useState(false);
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+    // Authentication & setup states
+    const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+    const [username, setUsername] = useState<string | null>(null);
+    const [isAdmin, setIsAdmin] = useState<boolean>(false);
+    const [isFirstTimeSetup, setIsFirstTimeSetup] = useState<boolean | null>(null);
+    const [setupComplete, setSetupComplete] = useState<boolean>(false);
+
+    // Initialize authentication state and check if first time setup
+    useEffect(() => {
+        const initializeAuth = async () => {
+            await checkIfUsersExist();
+            await checkLoginStatus();
+        };
+
+        initializeAuth();
+        // Setup API interceptors
+        DashApi.setupAxiosInterceptors();
+    }, []);
+
+    // Check if users exist in the system
+    const checkIfUsersExist = async () => {
+        try {
+            const hasUsers = await DashApi.checkIfUsersExist();
+            setIsFirstTimeSetup(!hasUsers);
+        } catch (error) {
+            console.error('Error checking for existing users:', error);
+            // If there's an error, assume it's not first time setup
+            setIsFirstTimeSetup(false);
+        }
+    };
+
+    // Check if user is logged in based on cookies
+    const checkLoginStatus = async () => {
+        console.log('Check login status');
+
+        try {
+            // HTTP-only cookies won't show in document.cookie
+            // Use the backend endpoint to check cookies
+            const cookieDebug = await DashApi.checkCookies();
+            console.log('Cookie debug:', cookieDebug);
+
+            // Check if access_token cookie exists from the server response
+            const hasAccessToken = cookieDebug && cookieDebug.hasAccessToken;
+
+            if (hasAccessToken) {
+                // If we have an access token, try to use it
+                try {
+                    // Check if user is admin to verify token is still valid
+                    const isAdminRes = await DashApi.checkIsAdmin();
+                    const storedUsername = localStorage.getItem('username');
+                    setUsername(storedUsername);
+                    setIsAdmin(isAdminRes);
+                    setIsLoggedIn(true);
+                    console.log('Authenticated with existing token');
+                } catch (error) {
+                    console.error('Access token validation failed:', error);
+                    // Try to refresh the token
+                    await refreshTokenAndValidate();
+                }
+            } else {
+                // No access token, but we might have a refresh token
+                console.log('No access token found');
+                // Server-side token refresh attempt
+                await refreshTokenAndValidate();
+            }
+        } catch (error) {
+            console.error('Error checking login status:', error);
+            setIsLoggedIn(false);
+            setUsername(null);
+            setIsAdmin(false);
+        }
+    };
+
+    // Helper function to refresh token and validate login
+    const refreshTokenAndValidate = async () => {
+        try {
+            // Try to refresh the token
+            const refreshed = await DashApi.refreshToken();
+
+            if (refreshed) {
+                // If token refreshed successfully, validate the new token
+                const isAdminRes = await DashApi.checkIsAdmin();
+                const storedUsername = localStorage.getItem('username');
+
+                // Update state based on new token
+                setUsername(storedUsername);
+                setIsAdmin(isAdminRes);
+                setIsLoggedIn(true);
+                console.log('Successfully refreshed token');
+            } else {
+                // If refresh failed, user is not logged in
+                setIsLoggedIn(false);
+                setUsername(null);
+                setIsAdmin(false);
+                console.log('Token refresh failed');
+            }
+        } catch (error) {
+            console.error('Error during token refresh:', error);
+            setIsLoggedIn(false);
+            setUsername(null);
+            setIsAdmin(false);
+        }
+    };
+
     const getLayout = async () => {
         console.log('Fetching saved layout');
 
@@ -25,6 +129,8 @@ export const AppContextProvider = ({ children }: Props) => {
 
         if (res) {
             setConfig(res);
+            console.log('config', res);
+
             const selectedLayout = isMobile ? res.layout.mobile : res.layout.desktop;
             if (selectedLayout.length > 0) {
                 setDashboardLayout(selectedLayout);
@@ -92,13 +198,15 @@ export const AppContextProvider = ({ children }: Props) => {
 
     const updateConfig = async (partialConfig: Partial<Config>) => {
         try {
+            console.log('updateConfig called with:', partialConfig);
+
             const updatedConfig: Partial<Config> = { ...partialConfig };
 
             // Ensure backgroundImage is a File before uploading
             if (partialConfig.backgroundImage && typeof partialConfig.backgroundImage === 'object' && 'name' in partialConfig.backgroundImage) {
                 const res = await DashApi.uploadBackgroundImage(partialConfig.backgroundImage);
 
-                console.log('########### uploaded', res);
+                console.log('Uploaded background image:', res);
 
                 if (res?.filePath) {
                     updatedConfig.backgroundImage = res.filePath;
@@ -110,16 +218,24 @@ export const AppContextProvider = ({ children }: Props) => {
 
             // Save updated config to API
             await DashApi.saveConfig(updatedConfig);
+            console.log('Config saved to API:', updatedConfig);
 
             // Update state with only the provided values, ensuring layout is always defined
             setConfig((prev) => {
-                if (!prev) return { ...updatedConfig, layout: { desktop: [], mobile: [] } };
+                if (!prev) {
+                    const newConfig = { ...updatedConfig, layout: { desktop: [], mobile: [] } };
+                    console.log('Creating new config:', newConfig);
+                    return newConfig;
+                }
 
-                return {
+                const mergedConfig = {
                     ...prev,
                     ...updatedConfig,
-                    layout: prev.layout ?? { desktop: [], mobile: [] }, // Ensures layout is always defined
+                    layout: prev.layout ?? { desktop: [], mobile: [] } // Ensures layout is always defined
                 };
+
+                console.log('Updating existing config. New state:', mergedConfig);
+                return mergedConfig;
             });
 
         } catch (error) {
@@ -131,7 +247,30 @@ export const AppContextProvider = ({ children }: Props) => {
     const { Provider } = AppContext;
 
     return (
-        <Provider value={{ dashboardLayout, refreshDashboard, saveLayout: saveLayout, addItem, setDashboardLayout, updateItem, editMode, setEditMode, config, updateConfig }}>
+        <Provider value={{
+            dashboardLayout,
+            refreshDashboard,
+            saveLayout,
+            addItem,
+            setDashboardLayout,
+            updateItem,
+            editMode,
+            setEditMode,
+            config,
+            updateConfig,
+            isLoggedIn,
+            setIsLoggedIn,
+            username,
+            setUsername,
+            isFirstTimeSetup,
+            setIsFirstTimeSetup,
+            setupComplete,
+            setSetupComplete,
+            checkIfUsersExist,
+            isAdmin,
+            setIsAdmin,
+            checkLoginStatus
+        }}>
             {children}
         </Provider>
     );

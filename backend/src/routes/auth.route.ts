@@ -4,6 +4,8 @@ import fs from 'fs';
 import jwt from 'jsonwebtoken';
 import path from 'path';
 
+import { authenticateToken } from '../middleware/auth.middleware';
+
 export const authRoute = Router();
 const USERS_PATH = path.join(__dirname, '../config/users.json');
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
@@ -16,6 +18,7 @@ interface User {
   username: string;
   passwordHash: string;
   refreshTokens?: string[];  // Store issued refresh tokens
+  role: 'admin' | 'user';    // Role for authorization
 }
 
 // Helper function to read users from JSON file
@@ -55,8 +58,8 @@ const writeUsers = (users: User[]): void => {
 };
 
 // Generate access token
-const generateAccessToken = (username: string): string => {
-    return jwt.sign({ username }, JWT_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRY });
+const generateAccessToken = (username: string, role: string): string => {
+    return jwt.sign({ username, role }, JWT_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRY });
 };
 
 // Generate refresh token
@@ -72,23 +75,30 @@ authRoute.post('/signup', async (req: Request, res: Response) => {
         // Validate input
         if (!username || !password) {
             res.status(400).json({ message: 'Username and password are required' });
+            return;
         }
 
         // Check if username is already taken
         const users = readUsers();
         if (users.some(user => user.username === username)) {
             res.status(409).json({ message: 'Username already exists' });
+            return;
         }
 
         // Hash the password
         const saltRounds = 10;
         const passwordHash = await bcrypt.hash(password, saltRounds);
 
+        // First user is automatically an admin, others are regular users
+        const isFirstUser = users.length === 0;
+        const role = isFirstUser ? 'admin' : 'user';
+
         // Store the new user with empty refresh tokens array
         users.push({
             username,
             passwordHash,
-            refreshTokens: []
+            refreshTokens: [],
+            role
         });
         writeUsers(users);
 
@@ -103,11 +113,14 @@ authRoute.post('/signup', async (req: Request, res: Response) => {
 // Login route
 authRoute.post('/login', async (req: Request, res: Response) => {
     try {
+        console.log('authenticating');
+
         const { username, password } = req.body;
 
         // Validate input
         if (!username || !password) {
             res.status(400).json({ message: 'Username and password are required' });
+            return;
         }
 
         // Find the user
@@ -116,6 +129,7 @@ authRoute.post('/login', async (req: Request, res: Response) => {
 
         if (userIndex === -1) {
             res.status(401).json({ message: 'Invalid credentials' });
+            return;
         }
 
         // Compare passwords
@@ -123,10 +137,11 @@ authRoute.post('/login', async (req: Request, res: Response) => {
 
         if (!passwordMatch) {
             res.status(401).json({ message: 'Invalid credentials' });
+            return;
         }
 
         // Generate tokens
-        const token = generateAccessToken(username);
+        const token = generateAccessToken(username, users[userIndex].role);
         const refreshToken = generateRefreshToken(username);
 
         // Store refresh token
@@ -140,7 +155,8 @@ authRoute.post('/login', async (req: Request, res: Response) => {
         res.cookie('access_token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production', // Use secure in production
-            sameSite: 'strict',
+            sameSite: 'lax',
+            path: '/',
             maxAge: 24 * 60 * 60 * 1000 // 1 day in milliseconds
         });
 
@@ -155,8 +171,10 @@ authRoute.post('/login', async (req: Request, res: Response) => {
         // Return success without including tokens in response body
         res.json({
             message: 'Login successful',
-            username: username
+            username: username,
+            isAdmin: users[userIndex].role === 'admin'
         });
+        console.log('login successful');
     } catch (error) {
         console.error('Login error:', error);
         res.status(500).json({ message: 'Internal server error' });
@@ -166,11 +184,14 @@ authRoute.post('/login', async (req: Request, res: Response) => {
 // Refresh token route
 authRoute.post('/refresh', async (req: Request, res: Response) => {
     try {
+        console.log('Refresh token request received, cookies:', req.cookies);
+
         // Get refresh token from cookie instead of request body
         const refreshToken = req.cookies?.refresh_token;
 
         if (!refreshToken) {
             res.status(400).json({ message: 'Refresh token is required' });
+            return;
         }
 
         // Verify refresh token
@@ -179,6 +200,7 @@ authRoute.post('/refresh', async (req: Request, res: Response) => {
             decoded = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET) as { username: string };
         } catch (err) {
             res.status(401).json({ message: 'Invalid refresh token' });
+            return;
         }
 
         // Find user with this refresh token
@@ -190,10 +212,11 @@ authRoute.post('/refresh', async (req: Request, res: Response) => {
 
         if (userIndex === -1) {
             res.status(401).json({ message: 'Refresh token not found' });
+            return;
         }
 
         // Generate new access token
-        const newAccessToken = generateAccessToken(decoded.username);
+        const newAccessToken = generateAccessToken(decoded.username, users[userIndex].role);
 
         // Set the new access token as an HTTP-only cookie
         res.cookie('access_token', newAccessToken, {
@@ -202,6 +225,8 @@ authRoute.post('/refresh', async (req: Request, res: Response) => {
             sameSite: 'strict',
             maxAge: 24 * 60 * 60 * 1000 // 1 day in milliseconds
         });
+
+        console.log('New access token set successfully');
 
         // Return success message
         res.json({ message: 'Token refreshed successfully' });
@@ -214,6 +239,8 @@ authRoute.post('/refresh', async (req: Request, res: Response) => {
 // Logout route
 authRoute.post('/logout', (req: Request, res: Response) => {
     try {
+        console.log('Logout request received, cookies:', req.cookies);
+
         // Get refresh token from cookie
         const refreshToken = req.cookies?.refresh_token;
 
@@ -234,10 +261,22 @@ authRoute.post('/logout', (req: Request, res: Response) => {
             writeUsers(updatedUsers);
         }
 
-        // Clear the cookies
-        res.clearCookie('access_token');
-        res.clearCookie('refresh_token');
+        // Clear the cookies with all necessary options
+        res.clearCookie('access_token', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/'
+        });
 
+        res.clearCookie('refresh_token', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            path: '/api/auth/refresh'
+        });
+
+        console.log('Cookies cleared on server');
         res.json({ message: 'Logged out successfully' });
     } catch (error) {
         console.error('Logout error:', error);
@@ -256,4 +295,26 @@ authRoute.get('/check-users', (req: Request, res: Response) => {
         console.error('Error checking users:', error);
         res.status(500).json({ message: 'Failed to check if users exist' });
     }
+});
+
+// Check if the current user is an admin
+authRoute.get('/check-admin', [authenticateToken], (req: Request, res: Response) => {
+    console.log('#### checking admin', req.body);
+
+    try {
+        const isAdmin = req.user?.role === 'admin';
+        res.json({ isAdmin });
+    } catch (error) {
+        console.error('Error checking admin status:', error);
+        res.status(500).json({ message: 'Failed to check admin status' });
+    }
+});
+
+authRoute.get('/check-cookies', (req: Request, res: Response) => {
+    console.log('Cookies received:', req.cookies);
+    res.json({
+        cookies: req.cookies,
+        hasAccessToken: !!req.cookies.access_token,
+        hasRefreshToken: !!req.cookies.refresh_token
+    });
 });

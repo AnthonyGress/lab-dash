@@ -184,7 +184,7 @@ export const SettingsForm = () => {
 
     const handleSubmit = async (data: any) => {
         try {
-            console.log(data);
+            console.log('Form data submitted:', data);
 
             const updatedConfig: Partial<Config> = {};
 
@@ -194,8 +194,10 @@ export const SettingsForm = () => {
 
             if (data.title.trim()) {
                 updatedConfig.title = data.title;
+                console.log('Setting title in updatedConfig:', data.title);
             } else {
                 updatedConfig.title = 'Lab Dash';
+                console.log('Using default title: Lab Dash');
             }
 
             if (data.search !== undefined) {
@@ -261,6 +263,8 @@ export const SettingsForm = () => {
                 }
             }
 
+            console.log('Final updatedConfig to be saved:', updatedConfig);
+
             if (Object.keys(updatedConfig).length > 0) {
                 await updateConfig(updatedConfig); // Update only the provided fields
 
@@ -275,7 +279,21 @@ export const SettingsForm = () => {
     };
 
     const resetBackground = async () => {
-        await updateConfig({ backgroundImage: '' });
+        PopupManager.deleteConfirmation({
+            title: 'Reset Background',
+            text: 'This will restore the default background.',
+            confirmText: 'Yes, Reset',
+            confirmAction: async () => {
+                try {
+                    await updateConfig({ backgroundImage: '' });
+                    PopupManager.success('Background has been reset');
+
+                } catch (error) {
+                    PopupManager.failure('Failed to reset background. Please try again.');
+                    console.error('Error resetting background:', error);
+                }
+            }
+        });
     };
 
     return (

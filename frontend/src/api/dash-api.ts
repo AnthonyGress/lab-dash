@@ -5,35 +5,15 @@ import { jwtDecode } from 'jwt-decode';
 import { BACKEND_URL } from '../constants/constants';
 import { Config, DashboardItem, DashboardLayout, Icon, UploadImageResponse } from '../types';
 
-// Auth types
-interface SignupRequest {
-  username: string;
-  password: string;
-}
-
 interface SignupResponse {
   message: string;
   username: string;
 }
 
-interface LoginRequest {
-  username: string;
-  password: string;
-}
-
 interface LoginResponse {
   message: string;
   username: string;
-}
-
-interface RefreshTokenResponse {
-  token: string;
-}
-
-interface JwtPayload {
-  exp: number;
-  username: string;
-  [key: string]: any;
+  isAdmin: boolean;
 }
 
 export class DashApi {
@@ -42,7 +22,7 @@ export class DashApi {
     // Authentication methods
     public static async signup(username: string, password: string): Promise<SignupResponse> {
         try {
-            const res = await axios.post(`${BACKEND_URL}/auth/signup`, {
+            const res = await axios.post(`${BACKEND_URL}/api/auth/signup`, {
                 username,
                 password
             });
@@ -59,7 +39,7 @@ export class DashApi {
 
     public static async login(username: string, password: string): Promise<LoginResponse> {
         try {
-            const res = await axios.post(`${BACKEND_URL}/auth/login`,
+            const res = await axios.post(`${BACKEND_URL}/api/auth/login`,
                 {
                     username,
                     password
@@ -74,6 +54,8 @@ export class DashApi {
                 localStorage.setItem('username', res.data.username);
             }
 
+            console.log('login successful', res.data);
+
             return res.data;
         } catch (error: any) {
             if (error.response) {
@@ -86,71 +68,25 @@ export class DashApi {
 
     public static async logout(): Promise<void> {
         try {
+            console.log('Logging out user...');
+
             // Call the logout endpoint to clear cookies on the server
-            await axios.post(`${BACKEND_URL}/auth/logout`, {}, { withCredentials: true });
+            // This is the only reliable way to clear HTTP-only cookies
+            await axios.post(`${BACKEND_URL}/api/auth/logout`, {}, { withCredentials: true });
+
+            // Clear username from localStorage
+            localStorage.removeItem('username');
+
+            console.log('Logged out successfully');
+
+            // Verify cookies are cleared
+            const cookieStatus = await this.checkCookies();
+            console.log('Cookie status after logout:', cookieStatus);
         } catch (error) {
             console.error('Logout error:', error);
+            // Even if the API call fails, clear local storage
+            localStorage.removeItem('username');
         }
-    }
-
-    // Refresh access token using the refresh token cookie
-    private static refreshAccessToken(): Promise<void> {
-        // If a refresh is already in progress, return that promise
-        if (this.refreshPromise) {
-            return this.refreshPromise;
-        }
-
-        this.refreshPromise = new Promise((resolve, reject) => {
-            axios.post<{ message: string }>(
-                `${BACKEND_URL}/auth/refresh`,
-                {}, // No body needed as token is in cookie
-                { withCredentials: true } // Include cookies in the request
-            )
-                .then(() => {
-                    // No need to store token as it's in cookies
-                    resolve();
-                })
-                .catch(error => {
-                    // If refresh fails, redirect to login
-                    this.redirectToLogin();
-                    reject(new Error('Failed to refresh token'));
-                })
-                .finally(() => {
-                    this.refreshPromise = null;
-                });
-        });
-
-        return this.refreshPromise;
-    }
-
-    // Get auth headers with token refresh logic
-    private static async getAuthHeadersWithRefresh(): Promise<Record<string, string>> {
-        // With HTTP-only cookies, we don't need to manually add the token to headers
-        // Cookies are automatically sent with the request
-
-        // Check if we need to refresh the token
-        try {
-            // If cookies include access_token, assume we're authenticated
-            // In a real implementation, you might want to check if the token is expired
-            const cookie = document.cookie;
-            const hasAccessToken = cookie.includes('access_token');
-
-            if (!hasAccessToken) {
-                // If no access token cookie, try to refresh
-                await this.refreshAccessToken();
-            }
-        } catch (error) {
-            console.error('Error checking authentication status:', error);
-        }
-
-        // Return empty headers as the cookies will be sent automatically
-        return {};
-    }
-
-    // Helper for non-auth headers - not needed with cookie auth
-    private static getAuthHeaders() {
-        // With HTTP-only cookies, we don't need to manually add auth headers
-        return {};
     }
 
     // Create an axios instance interceptor
@@ -162,9 +98,12 @@ export class DashApi {
         axios.interceptors.request.use(
             async (config) => {
                 // Only include credentials for auth-related endpoints
-                if (config.url?.includes('/auth/login') ||
-                    config.url?.includes('/auth/logout') ||
-                    config.url?.includes('/auth/refresh')) {
+                if (config.url?.includes('api/auth/login') ||
+                    config.url?.includes('api/auth/logout') ||
+                    config.url?.includes('api/auth/refresh') ||
+                    config.url?.includes('api/auth/debug-cookies') ||
+                    (config.url?.includes('api/config') && config.method === 'post') ||
+                    config.url?.includes('api/auth/check-admin')) {
                     config.withCredentials = true;
                 } else {
                     config.withCredentials = false;
@@ -179,23 +118,34 @@ export class DashApi {
         axios.interceptors.response.use(
             (response) => response,
             async (error) => {
+                // Get the original request configuration
                 const originalRequest = error.config;
 
-                // If 401 and not a retry and not login/refresh request
+                // Only handle 401 errors for authenticated routes
                 if (error.response?.status === 401 &&
                     !originalRequest._retry &&
-                    !originalRequest.url?.includes('/auth/login') &&
-                    !originalRequest.url?.includes('/auth/refresh')) {
+                    !originalRequest.url?.includes('api/auth/login') &&
+                    !originalRequest.url?.includes('api/auth/refresh')) {
 
+                    console.log('Intercepted 401 error for:', originalRequest.url);
                     originalRequest._retry = true;
 
                     try {
-                        // Refresh the token
-                        await this.refreshAccessToken();
+                        // Try to refresh the token
+                        const refreshSucceeded = await this.refreshToken();
 
-                        // Retry the original request
-                        return axios(originalRequest);
+                        if (refreshSucceeded) {
+                            console.log('Token refreshed, retrying original request');
+                            // If refresh was successful, retry the original request
+                            return axios(originalRequest);
+                        } else {
+                            // If refresh failed, redirect to login
+                            console.log('Token refresh failed, redirecting to login');
+                            this.redirectToLogin();
+                            return Promise.reject(error);
+                        }
                     } catch (refreshError) {
+                        console.error('Error during token refresh:', refreshError);
                         // If refresh fails, redirect to login
                         this.redirectToLogin();
                         return Promise.reject(refreshError);
@@ -209,10 +159,11 @@ export class DashApi {
 
     // Helper method to redirect to login page
     private static redirectToLogin(): void {
-        // Implement based on your routing library
-        // For example, with react-router:
-        // window.location.href = '/login';
-        console.log('Authentication expired. Redirecting to login...');
+        // Check if we're not already on the login page
+        if (!window.location.pathname.includes('/login')) {
+            console.log('Redirecting to login page...');
+            window.location.href = '/login';
+        }
     }
 
     // Existing methods - without auth headers for public endpoints
@@ -334,6 +285,58 @@ export class DashApi {
             return res.data;
         } catch (error) {
             console.error('Failed to upload image:', error);
+            return null;
+        }
+    }
+
+    // Check if any users exist (for first-time setup)
+    public static async checkIfUsersExist(): Promise<boolean> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/auth/check-users`);
+            return res.data.hasUsers;
+        } catch (error) {
+            console.error('Error checking users:', error);
+            // Assume users exist if there's an error to prevent unauthorized access
+            return false;
+        }
+    }
+
+    // Add this after the existing methods in the DashApi class
+    public static async checkIsAdmin(): Promise<boolean> {
+        try {
+            // Make a dedicated API call to check admin status
+            const res = await axios.get(`${BACKEND_URL}/api/auth/check-admin`, {
+                withCredentials: true
+            });
+            return res.data.isAdmin;
+        } catch (error) {
+            console.error('Error checking admin status:', error);
+            return false;
+        }
+    }
+
+    public static async refreshToken(): Promise<boolean> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/auth/refresh`, {}, {
+                withCredentials: true
+            });
+            console.log('Token refreshed successfully');
+            return true;
+        } catch (error) {
+            console.error('Error refreshing token:', error);
+            return false;
+        }
+    }
+
+    public static async checkCookies(): Promise<any> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/auth/check-cookies`, {
+                withCredentials: true
+            });
+            console.log('Cookie debug response:', res.data);
+            return res.data;
+        } catch (error) {
+            console.error('Error debugging cookies:', error);
             return null;
         }
     }

@@ -8,8 +8,10 @@ import Container from '@mui/material/Container';
 import Toolbar from '@mui/material/Toolbar';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
+import { nanoid } from 'nanoid';
 import React, { useEffect, useState } from 'react';
-import { FaGear, FaHouse, FaRightFromBracket, FaUser, FaWrench } from 'react-icons/fa6';
+import { FaEdit } from 'react-icons/fa';
+import { FaArrowRightFromBracket, FaGear, FaHouse, FaRightFromBracket, FaUser, FaWrench } from 'react-icons/fa6';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 
 import { DashApi } from '../../api/dash-api';
@@ -19,6 +21,7 @@ import { theme } from '../../theme/theme';
 import { AddEditForm } from '../forms/AddEditForm';
 import { Logo } from '../Logo';
 import { CenteredModal } from '../modals/CenteredModal';
+import { PopupManager } from '../modals/PopupManager';
 import { GlobalSearch } from '../search/GlobalSearch';
 
 const DrawerHeader = styled('div')(() => ({
@@ -37,42 +40,25 @@ export const ResponsiveAppBar = ({ children }: Props) => {
     const [openDrawer, setOpenDrawer] = useState(false);
     const [openAddModal, setOpenAddModal] = useState(false);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [username, setUsername] = useState<string | null>(null);
-    const { dashboardLayout, saveLayout, refreshDashboard, editMode, setEditMode, config } = useAppContext();
+    const {
+        dashboardLayout,
+        saveLayout,
+        refreshDashboard,
+        editMode,
+        setEditMode,
+        config,
+        isLoggedIn,
+        username,
+        setIsLoggedIn,
+        setUsername,
+        isAdmin
+    } = useAppContext();
 
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const location = useLocation();
     const navigate = useNavigate();
     const currentPath = location.pathname;
 
     const menuOpen = Boolean(anchorEl);
-
-    useEffect(() => {
-        // Check if user is logged in by attempting to access a protected endpoint
-        const checkLoginStatus = async () => {
-            try {
-                // We could check cookies or make a lightweight auth check API call
-                // For now, we'll simulate with a simple check
-                const cookie = document.cookie;
-                const hasAccessToken = cookie.includes('access_token');
-                setIsLoggedIn(hasAccessToken);
-
-                // If there's user info stored somewhere, set the username
-                // This is placeholder logic - implement based on your auth approach
-                if (hasAccessToken) {
-                    // This would be retrieved from your auth state management
-                    const storedUsername = localStorage.getItem('username');
-                    setUsername(storedUsername);
-                }
-            } catch (error) {
-                console.error('Error checking login status:', error);
-                setIsLoggedIn(false);
-            }
-        };
-
-        checkLoginStatus();
-    }, [location.pathname]); // Re-check when route changes
 
     const handleClose = () => setOpenAddModal(false);
 
@@ -120,8 +106,11 @@ export const ResponsiveAppBar = ({ children }: Props) => {
 
             // Optionally redirect to home page
             navigate('/');
+            handleCloseDrawer();
+            PopupManager.success('Logged out');
         } catch (error) {
             console.error('Logout error:', error);
+            PopupManager.failure('Logout error');
         }
     };
 
@@ -148,14 +137,19 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                     sx={{
                                         mr: 2,
                                         flexGrow: 1,
-                                        display: { xs: 'none', md: 'flex' },
+                                        display: { xs: 'none', md: 'block' },
                                         fontFamily: 'Earth Orbiter',
                                         letterSpacing: '.1rem',
                                         color: 'inherit',
                                         textDecoration: 'none',
+                                        minWidth: '120px',
+                                        textAlign: 'left',
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'visible'
                                     }}
+                                    key={`app-title-${config?.title}-${nanoid()}`}
                                 >
-                                    {config?.title || 'Lab Dash'}
+                                    <div style={{ display: 'block' }}>{config?.title || 'Lab Dash'}</div>
                                 </Typography>
                                 {/* Mobile */}
                                 <Logo sx={{ display: { xs: 'flex', md: 'none' }, ml: 2, mr: 2 }} />
@@ -170,9 +164,12 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                         letterSpacing: '.1rem',
                                         color: 'inherit',
                                         textDecoration: 'none',
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'visible'
                                     }}
+                                    key={`app-title-mobile-${config?.title}-${nanoid()}`}
                                 >
-                                    {(!editMode && isMobile) && config?.title || 'Lab Dash'}
+                                    {config?.title || 'Lab Dash'}
                                 </Typography>
                             </Box>
                         </Link>
@@ -192,91 +189,35 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                 </Tooltip>
                                 }
 
-                                {/* Avatar Menu */}
-                                <Tooltip title={isLoggedIn ? username || 'Account' : 'Login'}>
-                                    <IconButton
-                                        onClick={handleAvatarClick}
-                                        size='small'
-                                        aria-controls={menuOpen ? 'account-menu' : undefined}
-                                        aria-haspopup='true'
-                                        aria-expanded={menuOpen ? 'true' : undefined}
-                                        sx={{ mr: 2 }}
-                                    >
-                                        <Avatar
-                                            sx={{
-                                                width: 32,
-                                                height: 32,
-                                                bgcolor: isLoggedIn ? 'primary.main' : 'grey.500'
-                                            }}
-                                        >
-                                            {isLoggedIn && username ? username.charAt(0).toUpperCase() : <FaUser />}
-                                        </Avatar>
-                                    </IconButton>
-                                </Tooltip>
-                                <Menu
-                                    id='account-menu'
-                                    anchorEl={anchorEl}
-                                    open={menuOpen}
-                                    onClose={handleMenuClose}
-                                    PaperProps={{
-                                        elevation: 0,
-                                        sx: {
-                                            overflow: 'visible',
-                                            filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
-                                            mt: 1.5,
-                                            '& .MuiAvatar-root': {
-                                                width: 32,
-                                                height: 32,
-                                                ml: -0.5,
-                                                mr: 1,
-                                            },
-                                        },
-                                    }}
-                                    transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-                                    anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                                {/* Hamburger Menu Button */}
+                                <IconButton
+                                    onClick={handleOpenDrawer}
+                                    sx={{ ml: 1 }}
                                 >
-                                    {isLoggedIn ? (
-                                        <>
-                                            <MenuItem onClick={handleProfile}>
-                                                <ListItemIcon>
-                                                    <FaUser style={{ fontSize: 16, color: theme.palette.text.primary }} />
-                                                </ListItemIcon>
-                                                {username || 'User'}
-                                            </MenuItem>
-                                            <Divider />
-                                            <MenuItem onClick={handleLogout}>
-                                                <ListItemIcon>
-                                                    <FaRightFromBracket style={{ fontSize: 16, color: theme.palette.text.primary }} />
-                                                </ListItemIcon>
-                                                Logout
-                                            </MenuItem>
-                                        </>
-                                    ) : (
-                                        <MenuItem onClick={handleLogin}>
-                                            <ListItemIcon>
-                                                <FaUser style={{ fontSize: 16 , color: theme.palette.text.primary }} />
-                                            </ListItemIcon>
-                                            Login
-                                        </MenuItem>
-                                    )}
-                                </Menu>
-
-                                <IconButton onClick={handleOpenDrawer}>
                                     <MenuIcon sx={{ color: 'white', fontSize: '2rem', marginRight: '1rem' }}/>
                                 </IconButton>
                             </Box>
 
                             <Drawer open={openDrawer} onClose={handleCloseDrawer} anchor='right'>
-                                <Box sx={{ width: 225 }} role='presentation' onClick={handleCloseDrawer}>
+                                <Box
+                                    sx={{
+                                        width: 225,
+                                        height: '100%',
+                                        display: 'flex',
+                                        flexDirection: 'column'
+                                    }}
+                                    role='presentation'
+                                >
                                     <DrawerHeader>
                                         <IconButton onClick={handleCloseDrawer}>
                                             <CloseIcon sx={{ fontSize: 34, color: 'text.primary' }} />
                                         </IconButton>
                                     </DrawerHeader>
                                     <Divider />
-                                    {/* Routes */}
+
+                                    {/* Main Navigation */}
                                     <List>
-                                        <NavLink to='/' style={{ width: '100%', color: 'white' }}>
+                                        <NavLink to='/' style={{ width: '100%', color: 'white' }} onClick={handleCloseDrawer}>
                                             <ListItem disablePadding>
                                                 <ListItemButton>
                                                     <ListItemIcon>
@@ -286,33 +227,92 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                 </ListItemButton>
                                             </ListItem>
                                         </NavLink>
-                                        <ListItem disablePadding>
-                                            <ListItemButton onClick={() => {
-                                                setEditMode(true);
-                                                if (currentPath !== '/') navigate('/');
-                                            }}>
-                                                <ListItemIcon>
-                                                    {<FaWrench style={{ color: theme.palette.text.primary, fontSize: 22 }}/> }
-                                                </ListItemIcon>
-                                                <ListItemText primary={'Edit Dashboard'} />
-                                            </ListItemButton>
-                                        </ListItem>
-                                        <NavLink to='/settings' style={{ width: '100%', color: 'white' }} onClick={() => setEditMode(false)}>
+                                        {isLoggedIn && (
                                             <ListItem disablePadding>
-                                                <ListItemButton>
+                                                <ListItemButton onClick={() => {
+                                                    setEditMode(true);
+                                                    if (currentPath !== '/') navigate('/');
+                                                    handleCloseDrawer();
+                                                }}>
                                                     <ListItemIcon>
-                                                        {<FaGear style={{ color: theme.palette.text.primary, fontSize: 22 }}/> }
+                                                        {<FaEdit style={{ color: theme.palette.text.primary, fontSize: 22 }}/> }
                                                     </ListItemIcon>
-                                                    <ListItemText primary={'Settings'} />
+                                                    <ListItemText primary={'Edit Dashboard'} />
                                                 </ListItemButton>
                                             </ListItem>
-                                        </NavLink>
-                                        {!isLoggedIn && (
-                                            <NavLink to='/login' style={{ width: '100%', color: 'white' }} onClick={() => setEditMode(false)}>
+                                        )}
+                                        {isLoggedIn && isAdmin && (
+                                            <NavLink to='/settings' style={{ width: '100%', color: 'white' }} onClick={() => {handleCloseDrawer(); setEditMode(false);}}>
                                                 <ListItem disablePadding>
                                                     <ListItemButton>
                                                         <ListItemIcon>
-                                                            {<FaUser style={{ color: theme.palette.text.primary, fontSize: 22 }}/> }
+                                                            {<FaGear style={{ color: theme.palette.text.primary, fontSize: 22 }}/> }
+                                                        </ListItemIcon>
+                                                        <ListItemText primary={'Settings'} />
+                                                    </ListItemButton>
+                                                </ListItem>
+                                            </NavLink>
+                                        )}
+                                    </List>
+
+                                    {/* Spacer to push account info to bottom */}
+                                    <Box sx={{ flexGrow: 1 }} />
+
+                                    {/* Account Info at Bottom */}
+                                    <List sx={{ mt: 'auto', mb: 1 }}>
+                                        <Divider />
+
+                                        {/* Conditional Account Info */}
+                                        {isLoggedIn ? (
+                                            <>
+                                                {/* User Info */}
+                                                <ListItem
+                                                    disablePadding
+                                                    sx={{
+                                                        mt: 1
+                                                    }}
+                                                >
+                                                    <ListItemButton onClick={handleProfile}>
+                                                        <ListItemIcon>
+                                                            <Avatar
+                                                                sx={{
+                                                                    width: 24,
+                                                                    height: 24,
+                                                                    bgcolor: 'primary.main',
+                                                                    fontSize: 18
+                                                                }}
+                                                            >
+                                                                {username ? username.charAt(0).toUpperCase() : <FaUser style={{ fontSize: 16 }} />}
+                                                            </Avatar>
+                                                        </ListItemIcon>
+                                                        <ListItemText
+                                                            primary={username || 'User'}
+                                                            secondary={isAdmin ? 'Administrator' : 'User'}
+                                                            secondaryTypographyProps={{
+                                                                variant: 'caption',
+                                                                color: 'text.primary'
+                                                            }}
+                                                        />
+                                                    </ListItemButton>
+                                                </ListItem>
+
+                                                {/* Logout Button */}
+                                                <ListItem disablePadding>
+                                                    <ListItemButton onClick={() => {handleCloseDrawer(); handleLogout();}}>
+                                                        <ListItemIcon>
+                                                            <FaArrowRightFromBracket style={{ color: theme.palette.text.primary, fontSize: 22 }} />
+                                                        </ListItemIcon>
+                                                        <ListItemText primary='Logout' />
+                                                    </ListItemButton>
+                                                </ListItem>
+                                            </>
+                                        ) : (
+                                            // Login Button for Non-Logged in Users
+                                            <NavLink to='/login' style={{ width: '100%', color: 'white' }} onClick={() => {handleCloseDrawer(); setEditMode(false);}}>
+                                                <ListItem disablePadding>
+                                                    <ListItemButton>
+                                                        <ListItemIcon>
+                                                            <FaUser style={{ color: theme.palette.text.primary, fontSize: 22 }}/>
                                                         </ListItemIcon>
                                                         <ListItemText primary={'Login'} />
                                                     </ListItemButton>

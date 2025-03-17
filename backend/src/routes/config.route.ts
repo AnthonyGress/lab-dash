@@ -4,6 +4,7 @@ import fs from 'fs/promises';
 import StatusCodes from 'http-status-codes';
 import path from 'path';
 
+import {  authenticateToken, requireAdmin } from '../middleware/auth.middleware';
 import { Config } from '../types';
 export const configRoute = Router();
 
@@ -16,7 +17,7 @@ const loadConfig = () => {
     return { layout: { desktop: [], mobile: [] } };
 };
 
-// GET - Retrieve the saved layout JSON from disk
+// GET - Retrieve the saved layout JSON from disk (public access)
 configRoute.get('/', async (_req: Request, res: Response): Promise<void> => {
     try {
         const config = loadConfig();
@@ -30,8 +31,8 @@ configRoute.get('/', async (_req: Request, res: Response): Promise<void> => {
     }
 });
 
-// GET - Export the config file as a download
-configRoute.get('/export', async (_req: Request, res: Response): Promise<void> => {
+// GET - Export the config file as a download (admin only)
+configRoute.get('/export', [authenticateToken, requireAdmin], async (_req: Request, res: Response): Promise<void> => {
     try {
         const config = loadConfig();
         const fileName = `lab-dash-backup-${new Date().toISOString().slice(0, 10)}.json`;
@@ -50,8 +51,8 @@ configRoute.get('/export', async (_req: Request, res: Response): Promise<void> =
     }
 });
 
-// POST - Save the incoming JSON layout to disk
-configRoute.post('/', async (req: Request, res: Response): Promise<void> => {
+// POST - Save the incoming JSON layout to disk (admin only)
+configRoute.post('/', [authenticateToken, requireAdmin], async (req: Request, res: Response): Promise<void> => {
     try {
         console.log('Saving config body:', req.body);
 

@@ -24,8 +24,10 @@
   "description": "",
   "dependencies": {
     "@loganmarchione/homelab-svg-assets": "^0.4.8",
+    "@types/cookie-parser": "^1.4.8",
     "axios": "^1.7.9",
     "bcrypt": "^5.1.1",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",

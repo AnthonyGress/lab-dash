@@ -40,6 +40,11 @@ export const theme = createTheme({
             main: '#C6112E',
             contrastText: '#ffffff',
         },
+        action: {
+            // Make disabled items lighter
+            disabledBackground: 'rgba(255, 255, 255, 0.12)',
+            disabled: 'rgba(255, 255, 255, 0.5)'
+        }
     },
     components: {
         MuiMenuItem: {
@@ -97,6 +102,32 @@ export const theme = createTheme({
                 },
             },
         },
+        // Add styling for disabled buttons globally
+        MuiButton: {
+            styleOverrides: {
+                root: {
+                    '&.Mui-disabled': {
+                        color: 'rgba(255, 255, 255, 0.5)',
+                    }
+                }
+            }
+        },
+        // Style check icons in StepLabel component
+        MuiStepIcon: {
+            styleOverrides: {
+                root: {
+                    '&.Mui-active': {
+                        color: COLORS.PURPLE,
+                    },
+                    '&.Mui-completed': {
+                        color: COLORS.PURPLE,
+                    }
+                },
+                text: {
+                    fill: '#ffffff', // White text for step icons
+                }
+            }
+        }
     },
 });
 

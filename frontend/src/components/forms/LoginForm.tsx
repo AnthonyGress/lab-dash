@@ -1,7 +1,11 @@
-import { Box, Button, InputAdornment, Paper, Tooltip, Typography } from '@mui/material';
+import { Box, Button, InputAdornment, Typography } from '@mui/material';
 import { FormContainer, TextFieldElement, useForm } from 'react-hook-form-mui';
 import { FaLock, FaUser } from 'react-icons/fa6';
+import { useNavigate } from 'react-router-dom';
 
+import { DashApi } from '../../api/dash-api';
+import { PopupManager } from '../../components/modals/PopupManager';
+import { useAppContext } from '../../context/useAppContext';
 import { styles } from '../../theme/styles';
 import { theme } from '../../theme/theme';
 
@@ -11,6 +15,9 @@ type FormValues = {
 }
 
 export const LoginForm = () => {
+    const navigate = useNavigate();
+    const { setIsLoggedIn, setUsername, setIsAdmin } = useAppContext();
+
     const formContext = useForm<FormValues>({
         defaultValues: {
             username: '',
@@ -19,7 +26,26 @@ export const LoginForm = () => {
     });
 
     const handleSubmit = async (data: FormValues) => {
-        console.log(data);
+        try {
+            const response = await DashApi.login(data.username, data.password);
+            console.log('#### response', response);
+
+            // Update auth state in context
+            setIsLoggedIn(true);
+            setUsername(data.username);
+
+            // Get admin status directly from the response
+            if (response.isAdmin !== undefined) {
+                console.log('#### isAdmin from response', response.isAdmin);
+                setIsAdmin(response.isAdmin);
+            }
+
+            // Navigate to dashboard on successful login
+            PopupManager.success('Logged in', () => navigate('/'));
+        } catch (error: any) {
+            // Show error message
+            PopupManager.failure(error.message || 'Login failed');
+        }
     };
 
     return (
@@ -43,7 +69,8 @@ export const LoginForm = () => {
                                         <InputAdornment position='start'>
                                             <FaUser style={{ color: theme.palette.text.primary, fontSize: 22 }}/>
                                         </InputAdornment>
-                                    )
+                                    ),
+                                    autoComplete: 'username'
                                 }
                             }}
                         />
