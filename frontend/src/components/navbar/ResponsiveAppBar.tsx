@@ -1,17 +1,18 @@
 import { Add } from '@mui/icons-material';
 import CloseIcon from '@mui/icons-material/Close';
 import MenuIcon from '@mui/icons-material/Menu';
-import { Button, Divider, Drawer, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, styled, useMediaQuery } from '@mui/material';
+import { Avatar, Button, Divider, Drawer, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Menu, MenuItem, styled, useMediaQuery } from '@mui/material';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Toolbar from '@mui/material/Toolbar';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import React, { useState } from 'react';
-import { FaGear, FaHouse, FaWrench } from 'react-icons/fa6';
+import React, { useEffect, useState } from 'react';
+import { FaGear, FaHouse, FaRightFromBracket, FaUser, FaWrench } from 'react-icons/fa6';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 
+import { DashApi } from '../../api/dash-api';
 import { useAppContext } from '../../context/useAppContext';
 import { COLORS, styles } from '../../theme/styles';
 import { theme } from '../../theme/theme';
@@ -35,12 +36,43 @@ type Props = {
 export const ResponsiveAppBar = ({ children }: Props) => {
     const [openDrawer, setOpenDrawer] = useState(false);
     const [openAddModal, setOpenAddModal] = useState(false);
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [username, setUsername] = useState<string | null>(null);
     const { dashboardLayout, saveLayout, refreshDashboard, editMode, setEditMode, config } = useAppContext();
 
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const location = useLocation();
     const navigate = useNavigate();
     const currentPath = location.pathname;
+
+    const menuOpen = Boolean(anchorEl);
+
+    useEffect(() => {
+        // Check if user is logged in by attempting to access a protected endpoint
+        const checkLoginStatus = async () => {
+            try {
+                // We could check cookies or make a lightweight auth check API call
+                // For now, we'll simulate with a simple check
+                const cookie = document.cookie;
+                const hasAccessToken = cookie.includes('access_token');
+                setIsLoggedIn(hasAccessToken);
+
+                // If there's user info stored somewhere, set the username
+                // This is placeholder logic - implement based on your auth approach
+                if (hasAccessToken) {
+                    // This would be retrieved from your auth state management
+                    const storedUsername = localStorage.getItem('username');
+                    setUsername(storedUsername);
+                }
+            } catch (error) {
+                console.error('Error checking login status:', error);
+                setIsLoggedIn(false);
+            }
+        };
+
+        checkLoginStatus();
+    }, [location.pathname]); // Re-check when route changes
 
     const handleClose = () => setOpenAddModal(false);
 
@@ -63,6 +95,40 @@ export const ResponsiveAppBar = ({ children }: Props) => {
 
     const handleCloseDrawer = () => {
         setOpenDrawer(false);
+    };
+
+    const handleAvatarClick = (event: React.MouseEvent<HTMLElement>) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+    };
+
+    const handleLogin = () => {
+        handleMenuClose();
+        navigate('/login');
+    };
+
+    const handleLogout = async () => {
+        try {
+            await DashApi.logout();
+            setIsLoggedIn(false);
+            setUsername(null);
+            localStorage.removeItem('username');
+            handleMenuClose();
+
+            // Optionally redirect to home page
+            navigate('/');
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+    };
+
+    const handleProfile = () => {
+        handleMenuClose();
+        // Navigate to user profile page if you have one
+        // navigate('/profile');
     };
 
 
@@ -110,14 +176,14 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                 </Typography>
                             </Box>
                         </Link>
-                        { currentPath === '/' &&
+                        { currentPath === '/' && config?.search &&
                             <Box sx={{ width: '100%', display: { xs: 'none', md: 'block' } }}>
                                 <GlobalSearch />
                             </Box>
                         }
 
                         <Box sx={{ display: 'flex' }}>
-                            <Box sx={{ display: 'flex', width: { md: '200px' }, flexGrow: 1, justifyContent: 'flex-end' }}>
+                            <Box sx={{ display: 'flex', width: { md: '200px' }, flexGrow: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
                                 {editMode &&
                                 <Tooltip title='Add Item' placement='left'>
                                     <IconButton onClick={() => setOpenAddModal(true)}>
@@ -125,6 +191,76 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                     </IconButton>
                                 </Tooltip>
                                 }
+
+                                {/* Avatar Menu */}
+                                <Tooltip title={isLoggedIn ? username || 'Account' : 'Login'}>
+                                    <IconButton
+                                        onClick={handleAvatarClick}
+                                        size='small'
+                                        aria-controls={menuOpen ? 'account-menu' : undefined}
+                                        aria-haspopup='true'
+                                        aria-expanded={menuOpen ? 'true' : undefined}
+                                        sx={{ mr: 2 }}
+                                    >
+                                        <Avatar
+                                            sx={{
+                                                width: 32,
+                                                height: 32,
+                                                bgcolor: isLoggedIn ? 'primary.main' : 'grey.500'
+                                            }}
+                                        >
+                                            {isLoggedIn && username ? username.charAt(0).toUpperCase() : <FaUser />}
+                                        </Avatar>
+                                    </IconButton>
+                                </Tooltip>
+                                <Menu
+                                    id='account-menu'
+                                    anchorEl={anchorEl}
+                                    open={menuOpen}
+                                    onClose={handleMenuClose}
+                                    PaperProps={{
+                                        elevation: 0,
+                                        sx: {
+                                            overflow: 'visible',
+                                            filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
+                                            mt: 1.5,
+                                            '& .MuiAvatar-root': {
+                                                width: 32,
+                                                height: 32,
+                                                ml: -0.5,
+                                                mr: 1,
+                                            },
+                                        },
+                                    }}
+                                    transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                                    anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                                >
+                                    {isLoggedIn ? (
+                                        <>
+                                            <MenuItem onClick={handleProfile}>
+                                                <ListItemIcon>
+                                                    <FaUser style={{ fontSize: 16, color: theme.palette.text.primary }} />
+                                                </ListItemIcon>
+                                                {username || 'User'}
+                                            </MenuItem>
+                                            <Divider />
+                                            <MenuItem onClick={handleLogout}>
+                                                <ListItemIcon>
+                                                    <FaRightFromBracket style={{ fontSize: 16, color: theme.palette.text.primary }} />
+                                                </ListItemIcon>
+                                                Logout
+                                            </MenuItem>
+                                        </>
+                                    ) : (
+                                        <MenuItem onClick={handleLogin}>
+                                            <ListItemIcon>
+                                                <FaUser style={{ fontSize: 16 , color: theme.palette.text.primary }} />
+                                            </ListItemIcon>
+                                            Login
+                                        </MenuItem>
+                                    )}
+                                </Menu>
+
                                 <IconButton onClick={handleOpenDrawer}>
                                     <MenuIcon sx={{ color: 'white', fontSize: '2rem', marginRight: '1rem' }}/>
                                 </IconButton>
@@ -138,6 +274,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                         </IconButton>
                                     </DrawerHeader>
                                     <Divider />
+                                    {/* Routes */}
                                     <List>
                                         <NavLink to='/' style={{ width: '100%', color: 'white' }}>
                                             <ListItem disablePadding>
@@ -170,6 +307,18 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                 </ListItemButton>
                                             </ListItem>
                                         </NavLink>
+                                        {!isLoggedIn && (
+                                            <NavLink to='/login' style={{ width: '100%', color: 'white' }} onClick={() => setEditMode(false)}>
+                                                <ListItem disablePadding>
+                                                    <ListItemButton>
+                                                        <ListItemIcon>
+                                                            {<FaUser style={{ color: theme.palette.text.primary, fontSize: 22 }}/> }
+                                                        </ListItemIcon>
+                                                        <ListItemText primary={'Login'} />
+                                                    </ListItemButton>
+                                                </ListItem>
+                                            </NavLink>
+                                        )}
                                     </List>
                                 </Box>
                             </Drawer>
@@ -198,13 +347,12 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                             <Button variant='contained' onClick={handleSave}  sx={{ backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT, color: 'black', borderRadius: '999px', height: '1.7rem', width: '4.5rem' }}>Done</Button>
                         </Box>
                         :
-                        currentPath === '/' && <Box position='absolute' sx={{ top: { xs: '49px', sm: '55px' }, zIndex: 99, display: { xs: 'flex', md: 'none' }, justifyContent: 'center', width: '100%' }} mt={.5}>
+                        currentPath === '/' && config?.search && <Box position='absolute' sx={{ top: { xs: '49px', sm: '55px' }, zIndex: 99, display: { xs: 'flex', md: 'none' }, justifyContent: 'center', width: '100%' }} mt={.5}>
                             <GlobalSearch />
                         </Box>
                 }
                 {children}
             </Box>
         </>
-
     );
 };

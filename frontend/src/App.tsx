@@ -3,10 +3,11 @@ import { GlobalStyles } from '@mui/material';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 
 import { WithNav } from './components/navbar/WithNav';
-import { DashboardPage } from './components/pages/DashboardPage';
-import { SettingsPage } from './components/pages/SettingsPage';
 import { BACKEND_URL } from './constants/constants';
 import { useAppContext } from './context/useAppContext';
+import { DashboardPage } from './pages/DashboardPage';
+import { LoginPage } from './pages/LoginPage';
+import { SettingsPage } from './pages/SettingsPage';
 
 export const App = () => {
     const { config } = useAppContext();
@@ -38,6 +39,8 @@ export const App = () => {
                     <Route element={<WithNav />}>
                         <Route path='/' element={<DashboardPage />}/>
                         <Route path='/settings' element={<SettingsPage />}/>
+                        <Route path='/login' element={<LoginPage />}/>
+                        <Route path='/signup' element={<LoginPage />}/>
                     </Route>
                 </Routes>
             </Router>

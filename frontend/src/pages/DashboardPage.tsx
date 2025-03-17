@@ -1,4 +1,4 @@
-import { DashboardGrid } from '../dashboard/DashboardGrid';
+import { DashboardGrid } from '../components/dashboard/DashboardGrid';
 
 export const DashboardPage = () => {
     return (

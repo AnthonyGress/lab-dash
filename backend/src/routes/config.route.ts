@@ -30,6 +30,26 @@ configRoute.get('/', async (_req: Request, res: Response): Promise<void> => {
     }
 });
 
+// GET - Export the config file as a download
+configRoute.get('/export', async (_req: Request, res: Response): Promise<void> => {
+    try {
+        const config = loadConfig();
+        const fileName = `lab-dash-backup-${new Date().toISOString().slice(0, 10)}.json`;
+
+        // Set headers to force download
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
+
+        // Send the formatted JSON as the response
+        res.status(StatusCodes.OK).send(JSON.stringify(config, null, 2));
+    } catch (error) {
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            message: 'Error exporting config file',
+            error: (error as Error).message
+        });
+    }
+});
+
 // POST - Save the incoming JSON layout to disk
 configRoute.post('/', async (req: Request, res: Response): Promise<void> => {
     try {

@@ -32,8 +32,8 @@ a, img {
 }
 
 #root {
-  text-align: center;
-  margin: auto;
+  /* text-align: center; */
+  /* margin: auto; */
   user-select: none !important;
   -ms-user-select: none;
   -moz-user-select: -moz-none;
