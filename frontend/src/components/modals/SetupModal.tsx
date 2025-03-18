@@ -201,9 +201,9 @@ export const SetupModal: React.FC<SetupModalProps> = ({ open, onComplete }) => {
                         Lab Dash features a customizable grid layout where you can add various widgets:
                     </Typography>
                     <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'flex-start', pl: 4 }}>
-                        <Typography>• Weather information</Typography>
+                        <Typography>• Links to your tools/services</Typography>
+                        <Typography>• System information</Typography>
                         <Typography>• Service health checks</Typography>
-                        <Typography>• Links to your important tools</Typography>
                         <Typography>• Custom widgets and more</Typography>
                     </Box>
                 </Box>
@@ -220,7 +220,7 @@ export const SetupModal: React.FC<SetupModalProps> = ({ open, onComplete }) => {
                         You can easily customize your dashboard by:
                     </Typography>
                     <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'flex-start', pl: 4 }}>
-                        <Typography>• Dragging and resizing widgets</Typography>
+                        <Typography>• Dragging and reordering widgets</Typography>
                         <Typography>• Changing the background image</Typography>
                         <Typography>• Adding custom search providers</Typography>
                         <Typography>• Importing/exporting configurations</Typography>
@@ -241,7 +241,7 @@ export const SetupModal: React.FC<SetupModalProps> = ({ open, onComplete }) => {
                     <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'flex-start', pl: 4 }}>
                         <Typography>• All data is stored locally on your own server</Typography>
                         <Typography>• Only administrator accounts can make changes</Typography>
-                        <Typography>• Configuration can be easily exported and backed up</Typography>
+                        <Typography>• Configurations can be easily backed up and restored</Typography>
                     </Box>
 
                 </Box>
