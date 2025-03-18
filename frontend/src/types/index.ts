@@ -24,6 +24,11 @@ export type Icon = {
     guidelines?: string;
 }
 
+export type SearchProvider = {
+    name: string;
+    url: string;
+}
+
 export type Config = {
     layout: {
         desktop: DashboardItem[];
@@ -31,6 +36,9 @@ export type Config = {
     },
     title?: string;
     backgroundImage?: string;
+    search?: boolean;
+    searchProvider?: SearchProvider;
+    isSetupComplete?: boolean;
 }
 
 export type UploadImageResponse = {

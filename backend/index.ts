@@ -1,7 +1,7 @@
+import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express, { Application } from 'express';
-import helmet from 'helmet';
 import path from 'path';
 
 import { UPLOAD_DIRECTORY } from './src/constants/constants';
@@ -20,7 +20,13 @@ const iconListPath = path.join(__dirname, './node_modules/@loganmarchione/homela
 console.log('Serving icons from:', iconsPath);
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: true,
+    credentials: true, // Important for cookies
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+app.use(cookieParser()); // Add cookie parser
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

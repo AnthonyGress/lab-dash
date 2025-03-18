@@ -1,13 +1,14 @@
 import { Box, Paper } from '@mui/material';
 
-import { styles } from '../../theme/styles';
-import { SettingsForm } from '../forms/SettingsForm';
+import { LoginForm } from '../components/forms/LoginForm';
+import { styles } from '../theme/styles';
 
-export const SettingsPage = () => {
+export const LoginPage = () => {
+
     return (
         <Box width={'100%'} sx={styles.center}>
             <Box sx={{ ...styles.vcenter, width: '90%', borderRadius: 2 }} component={Paper}>
-                <SettingsForm />
+                <LoginForm />
             </Box>
         </Box>
     );

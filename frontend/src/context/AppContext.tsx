@@ -12,7 +12,20 @@ export interface IAppContext {
     editMode: boolean;
     setEditMode: Dispatch<SetStateAction<boolean>>;
     config: Config | undefined;
-    updateConfig: (partialConfig: Partial<Config>) => Promise<void>
+    updateConfig: (partialConfig: Partial<Config>) => Promise<void>;
+    // Authentication & setup states
+    isLoggedIn: boolean;
+    setIsLoggedIn: Dispatch<SetStateAction<boolean>>;
+    username: string | null;
+    setUsername: Dispatch<SetStateAction<string | null>>;
+    isAdmin: boolean;
+    setIsAdmin: Dispatch<SetStateAction<boolean>>;
+    isFirstTimeSetup: boolean | null;
+    setIsFirstTimeSetup: Dispatch<SetStateAction<boolean | null>>;
+    setupComplete: boolean;
+    setSetupComplete: Dispatch<SetStateAction<boolean>>;
+    checkIfUsersExist: () => Promise<void>;
+    checkLoginStatus: () => Promise<void>;
 }
 
 export const AppContext = createContext<IAppContext>(null!);

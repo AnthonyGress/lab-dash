@@ -1,23 +1,27 @@
 import { Add } from '@mui/icons-material';
 import CloseIcon from '@mui/icons-material/Close';
 import MenuIcon from '@mui/icons-material/Menu';
-import { Button, Divider, Drawer, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, styled, useMediaQuery } from '@mui/material';
+import { Avatar, Button, Divider, Drawer, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, styled } from '@mui/material';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Toolbar from '@mui/material/Toolbar';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import React, { useState } from 'react';
-import { FaGear, FaHouse, FaWrench } from 'react-icons/fa6';
+import { nanoid } from 'nanoid';
+import React, { useEffect, useState } from 'react';
+import { FaEdit } from 'react-icons/fa';
+import { FaArrowRightFromBracket, FaGear, FaHouse, FaUser } from 'react-icons/fa6';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 
+import { DashApi } from '../../api/dash-api';
 import { useAppContext } from '../../context/useAppContext';
 import { COLORS, styles } from '../../theme/styles';
 import { theme } from '../../theme/theme';
 import { AddEditForm } from '../forms/AddEditForm';
 import { Logo } from '../Logo';
 import { CenteredModal } from '../modals/CenteredModal';
+import { PopupManager } from '../modals/PopupManager';
 import { GlobalSearch } from '../search/GlobalSearch';
 
 const DrawerHeader = styled('div')(() => ({
@@ -35,12 +39,26 @@ type Props = {
 export const ResponsiveAppBar = ({ children }: Props) => {
     const [openDrawer, setOpenDrawer] = useState(false);
     const [openAddModal, setOpenAddModal] = useState(false);
-    const { dashboardLayout, saveLayout, refreshDashboard, editMode, setEditMode, config } = useAppContext();
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const {
+        dashboardLayout,
+        saveLayout,
+        refreshDashboard,
+        editMode,
+        setEditMode,
+        config,
+        isLoggedIn,
+        username,
+        setIsLoggedIn,
+        setUsername,
+        isAdmin
+    } = useAppContext();
 
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const location = useLocation();
     const navigate = useNavigate();
     const currentPath = location.pathname;
+
+    const menuOpen = Boolean(anchorEl);
 
     const handleClose = () => setOpenAddModal(false);
 
@@ -65,6 +83,43 @@ export const ResponsiveAppBar = ({ children }: Props) => {
         setOpenDrawer(false);
     };
 
+    const handleAvatarClick = (event: React.MouseEvent<HTMLElement>) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+    };
+
+    const handleLogin = () => {
+        handleMenuClose();
+        navigate('/login');
+    };
+
+    const handleLogout = async () => {
+        try {
+            await DashApi.logout();
+            setIsLoggedIn(false);
+            setUsername(null);
+            localStorage.removeItem('username');
+            handleMenuClose();
+
+            // Optionally redirect to home page
+            navigate('/');
+            handleCloseDrawer();
+            PopupManager.success('Logged out');
+        } catch (error) {
+            console.error('Logout error:', error);
+            PopupManager.failure('Logout error');
+        }
+    };
+
+    const handleProfile = () => {
+        handleMenuClose();
+        // Navigate to user profile page if you have one
+        // navigate('/profile');
+    };
+
 
     return (
         <>
@@ -82,14 +137,19 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                     sx={{
                                         mr: 2,
                                         flexGrow: 1,
-                                        display: { xs: 'none', md: 'flex' },
+                                        display: { xs: 'none', md: 'block' },
                                         fontFamily: 'Earth Orbiter',
                                         letterSpacing: '.1rem',
                                         color: 'inherit',
                                         textDecoration: 'none',
+                                        minWidth: '120px',
+                                        textAlign: 'left',
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'visible'
                                     }}
+                                    key={`app-title-${config?.title}-${nanoid()}`}
                                 >
-                                    {config?.title || 'Lab Dash'}
+                                    <div style={{ display: 'block' }}>{config?.title || 'Lab Dash'}</div>
                                 </Typography>
                                 {/* Mobile */}
                                 <Logo sx={{ display: { xs: 'flex', md: 'none' }, ml: 2, mr: 2 }} />
@@ -104,20 +164,23 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                         letterSpacing: '.1rem',
                                         color: 'inherit',
                                         textDecoration: 'none',
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'visible'
                                     }}
+                                    key={`app-title-mobile-${config?.title}-${nanoid()}`}
                                 >
-                                    {(!editMode && isMobile) && config?.title || 'Lab Dash'}
+                                    {config?.title || 'Lab Dash'}
                                 </Typography>
                             </Box>
                         </Link>
-                        { currentPath === '/' &&
+                        { currentPath === '/' && config?.search &&
                             <Box sx={{ width: '100%', display: { xs: 'none', md: 'block' } }}>
                                 <GlobalSearch />
                             </Box>
                         }
 
                         <Box sx={{ display: 'flex' }}>
-                            <Box sx={{ display: 'flex', width: { md: '200px' }, flexGrow: 1, justifyContent: 'flex-end' }}>
+                            <Box sx={{ display: 'flex', width: { md: '200px' }, flexGrow: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
                                 {editMode &&
                                 <Tooltip title='Add Item' placement='left'>
                                     <IconButton onClick={() => setOpenAddModal(true)}>
@@ -125,21 +188,36 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                     </IconButton>
                                 </Tooltip>
                                 }
-                                <IconButton onClick={handleOpenDrawer}>
+
+                                {/* Hamburger Menu Button */}
+                                <IconButton
+                                    onClick={handleOpenDrawer}
+                                    sx={{ ml: 1 }}
+                                >
                                     <MenuIcon sx={{ color: 'white', fontSize: '2rem', marginRight: '1rem' }}/>
                                 </IconButton>
                             </Box>
 
                             <Drawer open={openDrawer} onClose={handleCloseDrawer} anchor='right'>
-                                <Box sx={{ width: 225 }} role='presentation' onClick={handleCloseDrawer}>
+                                <Box
+                                    sx={{
+                                        width: 225,
+                                        height: '100%',
+                                        display: 'flex',
+                                        flexDirection: 'column'
+                                    }}
+                                    role='presentation'
+                                >
                                     <DrawerHeader>
                                         <IconButton onClick={handleCloseDrawer}>
                                             <CloseIcon sx={{ fontSize: 34, color: 'text.primary' }} />
                                         </IconButton>
                                     </DrawerHeader>
                                     <Divider />
+
+                                    {/* Main Navigation */}
                                     <List>
-                                        <NavLink to='/' style={{ width: '100%', color: 'white' }}>
+                                        <NavLink to='/' style={{ width: '100%', color: 'white' }} onClick={handleCloseDrawer}>
                                             <ListItem disablePadding>
                                                 <ListItemButton>
                                                     <ListItemIcon>
@@ -149,27 +227,98 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                 </ListItemButton>
                                             </ListItem>
                                         </NavLink>
-                                        <ListItem disablePadding>
-                                            <ListItemButton onClick={() => {
-                                                setEditMode(true);
-                                                if (currentPath !== '/') navigate('/');
-                                            }}>
-                                                <ListItemIcon>
-                                                    {<FaWrench style={{ color: theme.palette.text.primary, fontSize: 22 }}/> }
-                                                </ListItemIcon>
-                                                <ListItemText primary={'Edit Dashboard'} />
-                                            </ListItemButton>
-                                        </ListItem>
-                                        <NavLink to='/settings' style={{ width: '100%', color: 'white' }} onClick={() => setEditMode(false)}>
+                                        {isLoggedIn && (
                                             <ListItem disablePadding>
-                                                <ListItemButton>
+                                                <ListItemButton onClick={() => {
+                                                    setEditMode(true);
+                                                    if (currentPath !== '/') navigate('/');
+                                                    handleCloseDrawer();
+                                                }}>
                                                     <ListItemIcon>
-                                                        {<FaGear style={{ color: theme.palette.text.primary, fontSize: 22 }}/> }
+                                                        {<FaEdit style={{ color: theme.palette.text.primary, fontSize: 22 }}/> }
                                                     </ListItemIcon>
-                                                    <ListItemText primary={'Settings'} />
+                                                    <ListItemText primary={'Edit Dashboard'} />
                                                 </ListItemButton>
                                             </ListItem>
-                                        </NavLink>
+                                        )}
+                                        {isLoggedIn && isAdmin && (
+                                            <NavLink to='/settings' style={{ width: '100%', color: 'white' }} onClick={() => {handleCloseDrawer(); setEditMode(false);}}>
+                                                <ListItem disablePadding>
+                                                    <ListItemButton>
+                                                        <ListItemIcon>
+                                                            {<FaGear style={{ color: theme.palette.text.primary, fontSize: 22 }}/> }
+                                                        </ListItemIcon>
+                                                        <ListItemText primary={'Settings'} />
+                                                    </ListItemButton>
+                                                </ListItem>
+                                            </NavLink>
+                                        )}
+                                    </List>
+
+                                    {/* Spacer to push account info to bottom */}
+                                    <Box sx={{ flexGrow: 1 }} />
+
+                                    {/* Account Info at Bottom */}
+                                    <List sx={{ mt: 'auto', mb: 1 }}>
+                                        <Divider />
+
+                                        {/* Conditional Account Info */}
+                                        {isLoggedIn ? (
+                                            <>
+                                                {/* User Info */}
+                                                <ListItem
+                                                    disablePadding
+                                                    sx={{
+                                                        mt: 1
+                                                    }}
+                                                >
+                                                    <ListItemButton onClick={handleProfile}>
+                                                        <ListItemIcon>
+                                                            <Avatar
+                                                                sx={{
+                                                                    width: 26,
+                                                                    height: 26,
+                                                                    bgcolor: 'primary.main',
+                                                                    fontSize: 18,
+                                                                    ml: '-4px'
+                                                                }}
+                                                            >
+                                                                {username ? username.charAt(0).toUpperCase() : <FaUser style={{ fontSize: 16 }} />}
+                                                            </Avatar>
+                                                        </ListItemIcon>
+                                                        <ListItemText
+                                                            primary={username || 'User'}
+                                                            secondary={isAdmin ? 'Administrator' : 'User'}
+                                                            secondaryTypographyProps={{
+                                                                color: 'text.primary'
+                                                            }}
+                                                        />
+                                                    </ListItemButton>
+                                                </ListItem>
+
+                                                {/* Logout Button */}
+                                                <ListItem disablePadding>
+                                                    <ListItemButton onClick={() => {handleCloseDrawer(); handleLogout();}}>
+                                                        <ListItemIcon>
+                                                            <FaArrowRightFromBracket style={{ color: theme.palette.text.primary, fontSize: 22 }} />
+                                                        </ListItemIcon>
+                                                        <ListItemText primary='Logout' />
+                                                    </ListItemButton>
+                                                </ListItem>
+                                            </>
+                                        ) : (
+                                            // Login Button for Non-Logged in Users
+                                            <NavLink to='/login' style={{ width: '100%', color: 'white' }} onClick={() => {handleCloseDrawer(); setEditMode(false);}}>
+                                                <ListItem disablePadding>
+                                                    <ListItemButton>
+                                                        <ListItemIcon>
+                                                            <FaUser style={{ color: theme.palette.text.primary, fontSize: 22 }}/>
+                                                        </ListItemIcon>
+                                                        <ListItemText primary={'Login'} />
+                                                    </ListItemButton>
+                                                </ListItem>
+                                            </NavLink>
+                                        )}
                                     </List>
                                 </Box>
                             </Drawer>
@@ -198,13 +347,12 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                             <Button variant='contained' onClick={handleSave}  sx={{ backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT, color: 'black', borderRadius: '999px', height: '1.7rem', width: '4.5rem' }}>Done</Button>
                         </Box>
                         :
-                        currentPath === '/' && <Box position='absolute' sx={{ top: { xs: '49px', sm: '55px' }, zIndex: 99, display: { xs: 'flex', md: 'none' }, justifyContent: 'center', width: '100%' }} mt={.5}>
+                        currentPath === '/' && config?.search && <Box position='absolute' sx={{ top: { xs: '49px', sm: '55px' }, zIndex: 99, display: { xs: 'flex', md: 'none' }, justifyContent: 'center', width: '100%' }} mt={.5}>
                             <GlobalSearch />
                         </Box>
                 }
                 {children}
             </Box>
         </>
-
     );
 };

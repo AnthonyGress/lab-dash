@@ -4,6 +4,7 @@ import { nanoid } from 'nanoid';
 import { Dispatch, SetStateAction } from 'react';
 import { FaSearch } from 'react-icons/fa';
 
+import { useAppContext } from '../../context/useAppContext';
 import { COLORS, styles } from '../../theme/styles';
 
 export type SearchOption = {
@@ -25,11 +26,21 @@ export const SearchBar = ({
     setSearchValue,
     autocompleteOptions = []
 }: Props) => {
+    const { config } = useAppContext();
+
+    // Default to Google if no search provider is configured
+    const searchProvider = config?.searchProvider || { name: 'Google', url: 'https://www.google.com/search?q={query}' };
+
+    const getSearchUrl = (query: string) => {
+        if (!query.trim()) return '';
+        return searchProvider.url.replace('{query}', encodeURIComponent(query));
+    };
+
     const handleChange = (_event: any, newValue: SearchOption | string | null) => {
         if (!newValue) return;
 
         if (typeof newValue === 'string') {
-            window.open(`https://www.google.com/search?q=${encodeURIComponent(newValue)}`, '_blank');
+            window.open(getSearchUrl(newValue), '_blank');
         } else {
             if (newValue.url) {
                 window.open(newValue.url, '_blank');
@@ -61,8 +72,8 @@ export const SearchBar = ({
                     if (filtered.length === 0 && state.inputValue.trim() !== '') {
                         return [
                             {
-                                label: `Search Google for "${state.inputValue}"`,
-                                url: `https://www.google.com/search?q=${encodeURIComponent(state.inputValue)}`,
+                                label: `Search ${searchProvider.name} for "${state.inputValue}"`,
+                                url: getSearchUrl(state.inputValue),
                             },
                         ];
                     }
@@ -105,7 +116,7 @@ export const SearchBar = ({
                     <Box sx={{ width: '100%', ...styles.center }}>
                         <TextField
                             {...params}
-                            placeholder={placeholder}
+                            placeholder={placeholder || `Search with ${searchProvider.name}`}
                             InputProps={{
                                 ...params.InputProps,
                                 startAdornment: (

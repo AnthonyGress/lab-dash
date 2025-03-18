@@ -32,14 +32,19 @@ a, img {
 }
 
 #root {
-  text-align: center;
-  margin: auto;
+  /* text-align: center; */
+  /* margin: auto; */
   user-select: none !important;
   -ms-user-select: none;
   -moz-user-select: -moz-none;
   -webkit-user-select: none !important;
   -webkit-user-drag: none !important;
   -webkit-touch-callout: none !important;
+}
+
+.swal2-container {
+  z-index: 9999999 !important;
+  user-select: auto;
 }
 
 .scale {
