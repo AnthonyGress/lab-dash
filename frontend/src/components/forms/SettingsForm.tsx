@@ -315,6 +315,7 @@ export const SettingsForm = () => {
 
                 // Show success message
                 PopupManager.success('Settings updated successfully!');
+                formContext.reset();
             }
         } catch (error) {
             // Show error message
