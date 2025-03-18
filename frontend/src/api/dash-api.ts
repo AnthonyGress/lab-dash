@@ -88,13 +88,18 @@ export class DashApi {
 
     // Create an axios instance interceptor
     public static setupAxiosInterceptors(): void {
-        // Don't set withCredentials globally - only for auth endpoints
+        // Don't set withCredentials globally by default
         axios.defaults.withCredentials = false;
 
         // Request interceptor
         axios.interceptors.request.use(
             async (config) => {
-                config.withCredentials = true;
+                // Always send credentials for API requests that require authentication
+                if (config.url?.includes('/api/config') ||
+                    config.url?.includes('/api/auth') ||
+                    config.url?.includes('/api/system')) {
+                    config.withCredentials = true;
+                }
                 return config;
             },
             (error) => Promise.reject(error)
@@ -123,6 +128,8 @@ export class DashApi {
                         if (refreshSucceeded) {
                             console.log('Token refreshed, retrying original request');
                             // If refresh was successful, retry the original request
+                            // Ensure credentials are included in the retry
+                            originalRequest.withCredentials = true;
                             return axios(originalRequest);
                         } else {
                             // If refresh failed, redirect to login
@@ -165,8 +172,10 @@ export class DashApi {
 
     // These endpoints require authentication
     public static async getConfig(): Promise<Config> {
-        // Using axios interceptors, we don't need to manually add headers here
-        const res = await axios.get(`${BACKEND_URL}/api/config`);
+        // Explicitly set withCredentials for this request
+        const res = await axios.get(`${BACKEND_URL}/api/config`, {
+            withCredentials: true
+        });
         return res.data;
     }
 
@@ -212,10 +221,13 @@ export class DashApi {
 
     public static async saveConfig(config: Partial<Config>): Promise<void> {
         try {
-            // Using axios interceptors, we don't need to manually add headers here
-            await axios.post(`${BACKEND_URL}/api/config`, config);
+            // Explicitly set withCredentials for this request
+            await axios.post(`${BACKEND_URL}/api/config`, config, {
+                withCredentials: true
+            });
         } catch (error) {
             console.error('Failed to save layout:', error);
+            throw error; // Rethrow to allow handling in the UI
         }
     }
 
