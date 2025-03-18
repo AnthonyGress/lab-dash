@@ -154,7 +154,7 @@ authRoute.post('/login', async (req: Request, res: Response) => {
         // Set secure HTTP-only cookies
         res.cookie('access_token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production', // Use secure in production
+            secure: false, // Use secure in production
             sameSite: 'lax',
             path: '/',
             maxAge: 24 * 60 * 60 * 1000 // 1 day in milliseconds
@@ -162,7 +162,7 @@ authRoute.post('/login', async (req: Request, res: Response) => {
 
         res.cookie('refresh_token', refreshToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: false,
             sameSite: 'strict',
             path: '/api/auth/refresh', // Restrict refresh token to auth refresh route
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
