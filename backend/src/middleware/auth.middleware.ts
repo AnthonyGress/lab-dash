@@ -18,7 +18,9 @@ declare global {
 
 export const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
     // Check for token in cookies first (for login/logout/refresh routes)
+    // console.log('#### req', req);
     const tokenFromCookie = req.cookies?.access_token;
+    console.log('#### req.token', req.cookies);
 
     // Then check Authorization header (for API routes that don't use cookies)
     const authHeader = req.headers.authorization;

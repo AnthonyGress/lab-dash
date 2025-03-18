@@ -1,7 +1,7 @@
 import { Add } from '@mui/icons-material';
 import CloseIcon from '@mui/icons-material/Close';
 import MenuIcon from '@mui/icons-material/Menu';
-import { Avatar, Button, Divider, Drawer, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Menu, MenuItem, styled, useMediaQuery } from '@mui/material';
+import { Avatar, Button, Divider, Drawer, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, styled } from '@mui/material';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
@@ -11,7 +11,7 @@ import Typography from '@mui/material/Typography';
 import { nanoid } from 'nanoid';
 import React, { useEffect, useState } from 'react';
 import { FaEdit } from 'react-icons/fa';
-import { FaArrowRightFromBracket, FaGear, FaHouse, FaRightFromBracket, FaUser, FaWrench } from 'react-icons/fa6';
+import { FaArrowRightFromBracket, FaGear, FaHouse, FaUser } from 'react-icons/fa6';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 
 import { DashApi } from '../../api/dash-api';
@@ -276,10 +276,11 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                         <ListItemIcon>
                                                             <Avatar
                                                                 sx={{
-                                                                    width: 24,
-                                                                    height: 24,
+                                                                    width: 26,
+                                                                    height: 26,
                                                                     bgcolor: 'primary.main',
-                                                                    fontSize: 18
+                                                                    fontSize: 18,
+                                                                    ml: '-4px'
                                                                 }}
                                                             >
                                                                 {username ? username.charAt(0).toUpperCase() : <FaUser style={{ fontSize: 16 }} />}
@@ -289,7 +290,6 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                             primary={username || 'User'}
                                                             secondary={isAdmin ? 'Administrator' : 'User'}
                                                             secondaryTypographyProps={{
-                                                                variant: 'caption',
                                                                 color: 'text.primary'
                                                             }}
                                                         />

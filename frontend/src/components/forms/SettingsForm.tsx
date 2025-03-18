@@ -3,11 +3,13 @@ import { Box, Button, MenuItem, Tab, Tabs, Tooltip, Typography, useMediaQuery, u
 import { SyntheticEvent, useEffect, useState } from 'react';
 import { CheckboxElement, FormContainer, SelectElement, TextFieldElement, useForm } from 'react-hook-form-mui';
 import { FaCog } from 'react-icons/fa';
-import { FaDatabase, FaImage } from 'react-icons/fa6';
+import { FaClockRotateLeft, FaDatabase, FaImage } from 'react-icons/fa6';
+import { useNavigate } from 'react-router-dom';
 
 import { FileInput } from './FileInput';
 import { DashApi } from '../../api/dash-api';
 import { useAppContext } from '../../context/useAppContext';
+import { COLORS } from '../../theme/styles';
 import { Config, SearchProvider } from '../../types';
 import { PopupManager } from '../modals/PopupManager';
 
@@ -64,12 +66,39 @@ function a11yProps(index: number) {
 }
 
 export const SettingsForm = () => {
-    const { config, updateConfig } = useAppContext();
+    const [isCustomProvider, setIsCustomProvider] = useState(false);
+    const [hasChanges, setHasChanges] = useState(false);
+    const { config, updateConfig, refreshDashboard } = useAppContext();
     const [tabValue, setTabValue] = useState(0);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-    const [isCustomProvider, setIsCustomProvider] = useState(false);
-    const [hasChanges, setHasChanges] = useState(false);
+    const navigate = useNavigate();
+    // Add custom styling for menu items
+    useEffect(() => {
+        // Create a style element
+        const style = document.createElement('style');
+
+        // Add specific styling for menu items in the settings form
+        style.innerHTML = `
+            .MuiPopover-root .MuiPaper-root .MuiMenuItem-root:hover {
+                background-color: ${COLORS.LIGHT_GRAY_HOVER} !important;
+            }
+            .MuiPopover-root .MuiPaper-root .MuiMenuItem-root.Mui-selected {
+                background-color: ${theme.palette.primary.main} !important;
+            }
+            .MuiPopover-root .MuiPaper-root .MuiMenuItem-root.Mui-selected:hover {
+                background-color: ${COLORS.LIGHT_GRAY_HOVER} !important;
+            }
+        `;
+
+        // Append the style to the document head
+        document.head.appendChild(style);
+
+        // Clean up function to remove style when component unmounts
+        return () => {
+            document.head.removeChild(style);
+        };
+    }, []);
 
     // Determine initial search provider ID
     const getInitialSearchProviderId = (): string => {
@@ -238,28 +267,44 @@ export const SettingsForm = () => {
                             if (typeof fileContent === 'string') {
                                 const importedConfig = JSON.parse(fileContent) as Config;
 
+
                                 // Validate imported config has required structure
                                 if (importedConfig && typeof importedConfig === 'object') {
-                                    await updateConfig(importedConfig);
+                                    // Use the new import endpoint instead of updateConfig
+                                    await DashApi.importConfig(importedConfig);
+                                    await refreshDashboard();
 
                                     // Show success message
-                                    PopupManager.success('Configuration imported successfully!');
+                                    PopupManager.success('Configuration restored successfully!', () => navigate('/'));
 
                                     // Reset the file input
                                     formContext.resetField('configFile');
+
+                                    // Refresh the form with new config values (optional)
+                                    const refreshedConfig = await DashApi.getConfig();
+                                    formContext.reset({
+                                        selectedFile: null,
+                                        title: refreshedConfig?.title || '',
+                                        search: refreshedConfig?.search || false,
+                                        searchProviderId: getInitialSearchProviderId(),
+                                        searchProvider: {
+                                            name: refreshedConfig?.searchProvider?.name || '',
+                                            url: refreshedConfig?.searchProvider?.url || ''
+                                        }
+                                    });
                                 }
                             }
                         } catch (error) {
-                            PopupManager.failure('Failed to import configuration. The file format may be invalid.');
-                            console.error('Error importing configuration:', error);
+                            PopupManager.failure('Failed to restore configuration. The file format may be invalid.');
+                            console.error('Error restoring configuration:', error);
                         }
                     };
 
                     fileReader.readAsText(data.configFile);
                     return; // Skip other updates when importing config
                 } catch (error) {
-                    PopupManager.failure('Failed to import configuration. The file format may be invalid.');
-                    console.error('Error importing configuration:', error);
+                    PopupManager.failure('Failed to restore configuration. The file format may be invalid.');
+                    console.error('Error restoring configuration:', error);
                 }
             }
 
@@ -356,7 +401,7 @@ export const SettingsForm = () => {
                     >
                         <Tab icon={<FaCog style={{ fontSize: '1.2rem' }} />} label='General' {...a11yProps(0)} />
                         <Tab icon={<FaImage style={{ fontSize: '1.2rem' }} />} label='Appearance' {...a11yProps(1)} />
-                        <Tab icon={<FaDatabase style={{ fontSize: '1.2rem' }} />} label='Data' {...a11yProps(2)} />
+                        <Tab icon={<FaClockRotateLeft style={{ fontSize: '1.2rem' }} />} label='Backup' {...a11yProps(2)} />
                     </Tabs>
 
                     <TabPanel value={tabValue} index={0}>
@@ -377,7 +422,7 @@ export const SettingsForm = () => {
                                     <TextFieldElement
                                         name='title'
                                         variant='outlined'
-                                        fullWidth
+                                        sx={{ width: '95%' }}
                                     />
                                 </Box>
 
@@ -401,7 +446,7 @@ export const SettingsForm = () => {
                                     <Box>
                                         <SelectElement
                                             name='searchProviderId'
-                                            fullWidth
+
                                             options={[
                                                 { id: 'google', label: 'Google' },
                                                 { id: 'bing', label: 'Bing' },
@@ -411,6 +456,15 @@ export const SettingsForm = () => {
                                             ]}
                                             valueKey='id'
                                             labelKey='label'
+                                            sx={{
+                                                '& .MuiOutlinedInput-root': {
+                                                    '& fieldset': { borderColor: theme.palette.text.primary },
+                                                    '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
+                                                },
+                                                '.MuiSvgIcon-root ': { fill: theme.palette.text.primary },
+                                                width: '95%'
+                                            }}
                                         />
                                     </Box>
 
@@ -423,7 +477,7 @@ export const SettingsForm = () => {
                                             <Box>
                                                 <TextFieldElement
                                                     name='searchProvider.name'
-                                                    fullWidth
+                                                    sx={{ width: '95%' }}
                                                 />
                                             </Box>
 
@@ -441,8 +495,8 @@ export const SettingsForm = () => {
                                             <Box>
                                                 <TextFieldElement
                                                     name='searchProvider.url'
-                                                    fullWidth
                                                     helperText='Example: https://www.google.com/search?q={query}'
+                                                    sx={{ width: '95%' }}
                                                 />
                                             </Box>
                                         </>
@@ -461,13 +515,15 @@ export const SettingsForm = () => {
                                         PopupManager.deleteConfirmation({
                                             title: 'Reset All Settings',
                                             text: 'Are you sure you want to reset all settings? This cannot be undone.',
-                                            confirmAction: () => {
-                                                updateConfig({
+                                            confirmAction: async () => {
+                                                await updateConfig({
                                                     title: 'Lab Dash',
                                                     backgroundImage: '',
                                                     search: false,
                                                     searchProvider: undefined
                                                 });
+                                                await refreshDashboard();
+                                                PopupManager.success('All settings have been reset', () => navigate('/'));
                                             }
                                         });
                                     }}
@@ -530,7 +586,7 @@ export const SettingsForm = () => {
 
                     <TabPanel value={tabValue} index={2}>
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                            <Typography variant='h6'>Data</Typography>
+                            <Typography variant='h6'>Backup Settings</Typography>
 
                             <Box sx={{
                                 display: 'grid',
@@ -540,11 +596,13 @@ export const SettingsForm = () => {
                             }}>
                                 <Typography variant='body1' sx={{
                                     alignSelf: 'center',
-                                    fontSize: { xs: '0.875rem', sm: '1rem' }
+                                    fontSize: { xs: '0.875rem', sm: '1rem' },
+                                    width: '10rem'
+
                                 }}>Export Configuration</Typography>
-                                <Box>
+                                <Box ml={2}>
                                     <Button
-                                        variant='outlined'
+                                        variant='contained'
                                         size={isMobile ? 'small' : 'medium'}
                                         onClick={async () => {
                                             try {
@@ -563,13 +621,14 @@ export const SettingsForm = () => {
 
                                 <Typography variant='body1' sx={{
                                     alignSelf: 'center',
-                                    fontSize: { xs: '0.875rem', sm: '1rem' }
-                                }}>Import Configuration</Typography>
-                                <Box>
+                                    fontSize: { xs: '0.875rem', sm: '1rem' },
+                                    width: '10rem'
+                                }}>Restore Configuration</Typography>
+                                <Box ml={2}>
                                     <FileInput
                                         name='configFile'
                                         accept='.json'
-                                        sx={{}}
+                                        sx={{ width: '95%' }}
                                     />
                                 </Box>
                             </Box>

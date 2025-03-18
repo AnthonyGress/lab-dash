@@ -1,9 +1,8 @@
 import axios from 'axios';
 import { StatusCodes } from 'http-status-codes';
-import { jwtDecode } from 'jwt-decode';
 
 import { BACKEND_URL } from '../constants/constants';
-import { Config, DashboardItem, DashboardLayout, Icon, UploadImageResponse } from '../types';
+import { Config, Icon, UploadImageResponse } from '../types';
 
 interface SignupResponse {
   message: string;
@@ -17,8 +16,6 @@ interface LoginResponse {
 }
 
 export class DashApi {
-    private static refreshPromise: Promise<void> | null = null;
-
     // Authentication methods
     public static async signup(username: string, password: string): Promise<SignupResponse> {
         try {
@@ -97,18 +94,7 @@ export class DashApi {
         // Request interceptor
         axios.interceptors.request.use(
             async (config) => {
-                // Only include credentials for auth-related endpoints
-                if (config.url?.includes('api/auth/login') ||
-                    config.url?.includes('api/auth/logout') ||
-                    config.url?.includes('api/auth/refresh') ||
-                    config.url?.includes('api/auth/debug-cookies') ||
-                    (config.url?.includes('api/config') && config.method === 'post') ||
-                    config.url?.includes('api/auth/check-admin')) {
-                    config.withCredentials = true;
-                } else {
-                    config.withCredentials = false;
-                }
-
+                config.withCredentials = true;
                 return config;
             },
             (error) => Promise.reject(error)
@@ -188,7 +174,8 @@ export class DashApi {
         try {
             // Use axios to get the file as a blob
             const response = await axios.get(`${BACKEND_URL}/api/config/export`, {
-                responseType: 'blob'
+                responseType: 'blob',
+                withCredentials: true
             });
 
             // Create a URL for the blob
@@ -229,6 +216,21 @@ export class DashApi {
             await axios.post(`${BACKEND_URL}/api/config`, config);
         } catch (error) {
             console.error('Failed to save layout:', error);
+        }
+    }
+
+    public static async importConfig(configData: Config): Promise<boolean> {
+        try {
+            // Send the complete config object to the import endpoint
+            const response = await axios.post(`${BACKEND_URL}/api/config/import`, configData, {
+                withCredentials: true // Ensure credentials are sent for authentication
+            });
+
+            console.log('Config import response:', response.data);
+            return true;
+        } catch (error) {
+            console.error('Failed to import configuration:', error);
+            throw error; // Rethrow to allow handling in the UI
         }
     }
 

@@ -160,6 +160,15 @@ export const SetupModal: React.FC<SetupModalProps> = ({ open, onComplete }) => {
                     />
                 </Box>
             </Box>
+            <Box sx={styles.center} mt={4}>
+                <Button
+                    variant='contained'
+                    color='primary'
+                    type={'submit'}
+                >
+                    {'Create Account & Continue'}
+                </Button>
+            </Box>
         </FormContainer>
     );
 
@@ -264,6 +273,9 @@ export const SetupModal: React.FC<SetupModalProps> = ({ open, onComplete }) => {
             open={open}
             aria-labelledby='setup-modal-title'
             aria-describedby='setup-modal-description'
+            disableEnforceFocus
+            disableAutoFocus
+            sx={{ userSelect: 'none' }}
         >
             <Paper
                 sx={{
@@ -302,15 +314,15 @@ export const SetupModal: React.FC<SetupModalProps> = ({ open, onComplete }) => {
                     >
                         Back
                     </Button>
-                    <Button
+                    {!isLastStep && <Button
                         endIcon={isLastStep ? undefined : <ArrowForward />}
                         variant='contained'
                         color='primary'
                         onClick={handleNext}
-                        type={isLastStep ? 'submit' : 'button'}
+                        type={'button'}
                     >
-                        {isLastStep ? 'Create Account & Continue' : 'Next'}
-                    </Button>
+                        {'Next'}
+                    </Button>}
                 </Box>
             </Paper>
         </Modal>

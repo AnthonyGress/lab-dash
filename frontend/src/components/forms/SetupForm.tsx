@@ -27,8 +27,6 @@ export const SetupForm: React.FC<SetupFormProps> = ({ onSuccess }) => {
     const handleSetupComplete = async () => {
         // Mark setup as complete in the configuration
         await updateConfig({ isSetupComplete: true });
-
-        // Call the success callback
         onSuccess();
     };
 

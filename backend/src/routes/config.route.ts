@@ -86,3 +86,40 @@ configRoute.post('/', [authenticateToken, requireAdmin], async (req: Request, re
         });
     }
 });
+
+// POST - Import a complete configuration file and replace existing config (admin only)
+configRoute.post('/import', [authenticateToken, requireAdmin], async (req: Request, res: Response): Promise<void> => {
+    try {
+        // Get the complete config object from the request body
+        const importedConfig = req.body;
+
+        console.log('Importing config:', importedConfig);
+
+        // Validate the imported config structure
+        if (!importedConfig || typeof importedConfig !== 'object') {
+            res.status(StatusCodes.BAD_REQUEST).json({
+                message: 'Invalid configuration format'
+            });
+            return;
+        }
+
+        // Ensure layout property exists to avoid errors
+        if (!importedConfig.layout) {
+            importedConfig.layout = { desktop: [], mobile: [] };
+        }
+
+        // Write the imported config directly to the config file
+        await fs.writeFile(CONFIG_FILE, JSON.stringify(importedConfig, null, 2), 'utf-8');
+
+        res.status(StatusCodes.OK).json({
+            message: 'Configuration imported successfully',
+            updatedConfig: importedConfig
+        });
+    } catch (error) {
+        console.error('Error importing config:', error);
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            message: 'Error importing configuration file',
+            error: (error as Error).message
+        });
+    }
+});
