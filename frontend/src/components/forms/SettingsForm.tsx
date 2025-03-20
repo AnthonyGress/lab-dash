@@ -23,7 +23,7 @@ const SEARCH_PROVIDERS = [
 ];
 
 type FormValues = {
-    selectedFile: File | null,
+    backgroundFile: File | null,
     title: string;
     search: boolean;
     searchProviderId: string;
@@ -118,7 +118,7 @@ export const SettingsForm = () => {
 
     const formContext = useForm<FormValues>({
         defaultValues: {
-            selectedFile: null as File | null,
+            backgroundFile: null as File | null,
             title: config?.title || '',
             search: config?.search || false,
             searchProviderId: getInitialSearchProviderId(),
@@ -130,7 +130,7 @@ export const SettingsForm = () => {
         }
     });
 
-    const selectedFile = formContext.watch('selectedFile', null);
+    const backgroundFile = formContext.watch('backgroundFile', null);
     const searchProviderId = formContext.watch('searchProviderId', 'google');
     const searchEnabled = formContext.watch('search', false);
     const title = formContext.watch('title', '');
@@ -160,7 +160,7 @@ export const SettingsForm = () => {
             if (title !== (config?.title || 'Lab Dash')) return true;
 
             // Background image change
-            if (selectedFile) return true;
+            if (backgroundFile) return true;
 
             // Search enabled change
             if (searchEnabled !== (config?.search || false)) return true;
@@ -199,7 +199,7 @@ export const SettingsForm = () => {
         setHasChanges(checkForChanges());
     }, [
         title,
-        selectedFile,
+        backgroundFile,
         searchEnabled,
         searchProviderId,
         searchProviderName,
@@ -279,19 +279,6 @@ export const SettingsForm = () => {
 
                                     // Reset the file input
                                     formContext.resetField('configFile');
-
-                                    // Refresh the form with new config values (optional)
-                                    const refreshedConfig = await DashApi.getConfig();
-                                    formContext.reset({
-                                        selectedFile: null,
-                                        title: refreshedConfig?.title || '',
-                                        search: refreshedConfig?.search || false,
-                                        searchProviderId: getInitialSearchProviderId(),
-                                        searchProvider: {
-                                            name: refreshedConfig?.searchProvider?.name || '',
-                                            url: refreshedConfig?.searchProvider?.url || ''
-                                        }
-                                    });
                                 }
                             }
                         } catch (error) {
@@ -315,7 +302,18 @@ export const SettingsForm = () => {
 
                 // Show success message
                 PopupManager.success('Settings updated successfully!');
-                formContext.reset();
+                // Refresh the form with new config values (optional)
+                const refreshedConfig = await DashApi.getConfig();
+                formContext.reset({
+                    backgroundFile: null,
+                    title: refreshedConfig?.title || '',
+                    search: refreshedConfig?.search || false,
+                    searchProviderId: refreshedConfig?.searchProvider ? getInitialSearchProviderId() : 'google',
+                    searchProvider: {
+                        name: refreshedConfig?.searchProvider?.name || '',
+                        url: refreshedConfig?.searchProvider?.url || ''
+                    }
+                });
             }
         } catch (error) {
             // Show error message
@@ -554,10 +552,10 @@ export const SettingsForm = () => {
                                         name='selectedFile'
                                         sx={{ width: '95%' }}
                                     />
-                                    {selectedFile && (
+                                    {backgroundFile && (
                                         <Tooltip title='Clear'>
                                             <CloseIcon
-                                                onClick={() => formContext.resetField('selectedFile')}
+                                                onClick={() => formContext.resetField('backgroundFile')}
                                                 sx={{
                                                     position: 'absolute',
                                                     right: '10px',
