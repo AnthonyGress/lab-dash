@@ -227,7 +227,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                 </ListItemButton>
                                             </ListItem>
                                         </NavLink>
-                                        {isLoggedIn && (
+                                        {isLoggedIn && isAdmin && (
                                             <ListItem disablePadding>
                                                 <ListItemButton onClick={() => {
                                                     setEditMode(true);
