@@ -5,8 +5,11 @@ This is an open-source user interface designed to be your internally/externally 
 This only requires docker to be installed. [Install Docker](https://docs.docker.com/engine/install/)
 
 # Usage
-This application can be installed as an "app" on your computer/phone as a PWA (Progressive Web App) via chrome browser (or via safari on iOS/iPad OS).
-It can be accessed locally from any web browser via `http://localhost:2022` or `192.168.x.x:2022` which should be your servers local IP address or url CNAME.
+This application can be installed as an "app" on your computer/phone as a PWA (Progressive Web App) via:
+- Google Chrome browser on Mac/Windows/Android/Linux
+- Safari on iOS/iPad OS via the share menu > add to homscreen
+  
+Lab Dash can be accessed locally from any web browser via `http://localhost:2022` or `192.168.x.x:2022` which should be your servers local IP address or url CNAME `www.your-homepage.com`.
 
 > [!IMPORTANT]  
 > You should assign a static IP address for you server so any LAN/WAN device can access the Lab Dash instance.
