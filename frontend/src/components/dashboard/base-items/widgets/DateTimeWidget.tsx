@@ -13,8 +13,8 @@ export const DateTimeWidget = () => {
     return (
         <CardContent>
             <Box height={'100%'}>
-                <Typography fontSize={'3rem'} fontWeight={600}>{dateTime && dateTime.toLocaleTimeString([], { hour: 'numeric', minute:'2-digit' })}</Typography>
-                <Typography fontSize={'1.5rem'}>{dateTime && dateTime.toLocaleDateString([], {
+                <Typography fontSize={'3rem'} align={'center'} fontWeight={600}>{dateTime && dateTime.toLocaleTimeString([], { hour: 'numeric', minute:'2-digit' })}</Typography>
+                <Typography fontSize={'1.5rem'} align={'center'}>{dateTime && dateTime.toLocaleDateString([], {
                     weekday: 'long',
                     month: 'long',
                     day: 'numeric',
