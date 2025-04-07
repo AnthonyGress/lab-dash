@@ -29,7 +29,7 @@ type SetupModalProps = {
 
 export const SetupModal: React.FC<SetupModalProps> = ({ open, onComplete }) => {
     const [activeStep, setActiveStep] = useState(0);
-    const { setIsLoggedIn, setUsername } = useAppContext();
+    const { setIsLoggedIn, setUsername, setIsAdmin } = useAppContext();
 
     const formContext = useForm<FormValues>({
         defaultValues: {
@@ -57,11 +57,12 @@ export const SetupModal: React.FC<SetupModalProps> = ({ open, onComplete }) => {
             await DashApi.signup(data.username, data.password);
 
             // Log in the user automatically
-            await DashApi.login(data.username, data.password);
+            const loginResponse = await DashApi.login(data.username, data.password);
 
-            // Update auth state in context
+            // Update auth state in context - first user is always admin
             setIsLoggedIn(true);
             setUsername(data.username);
+            setIsAdmin(loginResponse.isAdmin);
 
             PopupManager.success('Account created successfully!');
             onComplete();
