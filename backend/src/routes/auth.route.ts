@@ -8,9 +8,9 @@ import { authenticateToken } from '../middleware/auth.middleware';
 
 export const authRoute = Router();
 const USERS_PATH = path.join(__dirname, '../config/users.json');
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
-const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || 'your_refresh_token_secret';
-const ACCESS_TOKEN_EXPIRY = '1d';
+const JWT_SECRET = process.env.SECRET || '@jZCgtn^qg8So*^^6A2M';
+const REFRESH_TOKEN_SECRET = process.env.SECRET || '@jZCgtn^qg8So*^^6A2M';
+const ACCESS_TOKEN_EXPIRY = '3d';
 const REFRESH_TOKEN_EXPIRY = '7d';
 
 // Interface for user data

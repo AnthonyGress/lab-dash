@@ -5,6 +5,8 @@ services:
       image: ghcr.io/anthonygress/lab-dash:latest
       ports:
         - 2022:2022
+      environment:
+        - SECRET=YOUR_SECRET_KEY # any random string for jwt encryption
       volumes:
         - /docker/lab-dash/config:/config
       restart: unless-stopped
