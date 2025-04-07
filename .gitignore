@@ -27,3 +27,4 @@ backend/src/config/config.json
 backend/src/config/users.json
 backend/src/public/uploads
 backend/public/uploads/*
+package-lock.json
