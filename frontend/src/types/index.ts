@@ -10,7 +10,7 @@ export enum ITEM_TYPE {
 
 export type NewItem = {
     name?: string;
-    icon?: { path: string; name: string };
+    icon?: { path: string; name: string; source?: string };
     url?: string;
     label: string;
     type: string;

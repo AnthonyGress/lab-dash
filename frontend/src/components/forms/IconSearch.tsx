@@ -1,6 +1,7 @@
-import { Autocomplete, Box, createFilterOptions, IconButton, TextField, Typography } from '@mui/material';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import { Autocomplete, Box, Button, createFilterOptions, Divider, IconButton, TextField, Typography } from '@mui/material';
 import axios from 'axios';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Controller } from 'react-hook-form';
 import { TextFieldElement } from 'react-hook-form-mui';
 import shortid from 'shortid';
@@ -14,17 +15,28 @@ import { getIconPath } from '../../utils/utils';
 
 type Props = {
     control: any;
-    errors: any
+    errors: any;
+    onCustomIconSelect?: (file: File | null) => void;
 };
 
-export const IconSearch = ({ control, errors }: Props) => {
+export const IconSearch = ({ control, errors, onCustomIconSelect }: Props) => {
     const [selectedIcon, setSelectedIcon] = useState<Icon | null>(control._defaultValues.icon || null);
     const [iconList, setIconList] = useState<Icon[]>([]);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [tempPreviewUrl, setTempPreviewUrl] = useState<string | null>(null);
 
     const fetchIconList = async () => {
         try {
-            const response = await DashApi.getIconList();
-            setIconList(response);
+            // Fetch built-in icons
+            const builtInIcons = await DashApi.getIconList();
+
+            // Fetch custom icons
+            const customIcons = await DashApi.getCustomIcons();
+            console.log('Custom icons:', customIcons);
+
+            // Combine the icons with custom icons first
+            const combinedIcons = [...(customIcons || []), ...(builtInIcons || [])];
+            setIconList(combinedIcons);
         } catch (error) {
             console.error('Error fetching icon list:', error);
         }
@@ -40,77 +52,187 @@ export const IconSearch = ({ control, errors }: Props) => {
         }
     }, [control._defaultValues.icon]);
 
+    // Clean up any temporary preview URLs when component unmounts
+    useEffect(() => {
+        return () => {
+            if (tempPreviewUrl) {
+                URL.revokeObjectURL(tempPreviewUrl);
+            }
+        };
+    }, [tempPreviewUrl]);
+
     return (
         <Box sx={{ textAlign: 'center' }}>
             <Controller
                 name='icon'
                 control={control}
                 rules={{ required: 'This field is required' }}
-                render={({ field, fieldState }) => (
-                    <Autocomplete
-                        {...field}
-                        options={iconList}
-                        filterOptions={createFilterOptions({
-                            matchFrom: 'any',
-                            limit: 50,
-                        })}
-                        disablePortal
-                        blurOnSelect={true}
-                        ListboxComponent={VirtualizedListbox}
-                        getOptionLabel={(option) => option?.name ?? ''}
-                        isOptionEqualToValue={(option, value) => option.name === value?.name}
-                        onChange={(_, newValue) => {
-                            field.onChange(newValue);
-                            setSelectedIcon(newValue);
-                        }}
-                        value={selectedIcon}
-                        renderOption={(props, option) => (
-                            <Box component='li' {...props}   sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                '&:hover': {
-                                    backgroundColor: `${COLORS.LIGHT_GRAY_HOVER} !important`
+                render={({ field, fieldState }) => {
+                    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+                        const file = event.target.files?.[0];
+                        if (!file) return;
 
-                                },
-                            }} key={shortid.generate()}>
-                                <img src={getIconPath(option.path)} alt={option.name} width={24} style={{ marginRight: 8 }} key={shortid.generate()} crossOrigin='anonymous'/>
-                                <Typography variant='body2' key={shortid.generate()}>{option.name}</Typography>
-                            </Box>
-                        )}
-                        renderInput={(params) => (
-                            <Box sx={styles.center}>
-                                <TextField
-                                    {...params}
-                                    label='Select Icon*'
-                                    variant='outlined'
-                                    fullWidth
-                                    error={!!fieldState?.error}
-                                    helperText={fieldState?.error?.message}
-                                    sx={{
-                                        '& .MuiOutlinedInput-root': {
-                                            '& fieldset': { borderColor: theme.palette.text.primary },
-                                            '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                                            '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
-                                            '&.MuiInputBase-root.MuiOutlinedInput-root.Mui-error fieldset': {
-                                                borderColor: theme.palette.error.main,
-                                            },
-                                            '.MuiSvgIcon-root ': { fill: theme.palette.text.primary },
+                        // Clean up previous preview URL if it exists
+                        if (tempPreviewUrl) {
+                            URL.revokeObjectURL(tempPreviewUrl);
+                        }
 
+                        // Create a temporary preview URL
+                        const objectUrl = URL.createObjectURL(file);
+                        setTempPreviewUrl(objectUrl);
+
+                        // Create a valid icon object
+                        const tempIcon: Icon = {
+                            name: file.name.replace(/\.[^/.]+$/, ''), // Remove extension
+                            path: objectUrl,
+                            source: 'custom-pending'
+                        };
+
+                        // Update the form field value
+                        field.onChange(tempIcon);
+                        setSelectedIcon(tempIcon);
+
+                        // Pass the file to parent component
+                        if (onCustomIconSelect) {
+                            onCustomIconSelect(file);
+                        }
+
+                        // Reset file input
+                        if (fileInputRef.current) {
+                            fileInputRef.current.value = '';
+                        }
+                    };
+
+                    const handleUploadClick = () => {
+                        fileInputRef.current?.click();
+                    };
+
+                    return (
+                        <>
+                            <input
+                                type='file'
+                                accept='image/*'
+                                style={{ display: 'none' }}
+                                ref={fileInputRef}
+                                onChange={handleFileChange}
+                            />
+                            <Autocomplete
+                                {...field}
+                                options={iconList}
+                                filterOptions={createFilterOptions({
+                                    matchFrom: 'any',
+                                    limit: 50,
+                                })}
+                                disablePortal
+                                blurOnSelect={true}
+                                ListboxComponent={VirtualizedListbox}
+                                getOptionLabel={(option) => option?.name ?? ''}
+                                isOptionEqualToValue={(option, value) => {
+                                    // Consider custom-pending icons equal to their non-pending versions
+                                    return option?.name === value?.name ||
+                                        (option?.source === 'custom-pending' && option?.name === value?.name);
+                                }}
+                                onChange={(_, newValue) => {
+                                    // Directly update the form value
+                                    field.onChange(newValue);
+                                    setSelectedIcon(newValue);
+
+                                    // Clear custom file if selecting a standard icon
+                                    if (newValue && newValue.source !== 'custom-pending' && onCustomIconSelect) {
+                                        onCustomIconSelect(null);
+                                    }
+                                }}
+                                value={selectedIcon}
+                                renderOption={(props, option) => (
+                                    <Box component='li' {...props} sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        '&:hover': {
+                                            backgroundColor: `${COLORS.LIGHT_GRAY_HOVER} !important`
                                         },
-                                    }}
-                                    slotProps={{ inputLabel: { style: { color: theme.palette.text.primary } } }}
-                                />
-                                {selectedIcon &&
-                                    <Box ml={1}>
-                                        <img src={getIconPath(selectedIcon.path)} alt={selectedIcon.name} width={25} crossOrigin='anonymous'/>
+                                    }} key={shortid.generate()}>
+                                        <img
+                                            src={option.source === 'custom-pending' ? option.path : getIconPath(option.path)}
+                                            alt={option.name}
+                                            width={24}
+                                            style={{ marginRight: 8 }}
+                                            key={shortid.generate()}
+                                            crossOrigin='anonymous'
+                                        />
+                                        <Typography variant='body2' key={shortid.generate()}
+                                            sx={{
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap',
+                                                maxWidth: '180px'
+                                            }}>
+                                            {option.name} {option.source === 'custom' && ' (Custom)'}
+                                        </Typography>
                                     </Box>
-                                }
+                                )}
+                                renderInput={(params) => (
+                                    <Box sx={styles.center}>
+                                        <TextField
+                                            {...params}
+                                            label='Select Icon*'
+                                            variant='outlined'
+                                            fullWidth
+                                            error={!!fieldState?.error}
+                                            helperText={fieldState?.error?.message}
+                                            sx={{
+                                                '& .MuiOutlinedInput-root': {
+                                                    '& fieldset': { borderColor: theme.palette.text.primary },
+                                                    '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
+                                                    '&.MuiInputBase-root.MuiOutlinedInput-root.Mui-error fieldset': {
+                                                        borderColor: theme.palette.error.main,
+                                                    },
+                                                    '.MuiSvgIcon-root ': { fill: theme.palette.text.primary },
+                                                },
+                                            }}
+                                            slotProps={{ inputLabel: { style: { color: theme.palette.text.primary } } }}
+                                        />
+                                        {selectedIcon &&
+                                            <Box ml={1}>
+                                                <img
+                                                    src={selectedIcon.source === 'custom-pending'
+                                                        ? selectedIcon.path
+                                                        : getIconPath(selectedIcon.path)}
+                                                    alt={selectedIcon.name}
+                                                    width={25}
+                                                    crossOrigin='anonymous'
+                                                />
+                                                <Typography
+                                                    variant='caption'
+                                                    sx={{
+                                                        display: 'block',
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis',
+                                                        whiteSpace: 'nowrap',
+                                                        maxWidth: '60px',
+                                                        textAlign: 'center'
+                                                    }}>
+                                                    {selectedIcon.name}
+                                                </Typography>
+                                            </Box>
+                                        }
+                                    </Box>
+                                )}
+                                noOptionsText='No icons found'
+                            />
+                            <Box mt={1}>
+                                <Button
+                                    variant='outlined'
+                                    startIcon={<CloudUploadIcon />}
+                                    onClick={handleUploadClick}
+                                    size='small'
+                                >
+                                    Select Custom Icon
+                                </Button>
                             </Box>
-                        )}
-                        noOptionsText='No icons found'
-                        // slotProps={{ listbox: { sx: { maxHeight: '25vh',  } } }}
-                    />
-                )}
+                        </>
+                    );
+                }}
             />
         </Box>
     );

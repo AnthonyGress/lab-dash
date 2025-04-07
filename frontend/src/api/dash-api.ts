@@ -165,6 +165,17 @@ export class DashApi {
         return res.data?.icons;
     }
 
+    public static async getCustomIcons(): Promise<Icon[]> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/app-shortcut/custom-icons`);
+            console.log('Custom icons response:', res.data);
+            return res.data?.icons || [];
+        } catch (error) {
+            console.error('Error fetching custom icons:', error);
+            return [];
+        }
+    }
+
     public static async getIcon(iconPath: string): Promise<string> {
         const res = await axios.get(`${BACKEND_URL}/icons/${iconPath.replace('./assets/', '')}`);
         return res.data;
@@ -299,6 +310,32 @@ export class DashApi {
             return res.data;
         } catch (error) {
             console.error('Failed to upload image:', error);
+            return null;
+        }
+    }
+
+    public static async uploadAppIcon(file: File): Promise<Icon | null> {
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const res = await axios({
+                method: 'POST',
+                url: `${BACKEND_URL}/api/app-shortcut/upload`,
+                data: formData,
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                },
+                withCredentials: true
+            });
+
+            return {
+                name: res.data.name,
+                path: res.data.filePath,
+                source: 'custom'
+            };
+        } catch (error) {
+            console.error('Failed to upload app icon:', error);
             return null;
         }
     }
