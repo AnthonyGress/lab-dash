@@ -134,7 +134,7 @@ export class DashApi {
                         } else {
                             // If refresh failed, redirect to login
                             console.log('Token refresh failed, redirecting to login');
-                            this.redirectToLogin();
+                            // this.redirectToLogin();
                             return Promise.reject(error);
                         }
                     } catch (refreshError) {
