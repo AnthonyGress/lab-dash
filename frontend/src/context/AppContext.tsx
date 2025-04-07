@@ -7,7 +7,7 @@ export interface IAppContext {
     setDashboardLayout: Dispatch<SetStateAction<DashboardItem[]>>;
     refreshDashboard: () => Promise<void>;
     saveLayout: (items: DashboardItem[]) => void;
-    addItem: (itemToAdd: NewItem) => void;
+    addItem: (itemToAdd: NewItem) => Promise<void>;
     updateItem: (id: string, updatedData: Partial<NewItem>) => void;
     editMode: boolean;
     setEditMode: Dispatch<SetStateAction<boolean>>;

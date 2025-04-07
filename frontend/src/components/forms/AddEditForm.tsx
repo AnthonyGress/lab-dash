@@ -56,7 +56,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
 
     const selectedItemType = formContext.watch('itemType');
 
-    const handleSubmit = (data: FormValues) => {
+    const handleSubmit = async (data: FormValues) => {
         console.log(data);
 
         const updatedItem: NewItem = {
@@ -67,14 +67,18 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             showLabel: data.showLabel
         };
 
-        if (existingItem) {
-            updateItem(existingItem.id, updatedItem);
-        } else {
-            addItem(updatedItem);
-        }
+        try {
+            if (existingItem) {
+                updateItem(existingItem.id, updatedItem);
+            } else {
+                await addItem(updatedItem);
+            }
 
-        formContext.reset();
-        handleClose();
+            formContext.reset();
+            handleClose();
+        } catch (error) {
+            console.error('Error submitting form:', error);
+        }
     };
 
     return (

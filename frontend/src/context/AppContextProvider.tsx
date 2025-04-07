@@ -173,8 +173,8 @@ export const AppContextProvider = ({ children }: Props) => {
         }
     };
 
-    const addItem = (itemToAdd: NewItem) => {
-        console.log('add item');
+    const addItem = async (itemToAdd: NewItem) => {
+        console.log('adding item to both desktop and mobile layouts');
 
         const newItem: DashboardItem = {
             id: `item-${shortid.generate()}`,
@@ -184,7 +184,28 @@ export const AppContextProvider = ({ children }: Props) => {
             type: itemToAdd.type,
             showLabel: itemToAdd.showLabel
         };
-        setDashboardLayout((prevItems: any) => [...prevItems, newItem]);
+
+        // Add to current view's layout (affects UI immediately)
+        setDashboardLayout((prevItems) => [...prevItems, newItem]);
+
+        try {
+            // Get the current configuration
+            const currentConfig = await DashApi.getConfig();
+
+            // Add the new item to both desktop and mobile layouts
+            const updatedLayout = {
+                layout: {
+                    desktop: [...currentConfig.layout.desktop, newItem],
+                    mobile: [...currentConfig.layout.mobile, newItem]
+                }
+            };
+
+            // Save the updated layout to the backend
+            await DashApi.saveConfig(updatedLayout);
+            console.log('Item added to both desktop and mobile layouts');
+        } catch (error) {
+            console.error('Failed to add item to both layouts:', error);
+        }
     };
 
     const updateItem = (id: string, updatedData: Partial<NewItem>) => {
