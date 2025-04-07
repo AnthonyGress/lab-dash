@@ -28,6 +28,5 @@
   },
   "include": [
     "./",
-    "../package.json"
   ]
 }
