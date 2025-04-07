@@ -95,18 +95,17 @@ export const AppContextProvider = ({ children }: Props) => {
     const refreshTokenAndValidate = async () => {
         try {
             // Try to refresh the token
-            const refreshed = await DashApi.refreshToken();
+            const refreshResult = await DashApi.refreshToken();
 
-            if (refreshed) {
-                // If token refreshed successfully, validate the new token
-                const isAdminRes = await DashApi.checkIsAdmin();
+            if (refreshResult.success) {
+                // If token refreshed successfully, get the stored username
                 const storedUsername = localStorage.getItem('username');
 
-                // Update state based on new token
+                // Update state based on new token, using isAdmin from refresh response
                 setUsername(storedUsername);
-                setIsAdmin(isAdminRes);
+                setIsAdmin(refreshResult.isAdmin || false);
                 setIsLoggedIn(true);
-                console.log('Successfully refreshed token');
+                console.log('Successfully refreshed token, admin status:', refreshResult.isAdmin);
             } else {
                 // If refresh failed, user is not logged in
                 setIsLoggedIn(false);

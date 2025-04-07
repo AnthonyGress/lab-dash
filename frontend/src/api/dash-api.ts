@@ -123,9 +123,9 @@ export class DashApi {
 
                     try {
                         // Try to refresh the token
-                        const refreshSucceeded = await this.refreshToken();
+                        const refreshResult = await this.refreshToken();
 
-                        if (refreshSucceeded) {
+                        if (refreshResult.success) {
                             console.log('Token refreshed, retrying original request');
                             // If refresh was successful, retry the original request
                             // Ensure credentials are included in the retry
@@ -329,16 +329,19 @@ export class DashApi {
         }
     }
 
-    public static async refreshToken(): Promise<boolean> {
+    public static async refreshToken(): Promise<{ success: boolean; isAdmin?: boolean }> {
         try {
             const res = await axios.post(`${BACKEND_URL}/api/auth/refresh`, {}, {
                 withCredentials: true
             });
             console.log('Token refreshed successfully');
-            return true;
+            return {
+                success: true,
+                isAdmin: res.data.isAdmin
+            };
         } catch (error) {
             console.error('Error refreshing token:', error);
-            return false;
+            return { success: false };
         }
     }
 

@@ -228,8 +228,11 @@ authRoute.post('/refresh', async (req: Request, res: Response) => {
 
         console.log('New access token set successfully');
 
-        // Return success message
-        res.json({ message: 'Token refreshed successfully' });
+        // Return success message with user role information
+        res.json({
+            message: 'Token refreshed successfully',
+            isAdmin: users[userIndex].role === 'admin'
+        });
     } catch (error) {
         console.error('Refresh token error:', error);
         res.status(500).json({ message: 'Internal server error' });
