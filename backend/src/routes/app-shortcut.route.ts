@@ -27,9 +27,21 @@ const storage = multer.diskStorage({
         cb(null, uploadPath);
     },
     filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        // Get the original filename without extension
+        const originalName = path.parse(file.originalname).name;
+
+        // Sanitize the filename (remove special characters)
+        const sanitizedName = originalName
+            .replace(/[^\w\s-]/g, '')
+            .replace(/[\s_-]+/g, '-')
+            .trim();
+
+        // Add a timestamp prefix to ensure uniqueness
+        const timestamp = Date.now();
         const ext = path.extname(file.originalname);
-        cb(null, 'file-' + uniqueSuffix + ext);
+
+        // Final format: sanitizedOriginalName-timestamp.ext
+        cb(null, `${sanitizedName}-${timestamp}${ext}`);
     }
 });
 
@@ -77,12 +89,29 @@ router.get('/custom-icons', (req: Request, res: Response) => {
 
         // Map files to icon objects
         const icons = files.map(file => {
-            // Get the file name without extension for display
+            // Get the file name without extension
             const filenameWithoutExt = path.parse(file).name;
+
+            // Extract the original name part (everything before the timestamp)
+            // Format is: sanitizedName-timestamp
+            const nameParts = filenameWithoutExt.split('-');
+
+            // If the filename has our expected format with a timestamp suffix,
+            // remove the timestamp; otherwise keep the full name
+            let displayName = filenameWithoutExt;
+
+            // Check if the last part is a timestamp (all digits)
+            if (nameParts.length > 1 && /^\d+$/.test(nameParts[nameParts.length - 1])) {
+                // Remove the timestamp part and join the rest
+                displayName = nameParts.slice(0, -1).join('-');
+            }
+
+            // Ensure the display name is sanitized
+            displayName = sanitizeFileName(displayName);
 
             // Create the icon object
             return {
-                name: sanitizeFileName(filenameWithoutExt),
+                name: displayName,
                 path: `/uploads/app-icons/${file}`,
                 source: 'custom'
             };

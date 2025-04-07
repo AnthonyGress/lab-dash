@@ -159,7 +159,13 @@ export const IconSearch = ({ control, errors, onCustomIconSelect }: Props) => {
                                             key={shortid.generate()}
                                             crossOrigin='anonymous'
                                         />
-                                        <Typography variant='body2' key={shortid.generate()}>
+                                        <Typography variant='body2' key={shortid.generate()}
+                                            sx={{
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap',
+                                                maxWidth: '180px'
+                                            }}>
                                             {option.name} {option.source === 'custom' && ' (Custom)'}
                                         </Typography>
                                     </Box>
@@ -196,6 +202,18 @@ export const IconSearch = ({ control, errors, onCustomIconSelect }: Props) => {
                                                     width={25}
                                                     crossOrigin='anonymous'
                                                 />
+                                                <Typography
+                                                    variant='caption'
+                                                    sx={{
+                                                        display: 'block',
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis',
+                                                        whiteSpace: 'nowrap',
+                                                        maxWidth: '60px',
+                                                        textAlign: 'center'
+                                                    }}>
+                                                    {selectedIcon.name}
+                                                </Typography>
                                             </Box>
                                         }
                                     </Box>
