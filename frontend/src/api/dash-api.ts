@@ -165,6 +165,17 @@ export class DashApi {
         return res.data?.icons;
     }
 
+    public static async getCustomIcons(): Promise<Icon[]> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/app-shortcut/custom-icons`);
+            console.log('Custom icons response:', res.data);
+            return res.data?.icons || [];
+        } catch (error) {
+            console.error('Error fetching custom icons:', error);
+            return [];
+        }
+    }
+
     public static async getIcon(iconPath: string): Promise<string> {
         const res = await axios.get(`${BACKEND_URL}/icons/${iconPath.replace('./assets/', '')}`);
         return res.data;

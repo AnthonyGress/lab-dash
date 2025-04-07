@@ -27,8 +27,16 @@ export const IconSearch = ({ control, errors, onCustomIconSelect }: Props) => {
 
     const fetchIconList = async () => {
         try {
-            const response = await DashApi.getIconList();
-            setIconList(response);
+            // Fetch built-in icons
+            const builtInIcons = await DashApi.getIconList();
+
+            // Fetch custom icons
+            const customIcons = await DashApi.getCustomIcons();
+            console.log('Custom icons:', customIcons);
+
+            // Combine the icons with custom icons first
+            const combinedIcons = [...(customIcons || []), ...(builtInIcons || [])];
+            setIconList(combinedIcons);
         } catch (error) {
             console.error('Error fetching icon list:', error);
         }

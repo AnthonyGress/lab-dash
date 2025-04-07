@@ -60,4 +60,39 @@ router.post('/upload', upload.single('file'), (req: Request, res: Response) => {
     });
 });
 
+// Get list of custom app icons
+router.get('/custom-icons', (req: Request, res: Response) => {
+    try {
+        const uploadPath = path.join(UPLOAD_DIRECTORY, 'app-icons');
+
+        // Create directory if it doesn't exist
+        if (!fs.existsSync(uploadPath)) {
+            fs.mkdirSync(uploadPath, { recursive: true });
+            res.json({ icons: [] });
+            return;
+        }
+
+        // Read the directory
+        const files = fs.readdirSync(uploadPath);
+
+        // Map files to icon objects
+        const icons = files.map(file => {
+            // Get the file name without extension for display
+            const filenameWithoutExt = path.parse(file).name;
+
+            // Create the icon object
+            return {
+                name: sanitizeFileName(filenameWithoutExt),
+                path: `/uploads/app-icons/${file}`,
+                source: 'custom'
+            };
+        });
+
+        res.json({ icons });
+    } catch (error) {
+        console.error('Error reading custom icons:', error);
+        res.status(500).json({ message: 'Failed to retrieve custom icons' });
+    }
+});
+
 export default router;
