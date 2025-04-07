@@ -1,6 +1,5 @@
 {
   "name": "lab-dash-backend",
-  "version": "1.0.0",
   "main": "index.js",
   "scripts": {
     "dev": "PORT=5000 nodemon",

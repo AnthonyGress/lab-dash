@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { FileInput } from './FileInput';
 import { DashApi } from '../../api/dash-api';
+import { APP_VERSION } from '../../constants/version';
 import { useAppContext } from '../../context/useAppContext';
 import { COLORS } from '../../theme/styles';
 import { Config, SearchProvider } from '../../types';
@@ -541,7 +542,7 @@ export const SettingsForm = () => {
                                 borderTop: '1px solid rgba(255, 255, 255, 0.1)'
                             }}>
                                 <Typography variant='body2'>
-                                    Version: 1.0.1
+                                    Version: {APP_VERSION}
                                 </Typography>
                             </Box>
                         </Box>
