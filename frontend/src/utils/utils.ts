@@ -1,8 +1,20 @@
 import { BACKEND_URL } from '../constants/constants';
 
-export const getIconPath = (icon: string | { path: string }) => {
+export const getIconPath = (icon: string | { path: string; source?: string }) => {
+    if (!icon) return '';
+
     const path = typeof icon === 'string' ? icon : icon?.path;
-    return path ? `${BACKEND_URL}/icons/${path.replace('./assets/', '')}` : '';
+    const source = typeof icon === 'object' ? icon.source : undefined;
+
+    if (!path) return '';
+
+    // If it's a custom uploaded icon, use the path directly
+    if (source === 'custom' || path.startsWith('/uploads/')) {
+        return `${BACKEND_URL}${path}`;
+    }
+
+    // Otherwise it's a built-in icon
+    return `${BACKEND_URL}/icons/${path.replace('./assets/', '')}`;
 };
 
 /**

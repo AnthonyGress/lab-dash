@@ -303,6 +303,32 @@ export class DashApi {
         }
     }
 
+    public static async uploadAppIcon(file: File): Promise<Icon | null> {
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const res = await axios({
+                method: 'POST',
+                url: `${BACKEND_URL}/api/app-shortcut/upload`,
+                data: formData,
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                },
+                withCredentials: true
+            });
+
+            return {
+                name: res.data.name,
+                path: res.data.filePath,
+                source: 'custom'
+            };
+        } catch (error) {
+            console.error('Failed to upload app icon:', error);
+            return null;
+        }
+    }
+
     // Check if any users exist (for first-time setup)
     public static async checkIfUsersExist(): Promise<boolean> {
         try {

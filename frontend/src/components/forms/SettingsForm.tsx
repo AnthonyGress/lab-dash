@@ -530,6 +530,20 @@ export const SettingsForm = () => {
                                         Reset All Settings
                                 </Button>
                             </Box>
+
+                            {/* Version information */}
+                            <Box sx={{
+                                display: 'flex',
+                                justifyContent: 'center',
+                                width: '100%',
+                                mt: 4,
+                                pt: 2,
+                                borderTop: '1px solid rgba(255, 255, 255, 0.1)'
+                            }}>
+                                <Typography variant='body2'>
+                                    Version: 1.0.1
+                                </Typography>
+                            </Box>
                         </Box>
                     </TabPanel>
 
@@ -629,6 +643,60 @@ export const SettingsForm = () => {
                                         accept='.json'
                                         sx={{ width: '95%' }}
                                     />
+                                </Box>
+                            </Box>
+
+                            {/* Desktop to Mobile Layout Sync */}
+                            <Box sx={{
+                                display: 'grid',
+                                gridTemplateColumns: { xs: '120px 1fr', sm: '150px 1fr' },
+                                gap: { xs: 1, sm: 2 },
+                                alignItems: 'center',
+                            }}>
+                                <Typography variant='body1' sx={{
+                                    alignSelf: 'center',
+                                    fontSize: { xs: '0.875rem', sm: '1rem' },
+                                    width: '10rem'
+                                }}>Layout Sync</Typography>
+                                <Box ml={2}>
+                                    <Button
+                                        variant='contained'
+                                        size={isMobile ? 'small' : 'medium'}
+                                        onClick={async () => {
+                                            try {
+                                                PopupManager.deleteConfirmation({
+                                                    title: 'Copy Desktop Layout to Mobile',
+                                                    text: 'This will overwrite your current mobile layout with your desktop layout. Continue?',
+                                                    confirmText: 'Yes, Copy',
+                                                    confirmAction: async () => {
+                                                        if (!config?.layout?.desktop) {
+                                                            PopupManager.failure('No desktop layout found to copy');
+                                                            return;
+                                                        }
+
+                                                        // Create updated config with desktop layout copied to mobile
+                                                        const updatedLayout = {
+                                                            layout: {
+                                                                desktop: config.layout.desktop,
+                                                                mobile: [...config.layout.desktop]
+                                                            }
+                                                        };
+
+                                                        // Save the updated layout
+                                                        await updateConfig(updatedLayout);
+                                                        await refreshDashboard();
+
+                                                        PopupManager.success('Desktop layout successfully copied to mobile');
+                                                    }
+                                                });
+                                            } catch (error) {
+                                                PopupManager.failure('Failed to copy desktop layout to mobile');
+                                                console.error('Error copying layout:', error);
+                                            }
+                                        }}
+                                    >
+                                        Copy Desktop Layout to Mobile
+                                    </Button>
                                 </Box>
                             </Box>
                         </Box>

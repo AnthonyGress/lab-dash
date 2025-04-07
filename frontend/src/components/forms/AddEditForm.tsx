@@ -40,7 +40,8 @@ type FormValues = {
 export const AddEditForm = ({ handleClose, existingItem }: Props) => {
     const { formState: { errors } } = useForm();
     const { dashboardLayout, addItem, updateItem } = useAppContext();
-    const  isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const [customIconFile, setCustomIconFile] = useState<File | null>(null);
 
     const formContext = useForm({
         defaultValues: {
@@ -56,12 +57,38 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
 
     const selectedItemType = formContext.watch('itemType');
 
+    const handleCustomIconSelect = (file: File | null) => {
+        setCustomIconFile(file);
+    };
+
     const handleSubmit = async (data: FormValues) => {
         console.log(data);
 
+        // Handle custom icon upload if needed
+        let iconData = data.icon;
+
+        if (customIconFile && data.icon?.source === 'custom-pending') {
+            try {
+                console.log('Uploading custom icon...');
+                const uploadedIcon = await DashApi.uploadAppIcon(customIconFile);
+
+                if (uploadedIcon) {
+                    console.log('Custom icon uploaded successfully:', uploadedIcon);
+                    iconData = uploadedIcon;
+                }
+            } catch (error) {
+                console.error('Error uploading custom icon:', error);
+                // Continue with form submission even if icon upload fails
+            }
+        }
+
         const updatedItem: NewItem = {
             label: data.shortcutName || '',
-            icon: data.icon ? { path: data.icon.path, name: data.icon.name } : undefined,
+            icon: iconData ? {
+                path: iconData.path,
+                name: iconData.name,
+                source: iconData.source
+            } : undefined,
             url: data.url,
             type: data.itemType === 'widget' && data.widgetType ? data.widgetType : data.itemType,
             showLabel: data.showLabel
@@ -167,7 +194,11 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                     />
                                 </Grid>
                                 <Grid>
-                                    <IconSearch control={formContext.control} errors={errors}/>
+                                    <IconSearch
+                                        control={formContext.control}
+                                        errors={errors}
+                                        onCustomIconSelect={handleCustomIconSelect}
+                                    />
                                 </Grid>
                                 <Grid>
                                     <CheckboxElement label='Show Name' name='showLabel' sx={{ ml: 1, color: 'white', '& .MuiSvgIcon-root': { fontSize: 30 },  }}/>
