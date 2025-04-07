@@ -76,5 +76,20 @@ npm install
 npm run dev
 ```
 
+# Updating
+### Portainer
+- Navigate to stacks
+- Click on the `lab-dash` stack
+- Click Editor tab at the top
+- Click Update the stack
+- Enable Re-pull image and redploy toggle
+- Click Update
+
+### Docker CLI:
+- `cd /directory_of_compose_yaml`
+- `docker compose down`
+- `docker compose pull`
+- `docker compose up -d`
+
 # Disclaimer
 This code is provided for informational and educational purposes only. I am not associated with any of the services/applications mentioned in this project.
