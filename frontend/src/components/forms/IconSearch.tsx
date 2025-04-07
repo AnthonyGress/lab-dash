@@ -23,6 +23,7 @@ export const IconSearch = ({ control, errors, onCustomIconSelect }: Props) => {
     const [selectedIcon, setSelectedIcon] = useState<Icon | null>(control._defaultValues.icon || null);
     const [iconList, setIconList] = useState<Icon[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [tempPreviewUrl, setTempPreviewUrl] = useState<string | null>(null);
 
     const fetchIconList = async () => {
         try {
@@ -43,6 +44,15 @@ export const IconSearch = ({ control, errors, onCustomIconSelect }: Props) => {
         }
     }, [control._defaultValues.icon]);
 
+    // Clean up any temporary preview URLs when component unmounts
+    useEffect(() => {
+        return () => {
+            if (tempPreviewUrl) {
+                URL.revokeObjectURL(tempPreviewUrl);
+            }
+        };
+    }, [tempPreviewUrl]);
+
     return (
         <Box sx={{ textAlign: 'center' }}>
             <Controller
@@ -54,8 +64,14 @@ export const IconSearch = ({ control, errors, onCustomIconSelect }: Props) => {
                         const file = event.target.files?.[0];
                         if (!file) return;
 
+                        // Clean up previous preview URL if it exists
+                        if (tempPreviewUrl) {
+                            URL.revokeObjectURL(tempPreviewUrl);
+                        }
+
                         // Create a temporary preview URL
                         const objectUrl = URL.createObjectURL(file);
+                        setTempPreviewUrl(objectUrl);
 
                         // Create a valid icon object
                         const tempIcon: Icon = {
@@ -82,16 +98,6 @@ export const IconSearch = ({ control, errors, onCustomIconSelect }: Props) => {
                     const handleUploadClick = () => {
                         fileInputRef.current?.click();
                     };
-
-                    // Clean up the object URL when the component unmounts or when the icon changes
-                    useEffect(() => {
-                        return () => {
-                            // Clean up the URL when the selected icon is no longer needed
-                            if (selectedIcon?.source === 'custom-pending' && typeof selectedIcon.path === 'string') {
-                                URL.revokeObjectURL(selectedIcon.path);
-                            }
-                        };
-                    }, [selectedIcon]);
 
                     return (
                         <>

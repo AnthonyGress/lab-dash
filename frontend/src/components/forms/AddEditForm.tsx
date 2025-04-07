@@ -62,19 +62,21 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
     };
 
     const handleSubmit = async (data: FormValues) => {
-        console.log(data);
+        console.log('Form data:', data);
 
         // Handle custom icon upload if needed
         let iconData = data.icon;
 
         if (customIconFile && data.icon?.source === 'custom-pending') {
             try {
-                console.log('Uploading custom icon...');
+                console.log('Uploading custom icon:', customIconFile.name);
                 const uploadedIcon = await DashApi.uploadAppIcon(customIconFile);
 
                 if (uploadedIcon) {
                     console.log('Custom icon uploaded successfully:', uploadedIcon);
                     iconData = uploadedIcon;
+                } else {
+                    console.error('Failed to get a valid response from upload');
                 }
             } catch (error) {
                 console.error('Error uploading custom icon:', error);

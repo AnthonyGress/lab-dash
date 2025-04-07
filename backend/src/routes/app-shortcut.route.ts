@@ -45,6 +45,13 @@ router.post('/upload', upload.single('file'), (req: Request, res: Response) => {
     // Sanitize the file name for display
     const sanitizedName = sanitizeFileName(req.file.originalname);
 
+    console.log('File uploaded successfully:', {
+        originalName: req.file.originalname,
+        sanitizedName,
+        filename: req.file.filename,
+        path: req.file.path
+    });
+
     res.status(200).json({
         message: 'App icon uploaded successfully',
         filePath: `/uploads/app-icons/${req.file.filename}`,
