@@ -24,7 +24,23 @@ You have complete control over your data and dashboard configuration.
 - Configurations can be easily backed up and restored
 
 # Installation
-This only requires docker to be installed. [Install Docker](https://docs.docker.com/engine/install/)
+This only requires docker to be installed. [Install Docker](https://docs.docker.com/engine/install/). Run using `docker compose`
+```yaml
+---
+services:
+  lab-dash:
+      container_name: lab-dash
+      image: ghcr.io/anthonygress/lab-dash:latest
+      ports:
+        - 2022:2022
+      environment:
+        - SECRET=YOUR_SECRET_KEY # any random string for jwt encryption
+      volumes:
+        - /docker/lab-dash/config:/config
+      restart: unless-stopped
+      labels:
+        - "com.centurylinklabs.watchtower.enable=true"
+```
 
 # Usage
 Lab Dash can aslo be accessed from any web browser via `http://localhost:2022` or `192.168.x.x:2022` which should be your servers local IP address or yout hosted url `www.your-homepage.com`. 
