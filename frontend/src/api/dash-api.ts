@@ -140,7 +140,7 @@ export class DashApi {
                     } catch (refreshError) {
                         console.error('Error during token refresh:', refreshError);
                         // If refresh fails, redirect to login
-                        this.redirectToLogin();
+                        // this.redirectToLogin();
                         return Promise.reject(refreshError);
                     }
                 }
