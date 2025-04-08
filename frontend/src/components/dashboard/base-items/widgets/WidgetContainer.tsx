@@ -118,10 +118,24 @@ export const WidgetContainer: React.FC<Props> = ({ children, editMode, onEdit, o
                         }}
                     >
                         {dotColor === 'green' && (
-                            <KeyboardArrowUpIcon sx={{ color: 'white', fontSize: 16, position: 'relative' }} />
+                            <KeyboardArrowUpIcon sx={{
+                                color: 'white',
+                                fontSize: 18,
+                                position: 'absolute',
+                                top: '50%',
+                                left: '50%',
+                                transform: 'translate(-50%, -50%)'
+                            }} />
                         )}
                         {dotColor === 'red' && (
-                            <KeyboardArrowDownIcon sx={{ color: 'white', fontSize: 18, position: 'relative' }} />
+                            <KeyboardArrowDownIcon sx={{
+                                color: 'white',
+                                fontSize: 18,
+                                position: 'absolute',
+                                top: '50%',
+                                left: '50%',
+                                transform: 'translate(-50%, -50%)'
+                            }} />
                         )}
                     </Box>
                 </Tooltip>
