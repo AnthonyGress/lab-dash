@@ -1,3 +1,5 @@
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { Box, Card, IconButton, Menu, MenuItem, Tooltip } from '@mui/material';
 import React, { useState } from 'react';
@@ -109,9 +111,19 @@ export const WidgetContainer: React.FC<Props> = ({ children, editMode, onEdit, o
                             height: 10,
                             borderRadius: '50%',
                             backgroundColor: dotColor,
-                            cursor: 'pointer'
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
                         }}
-                    />
+                    >
+                        {dotColor === 'green' && (
+                            <KeyboardArrowUpIcon sx={{ color: 'white', fontSize: 12, position: 'relative' }} />
+                        )}
+                        {dotColor === 'red' && (
+                            <KeyboardArrowDownIcon sx={{ color: 'white', fontSize: 12, position: 'relative' }} />
+                        )}
+                    </Box>
                 </Tooltip>
             )}
         </Card>
