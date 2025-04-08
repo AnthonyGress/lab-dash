@@ -49,7 +49,7 @@ export const AppContextProvider = ({ children }: Props) => {
             await checkForAppUpdates();
 
             // Set interval to check every 6 hours (6 * 60 * 60 * 1000 ms)
-            const intervalId = setInterval(checkForAppUpdates, 6 * 60 * 60 * 1000);
+            const intervalId = setInterval(checkForAppUpdates, 60 * 60 * 1000);
 
             // Clear interval on component unmount
             return () => clearInterval(intervalId);

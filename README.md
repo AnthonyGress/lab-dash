@@ -27,6 +27,7 @@ You have complete control over your data and dashboard configuration.
 This only requires docker to be installed. [Install Docker](https://docs.docker.com/engine/install/). Run using `docker compose`
 ```yaml
 ---
+---
 services:
   lab-dash:
       container_name: lab-dash
@@ -40,6 +41,7 @@ services:
         - /sys:/sys:ro
         - /docker/lab-dash/config:/config
         - /docker/lab-dash/uploads:/app/public/uploads
+        - /var/run/docker.sock:/var/run/docker.sock
       restart: unless-stopped
       labels:
         - "com.centurylinklabs.watchtower.enable=true"
