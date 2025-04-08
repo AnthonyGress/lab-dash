@@ -39,6 +39,7 @@ services:
       volumes:
         - /sys:/sys:ro
         - /docker/lab-dash/config:/config
+        - /docker/lab-dash/uploads:/app/public/uploads
       restart: unless-stopped
       labels:
         - "com.centurylinklabs.watchtower.enable=true"

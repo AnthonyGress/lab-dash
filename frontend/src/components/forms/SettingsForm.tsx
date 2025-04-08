@@ -218,8 +218,8 @@ export const SettingsForm = () => {
 
             const updatedConfig: Partial<Config> = {};
 
-            if (data.selectedFile instanceof File) {
-                updatedConfig.backgroundImage = data.selectedFile;
+            if (data.backgroundFile instanceof File) {
+                updatedConfig.backgroundImage = data.backgroundFile;
             }
 
             if (data.title.trim()) {
@@ -564,7 +564,7 @@ export const SettingsForm = () => {
                                 }}>Background Image</Typography>
                                 <Box sx={{ position: 'relative' }}>
                                     <FileInput
-                                        name='selectedFile'
+                                        name='backgroundFile'
                                         sx={{ width: '95%' }}
                                     />
                                     {backgroundFile && (
