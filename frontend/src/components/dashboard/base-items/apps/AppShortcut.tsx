@@ -18,14 +18,14 @@ export const AppShortcut = ({ url, name, iconName, showLabel, editMode }: Props)
 
     // Calculate font size based on name length
     const fontSize = useMemo(() => {
-        if (!name) return  '1rem';
+        if (!name) return isMobile ? '.9rem' : '1rem';
 
         // Adjust font size based on text length
-        if (name.length > 20) return isMobile ? '0.7rem' : '0.8rem';
-        if (name.length > 15) return isMobile ? '0.8rem' : '0.9rem';
-        if (name.length > 10) return isMobile ? '0.9rem' : '1rem';
+        if (name.length > 20) return isMobile ? '0.6rem' : '0.7rem';
+        if (name.length > 15) return isMobile ? '0.7rem' : '0.8rem';
+        if (name.length > 10) return isMobile ? '0.8rem' : '0.9rem';
 
-        return  '1rem';
+        return isMobile ? '.9rem' : '1rem';
     }, [name, isMobile]);
 
     // Content to render inside the shortcut component

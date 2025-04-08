@@ -377,7 +377,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
                             {isAdmin && (
                                 <Box sx={{ ...styles.center, width: '100%' }} >
-                                    <Button
+                                    {/* <Button
                                         variant='contained'
                                         color='primary'
                                         disabled={isUpdating}
@@ -399,6 +399,15 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                         }}
                                     >
                                         {isUpdating ? 'Updating...' : 'Update Now'}
+                                    </Button> */}
+                                    <Button
+                                        variant='outlined'
+                                        onClick={() => {
+                                            window.open('https://github.com/AnthonyGress/lab-dash/blob/main/README.md#updating', '_blank');
+                                            handleCloseUpdateModal();
+                                        }}
+                                    >
+                                        Update Guide
                                     </Button>
                                 </Box>
                             )}
