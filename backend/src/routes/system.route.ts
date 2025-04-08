@@ -119,7 +119,7 @@ systemRoute.post('/update-container', [authenticateToken, requireAdmin], async (
     } catch (error) {
         console.error('Error updating container:', error);
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-            message: 'Failed to update container',
+            message: JSON.stringify(error),
             error: (error as Error).message
         });
     }
