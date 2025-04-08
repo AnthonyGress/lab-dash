@@ -3,11 +3,13 @@ services:
   lab-dash:
       container_name: lab-dash
       image: ghcr.io/anthonygress/lab-dash:latest
+      privileged: true
       ports:
         - 2022:2022
       environment:
         - SECRET=YOUR_SECRET_KEY # any random string for jwt encryption
       volumes:
+        - /sys:/sys:ro
         - /docker/lab-dash/config:/config
       restart: unless-stopped
       labels:
