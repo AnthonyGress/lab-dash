@@ -324,6 +324,24 @@ export class DashApi {
         }
     }
 
+    public static async updateContainer(): Promise<{ success: boolean; message: string }> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/system/update-container`, {}, {
+                withCredentials: true
+            });
+            return {
+                success: true,
+                message: res.data.message || 'Update initiated. Container will restart shortly.'
+            };
+        } catch (error: any) {
+            console.error('Failed to update container:', error);
+            return {
+                success: false,
+                message: error.response?.data?.message || 'Failed to update container'
+            };
+        }
+    }
+
     public static async uploadAppIcon(file: File): Promise<Icon | null> {
         try {
             const formData = new FormData();

@@ -12,6 +12,7 @@ services:
         - /sys:/sys:ro
         - /docker/lab-dash/config:/config
         - /docker/lab-dash/uploads:/app/public/uploads
+        - /var/run/docker.sock:/var/run/docker.sock:ro
       restart: unless-stopped
       labels:
         - "com.centurylinklabs.watchtower.enable=true"

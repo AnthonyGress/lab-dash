@@ -1,10 +1,12 @@
+import { exec } from 'child_process';
 import { NextFunction, Request, Response, Router } from 'express';
 import fs from 'fs';
 import StatusCodes from 'http-status-codes';
 import multer, { StorageEngine } from 'multer';
-import path from 'path';
+import { promisify } from 'util';
 
 import { UPLOAD_DIRECTORY } from '../constants/constants';
+import { authenticateToken, requireAdmin } from '../middleware/auth.middleware';
 import { getSystemInfo } from '../system-monitor';
 import { CustomError } from '../types/custom-error';
 import { removeExistingFiles } from '../utils/utils';
@@ -40,6 +42,8 @@ const upload: multer.Multer = multer({
         }
     },
 });
+
+const execAsync = promisify(exec);
 
 systemRoute.get('/', async (_req: Request, res: Response) => {
     try {
@@ -94,6 +98,28 @@ systemRoute.post('/clean-background', (req: Request, res: Response) => {
         console.error('Error cleaning background images:', error);
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
             message: 'Error cleaning background images',
+            error: (error as Error).message
+        });
+    }
+});
+
+// Update container by pulling latest image and restarting
+systemRoute.post('/update-container', [authenticateToken, requireAdmin], async (req: Request, res: Response) => {
+    try {
+        // Execute Docker commands
+        await execAsync('docker pull ghcr.io/anthonygress/lab-dash:latest');
+
+        // Get the current container ID
+        const { stdout: containerId } = await execAsync('cat /proc/self/cgroup | grep docker | head -n 1 | sed "s/.*\\///" | cut -c 1-12');
+
+        // Restart the container
+        await execAsync(`docker restart ${containerId.trim()}`);
+
+        res.status(StatusCodes.OK).json({ message: 'Update initiated. Container will restart shortly.' });
+    } catch (error) {
+        console.error('Error updating container:', error);
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            message: 'Failed to update container',
             error: (error as Error).message
         });
     }

@@ -41,6 +41,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
     const [openDrawer, setOpenDrawer] = useState(false);
     const [openAddModal, setOpenAddModal] = useState(false);
     const [openUpdateModal, setOpenUpdateModal] = useState(false);
+    const [isUpdating, setIsUpdating] = useState(false);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const {
         dashboardLayout,
@@ -372,22 +373,35 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                         <Typography variant='h6' gutterBottom>
                             A new version is available: {latestVersion}
                         </Typography>
-                        <Typography variant='body1' paragraph>
-                            You are currently running version {APP_VERSION}.
-                            <br/>
-                            We recommend updating to the latest version for new features and bug fixes.
-                        </Typography>
-                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-                            <Button
-                                variant='contained'
-                                color='primary'
-                                onClick={() => {
-                                    window.open('https://github.com/AnthonyGress/lab-dash/blob/main/README.md#updating', '_blank');
-                                    handleCloseUpdateModal();
-                                }}
-                            >
-                                Update Guide
-                            </Button>
+
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+                            {isAdmin && (
+                                <Box sx={{ ...styles.center, width: '100%' }} >
+                                    <Button
+                                        variant='contained'
+                                        color='primary'
+                                        disabled={isUpdating}
+                                        onClick={async () => {
+                                            setIsUpdating(true);
+                                            try {
+                                                const result = await DashApi.updateContainer();
+                                                if (result.success) {
+                                                    PopupManager.success(result.message);
+                                                } else {
+                                                    PopupManager.failure(result.message);
+                                                }
+                                                handleCloseUpdateModal();
+                                            } catch (error) {
+                                                PopupManager.failure('Failed to update container');
+                                            } finally {
+                                                setIsUpdating(false);
+                                            }
+                                        }}
+                                    >
+                                        {isUpdating ? 'Updating...' : 'Update Now'}
+                                    </Button>
+                                </Box>
+                            )}
                         </Box>
                     </Box>
                 </CenteredModal>
