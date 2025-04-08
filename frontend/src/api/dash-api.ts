@@ -314,6 +314,16 @@ export class DashApi {
         }
     }
 
+    public static async cleanBackgroundImages(): Promise<boolean> {
+        try {
+            await axios.post(`${BACKEND_URL}/api/system/clean-background`);
+            return true;
+        } catch (error) {
+            console.error('Failed to clean background images:', error);
+            return false;
+        }
+    }
+
     public static async uploadAppIcon(file: File): Promise<Icon | null> {
         try {
             const formData = new FormData();

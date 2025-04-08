@@ -80,3 +80,21 @@ systemRoute.post('/upload', upload.single('file'), (req: Request, res: Response,
         next(error);
     }
 });
+
+// Clean up background images (removes all files at root level in uploads directory)
+systemRoute.post('/clean-background', (req: Request, res: Response) => {
+    try {
+        // Remove all files in the root of uploads directory
+        removeExistingFiles();
+
+        res.status(StatusCodes.OK).json({
+            message: 'Background images cleaned successfully'
+        });
+    } catch (error) {
+        console.error('Error cleaning background images:', error);
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            message: 'Error cleaning background images',
+            error: (error as Error).message
+        });
+    }
+});

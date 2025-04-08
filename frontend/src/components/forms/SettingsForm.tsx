@@ -326,13 +326,17 @@ export const SettingsForm = () => {
     const resetBackground = async () => {
         PopupManager.deleteConfirmation({
             title: 'Reset Background',
-            text: 'This will restore the default background.',
+            text: 'This will restore the default background and remove all uploaded background images.',
             confirmText: 'Yes, Reset',
             confirmAction: async () => {
                 try {
-                    await updateConfig({ backgroundImage: '' });
-                    PopupManager.success('Background has been reset');
+                    // First clean up all background images in the root directory
+                    await DashApi.cleanBackgroundImages();
 
+                    // Then update the config to use the default background
+                    await updateConfig({ backgroundImage: '' });
+
+                    PopupManager.success('Background has been reset');
                 } catch (error) {
                     PopupManager.failure('Failed to reset background. Please try again.');
                     console.error('Error resetting background:', error);

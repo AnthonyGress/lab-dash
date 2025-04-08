@@ -13,6 +13,12 @@ export const removeExistingFiles = (exceptFileName?: string) => {
             }
 
             const filePath = path.join(UPLOAD_DIRECTORY, file);
+
+            // Skip directories
+            if (fs.statSync(filePath).isDirectory()) {
+                return;
+            }
+
             fs.unlinkSync(filePath);
         });
     } catch (error) {
