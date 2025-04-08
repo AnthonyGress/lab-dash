@@ -107,8 +107,8 @@ export const WidgetContainer: React.FC<Props> = ({ children, editMode, onEdit, o
                             position: 'absolute',
                             bottom: 5,
                             right: 5,
-                            width: 10,
-                            height: 10,
+                            width: 13,
+                            height: 13,
                             borderRadius: '50%',
                             backgroundColor: dotColor,
                             cursor: 'pointer',
@@ -118,10 +118,10 @@ export const WidgetContainer: React.FC<Props> = ({ children, editMode, onEdit, o
                         }}
                     >
                         {dotColor === 'green' && (
-                            <KeyboardArrowUpIcon sx={{ color: 'white', fontSize: 12, position: 'relative' }} />
+                            <KeyboardArrowUpIcon sx={{ color: 'white', fontSize: 16, position: 'relative' }} />
                         )}
                         {dotColor === 'red' && (
-                            <KeyboardArrowDownIcon sx={{ color: 'white', fontSize: 12, position: 'relative' }} />
+                            <KeyboardArrowDownIcon sx={{ color: 'white', fontSize: 18, position: 'relative' }} />
                         )}
                     </Box>
                 </Tooltip>
