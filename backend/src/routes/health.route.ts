@@ -17,9 +17,29 @@ healthRoute.get('/', async (req: Request, res: Response): Promise<void> => {
     }
 
     try {
-        const response = await axios.get(url, { timeout: 5000, httpsAgent });
+        const response = await axios.get(url, {
+            timeout: 5000,
+            httpsAgent,
+            responseType: 'text'
+        });
 
-        res.json({ status: response.status >= 100 && response.status < 400 ? 'online' : 'offline' });
+        // Check if response is successful
+        if (response.status >= 200 && response.status < 400) {
+            // Check for meta refresh tags in HTML responses
+            res.json({ status: 'online' });
+            return;
+        }
+
+        if (response.headers['content-type']?.includes('text/html') &&
+                typeof response.data === 'string' &&
+                (response.data.includes('<meta http-equiv="refresh"') ||
+                 response.data.includes('<meta http-equiv=\'refresh\'') ||
+                 response.data.includes('<meta http-equiv=refresh'))) {
+            res.json({ status: 'online' });
+            return;
+        }
+
+        res.json({ status: 'offline' });
     } catch (error) {
         res.json({ status: 'offline' });
     }
