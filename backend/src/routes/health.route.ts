@@ -19,7 +19,7 @@ healthRoute.get('/', async (req: Request, res: Response): Promise<void> => {
     try {
         const response = await axios.get(url, { timeout: 5000, httpsAgent });
 
-        res.json({ status: response.status >= 200 && response.status < 400 ? 'online' : 'offline' });
+        res.json({ status: response.status >= 100 && response.status < 400 ? 'online' : 'offline' });
     } catch (error) {
         res.json({ status: 'offline' });
     }

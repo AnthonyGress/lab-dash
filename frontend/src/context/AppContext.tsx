@@ -26,6 +26,10 @@ export interface IAppContext {
     setSetupComplete: Dispatch<SetStateAction<boolean>>;
     checkIfUsersExist: () => Promise<void>;
     checkLoginStatus: () => Promise<void>;
+    updateAvailable: boolean;
+    latestVersion: string | null;
+    releaseUrl: string | null;
+    checkForAppUpdates: () => Promise<void>;
 }
 
 export const AppContext = createContext<IAppContext>(null!);

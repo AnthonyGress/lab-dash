@@ -7,6 +7,7 @@ import { DashApi } from '../api/dash-api';
 import { initialItems } from '../constants/constants';
 import { theme } from '../theme/theme';
 import { Config, DashboardItem, DashboardLayout, NewItem } from '../types';
+import { checkForUpdates } from '../utils/updateChecker';
 
 type Props = {
     children: ReactNode
@@ -25,6 +26,11 @@ export const AppContextProvider = ({ children }: Props) => {
     const [isFirstTimeSetup, setIsFirstTimeSetup] = useState<boolean | null>(null);
     const [setupComplete, setSetupComplete] = useState<boolean>(false);
 
+    // Update checker states
+    const [updateAvailable, setUpdateAvailable] = useState<boolean>(false);
+    const [latestVersion, setLatestVersion] = useState<string | null>(null);
+    const [releaseUrl, setReleaseUrl] = useState<string | null>(null);
+
     // Initialize authentication state and check if first time setup
     useEffect(() => {
         const initializeAuth = async () => {
@@ -36,6 +42,36 @@ export const AppContextProvider = ({ children }: Props) => {
         // Setup API interceptors
         DashApi.setupAxiosInterceptors();
     }, []);
+
+    // Check for updates on initial load and every 6 hours
+    useEffect(() => {
+        const checkUpdatesPeriodically = async () => {
+            await checkForAppUpdates();
+
+            // Set interval to check every 6 hours (6 * 60 * 60 * 1000 ms)
+            const intervalId = setInterval(checkForAppUpdates, 6 * 60 * 60 * 1000);
+
+            // Clear interval on component unmount
+            return () => clearInterval(intervalId);
+        };
+
+        checkUpdatesPeriodically();
+    }, []);
+
+    // Function to check for updates
+    const checkForAppUpdates = async () => {
+        try {
+            const { updateAvailable: hasUpdate, latestVersion: version, releaseUrl: url } = await checkForUpdates();
+
+            setUpdateAvailable(hasUpdate);
+            setLatestVersion(version);
+            setReleaseUrl(url);
+
+            console.log(`Update check: ${hasUpdate ? 'Update available' : 'No updates available'}`);
+        } catch (error) {
+            console.error('Error checking for updates:', error);
+        }
+    };
 
     // Check if users exist in the system
     const checkIfUsersExist = async () => {
@@ -289,7 +325,11 @@ export const AppContextProvider = ({ children }: Props) => {
             checkIfUsersExist,
             isAdmin,
             setIsAdmin,
-            checkLoginStatus
+            checkLoginStatus,
+            updateAvailable,
+            latestVersion,
+            releaseUrl,
+            checkForAppUpdates
         }}>
             {children}
         </Provider>

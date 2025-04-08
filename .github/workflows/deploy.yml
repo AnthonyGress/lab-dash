@@ -36,5 +36,21 @@ jobs:
           npm run docker:build
           npm run docker:push
 
+      - run: git fetch --all --tags
+
+      - name: Version Check
+        uses: thebongy/version-check@v2
+        with:
+          file: package.json
+          tagFormat: v${version}
+          failBuild: false
+        id: version_check
+
+      - name: Create Release
+        if: steps.version_check.outputs.versionChanged == 'true'
+        run: |
+            gh release create "v${{ steps.version_check.outputs.rawVersion }}" --generate-notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 

@@ -1,7 +1,7 @@
 import { Add } from '@mui/icons-material';
 import CloseIcon from '@mui/icons-material/Close';
 import MenuIcon from '@mui/icons-material/Menu';
-import { Avatar, Button, Divider, Drawer, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, styled } from '@mui/material';
+import { Avatar, Badge, Button, Divider, Drawer, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, styled } from '@mui/material';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
@@ -10,11 +10,12 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { nanoid } from 'nanoid';
 import React, { useEffect, useState } from 'react';
-import { FaEdit } from 'react-icons/fa';
+import { FaEdit, FaSync } from 'react-icons/fa';
 import { FaArrowRightFromBracket, FaGear, FaHouse, FaUser } from 'react-icons/fa6';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 
 import { DashApi } from '../../api/dash-api';
+import { APP_VERSION } from '../../constants/version';
 import { useAppContext } from '../../context/useAppContext';
 import { COLORS, styles } from '../../theme/styles';
 import { theme } from '../../theme/theme';
@@ -39,6 +40,7 @@ type Props = {
 export const ResponsiveAppBar = ({ children }: Props) => {
     const [openDrawer, setOpenDrawer] = useState(false);
     const [openAddModal, setOpenAddModal] = useState(false);
+    const [openUpdateModal, setOpenUpdateModal] = useState(false);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const {
         dashboardLayout,
@@ -51,16 +53,17 @@ export const ResponsiveAppBar = ({ children }: Props) => {
         username,
         setIsLoggedIn,
         setUsername,
-        isAdmin
+        isAdmin,
+        updateAvailable,
+        latestVersion
     } = useAppContext();
 
     const location = useLocation();
     const navigate = useNavigate();
     const currentPath = location.pathname;
 
-    const menuOpen = Boolean(anchorEl);
-
     const handleClose = () => setOpenAddModal(false);
+    const handleCloseUpdateModal = () => setOpenUpdateModal(false);
 
     const handleEditCancel = () => {
         handleCloseDrawer();
@@ -81,10 +84,6 @@ export const ResponsiveAppBar = ({ children }: Props) => {
 
     const handleCloseDrawer = () => {
         setOpenDrawer(false);
-    };
-
-    const handleAvatarClick = (event: React.MouseEvent<HTMLElement>) => {
-        setAnchorEl(event.currentTarget);
     };
 
     const handleMenuClose = () => {
@@ -118,6 +117,11 @@ export const ResponsiveAppBar = ({ children }: Props) => {
         handleMenuClose();
         // Navigate to user profile page if you have one
         // navigate('/profile');
+    };
+
+    const handleOpenUpdateModal = () => {
+        setOpenUpdateModal(true);
+        handleCloseDrawer();
     };
 
 
@@ -194,7 +198,22 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                     onClick={handleOpenDrawer}
                                     sx={{ ml: 1 }}
                                 >
-                                    <MenuIcon sx={{ color: 'white', fontSize: '2rem', marginRight: '1rem' }}/>
+                                    {updateAvailable ? (
+                                        <Badge
+                                            color='error'
+                                            variant='dot'
+                                            sx={{
+                                                '& .MuiBadge-badge': {
+                                                    top: 0,
+                                                    right: 5
+                                                }
+                                            }}
+                                        >
+                                            <MenuIcon sx={{ color: 'white', fontSize: '2rem', marginRight: '1rem' }}/>
+                                        </Badge>
+                                    ) : (
+                                        <MenuIcon sx={{ color: 'white', fontSize: '2rem', marginRight: '1rem' }}/>
+                                    )}
                                 </IconButton>
                             </Box>
 
@@ -262,6 +281,25 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                     <List sx={{ mt: 'auto', mb: 1 }}>
                                         <Divider />
 
+                                        {/* Update Available Item */}
+                                        {updateAvailable && (
+                                            <ListItem disablePadding>
+                                                <ListItemButton onClick={isLoggedIn ? handleOpenUpdateModal : () => {}}>
+                                                    <ListItemIcon>
+                                                        <FaSync style={{ color: theme.palette.text.primary, fontSize: 22 }}/>
+                                                    </ListItemIcon>
+                                                    <ListItemText
+                                                        primary={'Update Available'}
+                                                        secondary={`Version ${latestVersion}`}
+                                                        slotProps={{
+                                                            secondary: {
+                                                                color: 'text.primary'
+                                                            }
+                                                        }}
+                                                    />
+                                                </ListItemButton>
+                                            </ListItem>
+                                        )}
                                         {/* Conditional Account Info */}
                                         {isLoggedIn ? (
                                             <>
@@ -327,6 +365,31 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                 </Container>
                 <CenteredModal open={openAddModal} handleClose={handleClose} title='Add Item'>
                     <AddEditForm handleClose={handleClose}/>
+                </CenteredModal>
+                {/* Update Available Modal */}
+                <CenteredModal open={openUpdateModal} handleClose={handleCloseUpdateModal} title='Update Available'>
+                    <Box sx={{ p: 2 }}>
+                        <Typography variant='h6' gutterBottom>
+                            A new version is available: {latestVersion}
+                        </Typography>
+                        <Typography variant='body1' paragraph>
+                            You are currently running version {APP_VERSION}.
+                            <br/>
+                            We recommend updating to the latest version for new features and bug fixes.
+                        </Typography>
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                            <Button
+                                variant='contained'
+                                color='primary'
+                                onClick={() => {
+                                    window.open('https://github.com/AnthonyGress/lab-dash/blob/main/README.md#updating', '_blank');
+                                    handleCloseUpdateModal();
+                                }}
+                            >
+                                Update Guide
+                            </Button>
+                        </Box>
+                    </Box>
                 </CenteredModal>
             </AppBar>
             <Box sx={{
