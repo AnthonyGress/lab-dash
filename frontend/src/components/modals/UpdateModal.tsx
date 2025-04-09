@@ -1,6 +1,7 @@
 import { Box, Button, CircularProgress, Typography } from '@mui/material';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 
 import { CenteredModal } from './CenteredModal';
 import { PopupManager } from './PopupManager';
@@ -62,9 +63,6 @@ export const UpdateModal = ({ open, handleClose, latestVersion, isAdmin }: Updat
         if (fullChangelogIndex > 0) {
             cleanedNotes = cleanedNotes.substring(0, fullChangelogIndex).trim();
         }
-
-        // Replace "## What's Changed" with empty string (keeping content that follows)
-        cleanedNotes = cleanedNotes.replace(/## What's Changed\n?/g, '');
 
         // Remove everything after "by @" including "by @" itself
         const byAuthorIndex = cleanedNotes.indexOf('by @');
@@ -148,21 +146,59 @@ export const UpdateModal = ({ open, handleClose, latestVersion, isAdmin }: Updat
                         </Typography>
                         {releaseNotes.map((note, index) => (
                             <Box key={note.version} sx={{ mb: index < releaseNotes.length - 1 ? 3 : 0 }}>
-                                <Typography variant='subtitle2' fontWeight='bold' color='primary'>
+                                <Typography variant='subtitle2' fontWeight='bold'>
                                     {note.version} - {note.date}
                                 </Typography>
                                 <Box
                                     sx={{
-                                        whiteSpace: 'pre-line',
                                         backgroundColor: 'rgba(255,255,255,0.03)',
                                         p: 2,
                                         borderRadius: 1,
                                         fontSize: '0.9rem',
                                         border: '1px solid rgba(255,255,255,0.1)',
-                                        mt: 1
+                                        mt: 1,
+                                        '& h1, h2, h3, h4, h5, h6': {
+                                            margin: '0.5rem 0 0.2rem 0',
+                                            fontSize: 'inherit',
+                                            fontWeight: 'bold',
+                                        },
+                                        '& h1, h2': {
+                                            fontSize: '1.1rem',
+                                            marginTop: '0.3rem',
+                                            marginBottom: '0.2rem',
+                                        },
+                                        '& ul, ol': {
+                                            paddingLeft: '1.5rem',
+                                            marginTop: '0.2rem',
+                                            marginBottom: '0.2rem',
+                                        },
+                                        '& li': {
+                                            marginBottom: '0.2rem',
+                                        },
+                                        '& p': {
+                                            marginTop: '0.2rem',
+                                            marginBottom: '0.2rem',
+                                        },
+                                        '& a': {
+                                            color: 'primary.main',
+                                            textDecoration: 'none',
+                                            '&:hover': {
+                                                textDecoration: 'underline',
+                                            }
+                                        }
                                     }}
                                 >
-                                    {note.notes}
+                                    <ReactMarkdown
+                                        // remarkPlugins={[remarkGfm]}
+                                        components={{
+                                            // Override to use smaller margins for headers
+                                            h2: ({ node, ...props }) => <h2 style={{ marginTop: '0.2rem', marginBottom: '0.8rem' }} {...props} />,
+                                            // Override to use proper styling for links
+                                            a: ({ node, ...props }) => <a target='_blank' rel='noopener noreferrer' {...props} />
+                                        }}
+                                    >
+                                        {note.notes}
+                                    </ReactMarkdown>
                                 </Box>
                             </Box>
                         ))}
@@ -196,7 +232,7 @@ export const UpdateModal = ({ open, handleClose, latestVersion, isAdmin }: Updat
                                 {isUpdating ? 'Updating...' : 'Update Now'}
                             </Button> */}
                             <Button
-                                variant='outlined'
+                                variant='contained'
                                 onClick={() => {
                                     window.open('https://github.com/AnthonyGress/lab-dash/blob/main/README.md#updating', '_blank');
                                     handleClose();
