@@ -55,11 +55,34 @@ jobs:
           PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo $(git rev-list --max-parents=0 HEAD))
           CURR_TAG="v${{ steps.version_check.outputs.rawVersion }}"
 
-          # Generate simple release notes with commit messages
-          NOTES=$(git log --pretty=format:"* %s" $PREV_TAG..HEAD --no-merges)
+          # Initialize release notes file
           echo "## What's Changed" > release_notes.md
           echo "" >> release_notes.md
-          echo "$NOTES" >> release_notes.md
+
+          # Get all commits between previous tag and HEAD
+          for COMMIT_HASH in $(git log --no-merges --pretty=format:"%H" $PREV_TAG..HEAD); do
+            # Get commit message
+            COMMIT_MSG=$(git log --format=%B -n 1 $COMMIT_HASH)
+
+            # Extract PR number if present (format: "... (#123)")
+            PR_NUM=$(echo "$COMMIT_MSG" | grep -o "#[0-9]\+" | head -1 | tr -d "#")
+
+            if [ -n "$PR_NUM" ]; then
+              # PR number found, get commits from this PR
+              echo "* $COMMIT_MSG" >> release_notes.md
+
+              # Get all commits from the PR (requires GitHub CLI)
+              PR_COMMITS=$(gh pr view $PR_NUM --json commits --jq '.commits[].messageHeadline')
+
+              if [ -n "$PR_COMMITS" ]; then
+                # Add indented PR commits to notes
+                echo "$PR_COMMITS" | grep -v "Merge" | sed 's/^/  - /' >> release_notes.md
+              fi
+            else
+              # Regular commit, not from a squashed PR
+              echo "* $COMMIT_MSG" >> release_notes.md
+            fi
+          done
 
           # Create the release with notes
           gh release create "$CURR_TAG" --notes-file release_notes.md
