@@ -69,7 +69,7 @@ jobs:
 
             if [ -n "$PR_NUM" ]; then
               # PR number found, get commits from this PR
-              echo "* $COMMIT_MSG" >> release_notes.md
+              echo "### $COMMIT_MSG" >> release_notes.md
 
               PR_COMMITS=$(gh pr view $PR_NUM --json commits --jq '.commits[].messageHeadline')
 
