@@ -74,8 +74,8 @@ jobs:
               PR_COMMITS=$(gh pr view $PR_NUM --json commits --jq '.commits[].messageHeadline')
 
               if [ -n "$PR_COMMITS" ]; then
-                # Add indented PR commits to notes
-                echo "$PR_COMMITS" | grep -v "Merge" | sed 's/^/  - /' >> release_notes.md
+                # Add indented PR commits to notes, but filter out the main PR commit
+                echo "$PR_COMMITS" | grep -v "Merge" | grep -v "$COMMIT_MSG" | sed 's/^/  - /' >> release_notes.md
               fi
             else
               # Regular commit, not from a squashed PR
