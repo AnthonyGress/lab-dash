@@ -23,6 +23,16 @@ jobs:
         with:
           node-version: 20
 
+      - run: git fetch --all --tags
+
+      - name: Version Check
+        uses: thebongy/version-check@v2
+        with:
+          file: package.json
+          tagFormat: v${version}
+          failBuild: true
+        id: version_check
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -37,16 +47,6 @@ jobs:
         run: |
           npm run docker:build
           npm run docker:push
-
-      - run: git fetch --all --tags
-
-      - name: Version Check
-        uses: thebongy/version-check@v2
-        with:
-          file: package.json
-          tagFormat: v${version}
-          failBuild: false
-        id: version_check
 
       - name: Create Release
         if: steps.version_check.outputs.versionChanged == 'true'
