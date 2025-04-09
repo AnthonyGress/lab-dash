@@ -15,8 +15,6 @@ jobs:
     steps:
       - name: Checkout git repo
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Fetch all history for proper release notes
 
       - name: Install Node and NPM
         uses: actions/setup-node@v4
@@ -51,23 +49,7 @@ jobs:
       - name: Create Release
         if: steps.version_check.outputs.versionChanged == 'true'
         run: |
-          # Get the previous version tag
-          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-
-          if [ -z "$PREV_TAG" ]; then
-            # If no previous tag exists, use the first commit
-            PREV_COMMIT=$(git rev-list --max-parents=0 HEAD)
-            COMMIT_RANGE="$PREV_COMMIT..HEAD"
-          else
-            COMMIT_RANGE="$PREV_TAG..HEAD"
-          fi
-
-          # Generate release notes with commit messages
-          RELEASE_NOTES=$(echo -e "## What's Changed\n\n")
-          RELEASE_NOTES+=$(git log $COMMIT_RANGE --pretty=format:"* %s" --no-merges)
-
-          # Create release with the generated notes
-          gh release create "v${{ steps.version_check.outputs.rawVersion }}" --notes "$RELEASE_NOTES"
+            gh release create "v${{ steps.version_check.outputs.rawVersion }}" --generate-notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
