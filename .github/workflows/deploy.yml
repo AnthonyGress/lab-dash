@@ -64,14 +64,13 @@ jobs:
             # Get commit message
             COMMIT_MSG=$(git log --format=%B -n 1 $COMMIT_HASH)
 
-            # Extract PR number if present (format: "... (#123)")
+            # Extract PR number if present
             PR_NUM=$(echo "$COMMIT_MSG" | grep -o "#[0-9]\+" | head -1 | tr -d "#")
 
             if [ -n "$PR_NUM" ]; then
               # PR number found, get commits from this PR
               echo "* $COMMIT_MSG" >> release_notes.md
 
-              # Get all commits from the PR (requires GitHub CLI)
               PR_COMMITS=$(gh pr view $PR_NUM --json commits --jq '.commits[].messageHeadline')
 
               if [ -n "$PR_COMMITS" ]; then
