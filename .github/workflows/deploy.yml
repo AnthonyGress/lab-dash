@@ -83,8 +83,8 @@ jobs:
             fi
           done
 
-          # Create the release with notes
-          gh release create "$CURR_TAG" --notes-file release_notes.md
+          # Create the release with notes and explicit title
+          gh release create "$CURR_TAG" --title "$CURR_TAG" --notes-file release_notes.md
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
