@@ -15,14 +15,15 @@ import { FaArrowRightFromBracket, FaGear, FaHouse, FaUser } from 'react-icons/fa
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 
 import { DashApi } from '../../api/dash-api';
-import { APP_VERSION } from '../../constants/version';
 import { useAppContext } from '../../context/useAppContext';
 import { COLORS, styles } from '../../theme/styles';
 import { theme } from '../../theme/theme';
+import { getAppVersion } from '../../utils/version';
 import { AddEditForm } from '../forms/AddEditForm';
 import { Logo } from '../Logo';
 import { CenteredModal } from '../modals/CenteredModal';
 import { PopupManager } from '../modals/PopupManager';
+import { UpdateModal } from '../modals/UpdateModal';
 import { GlobalSearch } from '../search/GlobalSearch';
 
 const DrawerHeader = styled('div')(() => ({
@@ -41,7 +42,6 @@ export const ResponsiveAppBar = ({ children }: Props) => {
     const [openDrawer, setOpenDrawer] = useState(false);
     const [openAddModal, setOpenAddModal] = useState(false);
     const [openUpdateModal, setOpenUpdateModal] = useState(false);
-    const [isUpdating, setIsUpdating] = useState(false);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const {
         dashboardLayout,
@@ -367,53 +367,13 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                 <CenteredModal open={openAddModal} handleClose={handleClose} title='Add Item'>
                     <AddEditForm handleClose={handleClose}/>
                 </CenteredModal>
-                {/* Update Available Modal */}
-                <CenteredModal open={openUpdateModal} handleClose={handleCloseUpdateModal} title='Update Available'>
-                    <Box sx={{ p: 2 }}>
-                        <Typography variant='h6' gutterBottom>
-                            A new version is available: {latestVersion}
-                        </Typography>
-
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-                            {isAdmin && (
-                                <Box sx={{ ...styles.center, width: '100%' }} >
-                                    {/* <Button
-                                        variant='contained'
-                                        color='primary'
-                                        disabled={isUpdating}
-                                        onClick={async () => {
-                                            setIsUpdating(true);
-                                            try {
-                                                const result = await DashApi.updateContainer();
-                                                if (result.success) {
-                                                    PopupManager.success(result.message);
-                                                } else {
-                                                    PopupManager.failure(result.message);
-                                                }
-                                                handleCloseUpdateModal();
-                                            } catch (error) {
-                                                PopupManager.failure('Failed to update container');
-                                            } finally {
-                                                setIsUpdating(false);
-                                            }
-                                        }}
-                                    >
-                                        {isUpdating ? 'Updating...' : 'Update Now'}
-                                    </Button> */}
-                                    <Button
-                                        variant='outlined'
-                                        onClick={() => {
-                                            window.open('https://github.com/AnthonyGress/lab-dash/blob/main/README.md#updating', '_blank');
-                                            handleCloseUpdateModal();
-                                        }}
-                                    >
-                                        Update Guide
-                                    </Button>
-                                </Box>
-                            )}
-                        </Box>
-                    </Box>
-                </CenteredModal>
+                {/* Update Modal - Replaced with component */}
+                <UpdateModal
+                    open={openUpdateModal}
+                    handleClose={handleCloseUpdateModal}
+                    latestVersion={latestVersion}
+                    isAdmin={isAdmin}
+                />
             </AppBar>
             <Box sx={{
                 display: 'flex',
