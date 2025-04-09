@@ -10,7 +10,7 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { nanoid } from 'nanoid';
 import React, { useEffect, useState } from 'react';
-import { FaEdit, FaSync } from 'react-icons/fa';
+import { FaEdit, FaInfoCircle, FaSync } from 'react-icons/fa';
 import { FaArrowRightFromBracket, FaGear, FaHouse, FaUser } from 'react-icons/fa6';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 
@@ -301,6 +301,21 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                 </ListItemButton>
                                             </ListItem>
                                         )}
+                                        {/* Version Info */}
+                                        <ListItem disablePadding>
+                                            <ListItemButton>
+                                                <ListItemIcon>
+                                                    <FaInfoCircle style={{ color: theme.palette.text.primary, fontSize: 22, marginLeft: '-4px' }} />
+                                                </ListItemIcon>
+                                                <ListItemText
+                                                    primary={
+                                                        <Typography>
+                                                                    v{getAppVersion()}
+                                                        </Typography>
+                                                    }
+                                                />
+                                            </ListItemButton>
+                                        </ListItem>
                                         {/* Conditional Account Info */}
                                         {isLoggedIn ? (
                                             <>
@@ -328,8 +343,10 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                         <ListItemText
                                                             primary={username || 'User'}
                                                             secondary={isAdmin ? 'Administrator' : 'User'}
-                                                            secondaryTypographyProps={{
-                                                                color: 'text.primary'
+                                                            slotProps={{
+                                                                secondary: {
+                                                                    color: 'text.primary'
+                                                                }
                                                             }}
                                                         />
                                                     </ListItemButton>
