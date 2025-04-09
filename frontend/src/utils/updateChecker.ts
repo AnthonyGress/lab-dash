@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-import { APP_VERSION } from '../constants/version';
+// import { APP_VERSION } from '../constants/version';
+import { getAppVersion } from './version';
 
 interface GitHubRelease {
   tag_name: string;
@@ -59,7 +60,7 @@ export const checkForUpdates = async (): Promise<{
         }
 
         const latestVersion = latestRelease.tag_name;
-        const currentVersion = APP_VERSION;
+        const currentVersion = getAppVersion();
 
         // Compare versions
         const comparison = compareVersions(latestVersion, currentVersion);

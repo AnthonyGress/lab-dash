@@ -1,6 +1,6 @@
-// Import version from the root package.json
-// This will be bundled at build time
-import { version } from '../../package.json';
+// Get version from Vite's environment variables
+// This was set in vite.config.ts to read from the root package.json
+const appVersion = import.meta.env.APP_VERSION as string;
 
 // Export the version for use in the app
-export const APP_VERSION = version;
+export const APP_VERSION = appVersion;

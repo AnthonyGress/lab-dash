@@ -8,10 +8,10 @@ import { useNavigate } from 'react-router-dom';
 
 import { FileInput } from './FileInput';
 import { DashApi } from '../../api/dash-api';
-import { APP_VERSION } from '../../constants/version';
 import { useAppContext } from '../../context/useAppContext';
 import { COLORS } from '../../theme/styles';
 import { Config, SearchProvider } from '../../types';
+import { getAppVersion } from '../../utils/version';
 import { PopupManager } from '../modals/PopupManager';
 
 // Predefined search providers
@@ -546,7 +546,7 @@ export const SettingsForm = () => {
                                 borderTop: '1px solid rgba(255, 255, 255, 0.1)'
                             }}>
                                 <Typography variant='body2'>
-                                    Version: {APP_VERSION}
+                                    Version: {getAppVersion()}
                                 </Typography>
                             </Box>
                         </Box>
