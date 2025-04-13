@@ -39,10 +39,10 @@ spec:
       volumes:
         - name: config
           persistentVolumeClaim:
-            claimName: lab-dash-config
+            claimName: {{ include "lab-dash.fullname" . }}-config
         - name: uploads
           persistentVolumeClaim:
-            claimName: lab-dash-uploads
+            claimName: {{ include "lab-dash.fullname" . }}-uploads
         - name: docker-sock
           hostPath:
             path: /var/run/docker.sock

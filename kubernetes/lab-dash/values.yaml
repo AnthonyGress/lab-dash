@@ -1,6 +1,6 @@
 replicaCount: 1
 
-namespaceOverride: "dashboard"
+namespaceOverride: "default"
 
 image:
   repository: ghcr.io/anthonygress/lab-dash
@@ -28,7 +28,7 @@ ingress:
   className: ""
   annotations: {}
   hosts:
-    - host: your.host.name
+    - host: my.domain.net
       paths:
         - path: /
           pathType: Prefix

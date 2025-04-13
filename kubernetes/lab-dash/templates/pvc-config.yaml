@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "lab-dash.fullname" . }}-config
+  namespace: {{ .Values.namespaceOverride | default .Release.Namespace }}
+  labels:
+    app: {{ include "lab-dash.name" . }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: local-path
