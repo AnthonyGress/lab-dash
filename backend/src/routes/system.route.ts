@@ -4,6 +4,7 @@ import fs from 'fs';
 import StatusCodes from 'http-status-codes';
 import multer, { StorageEngine } from 'multer';
 import { promisify } from 'util';
+import wol from 'wol';
 
 import { UPLOAD_DIRECTORY } from '../constants/constants';
 import { authenticateToken, requireAdmin } from '../middleware/auth.middleware';
@@ -123,4 +124,60 @@ systemRoute.post('/update-container', [authenticateToken, requireAdmin], async (
             error: (error as Error).message
         });
     }
+});
+
+// Wake on LAN endpoint
+systemRoute.post('/wol', authenticateToken, (req: Request, res: Response) => {
+    const handleWol = async () => {
+        try {
+            const { mac, ip, port } = req.body;
+
+            if (!mac) {
+                res.status(StatusCodes.BAD_REQUEST).json({
+                    message: 'MAC address is required'
+                });
+                return;
+            }
+
+            // Validate MAC address format
+            const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
+            if (!macRegex.test(mac)) {
+                res.status(StatusCodes.BAD_REQUEST).json({
+                    message: 'Invalid MAC address format. Expected format: xx:xx:xx:xx:xx:xx or xx-xx-xx-xx-xx-xx'
+                });
+                return;
+            }
+
+            // Set default options
+            const options: { address?: string; port?: number } = {};
+
+            // Add optional parameters if provided
+            if (ip) options.address = ip;
+            if (port) options.port = parseInt(port, 10);
+
+            // Send the WOL packet
+            await new Promise<void>((resolve, reject) => {
+                wol.wake(mac, options, (err: Error | null) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve();
+                    }
+                });
+            });
+            console.log(`Wake-on-LAN packet sent to ${mac}`);
+            res.status(StatusCodes.OK).json({
+                message: 'Wake-on-LAN packet sent'
+            });
+        } catch (error) {
+            console.error('Error sending Wake-on-LAN packet:', error);
+            res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+                message: 'Error sending Wake-on-LAN packet',
+                error: (error as Error).message
+            });
+        }
+    };
+
+    // Execute the async function
+    handleWol();
 });

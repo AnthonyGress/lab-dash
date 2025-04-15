@@ -222,7 +222,7 @@ export const IconSearch = ({ control, errors, onCustomIconSelect }: Props) => {
                             />
                             <Box mt={1}>
                                 <Button
-                                    variant='outlined'
+                                    variant='contained'
                                     startIcon={<CloudUploadIcon />}
                                     onClick={handleUploadClick}
                                     size='small'

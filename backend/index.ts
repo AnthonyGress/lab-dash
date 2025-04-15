@@ -26,7 +26,7 @@ app.use(cors({
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(cookieParser()); // Add cookie parser
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -35,9 +35,7 @@ app.use('/icon-list', express.static(iconListPath));
 app.use('/icons', express.static(iconsPath));
 app.use('/uploads', express.static(UPLOAD_DIRECTORY));
 app.use('/api', routes);
-
 app.use(express.static(path.join(__dirname, 'public')));
-
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });

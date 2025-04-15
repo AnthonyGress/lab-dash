@@ -277,17 +277,42 @@ export const AppContextProvider = ({ children }: Props) => {
     };
 
     const updateItem = (id: string, updatedData: Partial<NewItem>) => {
-        // Update item in local state
-        setDashboardLayout((prevLayout) => {
-            const updatedLayout = prevLayout.map((item) =>
-                item.id === id ? { ...item, ...updatedData } : item
-            );
+        console.log('Updating item with ID:', id, 'Data:', updatedData);
 
-            // Save the updated layout to the server
-            saveLayoutToServer(updatedLayout);
+        try {
+            // Get current config first to ensure we have both layouts
+            DashApi.getConfig().then(currentConfig => {
+                // Find and update the item in desktop layout
+                const desktopLayout = currentConfig.layout.desktop.map(item =>
+                    item.id === id ? { ...item, ...updatedData } : item
+                );
 
-            return updatedLayout;
-        });
+                // Also find and update the same item in mobile layout
+                // This ensures changes propagate to both layouts
+                const mobileLayout = currentConfig.layout.mobile.map(item =>
+                    item.id === id ? { ...item, ...updatedData } : item
+                );
+
+                // Update local dashboard layout for immediate UI update
+                setDashboardLayout(isMobile ? mobileLayout : desktopLayout);
+
+                // Save both updated layouts to the server
+                const updatedConfig = {
+                    layout: {
+                        desktop: desktopLayout,
+                        mobile: mobileLayout
+                    }
+                };
+
+                DashApi.saveConfig(updatedConfig)
+                    .then(() => console.log('Item updated in both desktop and mobile layouts'))
+                    .catch(error => console.error('Error saving updated layouts:', error));
+            }).catch(error => {
+                console.error('Error fetching config for item update:', error);
+            });
+        } catch (error) {
+            console.error('Failed to update item:', error);
+        }
     };
 
     // Helper function to save layout changes to the server
@@ -296,7 +321,7 @@ export const AppContextProvider = ({ children }: Props) => {
             // Get the current configuration
             const currentConfig = await DashApi.getConfig();
 
-            // Determine which layout to update based on device
+            // For layout rearrangements, only update the current device's layout
             const updatedLayout = {
                 layout: {
                     desktop: isMobile ? currentConfig.layout.desktop : items,
@@ -306,7 +331,7 @@ export const AppContextProvider = ({ children }: Props) => {
 
             // Save the updated layout to the backend
             await DashApi.saveConfig(updatedLayout);
-            console.log('Layout saved to server after item update');
+            console.log('Layout saved to server after layout rearrangement');
         } catch (error) {
             console.error('Failed to save layout to server:', error);
         }

@@ -415,4 +415,21 @@ export class DashApi {
             return null;
         }
     }
+
+    // Wake-on-LAN method
+    public static async sendWakeOnLan(data: { mac: string; ip?: string; port?: number }): Promise<any> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/system/wol`, data, {
+                withCredentials: true
+            });
+            return res.data;
+        } catch (error: any) {
+            console.error('Error sending Wake-on-LAN packet:', error);
+            if (error.response) {
+                throw new Error(error.response.data.message || 'Failed to send Wake-on-LAN packet');
+            } else {
+                throw new Error('Network error occurred while sending Wake-on-LAN packet');
+            }
+        }
+    }
 }

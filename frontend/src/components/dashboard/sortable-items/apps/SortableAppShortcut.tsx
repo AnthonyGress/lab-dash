@@ -16,9 +16,21 @@ type Props = {
     onDelete?: () => void;
     onEdit?: () => void;
     showLabel?: boolean;
+    config?: any;
 };
 
-export const SortableAppShortcut: React.FC<Props> = ({ id, url, name, iconName, editMode, isOverlay = false, onDelete, onEdit, showLabel }) => {
+export const SortableAppShortcut: React.FC<Props> = ({
+    id,
+    url,
+    name,
+    iconName,
+    editMode,
+    isOverlay = false,
+    onDelete,
+    onEdit,
+    showLabel,
+    config
+}) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
     // Only show label in overlay when dragging, or when not dragging at all
@@ -39,7 +51,14 @@ export const SortableAppShortcut: React.FC<Props> = ({ id, url, name, iconName, 
             }}
         >
             <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit} appShortcut url={url}>
-                <AppShortcut url={url} name={name} iconName={iconName} showLabel={shouldShowLabel} editMode={editMode}/>
+                <AppShortcut
+                    url={url}
+                    name={name}
+                    iconName={iconName}
+                    showLabel={shouldShowLabel}
+                    editMode={editMode}
+                    config={config}
+                />
             </WidgetContainer>
         </Grid2>
     );

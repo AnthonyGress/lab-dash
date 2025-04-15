@@ -164,6 +164,7 @@ export const DashboardGrid: React.FC = () => {
                                             onDelete={() => handleDelete(item.id)}
                                             onEdit={() => handleEdit(item)}
                                             showLabel={item.showLabel}
+                                            config={item.config}
                                         />
                                     );
                                 case ITEM_TYPE.BLANK_APP:
@@ -200,6 +201,7 @@ export const DashboardGrid: React.FC = () => {
                                             editMode={editMode}
                                             isOverlay
                                             showLabel={item.showLabel}
+                                            config={item.config}
                                         />
                                     );
                                 case ITEM_TYPE.BLANK_APP:
