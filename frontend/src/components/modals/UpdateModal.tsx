@@ -1,5 +1,4 @@
 import { Box, Button, CircularProgress, Typography } from '@mui/material';
-import axios from 'axios';
 import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 
@@ -93,13 +92,23 @@ export const UpdateModal = ({ open, handleClose, latestVersion, isAdmin }: Updat
             // Get current app version
             const currentVersion = getAppVersion();
 
-            // Fetch all releases
-            const releasesResponse = await axios.get<GitHubRelease[]>(
-                'https://api.github.com/repos/anthonygress/lab-dash/releases'
+            // Fetch all releases using fetch API instead of axios
+            const response = await fetch(
+                'https://api.github.com/repos/anthonygress/lab-dash/releases',
+                {
+                    method: 'GET',
+                    credentials: 'omit' // Explicitly omit credentials
+                }
             );
 
+            if (!response.ok) {
+                throw new Error(`GitHub API returned ${response.status}`);
+            }
+
+            const data: GitHubRelease[] = await response.json();
+
             // Filter releases between current and latest version
-            const relevantReleases = releasesResponse.data.filter(release => {
+            const relevantReleases = data.filter(release => {
                 const version = release.tag_name;
                 return compareVersions(version, currentVersion) > 0 &&
                        compareVersions(targetVersion, version) >= 0;

@@ -28,20 +28,24 @@ export const LoginForm = () => {
     const handleSubmit = async (data: FormValues) => {
         try {
             const response = await DashApi.login(data.username, data.password);
-            console.log('#### response', response);
+            console.log('Login response:', response);
 
-            // Update auth state in context
-            setIsLoggedIn(true);
+            // Update auth state in context - do this in sequence to avoid race conditions
             setUsername(data.username);
 
             // Get admin status directly from the response
             if (response.isAdmin !== undefined) {
-                console.log('#### isAdmin from response', response.isAdmin);
+                console.log('Admin status from response:', response.isAdmin);
                 setIsAdmin(response.isAdmin);
             }
 
-            // Navigate to dashboard on successful login
-            PopupManager.success('Logged in', () => navigate('/'));
+            // Set logged in status last to trigger any dependent effects
+            setIsLoggedIn(true);
+
+            // Use a timeout to ensure state updates have propagated before navigation
+            PopupManager.success('Logged in', () => {
+                setTimeout(() => navigate('/'), 100);
+            });
         } catch (error: any) {
             // Show error message
             PopupManager.failure(error.message || 'Login failed');

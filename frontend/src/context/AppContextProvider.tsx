@@ -43,6 +43,28 @@ export const AppContextProvider = ({ children }: Props) => {
         DashApi.setupAxiosInterceptors();
     }, []);
 
+    // Reset dashboard state when logged out to prevent stale data
+    useEffect(() => {
+        if (!isLoggedIn) {
+            // Reset to initial items when logged out
+            console.log('User logged out, resetting dashboard layout');
+
+            // Ensure admin status is reset
+            setIsAdmin(false);
+
+            // Reset dashboard to initial state
+            setDashboardLayout(initialItems);
+
+            // Force a delayed refresh to ensure state changes are applied
+            const timer = setTimeout(() => {
+                console.log('Post-logout delayed refresh');
+                getLayout().catch(err => console.error('Error refreshing layout after logout:', err));
+            }, 100);
+
+            return () => clearTimeout(timer);
+        }
+    }, [isLoggedIn]);
+
     // Check for updates on initial load and every 6 hours
     useEffect(() => {
         const checkUpdatesPeriodically = async () => {
@@ -147,6 +169,10 @@ export const AppContextProvider = ({ children }: Props) => {
                 setIsLoggedIn(false);
                 setUsername(null);
                 setIsAdmin(false);
+                // Turn off edit mode if it was active
+                if (editMode) {
+                    setEditMode(false);
+                }
                 console.log('Token refresh failed');
             }
         } catch (error) {
@@ -154,6 +180,10 @@ export const AppContextProvider = ({ children }: Props) => {
             setIsLoggedIn(false);
             setUsername(null);
             setIsAdmin(false);
+            // Turn off edit mode if it was active
+            if (editMode) {
+                setEditMode(false);
+            }
         }
     };
 
@@ -218,7 +248,9 @@ export const AppContextProvider = ({ children }: Props) => {
             icon: itemToAdd.icon,
             url: itemToAdd.url,
             type: itemToAdd.type,
-            showLabel: itemToAdd.showLabel
+            showLabel: itemToAdd.showLabel,
+            adminOnly: itemToAdd.adminOnly,
+            config: itemToAdd.config
         };
 
         // Add to current view's layout (affects UI immediately)
@@ -245,11 +277,39 @@ export const AppContextProvider = ({ children }: Props) => {
     };
 
     const updateItem = (id: string, updatedData: Partial<NewItem>) => {
-        setDashboardLayout((prevLayout) =>
-            prevLayout.map((item) =>
+        // Update item in local state
+        setDashboardLayout((prevLayout) => {
+            const updatedLayout = prevLayout.map((item) =>
                 item.id === id ? { ...item, ...updatedData } : item
-            )
-        );
+            );
+
+            // Save the updated layout to the server
+            saveLayoutToServer(updatedLayout);
+
+            return updatedLayout;
+        });
+    };
+
+    // Helper function to save layout changes to the server
+    const saveLayoutToServer = async (items: DashboardItem[]) => {
+        try {
+            // Get the current configuration
+            const currentConfig = await DashApi.getConfig();
+
+            // Determine which layout to update based on device
+            const updatedLayout = {
+                layout: {
+                    desktop: isMobile ? currentConfig.layout.desktop : items,
+                    mobile: isMobile ? items : currentConfig.layout.mobile
+                }
+            };
+
+            // Save the updated layout to the backend
+            await DashApi.saveConfig(updatedLayout);
+            console.log('Layout saved to server after item update');
+        } catch (error) {
+            console.error('Failed to save layout to server:', error);
+        }
     };
 
     const updateConfig = async (partialConfig: Partial<Config>) => {

@@ -28,6 +28,11 @@ const ITEM_TYPE_OPTIONS = [
 
 const WIDGET_OPTIONS = [{ id: ITEM_TYPE.DATE_TIME_WIDGET, label: 'Date & Time' }, { id: ITEM_TYPE.WEATHER_WIDGET, label: 'Weather' }, { id: ITEM_TYPE.SYSTEM_MONITOR_WIDGET, label: 'System Monitor' }];
 
+const TEMPERATURE_UNIT_OPTIONS = [
+    { id: 'fahrenheit', label: 'Fahrenheit (°F)' },
+    { id: 'celsius', label: 'Celsius (°C)' }
+];
+
 type FormValues = {
     shortcutName?: string;
     itemType: string;
@@ -35,6 +40,8 @@ type FormValues = {
     icon?: { path: string; name: string; source?: string } | null;
     showLabel?: boolean;
     widgetType?: string;
+    temperatureUnit?: string;
+    adminOnly?: boolean;
 };
 
 export const AddEditForm = ({ handleClose, existingItem }: Props) => {
@@ -43,19 +50,33 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [customIconFile, setCustomIconFile] = useState<File | null>(null);
 
-    const formContext = useForm({
+    const formContext = useForm<FormValues>({
         defaultValues: {
             shortcutName: existingItem?.label || '',
-            itemType: existingItem?.type || '',
+            itemType: isWidgetType(existingItem?.type) ? 'widget' : existingItem?.type || '',
             url: existingItem?.url || '',
             showLabel: existingItem?.showLabel,
             icon: existingItem?.icon
                 ? { path: existingItem.icon.path, name: existingItem.icon.name, source: existingItem.icon.source || '' }
-                : null // Ensure correct structure
+                : null,
+            widgetType: isWidgetType(existingItem?.type) ? existingItem?.type : '',
+            temperatureUnit: existingItem?.config?.temperatureUnit || 'fahrenheit',
+            adminOnly: existingItem?.adminOnly || false
         }
     });
 
+    // Helper function to check if a type is a widget type
+    function isWidgetType(type?: string): boolean {
+        if (!type) return false;
+        return [
+            ITEM_TYPE.WEATHER_WIDGET,
+            ITEM_TYPE.DATE_TIME_WIDGET,
+            ITEM_TYPE.SYSTEM_MONITOR_WIDGET
+        ].includes(type as ITEM_TYPE);
+    }
+
     const selectedItemType = formContext.watch('itemType');
+    const selectedWidgetType = formContext.watch('widgetType');
 
     const handleCustomIconSelect = (file: File | null) => {
         setCustomIconFile(file);
@@ -84,6 +105,14 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             }
         }
 
+        // Prepare the config object based on widget type
+        let config = undefined;
+        if (data.itemType === 'widget' && data.widgetType === ITEM_TYPE.WEATHER_WIDGET) {
+            config = {
+                temperatureUnit: data.temperatureUnit || 'fahrenheit'
+            };
+        }
+
         const updatedItem: NewItem = {
             label: data.shortcutName || '',
             icon: iconData ? {
@@ -93,7 +122,9 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             } : undefined,
             url: data.url,
             type: data.itemType === 'widget' && data.widgetType ? data.widgetType : data.itemType,
-            showLabel: data.showLabel
+            showLabel: data.showLabel,
+            config: config,
+            adminOnly: data.adminOnly
         };
 
         try {
@@ -205,6 +236,23 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                 <Grid>
                                     <CheckboxElement label='Show Name' name='showLabel' sx={{ ml: 1, color: 'white', '& .MuiSvgIcon-root': { fontSize: 30 },  }}/>
                                 </Grid>
+                                <Grid>
+                                    <CheckboxElement
+                                        label='Admin Only'
+                                        name='adminOnly'
+                                        helperText='When checked, this item will only be visible to admin users'
+                                        sx={{
+                                            ml: 1,
+                                            color: 'white',
+                                            '& .MuiSvgIcon-root': { fontSize: 30 },
+                                            '& .MuiFormHelperText-root': {
+                                                marginLeft: 1,
+                                                fontSize: '0.75rem',
+                                                color: 'rgba(255, 255, 255, 0.7)'
+                                            }
+                                        }}
+                                    />
+                                </Grid>
                             </>
                             }
                             {
@@ -231,6 +279,58 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                     />
                                 </Grid>
                             }
+
+                            {/* Temperature Unit Selection for Weather Widget */}
+                            {selectedItemType === 'widget' && formContext.watch('widgetType') === ITEM_TYPE.WEATHER_WIDGET && (
+                                <Grid>
+                                    <SelectElement
+                                        label='Temperature Unit'
+                                        name='temperatureUnit'
+                                        options={TEMPERATURE_UNIT_OPTIONS}
+                                        required
+                                        fullWidth
+                                        sx={{
+                                            '& .MuiOutlinedInput-root': {
+                                                '& fieldset': {
+                                                    borderColor: 'text.primary',
+                                                },
+                                                '.MuiSvgIcon-root ': {
+                                                    fill: theme.palette.text.primary,
+                                                },
+                                                '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                                '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                            },
+                                            width: '100%',
+                                            minWidth: isMobile ? '50vw' :'20vw'
+                                        }}
+                                        slotProps={{
+                                            inputLabel: { style: { color: theme.palette.text.primary } }
+                                        }}
+                                    />
+                                </Grid>
+                            )}
+
+                            {/* Admin Only checkbox for widget types */}
+                            {selectedItemType === 'widget' && selectedWidgetType && (
+                                <Grid>
+                                    <CheckboxElement
+                                        label='Admin Only'
+                                        name='adminOnly'
+                                        helperText='When checked, this item will only be visible to admin users'
+                                        sx={{
+                                            ml: 1,
+                                            color: 'white',
+                                            '& .MuiSvgIcon-root': { fontSize: 30 },
+                                            '& .MuiFormHelperText-root': {
+                                                marginLeft: 1,
+                                                fontSize: '0.75rem',
+                                                color: 'rgba(255, 255, 255, 0.7)'
+                                            }
+                                        }}
+                                    />
+                                </Grid>
+                            )}
+
                             <Button variant='contained' type='submit' sx={{ minHeight: '3rem' }}>{existingItem ? 'Update' : 'Add'}</Button>
                         </Grid>
                     </FormContainer>

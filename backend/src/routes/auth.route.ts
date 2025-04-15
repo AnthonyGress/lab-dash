@@ -154,7 +154,7 @@ authRoute.post('/login', async (req: Request, res: Response) => {
         // Set secure HTTP-only cookies
         res.cookie('access_token', token, {
             httpOnly: true,
-            secure: false, // Use secure in production
+            secure: false,
             sameSite: 'lax',
             path: '/',
             maxAge: 24 * 60 * 60 * 1000 // 1 day in milliseconds
@@ -186,7 +186,7 @@ authRoute.post('/refresh', async (req: Request, res: Response) => {
     try {
         console.log('Refresh token request received, cookies:', req.cookies);
 
-        // Get refresh token from cookie instead of request body
+        // Get refresh token from cookie
         const refreshToken = req.cookies?.refresh_token;
 
         if (!refreshToken) {
@@ -218,13 +218,39 @@ authRoute.post('/refresh', async (req: Request, res: Response) => {
         // Generate new access token
         const newAccessToken = generateAccessToken(decoded.username, users[userIndex].role);
 
-        // Set the new access token as an HTTP-only cookie
+        // Set the new access token cookie
         res.cookie('access_token', newAccessToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 24 * 60 * 60 * 1000 // 1 day in milliseconds
+            secure: false,
+            sameSite: 'lax',
+            path: '/',
+            maxAge: 24 * 60 * 60 * 1000 // 1 day
         });
+
+        // Generate and set new refresh token
+        const newRefreshToken = generateRefreshToken(decoded.username);
+        res.cookie('refresh_token', newRefreshToken, {
+            httpOnly: true,
+            secure: false,
+            sameSite: 'lax',
+            path: '/',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
+
+        // Update the user's refresh tokens in the database
+        const updatedUsers = users.map(user => {
+            if (user.username === decoded.username) {
+                return {
+                    ...user,
+                    refreshTokens: [
+                        ...(user.refreshTokens?.filter(token => token !== refreshToken) || []),
+                        newRefreshToken
+                    ]
+                };
+            }
+            return user;
+        });
+        writeUsers(updatedUsers);
 
         console.log('New access token set successfully');
 

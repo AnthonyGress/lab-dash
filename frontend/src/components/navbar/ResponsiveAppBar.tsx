@@ -55,6 +55,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
         setIsLoggedIn,
         setUsername,
         isAdmin,
+        setIsAdmin,
         updateAvailable,
         latestVersion
     } = useAppContext();
@@ -98,13 +99,25 @@ export const ResponsiveAppBar = ({ children }: Props) => {
 
     const handleLogout = async () => {
         try {
+            // Turn off edit mode if it's active
+            if (editMode) {
+                setEditMode(false);
+            }
+
             await DashApi.logout();
-            setIsLoggedIn(false);
+
+            // Reset all auth-related state variables in the correct order
+            setIsAdmin(false);
             setUsername(null);
+            setIsLoggedIn(false);
+
             localStorage.removeItem('username');
             handleMenuClose();
 
-            // Optionally redirect to home page
+            // Force refresh dashboard
+            refreshDashboard();
+
+            // Navigate to home page
             navigate('/');
             handleCloseDrawer();
             PopupManager.success('Logged out');

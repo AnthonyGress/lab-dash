@@ -25,6 +25,12 @@ interface WeatherData {
     };
 }
 
+interface WeatherWidgetProps {
+    config?: {
+        temperatureUnit?: string;
+    };
+}
+
 const getDay = (dateString: string) => {
     if (dateString) {
         return new Date(dateString).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
@@ -54,13 +60,21 @@ const weatherDescriptions: Record<number, { description: string; icon: JSX.Eleme
     95: { description: 'Thunderstorm', icon: <BsCloudLightningRainFill style={{ fontSize: '2.4rem' }}/> },
 };
 
-export const WeatherWidget: React.FC = () => {
+export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
     const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
     const [forecastDays, setForecastDays] = useState(5);
-    const [isFahrenheit, setIsFahrenheit] = useState(true);
+    const [isFahrenheit, setIsFahrenheit] = useState(config?.temperatureUnit !== 'celsius');
     const [openTooltipIndex, setOpenTooltipIndex] = useState<number | null>(null);
 
+    // Debug log to verify temperature unit
+    useEffect(() => {
+        console.log('Weather Widget temperature unit:', config?.temperatureUnit);
+    }, [config?.temperatureUnit]);
+
+    useEffect(() => {
+        setIsFahrenheit(config?.temperatureUnit !== 'celsius');
+    }, [config?.temperatureUnit]);
 
     useEffect(() => {
         navigator.geolocation.getCurrentPosition(

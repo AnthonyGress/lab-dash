@@ -22,8 +22,8 @@ console.log('Serving icons from:', iconsPath);
 // Middleware
 app.use(cors({
     origin: true,
-    credentials: true, // Important for cookies
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(cookieParser()); // Add cookie parser
