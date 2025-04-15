@@ -42,9 +42,7 @@ export const DashboardGrid: React.FC = () => {
             console.log('Admin user - showing all items:', dashboardLayout.length);
             return dashboardLayout; // Show all items for admins
         } else {
-            // Filter out items where adminOnly is explicitly true
             const filteredItems = dashboardLayout.filter(item => item.adminOnly !== true);
-            console.log('Non-admin user - filtered items:', filteredItems.length, 'of', dashboardLayout.length);
             return filteredItems;
         }
     }, [dashboardLayout, isAdmin, isLoggedIn]);
