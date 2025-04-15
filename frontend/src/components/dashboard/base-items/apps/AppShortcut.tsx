@@ -39,26 +39,44 @@ export const AppShortcut = ({ url, name, iconName, showLabel, editMode }: Props)
             justifyContent: 'center'
         }}>
             <Box sx={{
-                flex: 1,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                minHeight: 0,
-                width: { xs: '45%', sm: '30%', md: '45%', lg: '40%', xl: '30%' },
-                margin: '0 auto',
-                marginTop: showLabel ? '10px' : '0'
+                // Fixed height for icon container based on device
+                height: { xs: '60px', sm: '70px', md: '40px', lg: '50px', xl: '60px' },
+                width: '100%',
+                padding: '10px',
+                marginTop: showLabel ? '5px' : '0',
+                position: 'relative',
+                mt: -.5
+
             }}>
-                <img
-                    src={getIconPath(iconName)}
-                    alt={name}
-                    style={{ maxWidth: '90%', maxHeight: '100%', objectFit: 'contain' }}
-                    crossOrigin='anonymous'
-                    draggable='false'
-                />
+                <Box
+                    sx={{
+                        width: { xs: '45px', sm: '50px', md: '45px', lg: '50px', xl: '55px' },
+                        height: { xs: '45px', sm: '50px', md: '45px', lg: '50px', xl: '55px' },
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        position: 'relative'
+                    }}
+                >
+                    <img
+                        src={getIconPath(iconName)}
+                        alt={name}
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'contain',
+                            position: 'absolute'
+                        }}
+                        crossOrigin='anonymous'
+                        draggable='false'
+                    />
+                </Box>
             </Box>
 
             <Box sx={{
-                height: showLabel ? (isMobile ? '2.2rem' : '2.5rem') : '0',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -74,11 +92,12 @@ export const AppShortcut = ({ url, name, iconName, showLabel, editMode }: Props)
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             display: '-webkit-box',
-                            WebkitLineClamp: 2,
+                            WebkitLineClamp: 1,
                             WebkitBoxOrient: 'vertical',
                             wordBreak: 'break-word',
-                            width: '100%',
-                            lineHeight: 1.2
+                            width: '80%',
+                            lineHeight: 1.2,
+                            mt: 1
                         }}
                     >
                         {name}
