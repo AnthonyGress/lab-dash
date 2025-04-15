@@ -33,6 +33,14 @@ jobs:
           failBuild: true
         id: version_check
 
+      - name: Set up QEMU for multi-platform builds
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -43,10 +51,15 @@ jobs:
       - name: Install
         run: npm install
 
-      - name: Build & Push Docker Image
-        run: |
-          npm run docker:build
-          npm run docker:push
+      - name: Build & Push Multi-Architecture Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:v${{ steps.version_check.outputs.rawVersion }}
 
       - name: Create Release
         if: steps.version_check.outputs.versionChanged == 'true'

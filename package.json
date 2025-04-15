@@ -8,15 +8,18 @@
     "preinstall": "cd ./backend && npm install && cd .. && cd ./frontend && npm install",
     "docker:build:dev": "docker build . --no-cache -t ghcr.io/anthonygress/lab-dash:latest",
     "docker:build": "docker build --platform linux/amd64 . -t ghcr.io/anthonygress/lab-dash:latest",
+    "docker:build:multi": "docker buildx build --platform linux/amd64,linux/arm64 . -t ghcr.io/anthonygress/lab-dash:latest --push",
     "docker:run": "docker run --platform=linux/amd64 -p 2022:80 -p 5000:5000 ghcr.io/anthonygress/lab-dash:latest",
     "docker:run:dev": "docker run -p 2022:2022 ghcr.io/anthonygress/lab-dash:latest",
-    "docker:push": "docker push ghcr.io/anthonygress/lab-dash:latest"
+    "docker:push": "docker push ghcr.io/anthonygress/lab-dash:latest",
+    "clean": "rimraf node_modules package-lock.json frontend/node_modules frontend/package-lock.json backend/node_modules backend/package-lock.json"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "rimraf": "^5.0.5"
   },
   "dependencies": {
     "nanoid": "^5.1.2"
