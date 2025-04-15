@@ -12,7 +12,7 @@ import {
     SortableContext,
 } from '@dnd-kit/sortable';
 import { Box, Grid2 as Grid } from '@mui/material';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 
 import { SortableAppShortcut } from './sortable-items/apps/SortableAppShortcut';
@@ -32,8 +32,37 @@ export const DashboardGrid: React.FC = () => {
     const [activeId, setActiveId] = useState<string | null>(null);
     const [selectedItem, setSelectedItem] = useState<DashboardItem | null>(null);
     const [openEditModal, setOpenEditModal] = useState(false);
-    const { dashboardLayout, setDashboardLayout, refreshDashboard, editMode } = useAppContext();
-    const items = dashboardLayout;
+    const { dashboardLayout, setDashboardLayout, refreshDashboard, editMode, isAdmin, isLoggedIn } = useAppContext();
+
+    // Filter out admin-only items if user is not an admin
+    const items = useMemo(() => {
+        console.log('Filtering dashboard items - isAdmin:', isAdmin, 'isLoggedIn:', isLoggedIn);
+
+        if (isAdmin) {
+            console.log('Admin user - showing all items:', dashboardLayout.length);
+            return dashboardLayout; // Show all items for admins
+        } else {
+            // Filter out items where adminOnly is explicitly true
+            const filteredItems = dashboardLayout.filter(item => item.adminOnly !== true);
+            console.log('Non-admin user - filtered items:', filteredItems.length, 'of', dashboardLayout.length);
+            return filteredItems;
+        }
+    }, [dashboardLayout, isAdmin, isLoggedIn]);
+
+    const prevAuthStatus = useRef({ isLoggedIn, isAdmin });
+
+    useEffect(() => {
+        // Only refresh if login status or admin status has actually changed
+        if (prevAuthStatus.current.isLoggedIn !== isLoggedIn ||
+            prevAuthStatus.current.isAdmin !== isAdmin) {
+
+            console.log('Auth status changed - isLoggedIn:', isLoggedIn, 'isAdmin:', isAdmin);
+            refreshDashboard();
+
+            // Update ref with current values
+            prevAuthStatus.current = { isLoggedIn, isAdmin };
+        }
+    }, [isLoggedIn, isAdmin, refreshDashboard]);
 
     const isMobile = useMemo(() => {
         return (
@@ -98,10 +127,6 @@ export const DashboardGrid: React.FC = () => {
             document.removeEventListener('touchmove', disableScroll);
         };
     }, [isDragging]);
-
-    useEffect(() => {
-        refreshDashboard();
-    }, []);
 
     return (
         <>

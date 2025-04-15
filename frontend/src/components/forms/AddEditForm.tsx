@@ -41,6 +41,7 @@ type FormValues = {
     showLabel?: boolean;
     widgetType?: string;
     temperatureUnit?: string;
+    adminOnly?: boolean;
 };
 
 export const AddEditForm = ({ handleClose, existingItem }: Props) => {
@@ -59,7 +60,8 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                 ? { path: existingItem.icon.path, name: existingItem.icon.name, source: existingItem.icon.source || '' }
                 : null,
             widgetType: isWidgetType(existingItem?.type) ? existingItem?.type : '',
-            temperatureUnit: existingItem?.config?.temperatureUnit || 'fahrenheit'
+            temperatureUnit: existingItem?.config?.temperatureUnit || 'fahrenheit',
+            adminOnly: existingItem?.adminOnly || false
         }
     });
 
@@ -121,7 +123,8 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             url: data.url,
             type: data.itemType === 'widget' && data.widgetType ? data.widgetType : data.itemType,
             showLabel: data.showLabel,
-            config: config
+            config: config,
+            adminOnly: data.adminOnly
         };
 
         try {
@@ -233,6 +236,23 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                 <Grid>
                                     <CheckboxElement label='Show Name' name='showLabel' sx={{ ml: 1, color: 'white', '& .MuiSvgIcon-root': { fontSize: 30 },  }}/>
                                 </Grid>
+                                <Grid>
+                                    <CheckboxElement
+                                        label='Admin Only'
+                                        name='adminOnly'
+                                        helperText='When checked, this item will only be visible to admin users'
+                                        sx={{
+                                            ml: 1,
+                                            color: 'white',
+                                            '& .MuiSvgIcon-root': { fontSize: 30 },
+                                            '& .MuiFormHelperText-root': {
+                                                marginLeft: 1,
+                                                fontSize: '0.75rem',
+                                                color: 'rgba(255, 255, 255, 0.7)'
+                                            }
+                                        }}
+                                    />
+                                </Grid>
                             </>
                             }
                             {
@@ -285,6 +305,27 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                         }}
                                         slotProps={{
                                             inputLabel: { style: { color: theme.palette.text.primary } }
+                                        }}
+                                    />
+                                </Grid>
+                            )}
+
+                            {/* Admin Only checkbox for widget types */}
+                            {selectedItemType === 'widget' && selectedWidgetType && (
+                                <Grid>
+                                    <CheckboxElement
+                                        label='Admin Only'
+                                        name='adminOnly'
+                                        helperText='When checked, this item will only be visible to admin users'
+                                        sx={{
+                                            ml: 1,
+                                            color: 'white',
+                                            '& .MuiSvgIcon-root': { fontSize: 30 },
+                                            '& .MuiFormHelperText-root': {
+                                                marginLeft: 1,
+                                                fontSize: '0.75rem',
+                                                color: 'rgba(255, 255, 255, 0.7)'
+                                            }
                                         }}
                                     />
                                 </Grid>
