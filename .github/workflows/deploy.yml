@@ -51,6 +51,10 @@ jobs:
       - name: Install
         run: npm install
 
+      - name: Set repository name lowercase
+        run: |
+          echo "REPO_LOWER=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - name: Build & Push Multi-Architecture Docker Image
         uses: docker/build-push-action@v5
         with:
@@ -58,8 +62,8 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            ghcr.io/${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:v${{ steps.version_check.outputs.rawVersion }}
+            ghcr.io/${{ env.REPO_LOWER }}:latest
+            ghcr.io/${{ env.REPO_LOWER }}:v${{ steps.version_check.outputs.rawVersion }}
 
       - name: Create Release
         if: steps.version_check.outputs.versionChanged == 'true'
@@ -99,6 +103,7 @@ jobs:
           gh release create "$CURR_TAG" --title "$CURR_TAG" --notes-file release_notes.md
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - uses: AButler/upload-release-assets@v2.0
         with:
           files: 'docker-compose*'
