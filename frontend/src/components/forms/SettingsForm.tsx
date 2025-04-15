@@ -106,14 +106,15 @@ export const SettingsForm = () => {
         if (!config?.search || !config?.searchProvider) return 'google';
 
         const { name, url } = config.searchProvider;
+
         // Check if it matches any predefined provider
         for (const provider of SEARCH_PROVIDERS) {
             if (provider.id !== 'custom' &&
-                url === provider.url &&
-                (name === provider.name || !name)) {
+                url === provider.url) {
                 return provider.id;
             }
         }
+
         // If no match found, it's a custom provider
         return 'custom';
     };
@@ -333,11 +334,27 @@ export const SettingsForm = () => {
                 PopupManager.success('Settings updated successfully!');
                 // Refresh the form with new config values (optional)
                 const refreshedConfig = await DashApi.getConfig();
+
+                // Get the correct provider ID based on the saved config
+                const savedSearchProviderId = refreshedConfig?.searchProvider
+                    ? (() => {
+                        const { url } = refreshedConfig.searchProvider;
+                        // Check if it matches any predefined provider
+                        for (const provider of SEARCH_PROVIDERS) {
+                            if (provider.id !== 'custom' && url === provider.url) {
+                                return provider.id;
+                            }
+                        }
+                        // If no match found, it's a custom provider
+                        return 'custom';
+                    })()
+                    : 'google';
+
                 formContext.reset({
                     backgroundFile: null,
                     title: refreshedConfig?.title || '',
                     search: refreshedConfig?.search || false,
-                    searchProviderId: refreshedConfig?.searchProvider ? getInitialSearchProviderId() : 'google',
+                    searchProviderId: savedSearchProviderId,
                     searchProvider: {
                         name: refreshedConfig?.searchProvider?.name || '',
                         url: refreshedConfig?.searchProvider?.url || ''
@@ -476,105 +493,100 @@ export const SettingsForm = () => {
                                     />
                                 </Box>
 
+                                {searchEnabled && (
+                                    <>
+                                        <Typography variant='body1' sx={{
+                                            alignSelf: 'center',
+                                            fontSize: { xs: '0.875rem', sm: '1rem' }
+                                        }}>Search Provider</Typography>
+                                        <Box>
+                                            <SelectElement
+                                                name='searchProviderId'
+                                                options={[
+                                                    { id: 'google', label: 'Google' },
+                                                    { id: 'bing', label: 'Bing' },
+                                                    { id: 'duckduckgo', label: 'DuckDuckGo' },
+                                                    { id: 'searx', label: 'Searx' },
+                                                    { id: 'custom', label: 'Custom' }
+                                                ]}
+                                                valueKey='id'
+                                                labelKey='label'
+                                                sx={{
+                                                    '& .MuiOutlinedInput-root': {
+                                                        '& fieldset': { borderColor: theme.palette.text.primary },
+                                                        '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                                        '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
+                                                    },
+                                                    '.MuiSvgIcon-root ': { fill: theme.palette.text.primary },
+                                                    width: '95%'
+                                                }}
+                                            />
+                                        </Box>
 
-                                <>
-                                    <Typography variant='body1' sx={{
-                                        alignSelf: 'center',
-                                        fontSize: { xs: '0.875rem', sm: '1rem' }
-                                    }}>Search Provider</Typography>
-                                    <Box>
-                                        <SelectElement
-                                            name='searchProviderId'
-                                            disabled={!searchEnabled}
-                                            options={[
-                                                { id: 'google', label: 'Google' },
-                                                { id: 'bing', label: 'Bing' },
-                                                { id: 'duckduckgo', label: 'DuckDuckGo' },
-                                                { id: 'searx', label: 'Searx' },
-                                                { id: 'custom', label: 'Custom' }
-                                            ]}
-                                            valueKey='id'
-                                            labelKey='label'
-                                            sx={{
-                                                '& .MuiOutlinedInput-root': {
-                                                    '& fieldset': { borderColor: theme.palette.text.primary },
-                                                    '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                                                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
-                                                },
-                                                '.MuiSvgIcon-root ': { fill: theme.palette.text.primary },
-                                                width: '95%',
-                                                opacity: searchEnabled ? 1 : 0.5
-                                            }}
-                                        />
-                                    </Box>
+                                        {isCustomProvider && (
+                                            <>
+                                                <Typography variant='body1' sx={{
+                                                    alignSelf: 'center',
+                                                    fontSize: { xs: '0.875rem', sm: '1rem' }
+                                                }}>Provider Name</Typography>
+                                                <Box>
+                                                    <TextFieldElement
+                                                        name='searchProvider.name'
+                                                        sx={{
+                                                            width: '95%',
+                                                            '& .MuiInputBase-root': {
+                                                                overflow: 'hidden',
+                                                                textOverflow: 'ellipsis',
+                                                                whiteSpace: 'nowrap'
+                                                            },
+                                                            '& .MuiInputBase-input': {
+                                                                overflow: 'hidden',
+                                                                textOverflow: 'ellipsis'
+                                                            }
+                                                        }}
+                                                    />
+                                                </Box>
 
-                                    {isCustomProvider && searchEnabled && (
-                                        <>
-                                            <Typography variant='body1' sx={{
-                                                alignSelf: 'center',
-                                                fontSize: { xs: '0.875rem', sm: '1rem' }
-                                            }}>Provider Name</Typography>
-                                            <Box>
-                                                <TextFieldElement
-                                                    name='searchProvider.name'
-                                                    disabled={!searchEnabled}
-                                                    sx={{
-                                                        width: '95%',
-                                                        opacity: searchEnabled ? 1 : 0.5,
-                                                        '& .MuiInputBase-root': {
-                                                            overflow: 'hidden',
-                                                            textOverflow: 'ellipsis',
-                                                            whiteSpace: 'nowrap'
-                                                        },
-                                                        '& .MuiInputBase-input': {
-                                                            overflow: 'hidden',
-                                                            textOverflow: 'ellipsis'
-                                                        }
-                                                    }}
-                                                />
-                                            </Box>
-
-                                            <Box sx={{
-                                                alignSelf: 'center'
-                                            }}>
-                                                <Typography variant='body1' sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>Search URL</Typography>
-                                                <Typography variant='caption' sx={{
-                                                    display: 'block',
-                                                    fontSize: { xs: '0.7rem', sm: '0.75rem' }
+                                                <Box sx={{
+                                                    alignSelf: 'center'
                                                 }}>
-                                                        Use {'{query}'} as placeholder
-                                                </Typography>
-                                            </Box>
-                                            <Box>
-                                                <TextFieldElement
-                                                    name='searchProvider.url'
-                                                    disabled={!searchEnabled}
-                                                    helperText={isMobile ? 'Example: ...search?q={query}' : 'Example: https://www.google.com/search?q={query}'}
-                                                    sx={{
-                                                        width: '95%',
-                                                        opacity: searchEnabled ? 1 : 0.5,
-                                                        '& .MuiInputBase-root': {
-                                                            overflow: 'hidden',
-                                                            textOverflow: 'ellipsis',
-                                                            whiteSpace: 'nowrap'
-                                                        },
-                                                        '& .MuiInputBase-input': {
-                                                            overflow: 'hidden',
-                                                            textOverflow: 'ellipsis'
-                                                        },
-                                                        '& .MuiFormHelperText-root': {
-                                                            overflow: 'hidden',
-                                                            textOverflow: 'ellipsis',
-                                                            whiteSpace: 'nowrap',
-                                                            maxWidth: '100%',
-                                                            fontSize: { xs: '0.65rem', sm: '0.75rem' }
-                                                        }
-                                                    }}
-                                                />
-                                            </Box>
-                                        </>
-                                    )}
-                                </>
+                                                    <Typography variant='body1' sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>Search URL</Typography>
+                                                    <Typography variant='caption' sx={{
+                                                        display: 'block',
+                                                        fontSize: { xs: '0.7rem', sm: '0.75rem' }
+                                                    }}>
+                                                            Use {'{query}'} as placeholder
+                                                    </Typography>
+                                                </Box>
+                                                <Box>
+                                                    <TextFieldElement
+                                                        name='searchProvider.url'
+                                                        helperText={isMobile ? 'Example: ...search?q={query}' : 'Example: https://www.google.com/search?q={query}'}
+                                                        sx={{
+                                                            width: '95%',
+                                                            '& .MuiInputBase-root': {
+                                                                overflow: 'hidden',
+                                                                textOverflow: 'ellipsis',
+                                                                whiteSpace: 'nowrap'
+                                                            },
+                                                            '& .MuiInputBase-input': {
+                                                                overflow: 'hidden',
+                                                                textOverflow: 'ellipsis'
+                                                            },
+                                                            '& .MuiFormHelperText-root': {
+                                                                overflow: 'hidden',
+                                                                textOverflow: 'ellipsis',
+                                                                whiteSpace: 'nowrap',
+                                                                maxWidth: '100%',
+                                                                fontSize: { xs: '0.65rem', sm: '0.75rem' }
+                                                            }
+                                                        }}
+                                                    />
+                                                </Box>
+                                            </>
+                                        )}
+                                    </>
+                                )}
                             </Box>
                             <Box sx={{
                                 gridColumn: { xs: '1', sm: '1 / -1' },
