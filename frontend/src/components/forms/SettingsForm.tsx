@@ -47,7 +47,7 @@ function TabPanel(props: TabPanelProps) {
             hidden={value !== index}
             id={`vertical-tabpanel-${index}`}
             aria-labelledby={`vertical-tab-${index}`}
-            style={{ width: '100%', height: '100%' }}
+            style={{ width: '100%', height: '100%', overflow: 'auto' }}
             {...other}
         >
             {value === index && (
@@ -101,7 +101,7 @@ export const SettingsForm = () => {
         };
     }, []);
 
-    // Determine initial search provider ID
+    // Determine initial search provider ID and properly handle custom provider
     const getInitialSearchProviderId = (): string => {
         if (!config?.search || !config?.searchProvider) return 'google';
 
@@ -114,18 +114,30 @@ export const SettingsForm = () => {
                 return provider.id;
             }
         }
+        // If no match found, it's a custom provider
         return 'custom';
     };
+
+    // Get the initial provider ID before setting up the form
+    const initialProviderId = getInitialSearchProviderId();
 
     const formContext = useForm<FormValues>({
         defaultValues: {
             backgroundFile: null as File | null,
             title: config?.title || '',
             search: config?.search || false,
-            searchProviderId: getInitialSearchProviderId(),
+            searchProviderId: initialProviderId,
             searchProvider: {
-                name: config?.searchProvider?.name || '',
-                url: config?.searchProvider?.url || ''
+                name: initialProviderId === 'custom' && config?.searchProvider?.name
+                    ? config.searchProvider.name
+                    : initialProviderId !== 'custom'
+                        ? SEARCH_PROVIDERS.find(p => p.id === initialProviderId)?.name || ''
+                        : '',
+                url: initialProviderId === 'custom' && config?.searchProvider?.url
+                    ? config.searchProvider.url
+                    : initialProviderId !== 'custom'
+                        ? SEARCH_PROVIDERS.find(p => p.id === initialProviderId)?.url || ''
+                        : ''
             },
             configFile: null
         }
@@ -139,6 +151,18 @@ export const SettingsForm = () => {
     const searchProviderUrl = formContext.watch('searchProvider.url', '');
     const configFile = formContext.watch('configFile', null);
 
+    // Initialize custom provider flag properly on component mount
+    useEffect(() => {
+        const providerId = getInitialSearchProviderId();
+        setIsCustomProvider(providerId === 'custom');
+
+        // Make sure custom provider fields are populated when provider is custom
+        if (providerId === 'custom' && config?.searchProvider) {
+            formContext.setValue('searchProvider.name', config.searchProvider.name || '');
+            formContext.setValue('searchProvider.url', config.searchProvider.url || '');
+        }
+    }, [config]);
+
     // Update custom provider state when search provider ID changes
     useEffect(() => {
         setIsCustomProvider(searchProviderId === 'custom');
@@ -150,8 +174,12 @@ export const SettingsForm = () => {
                 formContext.setValue('searchProvider.name', selectedProvider.name);
                 formContext.setValue('searchProvider.url', selectedProvider.url);
             }
+        } else if (config?.searchProvider && searchProviderId === 'custom') {
+            // Ensure custom provider fields are populated when switching to custom
+            formContext.setValue('searchProvider.name', config.searchProvider.name || '');
+            formContext.setValue('searchProvider.url', config.searchProvider.url || '');
         }
-    }, [searchProviderId, formContext]);
+    }, [searchProviderId, formContext, config]);
 
     // Check if form values differ from current config
     useEffect(() => {
@@ -368,8 +396,9 @@ export const SettingsForm = () => {
                 <Box sx={{
                     display: 'flex',
                     flexDirection: { xs: 'column', md: 'row' },
-                    height: { xs: 'auto', md: '450px' },
-                    width: '100%'
+                    height: { xs: 'auto', md: '550px' },
+                    width: '100%',
+                    overflow: 'hidden' // Ensure the container doesn't grow
                 }}>
                     <Tabs
                         orientation={isMobile ? 'horizontal' : 'vertical'}
@@ -409,12 +438,18 @@ export const SettingsForm = () => {
                     </Tabs>
 
                     <TabPanel value={tabValue} index={0}>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        <Box sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 3,
+                            height: '100%',
+                            overflow: 'auto' // Add scroll to inner content
+                        }}>
                             <Typography variant='h6'>General Settings</Typography>
 
                             <Box sx={{
                                 display: 'grid',
-                                gridTemplateColumns: { xs: '120px 1fr', sm: '150px 1fr' },
+                                gridTemplateColumns: { xs: '120px 1fr', sm: '180px 1fr' },
                                 gap: { xs: 1, sm: 2 },
                                 alignItems: 'center'
                             }}>
@@ -450,7 +485,7 @@ export const SettingsForm = () => {
                                     <Box>
                                         <SelectElement
                                             name='searchProviderId'
-
+                                            disabled={!searchEnabled}
                                             options={[
                                                 { id: 'google', label: 'Google' },
                                                 { id: 'bing', label: 'Bing' },
@@ -467,12 +502,13 @@ export const SettingsForm = () => {
                                                     '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
                                                 },
                                                 '.MuiSvgIcon-root ': { fill: theme.palette.text.primary },
-                                                width: '95%'
+                                                width: '95%',
+                                                opacity: searchEnabled ? 1 : 0.5
                                             }}
                                         />
                                     </Box>
 
-                                    {isCustomProvider && (
+                                    {isCustomProvider && searchEnabled && (
                                         <>
                                             <Typography variant='body1' sx={{
                                                 alignSelf: 'center',
@@ -481,7 +517,20 @@ export const SettingsForm = () => {
                                             <Box>
                                                 <TextFieldElement
                                                     name='searchProvider.name'
-                                                    sx={{ width: '95%' }}
+                                                    disabled={!searchEnabled}
+                                                    sx={{
+                                                        width: '95%',
+                                                        opacity: searchEnabled ? 1 : 0.5,
+                                                        '& .MuiInputBase-root': {
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis',
+                                                            whiteSpace: 'nowrap'
+                                                        },
+                                                        '& .MuiInputBase-input': {
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis'
+                                                        }
+                                                    }}
                                                 />
                                             </Box>
 
@@ -499,8 +548,28 @@ export const SettingsForm = () => {
                                             <Box>
                                                 <TextFieldElement
                                                     name='searchProvider.url'
-                                                    helperText='Example: https://www.google.com/search?q={query}'
-                                                    sx={{ width: '95%' }}
+                                                    disabled={!searchEnabled}
+                                                    helperText={isMobile ? 'Example: ...search?q={query}' : 'Example: https://www.google.com/search?q={query}'}
+                                                    sx={{
+                                                        width: '95%',
+                                                        opacity: searchEnabled ? 1 : 0.5,
+                                                        '& .MuiInputBase-root': {
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis',
+                                                            whiteSpace: 'nowrap'
+                                                        },
+                                                        '& .MuiInputBase-input': {
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis'
+                                                        },
+                                                        '& .MuiFormHelperText-root': {
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis',
+                                                            whiteSpace: 'nowrap',
+                                                            maxWidth: '100%',
+                                                            fontSize: { xs: '0.65rem', sm: '0.75rem' }
+                                                        }
+                                                    }}
                                                 />
                                             </Box>
                                         </>
@@ -513,7 +582,7 @@ export const SettingsForm = () => {
                                 mt: 2
                             }}>
                                 <Button
-                                    variant='outlined'
+                                    variant='contained'
                                     color='error'
                                     onClick={() => {
                                         PopupManager.deleteConfirmation({
@@ -536,24 +605,17 @@ export const SettingsForm = () => {
                                 </Button>
                             </Box>
 
-                            {/* Version information */}
-                            <Box sx={{
-                                display: 'flex',
-                                justifyContent: 'center',
-                                width: '100%',
-                                mt: 4,
-                                pt: 2,
-                                borderTop: '1px solid rgba(255, 255, 255, 0.1)'
-                            }}>
-                                <Typography variant='body2'>
-                                    Version: {getAppVersion()}
-                                </Typography>
-                            </Box>
                         </Box>
                     </TabPanel>
 
                     <TabPanel value={tabValue} index={1}>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        <Box sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 3,
+                            height: '100%',
+                            overflow: 'auto'
+                        }}>
                             <Typography variant='h6'>Appearance Settings</Typography>
 
                             <Box sx={{
@@ -595,7 +657,7 @@ export const SettingsForm = () => {
                                 justifySelf: 'start',
                                 mt: 2
                             }}>
-                                <Button variant='outlined' onClick={resetBackground} color='error'>
+                                <Button variant='contained' onClick={resetBackground} color='error'>
                                         Reset Background
                                 </Button>
                             </Box>
@@ -603,7 +665,13 @@ export const SettingsForm = () => {
                     </TabPanel>
 
                     <TabPanel value={tabValue} index={2}>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        <Box sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 3,
+                            height: '100%',
+                            overflow: 'auto'
+                        }}>
                             <Typography variant='h6'>Backup Settings</Typography>
 
                             <Box sx={{
