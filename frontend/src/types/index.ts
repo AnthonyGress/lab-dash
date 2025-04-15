@@ -15,6 +15,10 @@ export type NewItem = {
     label: string;
     type: string;
     showLabel?: boolean;
+    config?: {
+        temperatureUnit?: string;
+        [key: string]: any;
+    };
 }
 
 export type Icon = {
@@ -60,5 +64,9 @@ export type DashboardItem = {
     url?: string;
     icon?: { path: string; name: string; source?: string; };
     showLabel?: boolean;
+    config?: {
+        temperatureUnit?: string;
+        [key: string]: any;
+    };
 };
 

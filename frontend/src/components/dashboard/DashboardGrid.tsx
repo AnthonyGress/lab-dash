@@ -124,7 +124,7 @@ export const DashboardGrid: React.FC = () => {
                             {items.map((item) => {
                                 switch (item.type) {
                                 case ITEM_TYPE.WEATHER_WIDGET:
-                                    return <SortableWeatherWidget key={item.id} id={item.id} editMode={editMode} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
+                                    return <SortableWeatherWidget key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
                                 case ITEM_TYPE.DATE_TIME_WIDGET:
                                     return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
                                 case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
@@ -161,7 +161,7 @@ export const DashboardGrid: React.FC = () => {
                             if (item.id === activeId) {
                                 switch (item.type) {
                                 case ITEM_TYPE.WEATHER_WIDGET:
-                                    return <SortableWeatherWidget key={item.id} id={item.id} editMode={editMode} isOverlay/>;
+                                    return <SortableWeatherWidget key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
                                 case ITEM_TYPE.DATE_TIME_WIDGET:
                                     return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} isOverlay/>;
                                 case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
