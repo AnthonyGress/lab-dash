@@ -88,18 +88,14 @@ export class DashApi {
 
     // Create an axios instance interceptor
     public static setupAxiosInterceptors(): void {
-        // Don't set withCredentials globally by default
-        axios.defaults.withCredentials = false;
+        // Set withCredentials globally for all API requests
+        axios.defaults.withCredentials = true;
 
         // Request interceptor
         axios.interceptors.request.use(
             async (config) => {
-                // Always send credentials for API requests that require authentication
-                if (config.url?.includes('/api/config') ||
-                    config.url?.includes('/api/auth') ||
-                    config.url?.includes('/api/system')) {
-                    config.withCredentials = true;
-                }
+                // Ensure credentials are sent for all API requests
+                config.withCredentials = true;
                 return config;
             },
             (error) => Promise.reject(error)
@@ -107,9 +103,8 @@ export class DashApi {
 
         // Response interceptor to handle 401 errors
         axios.interceptors.response.use(
-            (response) => response,
+            response => response,
             async (error) => {
-                // Get the original request configuration
                 const originalRequest = error.config;
 
                 // Only handle 401 errors for authenticated routes
@@ -128,19 +123,15 @@ export class DashApi {
                         if (refreshResult.success) {
                             console.log('Token refreshed, retrying original request');
                             // If refresh was successful, retry the original request
-                            // Ensure credentials are included in the retry
-                            originalRequest.withCredentials = true;
                             return axios(originalRequest);
                         } else {
-                            // If refresh failed, redirect to login
-                            console.log('Token refresh failed, redirecting to login');
-                            // this.redirectToLogin();
+                            console.log('Token refresh failed, logging out user');
+                            // The refreshToken method will handle the logout
                             return Promise.reject(error);
                         }
                     } catch (refreshError) {
                         console.error('Error during token refresh:', refreshError);
-                        // If refresh fails, redirect to login
-                        // this.redirectToLogin();
+                        // The refreshToken method will handle the logout
                         return Promise.reject(refreshError);
                     }
                 }
@@ -406,6 +397,8 @@ export class DashApi {
             };
         } catch (error) {
             console.error('Error refreshing token:', error);
+            // If refresh token fails, log out the user
+            await this.logout();
             return { success: false };
         }
     }

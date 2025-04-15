@@ -1,5 +1,3 @@
-import axios from 'axios';
-
 // import { APP_VERSION } from '../constants/version';
 import { getAppVersion } from './version';
 
@@ -34,10 +32,20 @@ export const compareVersions = (v1: string, v2: string): number => {
  */
 export const fetchLatestRelease = async (): Promise<GitHubRelease | null> => {
     try {
-        const response = await axios.get<GitHubRelease>(
-            'https://api.github.com/repos/anthonygress/lab-dash/releases/latest'
+        // Use fetch instead of axios to have more control over CORS and credentials
+        const response = await fetch(
+            'https://api.github.com/repos/anthonygress/lab-dash/releases/latest',
+            {
+                method: 'GET',
+                credentials: 'omit' // Explicitly omit credentials
+            }
         );
-        return response.data;
+
+        if (!response.ok) {
+            throw new Error(`GitHub API returned ${response.status}`);
+        }
+
+        return await response.json();
     } catch (error) {
         console.error('Failed to fetch latest release:', error);
         return null;
