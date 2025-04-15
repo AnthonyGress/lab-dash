@@ -31,14 +31,23 @@ export const AppShortcut = ({ url, name, iconName, showLabel, editMode }: Props)
     // Content to render inside the shortcut component
     const shortcutContent = (
         <Box sx={{
-            width: { xs: '45%', sm: showLabel ? '25%' : '30%', md: '45%', lg: '40%', xl: '30%' },
+            width: '100%',
             ...styles.vcenter,
             height: '100%',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'center'
         }}>
-            <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 0 }}>
+            <Box sx={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 0,
+                width: { xs: '45%', sm: '30%', md: '45%', lg: '40%', xl: '30%' },
+                margin: '0 auto',
+                marginTop: showLabel ? '10px' : '0'
+            }}>
                 <img
                     src={getIconPath(iconName)}
                     alt={name}
@@ -54,7 +63,8 @@ export const AppShortcut = ({ url, name, iconName, showLabel, editMode }: Props)
                 alignItems: 'center',
                 justifyContent: 'center',
                 width: '100%',
-                visibility: showLabel ? 'visible' : 'hidden'
+                visibility: showLabel ? 'visible' : 'hidden',
+                px: 1
             }}>
                 {showLabel && (
                     <Typography

@@ -176,6 +176,7 @@ export const DashboardGrid: React.FC = () => {
                                             iconName={item.icon?.path || ''}
                                             editMode={editMode}
                                             isOverlay
+                                            showLabel={item.showLabel}
                                         />
                                     );
                                 case ITEM_TYPE.BLANK_APP:
