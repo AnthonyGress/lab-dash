@@ -76,7 +76,7 @@ export const AppShortcut = ({ url, name, iconName, showLabel, editMode, config }
                 padding: '10px',
                 marginTop: showLabel ? '5px' : '0',
                 position: 'relative',
-                mt: -.5
+                mt: isMobile ? -1.5 : 0
 
             }}>
                 <Box
