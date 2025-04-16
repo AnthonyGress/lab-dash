@@ -29,8 +29,6 @@ export const SystemMonitorWidget = () => {
     const getRamPercentage = (systemData: any) => {
         let totalPercentage = 0;
 
-        // console.log(convertBytesToGB(systemData?.memory?.active));
-
         if (systemData?.memory?.total && systemData?.memory?.active) {
             totalPercentage = Math.round((systemData.memory.active / systemData.memory.total) * 100);
         }
@@ -39,7 +37,6 @@ export const SystemMonitorWidget = () => {
 
     const getSystemInfo = async () => {
         const res = await DashApi.getSystemInformation();
-        // console.log(res);
 
         setSystemInformation(res);
         getRamPercentage(res);

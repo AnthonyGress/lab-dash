@@ -20,7 +20,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     // Check for token in cookies first (for login/logout/refresh routes)
     // console.log('#### req', req);
     const tokenFromCookie = req.cookies?.access_token;
-    console.log('#### req.token', req.cookies);
+    // console.log('#### req.token', req.cookies);
 
     // Then check Authorization header (for API routes that don't use cookies)
     const authHeader = req.headers.authorization;
@@ -49,8 +49,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 // Middleware to check if user is an admin
 export const requireAdmin = (req: Request, res: Response, next: NextFunction): void => {
     // authenticateToken must be called before this middleware
-    console.log('#### req', req);
-    console.log('#### req.user', req.user);
+    // console.log('#### req', req);
 
     if (!req.user) {
         res.status(401).json({ message: 'Authentication required' });

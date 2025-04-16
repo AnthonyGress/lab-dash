@@ -408,11 +408,28 @@ export class DashApi {
             const res = await axios.get(`${BACKEND_URL}/api/auth/check-cookies`, {
                 withCredentials: true
             });
-            console.log('Cookie debug response:', res.data);
+            // console.log('Cookie debug response:', res.data);
             return res.data;
         } catch (error) {
-            console.error('Error debugging cookies:', error);
+            // console.error('Error debugging cookies:', error);
             return null;
+        }
+    }
+
+    // Wake-on-LAN method
+    public static async sendWakeOnLan(data: { mac: string; ip?: string; port?: number }): Promise<any> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/system/wol`, data, {
+                withCredentials: true
+            });
+            return res.data;
+        } catch (error: any) {
+            console.error('Error sending Wake-on-LAN packet:', error);
+            if (error.response) {
+                throw new Error(error.response.data.message || 'Failed to send Wake-on-LAN packet');
+            } else {
+                throw new Error('Network error occurred while sending Wake-on-LAN packet');
+            }
         }
     }
 }

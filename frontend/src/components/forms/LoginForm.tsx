@@ -28,14 +28,12 @@ export const LoginForm = () => {
     const handleSubmit = async (data: FormValues) => {
         try {
             const response = await DashApi.login(data.username, data.password);
-            console.log('Login response:', response);
 
             // Update auth state in context - do this in sequence to avoid race conditions
             setUsername(data.username);
 
             // Get admin status directly from the response
             if (response.isAdmin !== undefined) {
-                console.log('Admin status from response:', response.isAdmin);
                 setIsAdmin(response.isAdmin);
             }
 

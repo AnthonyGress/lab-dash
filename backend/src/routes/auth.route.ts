@@ -113,8 +113,6 @@ authRoute.post('/signup', async (req: Request, res: Response) => {
 // Login route
 authRoute.post('/login', async (req: Request, res: Response) => {
     try {
-        console.log('authenticating');
-
         const { username, password } = req.body;
 
         // Validate input
@@ -184,7 +182,7 @@ authRoute.post('/login', async (req: Request, res: Response) => {
 // Refresh token route
 authRoute.post('/refresh', async (req: Request, res: Response) => {
     try {
-        console.log('Refresh token request received, cookies:', req.cookies);
+        // console.log('Refresh token request received, cookies:', req.cookies);
 
         // Get refresh token from cookie
         const refreshToken = req.cookies?.refresh_token;
@@ -268,8 +266,6 @@ authRoute.post('/refresh', async (req: Request, res: Response) => {
 // Logout route
 authRoute.post('/logout', (req: Request, res: Response) => {
     try {
-        console.log('Logout request received, cookies:', req.cookies);
-
         // Get refresh token from cookie
         const refreshToken = req.cookies?.refresh_token;
 
@@ -328,8 +324,6 @@ authRoute.get('/check-users', (req: Request, res: Response) => {
 
 // Check if the current user is an admin
 authRoute.get('/check-admin', [authenticateToken], (req: Request, res: Response) => {
-    console.log('#### checking admin', req.body);
-
     try {
         const isAdmin = req.user?.role === 'admin';
         res.json({ isAdmin });
@@ -340,7 +334,7 @@ authRoute.get('/check-admin', [authenticateToken], (req: Request, res: Response)
 });
 
 authRoute.get('/check-cookies', (req: Request, res: Response) => {
-    console.log('Cookies received:', req.cookies);
+    // console.log('Cookies received:', req.cookies);
     res.json({
         cookies: req.cookies,
         hasAccessToken: !!req.cookies.access_token,

@@ -65,14 +65,8 @@ configRoute.post('/', [authenticateToken, requireAdmin], async (req: Request, re
                 (config as any)[key] = updates[key]; // Update the key dynamically
             }
         });
-
-        // ✅ Ensure mobile layout defaults to desktop layout if not provided
-        // if (updates.layout) {
-        //     config.layout.desktop = updates.layout.desktop?.length ? updates.layout.desktop : config.layout.desktop;
-        //     config.layout.mobile = updates.layout.mobile?.length ? updates.layout.mobile : config.layout.desktop;
-        // }
-
-        console.log('Updated Config:', JSON.stringify(config));
+        
+        // console.log('Updated Config:', JSON.stringify(config));
 
         // Save the updated config to file
         await fs.writeFile(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8');
@@ -93,7 +87,7 @@ configRoute.post('/import', [authenticateToken, requireAdmin], async (req: Reque
         // Get the complete config object from the request body
         const importedConfig = req.body;
 
-        console.log('Importing config:', importedConfig);
+        // console.log('Importing config:', importedConfig);
 
         // Validate the imported config structure
         if (!importedConfig || typeof importedConfig !== 'object') {

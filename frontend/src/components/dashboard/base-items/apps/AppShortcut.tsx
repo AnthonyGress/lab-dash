@@ -1,9 +1,11 @@
 import { Box, Grid2 as Grid, Typography, useMediaQuery } from '@mui/material';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 
+import { DashApi } from '../../../../api/dash-api';
 import { styles } from '../../../../theme/styles';
 import { theme } from '../../../../theme/theme';
 import { getIconPath } from '../../../../utils/utils';
+import { PopupManager } from '../../../modals/PopupManager';
 
 type Props = {
     url: string;
@@ -11,10 +13,12 @@ type Props = {
     iconName: string;
     showLabel?: boolean;
     editMode?: boolean;
+    config?: any;
 }
 
-export const AppShortcut = ({ url, name, iconName, showLabel, editMode }: Props) => {
+export const AppShortcut = ({ url, name, iconName, showLabel, editMode, config }: Props) => {
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const isWolShortcut = config?.isWol === true;
 
     // Calculate font size based on name length
     const fontSize = useMemo(() => {
@@ -28,7 +32,31 @@ export const AppShortcut = ({ url, name, iconName, showLabel, editMode }: Props)
         return isMobile ? '.9rem' : '1rem';
     }, [name, isMobile]);
 
-    // Content to render inside the shortcut component
+    const handleWakeOnLan = useCallback(async (e: React.MouseEvent) => {
+        e.preventDefault();
+
+        if (!isWolShortcut || !config?.macAddress) {
+            PopupManager.failure('Invalid Wake-on-LAN configuration');
+            return;
+        }
+
+        try {
+            // Prepare payload
+            const payload: any = { mac: config.macAddress };
+            if (config.ipAddress) payload.ip = config.ipAddress;
+            if (config.port) payload.port = parseInt(config.port, 10);
+
+            // Send WOL request
+            await DashApi.sendWakeOnLan(payload);
+
+            // Show success message
+            PopupManager.success(`Wake-on-LAN packet sent to ${config.macAddress}`);
+        } catch (error) {
+            console.error('Error sending Wake-on-LAN packet:', error);
+            PopupManager.failure('Failed to send Wake-on-LAN packet');
+        }
+    }, [config, isWolShortcut]);
+
     const shortcutContent = (
         <Box sx={{
             width: '100%',
@@ -48,7 +76,7 @@ export const AppShortcut = ({ url, name, iconName, showLabel, editMode }: Props)
                 padding: '10px',
                 marginTop: showLabel ? '5px' : '0',
                 position: 'relative',
-                mt: -.5
+                mt: isMobile ? -1.5 : 0
 
             }}>
                 <Box
@@ -113,6 +141,12 @@ export const AppShortcut = ({ url, name, iconName, showLabel, editMode }: Props)
                 <Box sx={{ ...styles.center, width: '100%', height: '100%' }} className='scale'>
                     {shortcutContent}
                 </Box>
+            ) : isWolShortcut ? (
+                <a href='#' onClick={handleWakeOnLan} style={{ width: '100%', height: '100%' }}>
+                    <Box sx={{ ...styles.center }} className='scale'>
+                        {shortcutContent}
+                    </Box>
+                </a>
             ) : (
                 <a href={url} rel='noopener noreferrer' target='_blank' style={{ width: '100%', height: '100%' }}>
                     <Box sx={{ ...styles.center }} className='scale'>

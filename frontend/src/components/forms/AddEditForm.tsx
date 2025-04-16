@@ -42,6 +42,10 @@ type FormValues = {
     widgetType?: string;
     temperatureUnit?: string;
     adminOnly?: boolean;
+    isWol?: boolean;
+    macAddress?: string;
+    ipAddress?: string;
+    port?: string;
 };
 
 export const AddEditForm = ({ handleClose, existingItem }: Props) => {
@@ -49,6 +53,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
     const { dashboardLayout, addItem, updateItem } = useAppContext();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [customIconFile, setCustomIconFile] = useState<File | null>(null);
+    const [editingWolShortcut, setEditingWolShortcut] = useState(false);
 
     const formContext = useForm<FormValues>({
         defaultValues: {
@@ -61,7 +66,11 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                 : null,
             widgetType: isWidgetType(existingItem?.type) ? existingItem?.type : '',
             temperatureUnit: existingItem?.config?.temperatureUnit || 'fahrenheit',
-            adminOnly: existingItem?.adminOnly || false
+            adminOnly: existingItem?.adminOnly || false,
+            isWol: existingItem?.config?.isWol || false,
+            macAddress: existingItem?.config?.macAddress || '',
+            ipAddress: existingItem?.config?.ipAddress || '',
+            port: existingItem?.config?.port || ''
         }
     });
 
@@ -77,24 +86,22 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
 
     const selectedItemType = formContext.watch('itemType');
     const selectedWidgetType = formContext.watch('widgetType');
+    const isWol = formContext.watch('isWol', false);
 
     const handleCustomIconSelect = (file: File | null) => {
         setCustomIconFile(file);
     };
 
     const handleSubmit = async (data: FormValues) => {
-        console.log('Form data:', data);
-
+        // console.log('Form data:', data);
         // Handle custom icon upload if needed
         let iconData = data.icon;
 
         if (customIconFile && data.icon?.source === 'custom-pending') {
             try {
-                console.log('Uploading custom icon:', customIconFile.name);
                 const uploadedIcon = await DashApi.uploadAppIcon(customIconFile);
 
                 if (uploadedIcon) {
-                    console.log('Custom icon uploaded successfully:', uploadedIcon);
                     iconData = uploadedIcon;
                 } else {
                     console.error('Failed to get a valid response from upload');
@@ -105,13 +112,25 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             }
         }
 
-        // Prepare the config object based on widget type
+        // Prepare the config object based on item type
         let config = undefined;
         if (data.itemType === 'widget' && data.widgetType === ITEM_TYPE.WEATHER_WIDGET) {
             config = {
                 temperatureUnit: data.temperatureUnit || 'fahrenheit'
             };
+        } else if (data.itemType === 'APP_SHORTCUT' && data.isWol) {
+            config = {
+                isWol: true,
+                macAddress: data.macAddress,
+                ipAddress: data.ipAddress,
+                port: data.port
+            };
         }
+
+        // For WOL shortcuts, use a placeholder URL if none provided
+        const url = (data.itemType === 'APP_SHORTCUT' && data.isWol)
+            ? (data.url || '#')
+            : data.url;
 
         const updatedItem: NewItem = {
             label: data.shortcutName || '',
@@ -120,7 +139,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                 name: iconData.name,
                 source: iconData.source
             } : undefined,
-            url: data.url,
+            url,
             type: data.itemType === 'widget' && data.widgetType ? data.widgetType : data.itemType,
             showLabel: data.showLabel,
             config: config,
@@ -140,6 +159,27 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             console.error('Error submitting form:', error);
         }
     };
+
+    useEffect(() => {
+        if (existingItem) {
+            formContext.reset({
+                shortcutName: existingItem.label || '',
+                itemType: isWidgetType(existingItem.type) ? 'widget' : existingItem.type || '',
+                url: existingItem.url || '',
+                showLabel: existingItem.showLabel,
+                icon: existingItem.icon
+                    ? { path: existingItem.icon.path, name: existingItem.icon.name, source: existingItem.icon.source || '' }
+                    : null,
+                widgetType: isWidgetType(existingItem.type) ? existingItem.type : '',
+                temperatureUnit: existingItem.config?.temperatureUnit || 'fahrenheit',
+                adminOnly: existingItem.adminOnly || false,
+                isWol: existingItem.config?.isWol || false,
+                macAddress: existingItem.config?.macAddress || '',
+                ipAddress: existingItem.config?.ipAddress || '',
+                port: existingItem.config?.port || ''
+            });
+        }
+    }, [existingItem, formContext]);
 
     return (
         <Grid
@@ -201,31 +241,148 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                     />
                                 </Grid>
                                 <Grid>
-                                    <TextFieldElement name='url' label='URL' required variant='outlined' sx={{
-                                        width: '100%',
-                                        '& .MuiOutlinedInput-root': {
-                                            '& fieldset': {
-                                                borderColor: 'text.primary',
-                                            },
-                                            '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                                            '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
-                                        },
-                                    }}
-                                    rules={{
-                                        validate: (value) =>
-                                            value.includes('://') || 'Invalid url. Ex "http://192.168.x.x" or "unifi-network://"',
-                                    }}
-                                    autoComplete='off'
-                                    slotProps={{
-                                        inputLabel:
-                            { style: { color: theme.palette.text.primary } },
-                                        formHelperText: { sx: {
-                                            whiteSpace: 'normal',
-                                            maxWidth: '16vw',
-                                        }, }
-                                    }}
+                                    <CheckboxElement
+                                        label='Wake-on-LAN'
+                                        name='isWol'
+                                        helperText='Enable to create a Wake-on-LAN shortcut'
+                                        sx={{
+                                            ml: 1,
+                                            color: 'white',
+                                            '& .MuiSvgIcon-root': { fontSize: 30 },
+                                            '& .MuiFormHelperText-root': {
+                                                marginLeft: 1,
+                                                fontSize: '0.75rem',
+                                                color: 'rgba(255, 255, 255, 0.7)'
+                                            }
+                                        }}
                                     />
                                 </Grid>
+
+                                {!isWol && (
+                                    <Grid>
+                                        <TextFieldElement name='url' label='URL' required variant='outlined' sx={{
+                                            width: '100%',
+                                            '& .MuiOutlinedInput-root': {
+                                                '& fieldset': {
+                                                    borderColor: 'text.primary',
+                                                },
+                                                '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                                '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                            },
+                                        }}
+                                        rules={{
+                                            validate: (value) =>
+                                                value.includes('://') || 'Invalid url. Ex "http://192.168.x.x" or "unifi-network://"',
+                                        }}
+                                        autoComplete='off'
+                                        slotProps={{
+                                            inputLabel:
+                                { style: { color: theme.palette.text.primary } },
+                                            formHelperText: { sx: {
+                                                whiteSpace: 'normal',
+                                                maxWidth: '16vw',
+                                            }, }
+                                        }}
+                                        />
+                                    </Grid>
+                                )}
+
+                                {(isWol || editingWolShortcut) && (
+                                    <>
+                                        <Grid>
+                                            <TextFieldElement
+                                                name='macAddress'
+                                                label='MAC Address'
+                                                required
+                                                variant='outlined'
+                                                rules={{
+                                                    pattern: {
+                                                        value: /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/,
+                                                        message: 'Invalid MAC address format. Expected format: xx:xx:xx:xx:xx:xx or xx-xx-xx-xx-xx-xx'
+                                                    }
+                                                }}
+                                                helperText='Format: xx:xx:xx:xx:xx:xx'
+                                                sx={{
+                                                    width: '100%',
+                                                    '& .MuiOutlinedInput-root': {
+                                                        '& fieldset': {
+                                                            borderColor: 'text.primary',
+                                                        },
+                                                        '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                                        '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                                    },
+                                                }}
+                                                autoComplete='off'
+                                                slotProps={{
+                                                    inputLabel: { style: { color: theme.palette.text.primary } },
+                                                    formHelperText: { sx: {
+                                                        whiteSpace: 'normal',
+                                                        maxWidth: '16vw',
+                                                    } }
+                                                }}
+                                            />
+                                        </Grid>
+                                        <Grid>
+                                            <TextFieldElement
+                                                name='ipAddress'
+                                                label='IP Address (Optional)'
+                                                variant='outlined'
+                                                helperText='The broadcast address for your network'
+                                                sx={{
+                                                    width: '100%',
+                                                    '& .MuiOutlinedInput-root': {
+                                                        '& fieldset': {
+                                                            borderColor: 'text.primary',
+                                                        },
+                                                        '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                                        '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                                    },
+                                                }}
+                                                autoComplete='off'
+                                                slotProps={{
+                                                    inputLabel: { style: { color: theme.palette.text.primary } },
+                                                    formHelperText: { sx: {
+                                                        whiteSpace: 'normal',
+                                                        maxWidth: '16vw',
+                                                    } }
+                                                }}
+                                            />
+                                        </Grid>
+                                        <Grid>
+                                            <TextFieldElement
+                                                name='port'
+                                                label='Port (Optional)'
+                                                variant='outlined'
+                                                helperText='Default: 9'
+                                                rules={{
+                                                    pattern: {
+                                                        value: /^[0-9]*$/,
+                                                        message: 'Port must be a number'
+                                                    }
+                                                }}
+                                                sx={{
+                                                    width: '100%',
+                                                    '& .MuiOutlinedInput-root': {
+                                                        '& fieldset': {
+                                                            borderColor: 'text.primary',
+                                                        },
+                                                        '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                                        '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                                    },
+                                                }}
+                                                autoComplete='off'
+                                                slotProps={{
+                                                    inputLabel: { style: { color: theme.palette.text.primary } },
+                                                    formHelperText: { sx: {
+                                                        whiteSpace: 'normal',
+                                                        maxWidth: '16vw',
+                                                    } }
+                                                }}
+                                            />
+                                        </Grid>
+                                    </>
+                                )}
+
                                 <Grid>
                                     <IconSearch
                                         control={formContext.control}

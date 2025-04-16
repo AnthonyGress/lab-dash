@@ -32,7 +32,6 @@ export const IconSearch = ({ control, errors, onCustomIconSelect }: Props) => {
 
             // Fetch custom icons
             const customIcons = await DashApi.getCustomIcons();
-            console.log('Custom icons:', customIcons);
 
             // Combine the icons with custom icons first
             const combinedIcons = [...(customIcons || []), ...(builtInIcons || [])];
@@ -222,7 +221,7 @@ export const IconSearch = ({ control, errors, onCustomIconSelect }: Props) => {
                             />
                             <Box mt={1}>
                                 <Button
-                                    variant='outlined'
+                                    variant='contained'
                                     startIcon={<CloudUploadIcon />}
                                     onClick={handleUploadClick}
                                     size='small'
