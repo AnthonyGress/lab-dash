@@ -301,6 +301,14 @@ authRoute.post('/logout', (req: Request, res: Response) => {
             path: '/api/auth/refresh'
         });
 
+        // Also clear the refresh_token cookie with the updated path from the refresh route
+        res.clearCookie('refresh_token', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/'
+        });
+
         console.log('Cookies cleared on server');
         res.json({ message: 'Logged out successfully' });
     } catch (error) {
