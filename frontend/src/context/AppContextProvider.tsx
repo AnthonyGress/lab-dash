@@ -115,7 +115,6 @@ export const AppContextProvider = ({ children }: Props) => {
             // HTTP-only cookies won't show in document.cookie
             // Use the backend endpoint to check cookies
             const cookies = await DashApi.checkCookies();
-            console.log('Cookie debug:', cookies);
 
             // Check if access_token cookie exists from the server response
             const hasAccessToken = cookies && cookies.hasAccessToken;

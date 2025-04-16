@@ -408,10 +408,10 @@ export class DashApi {
             const res = await axios.get(`${BACKEND_URL}/api/auth/check-cookies`, {
                 withCredentials: true
             });
-            console.log('Cookie debug response:', res.data);
+            // console.log('Cookie debug response:', res.data);
             return res.data;
         } catch (error) {
-            console.error('Error debugging cookies:', error);
+            // console.error('Error debugging cookies:', error);
             return null;
         }
     }
