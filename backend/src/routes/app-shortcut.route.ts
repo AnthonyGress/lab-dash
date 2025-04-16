@@ -5,18 +5,16 @@ import path from 'path';
 
 import { UPLOAD_DIRECTORY } from '../constants/constants';
 
-const router = Router();
+export const appShortcutRoute = Router();
 
-// Helper function to sanitize filenames
 const sanitizeFileName = (fileName: string): string => {
-    // Remove file extension
     const nameWithoutExt = fileName.replace(/\.[^/.]+$/, '');
 
     // Replace special characters and normalize spaces
     return nameWithoutExt
-        .replace(/[^\w\s-]/g, '') // Remove special characters
-        .replace(/[\s_-]+/g, ' ')  // Replace multiple spaces/underscores/hyphens with a single space
-        .trim();                   // Trim leading/trailing spaces
+        .replace(/[^\w\s-]/g, '')
+        .replace(/[\s_-]+/g, ' ')
+        .trim();
 };
 
 // Configure storage for file uploads
@@ -27,16 +25,13 @@ const storage = multer.diskStorage({
         cb(null, uploadPath);
     },
     filename: (req, file, cb) => {
-        // Get the original filename without extension
         const originalName = path.parse(file.originalname).name;
 
-        // Sanitize the filename (remove special characters)
         const sanitizedName = originalName
             .replace(/[^\w\s-]/g, '')
             .replace(/[\s_-]+/g, '-')
             .trim();
 
-        // Add a timestamp prefix to ensure uniqueness
         const timestamp = Date.now();
         const ext = path.extname(file.originalname);
 
@@ -48,7 +43,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Upload app icon
-router.post('/upload', upload.single('file'), (req: Request, res: Response) => {
+appShortcutRoute.post('/upload', upload.single('file'), (req: Request, res: Response) => {
     if (!req.file) {
         res.status(400).json({ message: 'No file uploaded' });
         return;
@@ -73,7 +68,7 @@ router.post('/upload', upload.single('file'), (req: Request, res: Response) => {
 });
 
 // Get list of custom app icons
-router.get('/custom-icons', (req: Request, res: Response) => {
+appShortcutRoute.get('/custom-icons', (req: Request, res: Response) => {
     try {
         const uploadPath = path.join(UPLOAD_DIRECTORY, 'app-icons');
 
@@ -123,5 +118,3 @@ router.get('/custom-icons', (req: Request, res: Response) => {
         res.status(500).json({ message: 'Failed to retrieve custom icons' });
     }
 });
-
-export default router;
