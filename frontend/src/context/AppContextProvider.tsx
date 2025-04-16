@@ -47,8 +47,6 @@ export const AppContextProvider = ({ children }: Props) => {
     useEffect(() => {
         if (!isLoggedIn) {
             // Reset to initial items when logged out
-            console.log('User logged out, resetting dashboard layout');
-
             // Ensure admin status is reset
             setIsAdmin(false);
 
@@ -57,7 +55,6 @@ export const AppContextProvider = ({ children }: Props) => {
 
             // Force a delayed refresh to ensure state changes are applied
             const timer = setTimeout(() => {
-                console.log('Post-logout delayed refresh');
                 getLayout().catch(err => console.error('Error refreshing layout after logout:', err));
             }, 100);
 
@@ -89,7 +86,6 @@ export const AppContextProvider = ({ children }: Props) => {
             setLatestVersion(version);
             setReleaseUrl(url);
 
-            console.log(`Update check: ${hasUpdate ? 'Update available' : 'No updates available'}`);
         } catch (error) {
             console.error('Error checking for updates:', error);
         }
@@ -109,7 +105,6 @@ export const AppContextProvider = ({ children }: Props) => {
 
     // Check if user is logged in based on cookies
     const checkLoginStatus = async () => {
-        console.log('Check login status');
 
         try {
             // HTTP-only cookies won't show in document.cookie
@@ -128,7 +123,6 @@ export const AppContextProvider = ({ children }: Props) => {
                     setUsername(storedUsername);
                     setIsAdmin(isAdminRes);
                     setIsLoggedIn(true);
-                    console.log('Authenticated with existing token');
                 } catch (error) {
                     console.error('Access token validation failed:', error);
                     // Try to refresh the token
@@ -136,7 +130,6 @@ export const AppContextProvider = ({ children }: Props) => {
                 }
             } else {
                 // No access token, but we might have a refresh token
-                console.log('No access token found');
                 // Server-side token refresh attempt
                 await refreshTokenAndValidate();
             }
@@ -162,7 +155,6 @@ export const AppContextProvider = ({ children }: Props) => {
                 setUsername(storedUsername);
                 setIsAdmin(refreshResult.isAdmin || false);
                 setIsLoggedIn(true);
-                console.log('Successfully refreshed token, admin status:', refreshResult.isAdmin);
             } else {
                 // If refresh failed, user is not logged in
                 setIsLoggedIn(false);
@@ -172,7 +164,6 @@ export const AppContextProvider = ({ children }: Props) => {
                 if (editMode) {
                     setEditMode(false);
                 }
-                console.log('Token refresh failed');
             }
         } catch (error) {
             console.error('Error during token refresh:', error);
@@ -187,13 +178,11 @@ export const AppContextProvider = ({ children }: Props) => {
     };
 
     const getLayout = async () => {
-        console.log('Fetching saved layout');
 
         const res = await DashApi.getConfig(); // Retrieves { desktop: [], mobile: [] }
 
         if (res) {
             setConfig(res);
-            console.log('config', res);
 
             const selectedLayout = isMobile ? res.layout.mobile : res.layout.desktop;
             if (selectedLayout.length > 0) {
@@ -207,31 +196,25 @@ export const AppContextProvider = ({ children }: Props) => {
     const saveLayout = async (items: DashboardItem[]) => {
 
         const existingLayout = await DashApi.getConfig();
-        console.log('saving layout', );
 
         let updatedLayout: DashboardLayout;
 
         if (existingLayout.layout.mobile.length > 3) {
-            console.log('saving mobile layout', items);
 
             // has no prev mobile layout, duplicate desktop
             updatedLayout = isMobile
                 ? { layout: { ...existingLayout.layout, mobile: items } }
                 : { layout: { ...existingLayout.layout, desktop: items } };
         } else {
-            console.log('desktop + mobile', items);
             updatedLayout = { layout: { desktop: items, mobile: items } };
         }
 
-        console.log('Saving updated layout:', updatedLayout);
         await DashApi.saveConfig(updatedLayout);
     };
 
     const refreshDashboard = async () => {
         try {
-            console.log('updating dashboard');
             const savedLayout = await getLayout();
-            console.log('Updated dashboard:', savedLayout);
             setConfig(await DashApi.getConfig());
         } catch (error) {
             console.error('Failed to refresh dashboard:', error);
@@ -239,7 +222,6 @@ export const AppContextProvider = ({ children }: Props) => {
     };
 
     const addItem = async (itemToAdd: NewItem) => {
-        console.log('adding item to both desktop and mobile layouts');
 
         const newItem: DashboardItem = {
             id: `item-${shortid.generate()}`,
@@ -269,14 +251,12 @@ export const AppContextProvider = ({ children }: Props) => {
 
             // Save the updated layout to the backend
             await DashApi.saveConfig(updatedLayout);
-            console.log('Item added to both desktop and mobile layouts');
         } catch (error) {
             console.error('Failed to add item to both layouts:', error);
         }
     };
 
     const updateItem = (id: string, updatedData: Partial<NewItem>) => {
-        console.log('Updating item with ID:', id, 'Data:', updatedData);
 
         try {
             // Get current config first to ensure we have both layouts
@@ -304,7 +284,6 @@ export const AppContextProvider = ({ children }: Props) => {
                 };
 
                 DashApi.saveConfig(updatedConfig)
-                    .then(() => console.log('Item updated in both desktop and mobile layouts'))
                     .catch(error => console.error('Error saving updated layouts:', error));
             }).catch(error => {
                 console.error('Error fetching config for item update:', error);
@@ -330,7 +309,6 @@ export const AppContextProvider = ({ children }: Props) => {
 
             // Save the updated layout to the backend
             await DashApi.saveConfig(updatedLayout);
-            console.log('Layout saved to server after layout rearrangement');
         } catch (error) {
             console.error('Failed to save layout to server:', error);
         }
@@ -338,7 +316,6 @@ export const AppContextProvider = ({ children }: Props) => {
 
     const updateConfig = async (partialConfig: Partial<Config>) => {
         try {
-            console.log('updateConfig called with:', partialConfig);
 
             const updatedConfig: Partial<Config> = { ...partialConfig };
 
@@ -346,7 +323,6 @@ export const AppContextProvider = ({ children }: Props) => {
             if (partialConfig.backgroundImage && typeof partialConfig.backgroundImage === 'object' && 'name' in partialConfig.backgroundImage) {
                 const res = await DashApi.uploadBackgroundImage(partialConfig.backgroundImage);
 
-                console.log('Uploaded background image:', res);
 
                 if (res?.filePath) {
                     updatedConfig.backgroundImage = res.filePath;
@@ -358,13 +334,11 @@ export const AppContextProvider = ({ children }: Props) => {
 
             // Save updated config to API
             await DashApi.saveConfig(updatedConfig);
-            console.log('Config saved to API:', updatedConfig);
 
             // Update state with only the provided values, ensuring layout is always defined
             setConfig((prev) => {
                 if (!prev) {
                     const newConfig = { ...updatedConfig, layout: { desktop: [], mobile: [] } };
-                    console.log('Creating new config:', newConfig);
                     return newConfig;
                 }
 
@@ -374,7 +348,6 @@ export const AppContextProvider = ({ children }: Props) => {
                     layout: prev.layout ?? { desktop: [], mobile: [] } // Ensures layout is always defined
                 };
 
-                console.log('Updating existing config. New state:', mergedConfig);
                 return mergedConfig;
             });
 

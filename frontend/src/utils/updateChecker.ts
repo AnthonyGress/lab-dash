@@ -74,8 +74,6 @@ export const checkForUpdates = async (): Promise<{
         const comparison = compareVersions(latestVersion, currentVersion);
         const updateAvailable = comparison > 0;
 
-        console.log(`Version check: Current=${currentVersion}, Latest=${latestVersion}, Update Available=${updateAvailable}`);
-
         return {
             updateAvailable,
             latestVersion: updateAvailable ? latestVersion : null,

@@ -93,18 +93,15 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
     };
 
     const handleSubmit = async (data: FormValues) => {
-        console.log('Form data:', data);
-
+        // console.log('Form data:', data);
         // Handle custom icon upload if needed
         let iconData = data.icon;
 
         if (customIconFile && data.icon?.source === 'custom-pending') {
             try {
-                console.log('Uploading custom icon:', customIconFile.name);
                 const uploadedIcon = await DashApi.uploadAppIcon(customIconFile);
 
                 if (uploadedIcon) {
-                    console.log('Custom icon uploaded successfully:', uploadedIcon);
                     iconData = uploadedIcon;
                 } else {
                     console.error('Failed to get a valid response from upload');
@@ -121,7 +118,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             config = {
                 temperatureUnit: data.temperatureUnit || 'fahrenheit'
             };
-        } else if (data.itemType === ITEM_TYPE.APP_SHORTCUT && data.isWol) {
+        } else if (data.itemType === 'APP_SHORTCUT' && data.isWol) {
             config = {
                 isWol: true,
                 macAddress: data.macAddress,
@@ -131,7 +128,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
         }
 
         // For WOL shortcuts, use a placeholder URL if none provided
-        const url = (data.itemType === ITEM_TYPE.APP_SHORTCUT && data.isWol)
+        const url = (data.itemType === 'APP_SHORTCUT' && data.isWol)
             ? (data.url || '#')
             : data.url;
 

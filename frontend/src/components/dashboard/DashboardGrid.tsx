@@ -36,10 +36,7 @@ export const DashboardGrid: React.FC = () => {
 
     // Filter out admin-only items if user is not an admin
     const items = useMemo(() => {
-        console.log('Filtering dashboard items - isAdmin:', isAdmin, 'isLoggedIn:', isLoggedIn);
-
         if (isAdmin) {
-            console.log('Admin user - showing all items:', dashboardLayout.length);
             return dashboardLayout; // Show all items for admins
         } else {
             const filteredItems = dashboardLayout.filter(item => item.adminOnly !== true);
@@ -54,7 +51,6 @@ export const DashboardGrid: React.FC = () => {
         if (prevAuthStatus.current.isLoggedIn !== isLoggedIn ||
             prevAuthStatus.current.isAdmin !== isAdmin) {
 
-            console.log('Auth status changed - isLoggedIn:', isLoggedIn, 'isAdmin:', isAdmin);
             refreshDashboard();
 
             // Update ref with current values

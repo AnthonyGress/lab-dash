@@ -16,9 +16,6 @@ const PORT = Number(process.env.PORT) || 2022;
 const iconsPath = path.join(__dirname, './node_modules/@loganmarchione/homelab-svg-assets/assets');
 const iconListPath = path.join(__dirname, './node_modules/@loganmarchione/homelab-svg-assets/icons.json');
 
-
-console.log('Serving icons from:', iconsPath);
-
 // Middleware
 app.use(cors({
     origin: true,

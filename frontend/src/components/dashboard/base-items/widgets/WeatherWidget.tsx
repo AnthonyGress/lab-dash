@@ -67,11 +67,6 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
     const [isFahrenheit, setIsFahrenheit] = useState(config?.temperatureUnit !== 'celsius');
     const [openTooltipIndex, setOpenTooltipIndex] = useState<number | null>(null);
 
-    // Debug log to verify temperature unit
-    useEffect(() => {
-        console.log('Weather Widget temperature unit:', config?.temperatureUnit);
-    }, [config?.temperatureUnit]);
-
     useEffect(() => {
         setIsFahrenheit(config?.temperatureUnit !== 'celsius');
     }, [config?.temperatureUnit]);
@@ -98,18 +93,13 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
 
     useEffect(() => {
         const fetchWeather = async () => {
-            console.log('fetching weatjer');
-
             try {
                 let data;
                 if (!location?.latitude || !location.longitude) {
-                    console.log('no location');
 
                     data = await DashApi.getWeather();
-                    console.log('Weather data:', data);
                 } else {
                     data = await DashApi.getWeather(location.latitude, location.longitude);
-                    console.log('Weather data:', data);
                 }
                 setWeatherData(data);
             } catch (error) {
