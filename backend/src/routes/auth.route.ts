@@ -210,6 +210,48 @@ authRoute.post('/refresh', async (req: Request, res: Response) => {
 
         if (userIndex === -1) {
             res.status(401).json({ message: 'Refresh token not found' });
+
+
+            if (refreshToken) {
+                // Find and remove the refresh token
+
+                const updatedUsers = users.map(user => {
+                    if (user.refreshTokens?.includes(refreshToken)) {
+                        return {
+                            ...user,
+                            refreshTokens: user.refreshTokens.filter(token => token !== refreshToken)
+                        };
+                    }
+                    return user;
+                });
+
+                writeUsers(updatedUsers);
+            }
+
+            // Clear the cookies with all necessary options
+            res.clearCookie('access_token', {
+                httpOnly: true,
+                secure: false,
+                sameSite: 'lax',
+                path: '/'
+            });
+
+            res.clearCookie('refresh_token', {
+                httpOnly: true,
+                secure: false,
+                sameSite: 'strict',
+                path: '/api/auth/refresh'
+            });
+
+            // Also clear the refresh_token cookie with the updated path from the refresh route
+            res.clearCookie('refresh_token', {
+                httpOnly: true,
+                secure: false,
+                sameSite: 'lax',
+                path: '/'
+            });
+
+            console.log('Cookies cleared on server');
             return;
         }
 
@@ -289,14 +331,14 @@ authRoute.post('/logout', (req: Request, res: Response) => {
         // Clear the cookies with all necessary options
         res.clearCookie('access_token', {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: false,
             sameSite: 'lax',
             path: '/'
         });
 
         res.clearCookie('refresh_token', {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: false,
             sameSite: 'strict',
             path: '/api/auth/refresh'
         });
@@ -304,7 +346,7 @@ authRoute.post('/logout', (req: Request, res: Response) => {
         // Also clear the refresh_token cookie with the updated path from the refresh route
         res.clearCookie('refresh_token', {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: false,
             sameSite: 'lax',
             path: '/'
         });
