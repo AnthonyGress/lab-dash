@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-import appShortcutRoute from './app-shortcut.route';
+import { appShortcutRoute } from './app-shortcut.route';
 import { authRoute } from './auth.route';
 import { configRoute } from './config.route';
 import { healthRoute } from './health.route';
