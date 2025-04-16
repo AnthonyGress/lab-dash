@@ -78,7 +78,6 @@ export class DashApi {
 
             // Verify cookies are cleared
             const cookieStatus = await this.checkCookies();
-            console.log('Cookie status after logout:', cookieStatus);
         } catch (error) {
             console.error('Logout error:', error);
             // Even if the API call fails, clear local storage
@@ -113,7 +112,6 @@ export class DashApi {
                     !originalRequest.url?.includes('api/auth/login') &&
                     !originalRequest.url?.includes('api/auth/refresh')) {
 
-                    console.log('Intercepted 401 error for:', originalRequest.url);
                     originalRequest._retry = true;
 
                     try {
@@ -159,7 +157,6 @@ export class DashApi {
     public static async getCustomIcons(): Promise<Icon[]> {
         try {
             const res = await axios.get(`${BACKEND_URL}/api/app-shortcut/custom-icons`);
-            console.log('Custom icons response:', res.data);
             return res.data?.icons || [];
         } catch (error) {
             console.error('Error fetching custom icons:', error);
