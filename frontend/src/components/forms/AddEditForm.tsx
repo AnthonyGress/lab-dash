@@ -93,8 +93,6 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
     };
 
     const handleSubmit = async (data: FormValues) => {
-        // console.log('Form data:', data);
-        // Handle custom icon upload if needed
         let iconData = data.icon;
 
         if (customIconFile && data.icon?.source === 'custom-pending') {
@@ -108,17 +106,15 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                 }
             } catch (error) {
                 console.error('Error uploading custom icon:', error);
-                // Continue with form submission even if icon upload fails
             }
         }
 
-        // Prepare the config object based on item type
         let config = undefined;
         if (data.itemType === 'widget' && data.widgetType === ITEM_TYPE.WEATHER_WIDGET) {
             config = {
                 temperatureUnit: data.temperatureUnit || 'fahrenheit'
             };
-        } else if (data.itemType === 'APP_SHORTCUT' && data.isWol) {
+        } else if (data.itemType === ITEM_TYPE.APP_SHORTCUT && data.isWol) {
             config = {
                 isWol: true,
                 macAddress: data.macAddress,
@@ -127,8 +123,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             };
         }
 
-        // For WOL shortcuts, use a placeholder URL if none provided
-        const url = (data.itemType === 'APP_SHORTCUT' && data.isWol)
+        const url = (data.itemType === ITEM_TYPE.APP_SHORTCUT && data.isWol)
             ? (data.url || '#')
             : data.url;
 
