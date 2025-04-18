@@ -127,7 +127,7 @@ systemRoute.post('/update-container', [authenticateToken, requireAdmin], async (
 });
 
 // Wake on LAN endpoint
-systemRoute.post('/wol', authenticateToken, (req: Request, res: Response) => {
+systemRoute.post('/wol', (req: Request, res: Response) => {
     const handleWol = async () => {
         try {
             const { mac, ip, port } = req.body;
@@ -151,19 +151,44 @@ systemRoute.post('/wol', authenticateToken, (req: Request, res: Response) => {
             // Set default options
             const options: { address?: string; port?: number } = {};
 
-            // Add optional parameters if provided
-            if (ip) options.address = ip;
-            if (port) options.port = parseInt(port, 10);
+            // Add optional parameters if provided and validate IP if present
+            if (ip) {
+                // Validate IP address format if provided
+                const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+                if (!ipRegex.test(ip)) {
+                    res.status(StatusCodes.BAD_REQUEST).json({
+                        message: 'Invalid IP address format. Expected format: xxx.xxx.xxx.xxx'
+                    });
+                    return;
+                }
+                options.address = ip;
+            }
+
+            if (port) {
+                // Validate port is a number and in valid range
+                const portNum = parseInt(port, 10);
+                if (isNaN(portNum) || portNum < 1 || portNum > 65535) {
+                    res.status(StatusCodes.BAD_REQUEST).json({
+                        message: 'Invalid port. Port must be a number between 1 and 65535'
+                    });
+                    return;
+                }
+                options.port = portNum;
+            }
 
             // Send the WOL packet
             await new Promise<void>((resolve, reject) => {
-                wol.wake(mac, options, (err: Error | null) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        resolve();
-                    }
-                });
+                try {
+                    wol.wake(mac, options, (err: Error | null) => {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve();
+                        }
+                    });
+                } catch (error) {
+                    reject(error);
+                }
             });
             console.log(`Wake-on-LAN packet sent to ${mac}`);
             res.status(StatusCodes.OK).json({
@@ -178,6 +203,14 @@ systemRoute.post('/wol', authenticateToken, (req: Request, res: Response) => {
         }
     };
 
-    // Execute the async function
-    handleWol();
+    // Execute the async function with proper error handling
+    handleWol().catch(error => {
+        console.error('Unhandled error in WOL endpoint:', error);
+        if (!res.headersSent) {
+            res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+                message: 'Internal server error during Wake-on-LAN',
+                error: error instanceof Error ? error.message : String(error)
+            });
+        }
+    });
 });
