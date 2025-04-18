@@ -43,7 +43,7 @@ export const AppShortcut = ({ url, name, iconName, showLabel, editMode, config }
         try {
             // Prepare payload
             const payload: any = { mac: config.macAddress };
-            if (config.ipAddress) payload.ip = config.ipAddress;
+            if (config.broadcastAddress) payload.ip = config.broadcastAddress;
             if (config.port) payload.port = parseInt(config.port, 10);
 
             // Send WOL request

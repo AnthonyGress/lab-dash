@@ -44,7 +44,7 @@ type FormValues = {
     adminOnly?: boolean;
     isWol?: boolean;
     macAddress?: string;
-    ipAddress?: string;
+    broadcastAddress?: string;
     port?: string;
 };
 
@@ -69,7 +69,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             adminOnly: existingItem?.adminOnly || false,
             isWol: existingItem?.config?.isWol || false,
             macAddress: existingItem?.config?.macAddress || '',
-            ipAddress: existingItem?.config?.ipAddress || '',
+            broadcastAddress: existingItem?.config?.broadcastAddress || '',
             port: existingItem?.config?.port || ''
         }
     });
@@ -118,7 +118,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             config = {
                 isWol: true,
                 macAddress: data.macAddress,
-                ipAddress: data.ipAddress,
+                broadcastAddress: data.broadcastAddress,
                 port: data.port
             };
         }
@@ -170,7 +170,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                 adminOnly: existingItem.adminOnly || false,
                 isWol: existingItem.config?.isWol || false,
                 macAddress: existingItem.config?.macAddress || '',
-                ipAddress: existingItem.config?.ipAddress || '',
+                broadcastAddress: existingItem.config?.broadcastAddress || '',
                 port: existingItem.config?.port || ''
             });
         }
@@ -319,10 +319,16 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                         </Grid>
                                         <Grid>
                                             <TextFieldElement
-                                                name='ipAddress'
-                                                label='IP Address (Optional)'
+                                                name='broadcastAddress'
+                                                label='Broadcast Address (Optional)'
                                                 variant='outlined'
                                                 helperText='The broadcast address for your network'
+                                                rules={{
+                                                    pattern: {
+                                                        value: /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/,
+                                                        message: 'Invalid IP address format. Expected format: xxx.xxx.xxx.xxx'
+                                                    }
+                                                }}
                                                 sx={{
                                                     width: '100%',
                                                     '& .MuiOutlinedInput-root': {
