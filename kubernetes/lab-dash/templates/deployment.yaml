@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "lab-dash.fullname" . }}
+  namespace: {{ .Values.namespaceOverride | default .Release.Namespace }}
+  labels:
+    app: {{ include "lab-dash.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "lab-dash.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "lab-dash.name" . }}
+    spec:
+      securityContext:
+        runAsUser: 0
+      containers:
+        - name: lab-dash
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 2022
+          env:
+            - name: SECRET
+              value: "{{ .Values.secret }}"
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: uploads
+              mountPath: /app/public/uploads
+            - name: docker-sock
+              mountPath: /var/run/docker.sock
+            - name: sys-ro
+              mountPath: /sys
+              readOnly: true
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: {{ include "lab-dash.fullname" . }}-config
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: {{ include "lab-dash.fullname" . }}-uploads
+        - name: docker-sock
+          hostPath:
+            path: /var/run/docker.sock
+        - name: sys-ro
+          hostPath:
+            path: /sys
