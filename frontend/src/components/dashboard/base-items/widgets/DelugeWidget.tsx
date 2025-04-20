@@ -3,18 +3,17 @@ import { useCallback, useEffect, useState } from 'react';
 import { TorrentClientWidget } from './TorrentClientWidget';
 import { DashApi } from '../../../../api/dash-api';
 
-type QBittorrentWidgetConfig = {
+type DelugeWidgetConfig = {
     host?: string;
     port?: string;
     ssl?: boolean;
     username?: string;
     password?: string;
-    refreshInterval?: number;
     maxDisplayedTorrents?: number;
     showLabel?: boolean;
 };
 
-export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) => {
+export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
     const { config } = props;
     const [isLoading, setIsLoading] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -23,7 +22,7 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
     const [torrents, setTorrents] = useState<any[]>([]);
     const [loginCredentials, setLoginCredentials] = useState({
         host: config?.host || 'localhost',
-        port: config?.port || '8080',
+        port: config?.port || '8112',
         ssl: config?.ssl || false,
         username: config?.username || '',
         password: config?.password || ''
@@ -34,7 +33,7 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
         if (config) {
             setLoginCredentials({
                 host: config.host || 'localhost',
-                port: config.port || '8080',
+                port: config.port || '8112',
                 ssl: config.ssl || false,
                 username: config.username || '',
                 password: config.password || ''
@@ -46,14 +45,14 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
         setIsLoading(true);
         setAuthError('');
         try {
-            const success = await DashApi.qbittorrentLogin(loginCredentials);
+            const success = await DashApi.delugeLogin(loginCredentials);
             setIsAuthenticated(success);
             if (!success) {
                 setAuthError('Login failed. Check your credentials and connection.');
             }
         } catch (error) {
             console.error('Login error:', error);
-            setAuthError('Connection error. Check your qBittorrent WebUI settings.');
+            setAuthError('Connection error. Check your Deluge WebUI settings.');
             setIsAuthenticated(false);
         } finally {
             setIsLoading(false);
@@ -69,10 +68,10 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
                 port: loginCredentials.port,
                 ssl: loginCredentials.ssl
             };
-            const statsData = await DashApi.qbittorrentGetStats(connectionInfo);
+            const statsData = await DashApi.delugeGetStats(connectionInfo);
             setStats(statsData);
         } catch (error) {
-            console.error('Error fetching qBittorrent stats:', error);
+            console.error('Error fetching Deluge stats:', error);
             // If we get an auth error, set isAuthenticated to false to show login form
             if ((error as any)?.response?.status === 401) {
                 setIsAuthenticated(false);
@@ -90,7 +89,7 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
                 port: loginCredentials.port,
                 ssl: loginCredentials.ssl
             };
-            const torrentsData = await DashApi.qbittorrentGetTorrents(connectionInfo);
+            const torrentsData = await DashApi.delugeGetTorrents(connectionInfo);
             // Sort by progress (downloading first) then by name
             const sortedTorrents = torrentsData.sort((a, b) => {
                 // Prioritize downloading torrents
@@ -108,7 +107,7 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
             const maxTorrents = config?.maxDisplayedTorrents || 5;
             setTorrents(sortedTorrents.slice(0, maxTorrents));
         } catch (error) {
-            console.error('Error fetching qBittorrent torrents:', error);
+            console.error('Error fetching Deluge torrents:', error);
             if ((error as any)?.response?.status === 401) {
                 setIsAuthenticated(false);
                 setAuthError('Session expired. Please login again.');
@@ -149,7 +148,7 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
 
     return (
         <TorrentClientWidget
-            clientName='qBittorrent'
+            clientName='Deluge'
             isLoading={isLoading}
             isAuthenticated={isAuthenticated}
             authError={authError}

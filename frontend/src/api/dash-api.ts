@@ -527,4 +527,80 @@ export class DashApi {
             return false;
         }
     }
+
+    // Deluge methods
+    public static async delugeLogin(credentials: {
+        username: string;
+        password: string;
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+    }): Promise<boolean> {
+        try {
+            const { host, port, ssl, username, password } = credentials;
+            const response = await axios.post(
+                `${BACKEND_URL}/api/deluge/login`,
+                { username, password },
+                {
+                    params: { host, port, ssl },
+                    withCredentials: true
+                }
+            );
+            return response.data.success;
+        } catch (error) {
+            console.error('Failed to login to Deluge:', error);
+            return false;
+        }
+    }
+
+    public static async delugeGetStats(connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+    }): Promise<any> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/deluge/stats`, {
+                params: connectionInfo,
+                withCredentials: true
+            });
+            return res.data;
+        } catch (error) {
+            console.error('Deluge stats error:', error);
+            throw error;
+        }
+    }
+
+    public static async delugeGetTorrents(connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+    }): Promise<any[]> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/deluge/torrents`, {
+                params: connectionInfo,
+                withCredentials: true
+            });
+            return res.data;
+        } catch (error) {
+            console.error('Deluge torrents error:', error);
+            return [];
+        }
+    }
+
+    public static async delugeLogout(connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+    }): Promise<boolean> {
+        try {
+            await axios.post(`${BACKEND_URL}/api/deluge/logout`, {}, {
+                params: connectionInfo,
+                withCredentials: true
+            });
+            return true;
+        } catch (error) {
+            console.error('Deluge logout error:', error);
+            return false;
+        }
+    }
 }

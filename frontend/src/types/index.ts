@@ -2,7 +2,7 @@ export enum ITEM_TYPE {
     WEATHER_WIDGET = 'weather-widget',
     DATE_TIME_WIDGET = 'date-time-widget',
     SYSTEM_MONITOR_WIDGET = 'system-monitor-widget',
-    QBITTORRENT_WIDGET = 'qbittorrent-widget',
+    TORRENT_CLIENT = 'torrent-client',
     APP_SHORTCUT = 'app-shortcut',
     BLANK_APP = 'blank-app',
     BLANK_WIDGET = 'blank-widget',
