@@ -429,4 +429,102 @@ export class DashApi {
             }
         }
     }
+
+    // qBittorrent methods
+    public static async qbittorrentLogin(credentials: {
+        username: string;
+        password: string;
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+    }): Promise<boolean> {
+        try {
+            const { host, port, ssl, username, password } = credentials;
+            const response = await axios.post(
+                `${BACKEND_URL}/api/qbittorrent/login`,
+                { username, password },
+                {
+                    params: { host, port, ssl },
+                    withCredentials: true
+                }
+            );
+            return response.data.success;
+        } catch (error) {
+            console.error('Failed to login to qBittorrent:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Encrypts a password using the backend encryption
+     * @param password The password to encrypt
+     * @returns The encrypted password or the original if encryption fails
+     */
+    public static async encryptPassword(password: string): Promise<string> {
+        if (!password) return '';
+
+        try {
+            const response = await axios.post(
+                `${BACKEND_URL}/api/qbittorrent/encrypt-password`,
+                { password },
+                { withCredentials: true }
+            );
+
+            return response.data.encryptedPassword;
+        } catch (error) {
+            console.error('Failed to encrypt password:', error);
+            return password; // Return the original password if encryption fails
+        }
+    }
+
+    public static async qbittorrentGetStats(connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+    }): Promise<any> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/qbittorrent/stats`, {
+                params: connectionInfo,
+                withCredentials: true
+            });
+            return res.data;
+        } catch (error) {
+            console.error('qBittorrent stats error:', error);
+            throw error;
+        }
+    }
+
+    public static async qbittorrentGetTorrents(connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+    }): Promise<any[]> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/qbittorrent/torrents`, {
+                params: connectionInfo,
+                withCredentials: true
+            });
+            return res.data;
+        } catch (error) {
+            console.error('qBittorrent torrents error:', error);
+            return [];
+        }
+    }
+
+    public static async qbittorrentLogout(connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+    }): Promise<boolean> {
+        try {
+            await axios.post(`${BACKEND_URL}/api/qbittorrent/logout`, {}, {
+                params: connectionInfo,
+                withCredentials: true
+            });
+            return true;
+        } catch (error) {
+            console.error('qBittorrent logout error:', error);
+            return false;
+        }
+    }
 }

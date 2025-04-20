@@ -11,6 +11,7 @@ import { useIsMobile } from '../../hooks/useIsMobile';
 import { COLORS, styles } from '../../theme/styles';
 import { theme } from '../../theme/theme';
 import { DashboardItem, Icon, ITEM_TYPE, NewItem } from '../../types';
+import { encryptPassword, isEncrypted } from '../../utils/crypto';
 
 type Props = {
     handleClose: () => void
@@ -26,7 +27,12 @@ const ITEM_TYPE_OPTIONS = [
     { id: ITEM_TYPE.BLANK_ROW, label: 'Blank Row' },
 ];
 
-const WIDGET_OPTIONS = [{ id: ITEM_TYPE.DATE_TIME_WIDGET, label: 'Date & Time' }, { id: ITEM_TYPE.WEATHER_WIDGET, label: 'Weather' }, { id: ITEM_TYPE.SYSTEM_MONITOR_WIDGET, label: 'System Monitor' }];
+const WIDGET_OPTIONS = [
+    { id: ITEM_TYPE.DATE_TIME_WIDGET, label: 'Date & Time' },
+    { id: ITEM_TYPE.WEATHER_WIDGET, label: 'Weather' },
+    { id: ITEM_TYPE.SYSTEM_MONITOR_WIDGET, label: 'System Monitor' },
+    { id: ITEM_TYPE.QBITTORRENT_WIDGET, label: 'qBittorrent' }
+];
 
 const TEMPERATURE_UNIT_OPTIONS = [
     { id: 'fahrenheit', label: 'Fahrenheit (°F)' },
@@ -46,6 +52,15 @@ type FormValues = {
     macAddress?: string;
     broadcastAddress?: string;
     port?: string;
+    // qBittorrent config
+    qbHost?: string;
+    qbPort?: string;
+    qbSsl?: boolean;
+    qbUsername?: string;
+    qbPassword?: string;
+    qbAutoLogin?: boolean;
+    qbRefreshInterval?: number;
+    qbMaxDisplayedTorrents?: number;
 };
 
 export const AddEditForm = ({ handleClose, existingItem }: Props) => {
@@ -70,7 +85,16 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             isWol: existingItem?.config?.isWol || false,
             macAddress: existingItem?.config?.macAddress || '',
             broadcastAddress: existingItem?.config?.broadcastAddress || '',
-            port: existingItem?.config?.port || ''
+            port: existingItem?.config?.port || '',
+            // qBittorrent defaults
+            qbHost: existingItem?.config?.host || 'localhost',
+            qbPort: existingItem?.config?.port || '8080',
+            qbSsl: existingItem?.config?.ssl || false,
+            qbUsername: existingItem?.config?.username || '',
+            qbPassword: existingItem?.config?.password || '',
+            qbAutoLogin: existingItem?.config?.autoLogin || false,
+            qbRefreshInterval: existingItem?.config?.refreshInterval || 5000,
+            qbMaxDisplayedTorrents: existingItem?.config?.maxDisplayedTorrents || 5
         }
     });
 
@@ -80,7 +104,8 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
         return [
             ITEM_TYPE.WEATHER_WIDGET,
             ITEM_TYPE.DATE_TIME_WIDGET,
-            ITEM_TYPE.SYSTEM_MONITOR_WIDGET
+            ITEM_TYPE.SYSTEM_MONITOR_WIDGET,
+            ITEM_TYPE.QBITTORRENT_WIDGET
         ].includes(type as ITEM_TYPE);
     }
 
@@ -113,6 +138,28 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
         if (data.itemType === 'widget' && data.widgetType === ITEM_TYPE.WEATHER_WIDGET) {
             config = {
                 temperatureUnit: data.temperatureUnit || 'fahrenheit'
+            };
+        } else if (data.itemType === 'widget' && data.widgetType === ITEM_TYPE.QBITTORRENT_WIDGET) {
+            // Encrypt password using backend encryption
+            let encryptedPassword = data.qbPassword || '';
+
+            if (encryptedPassword) {
+                try {
+                    encryptedPassword = await DashApi.encryptPassword(encryptedPassword);
+                } catch (error) {
+                    console.error('Error encrypting password:', error);
+                }
+            }
+
+            config = {
+                host: data.qbHost,
+                port: data.qbPort,
+                ssl: data.qbSsl,
+                username: data.qbUsername,
+                password: encryptedPassword,
+                autoLogin: data.qbAutoLogin,
+                refreshInterval: data.qbRefreshInterval,
+                maxDisplayedTorrents: data.qbMaxDisplayedTorrents
             };
         } else if (data.itemType === ITEM_TYPE.APP_SHORTCUT && data.isWol) {
             config = {
@@ -171,7 +218,16 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                 isWol: existingItem.config?.isWol || false,
                 macAddress: existingItem.config?.macAddress || '',
                 broadcastAddress: existingItem.config?.broadcastAddress || '',
-                port: existingItem.config?.port || ''
+                port: existingItem.config?.port || '',
+                // qBittorrent config
+                qbHost: existingItem.config?.host || 'localhost',
+                qbPort: existingItem.config?.port || '8080',
+                qbSsl: existingItem.config?.ssl || false,
+                qbUsername: existingItem.config?.username || '',
+                qbPassword: existingItem.config?.password || '',
+                qbAutoLogin: existingItem.config?.autoLogin || false,
+                qbRefreshInterval: existingItem.config?.refreshInterval || 5000,
+                qbMaxDisplayedTorrents: existingItem.config?.maxDisplayedTorrents || 5
             });
         }
     }, [existingItem, formContext]);
@@ -489,7 +545,180 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                 </Grid>
                             )}
 
-                            <Button variant='contained' type='submit' sx={{ minHeight: '3rem' }}>{existingItem ? 'Update' : 'Add'}</Button>
+                            {/* qBittorrent Widget Configuration */}
+                            {selectedItemType === 'widget' && formContext.watch('widgetType') === ITEM_TYPE.QBITTORRENT_WIDGET && (
+                                <>
+                                    <Grid>
+                                        <TextFieldElement
+                                            name='qbHost'
+                                            label='Host'
+                                            variant='outlined'
+                                            fullWidth
+                                            autoComplete='off'
+                                            sx={{
+                                                width: '100%',
+                                                '& .MuiOutlinedInput-root': {
+                                                    '& fieldset': {
+                                                        borderColor: 'text.primary',
+                                                    },
+                                                    '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                                },
+                                            }}
+                                            slotProps={{
+                                                inputLabel: { style: { color: theme.palette.text.primary } }
+                                            }}
+                                        />
+                                    </Grid>
+                                    <Grid>
+                                        <TextFieldElement
+                                            name='qbPort'
+                                            label='Port'
+                                            variant='outlined'
+                                            fullWidth
+                                            autoComplete='off'
+                                            sx={{
+                                                width: '100%',
+                                                '& .MuiOutlinedInput-root': {
+                                                    '& fieldset': {
+                                                        borderColor: 'text.primary',
+                                                    },
+                                                    '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                                },
+                                            }}
+                                            slotProps={{
+                                                inputLabel: { style: { color: theme.palette.text.primary } }
+                                            }}
+                                        />
+                                    </Grid>
+                                    <Grid>
+                                        <TextFieldElement
+                                            name='qbUsername'
+                                            label='Username'
+                                            variant='outlined'
+                                            fullWidth
+                                            autoComplete='off'
+                                            sx={{
+                                                width: '100%',
+                                                '& .MuiOutlinedInput-root': {
+                                                    '& fieldset': {
+                                                        borderColor: 'text.primary',
+                                                    },
+                                                    '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                                },
+                                            }}
+                                            slotProps={{
+                                                inputLabel: { style: { color: theme.palette.text.primary } }
+                                            }}
+                                        />
+                                    </Grid>
+                                    <Grid>
+                                        <TextFieldElement
+                                            name='qbPassword'
+                                            label='Password'
+                                            type='password'
+                                            variant='outlined'
+                                            fullWidth
+                                            autoComplete='off'
+                                            sx={{
+                                                width: '100%',
+                                                '& .MuiOutlinedInput-root': {
+                                                    '& fieldset': {
+                                                        borderColor: 'text.primary',
+                                                    },
+                                                    '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                                },
+                                            }}
+                                            slotProps={{
+                                                inputLabel: { style: { color: theme.palette.text.primary } }
+                                            }}
+                                        />
+                                    </Grid>
+                                    <Grid>
+                                        <CheckboxElement
+                                            label='Use SSL'
+                                            name='qbSsl'
+                                            sx={{
+                                                ml: 1,
+                                                color: 'white',
+                                                '& .MuiSvgIcon-root': { fontSize: 30 }
+                                            }}
+                                        />
+                                    </Grid>
+                                    <Grid>
+                                        <CheckboxElement
+                                            label='Auto Login'
+                                            name='qbAutoLogin'
+                                            helperText='Automatically connect on widget load'
+                                            sx={{
+                                                ml: 1,
+                                                color: 'white',
+                                                '& .MuiSvgIcon-root': { fontSize: 30 },
+                                                '& .MuiFormHelperText-root': {
+                                                    marginLeft: 1,
+                                                    fontSize: '0.75rem',
+                                                    color: 'rgba(255, 255, 255, 0.7)'
+                                                }
+                                            }}
+                                        />
+                                    </Grid>
+                                    <Grid>
+                                        <TextFieldElement
+                                            name='qbRefreshInterval'
+                                            label='Refresh Interval (ms)'
+                                            type='number'
+                                            variant='outlined'
+                                            fullWidth
+                                            autoComplete='off'
+                                            sx={{
+                                                width: '100%',
+                                                '& .MuiOutlinedInput-root': {
+                                                    '& fieldset': {
+                                                        borderColor: 'text.primary',
+                                                    },
+                                                    '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                                },
+                                            }}
+                                            slotProps={{
+                                                inputLabel: { style: { color: theme.palette.text.primary } }
+                                            }}
+                                        />
+                                    </Grid>
+                                    <Grid>
+                                        <TextFieldElement
+                                            name='qbMaxDisplayedTorrents'
+                                            label='Max Displayed Torrents'
+                                            type='number'
+                                            variant='outlined'
+                                            fullWidth
+                                            autoComplete='off'
+                                            sx={{
+                                                width: '100%',
+                                                '& .MuiOutlinedInput-root': {
+                                                    '& fieldset': {
+                                                        borderColor: 'text.primary',
+                                                    },
+                                                    '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                                },
+                                            }}
+                                            slotProps={{
+                                                inputLabel: { style: { color: theme.palette.text.primary } }
+                                            }}
+                                        />
+                                    </Grid>
+                                </>
+                            )}
+
+                            <Grid>
+                                <Button variant='contained' type='submit' sx={{ minHeight: '3rem' }}>
+                                    {existingItem ? 'Update' : 'Add'}
+                                </Button>
+                            </Grid>
                         </Grid>
                     </FormContainer>
                 </Box>

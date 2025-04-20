@@ -15,10 +15,7 @@ import { Box, Grid2 as Grid } from '@mui/material';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 
-import { SortableAppShortcut } from './sortable-items/apps/SortableAppShortcut';
-import { SortableDateTimeWidget } from './sortable-items/widgets/SortableDateTime';
-import { SortableSystemMonitorWidget } from './sortable-items/widgets/SortableSystemMonitor';
-import { SortableWeatherWidget } from './sortable-items/widgets/SortableWeather';
+import { SortableQBittorrent } from './sortable-items/widgets/SortableQBittorrent';
 import { useAppContext } from '../../context/useAppContext';
 import { DashboardItem, ITEM_TYPE } from '../../types';
 import { AddEditForm } from '../forms/AddEditForm';
@@ -26,6 +23,10 @@ import { CenteredModal } from '../modals/CenteredModal';
 import { ConfirmationOptions, PopupManager } from '../modals/PopupManager';
 import { BlankAppShortcut } from './base-items/apps/BlankAppShortcut';
 import { BlankWidget } from './base-items/widgets/BlankWidget';
+import { SortableAppShortcut } from './sortable-items/apps/SortableAppShortcut';
+import { SortableDateTimeWidget } from './sortable-items/widgets/SortableDateTime';
+import { SortableSystemMonitorWidget } from './sortable-items/widgets/SortableSystemMonitor';
+import { SortableWeatherWidget } from './sortable-items/widgets/SortableWeather';
 
 
 export const DashboardGrid: React.FC = () => {
@@ -148,6 +149,8 @@ export const DashboardGrid: React.FC = () => {
                                     return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
                                 case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
                                     return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
+                                case ITEM_TYPE.QBITTORRENT_WIDGET:
+                                    return <SortableQBittorrent key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
                                 case ITEM_TYPE.APP_SHORTCUT:
                                     return (
                                         <SortableAppShortcut
@@ -186,6 +189,8 @@ export const DashboardGrid: React.FC = () => {
                                     return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} isOverlay/>;
                                 case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
                                     return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} isOverlay/>;
+                                case ITEM_TYPE.QBITTORRENT_WIDGET:
+                                    return <SortableQBittorrent key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
                                 case ITEM_TYPE.APP_SHORTCUT:
                                     return (
                                         <SortableAppShortcut
