@@ -475,6 +475,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                             variant='outlined'
                                             fullWidth
                                             autoComplete='off'
+                                            required
                                             sx={{
                                                 width: '100%',
                                                 '& .MuiOutlinedInput-root': {
@@ -497,6 +498,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                             variant='outlined'
                                             fullWidth
                                             autoComplete='off'
+                                            required
                                             sx={{
                                                 width: '100%',
                                                 '& .MuiOutlinedInput-root': {
@@ -519,6 +521,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                             variant='outlined'
                                             fullWidth
                                             autoComplete='off'
+                                            required={torrentClientType === TORRENT_CLIENT_TYPE.QBITTORRENT}
                                             sx={{
                                                 width: '100%',
                                                 '& .MuiOutlinedInput-root': {
@@ -542,6 +545,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                             variant='outlined'
                                             fullWidth
                                             autoComplete='off'
+                                            required
                                             sx={{
                                                 width: '100%',
                                                 '& .MuiOutlinedInput-root': {
