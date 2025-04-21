@@ -288,7 +288,18 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                         '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
                                     },
                                     width: '100%',
-                                    minWidth: isMobile ? '65vw' :'20vw'
+                                    minWidth: isMobile ? '65vw' :'20vw',
+                                    '& .MuiMenuItem-root:hover': {
+                                        backgroundColor: `${COLORS.LIGHT_GRAY_HOVER} !important`,
+                                    },
+                                    '& .MuiMenuItem-root.Mui-selected': {
+                                        backgroundColor: `${theme.palette.primary.main} !important`,
+                                        color: 'white',
+                                    },
+                                    '& .MuiMenuItem-root.Mui-selected:hover': {
+                                        backgroundColor: `${theme.palette.primary.main} !important`,
+                                        color: 'white',
+                                    }
                                 }}
                                 slotProps={{
                                     inputLabel:
@@ -317,7 +328,18 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                                 '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
                                             },
                                             width: '100%',
-                                            minWidth: isMobile ? '65vw' :'20vw'
+                                            minWidth: isMobile ? '65vw' :'20vw',
+                                            '& .MuiMenuItem-root:hover': {
+                                                backgroundColor: `${COLORS.LIGHT_GRAY_HOVER} !important`,
+                                            },
+                                            '& .MuiMenuItem-root.Mui-selected': {
+                                                backgroundColor: `${theme.palette.primary.main} !important`,
+                                                color: 'white',
+                                            },
+                                            '& .MuiMenuItem-root.Mui-selected:hover': {
+                                                backgroundColor: `${theme.palette.primary.main} !important`,
+                                                color: 'white',
+                                            }
                                         }}
                                         slotProps={{
                                             inputLabel: { style: { color: theme.palette.text.primary } }
@@ -398,7 +420,18 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                                 '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
                                             },
                                             width: '100%',
-                                            minWidth: isMobile ? '50vw' :'20vw'
+                                            minWidth: isMobile ? '50vw' :'20vw',
+                                            '& .MuiMenuItem-root:hover': {
+                                                backgroundColor: `${COLORS.LIGHT_GRAY_HOVER} !important`,
+                                            },
+                                            '& .MuiMenuItem-root.Mui-selected': {
+                                                backgroundColor: `${theme.palette.primary.main} !important`,
+                                                color: 'white',
+                                            },
+                                            '& .MuiMenuItem-root.Mui-selected:hover': {
+                                                backgroundColor: `${theme.palette.primary.main} !important`,
+                                                color: 'white',
+                                            }
                                         }}
                                         slotProps={{
                                             inputLabel: { style: { color: theme.palette.text.primary } }
@@ -759,8 +792,8 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                             </>
                             }
 
-                            <Grid>
-                                <Button variant='contained' type='submit' sx={{ minHeight: '3rem' }}>
+                            <Grid sx={{ width: '100%', display: 'flex', justifyContent: 'center', mt: 2 }}>
+                                <Button variant='contained' type='submit' sx={{ minHeight: '3rem' }} fullWidth>
                                     {existingItem ? 'Update' : 'Add'}
                                 </Button>
                             </Grid>
