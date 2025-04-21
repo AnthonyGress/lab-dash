@@ -252,3 +252,132 @@ delugeRoute.post('/logout', authenticateToken, async (req: Request, res: Respons
         res.status(500).json({ error: 'Failed to logout from Deluge' });
     }
 });
+
+// Resume torrent(s)
+delugeRoute.post('/torrents/resume', authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const baseUrl = getBaseUrl(req);
+        const sessionId = req.user?.username || 'default';
+        const cookie = sessions[sessionId];
+        const { hash } = req.body;
+
+        if (!cookie) {
+            res.status(401).json({ error: 'Not authenticated with Deluge' });
+            return;
+        }
+
+        if (!hash) {
+            res.status(400).json({ error: 'Hash parameter is required' });
+            return;
+        }
+
+        // Call Deluge resume method
+        const response = await axios.post(`${baseUrl}`,
+            {
+                method: 'core.resume_torrent',
+                params: [[hash]],
+                id: 6
+            },
+            {
+                headers: { Cookie: cookie }
+            });
+
+        // Check the response
+        if (response.data.error) {
+            throw new Error(response.data.error.message || 'Failed to resume torrent');
+        }
+
+        res.status(200).json({ success: true });
+    } catch (error: any) {
+        console.error('Deluge resume error:', error.message);
+        res.status(error.response?.status || 500).json({
+            error: error.response?.data || 'Failed to resume torrent'
+        });
+    }
+});
+
+// Pause torrent(s)
+delugeRoute.post('/torrents/pause', authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const baseUrl = getBaseUrl(req);
+        const sessionId = req.user?.username || 'default';
+        const cookie = sessions[sessionId];
+        const { hash } = req.body;
+
+        if (!cookie) {
+            res.status(401).json({ error: 'Not authenticated with Deluge' });
+            return;
+        }
+
+        if (!hash) {
+            res.status(400).json({ error: 'Hash parameter is required' });
+            return;
+        }
+
+        // Call Deluge pause method
+        const response = await axios.post(`${baseUrl}`,
+            {
+                method: 'core.pause_torrent',
+                params: [[hash]],
+                id: 7
+            },
+            {
+                headers: { Cookie: cookie }
+            });
+
+        // Check the response
+        if (response.data.error) {
+            throw new Error(response.data.error.message || 'Failed to pause torrent');
+        }
+
+        res.status(200).json({ success: true });
+    } catch (error: any) {
+        console.error('Deluge pause error:', error.message);
+        res.status(error.response?.status || 500).json({
+            error: error.response?.data || 'Failed to pause torrent'
+        });
+    }
+});
+
+// Delete torrent(s)
+delugeRoute.post('/torrents/delete', authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const baseUrl = getBaseUrl(req);
+        const sessionId = req.user?.username || 'default';
+        const cookie = sessions[sessionId];
+        const { hash, deleteFiles } = req.body;
+
+        if (!cookie) {
+            res.status(401).json({ error: 'Not authenticated with Deluge' });
+            return;
+        }
+
+        if (!hash) {
+            res.status(400).json({ error: 'Hash parameter is required' });
+            return;
+        }
+
+        // Call Deluge remove_torrent method
+        const response = await axios.post(`${baseUrl}`,
+            {
+                method: 'core.remove_torrent',
+                params: [hash, deleteFiles === true],
+                id: 8
+            },
+            {
+                headers: { Cookie: cookie }
+            });
+
+        // Check the response
+        if (response.data.error) {
+            throw new Error(response.data.error.message || 'Failed to delete torrent');
+        }
+
+        res.status(200).json({ success: true });
+    } catch (error: any) {
+        console.error('Deluge delete error:', error.message);
+        res.status(error.response?.status || 500).json({
+            error: error.response?.data || 'Failed to delete torrent'
+        });
+    }
+});

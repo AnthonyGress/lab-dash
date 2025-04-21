@@ -91,6 +91,7 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
                 ssl: loginCredentials.ssl
             };
             const torrentsData = await DashApi.qbittorrentGetTorrents(connectionInfo);
+
             // Sort by progress (downloading first) then by name
             const sortedTorrents = torrentsData.sort((a, b) => {
                 // Prioritize downloading torrents
@@ -147,6 +148,72 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
         }
     }, [isAuthenticated, fetchStats, fetchTorrents]);
 
+    // Torrent actions
+    const handleStartTorrent = useCallback(async (hash: string) => {
+        try {
+            const connectionInfo = {
+                host: loginCredentials.host,
+                port: loginCredentials.port,
+                ssl: loginCredentials.ssl
+            };
+            // Use the existing resume API endpoint
+            const success = await DashApi.qbittorrentStartTorrent(hash, connectionInfo);
+
+            // Refresh the torrents list after operation
+            if (success) {
+                await fetchTorrents();
+            }
+
+            return success;
+        } catch (error) {
+            console.error('Error starting qBittorrent torrent:', error);
+            return false;
+        }
+    }, [loginCredentials, fetchTorrents]);
+
+    const handleStopTorrent = useCallback(async (hash: string) => {
+        try {
+            const connectionInfo = {
+                host: loginCredentials.host,
+                port: loginCredentials.port,
+                ssl: loginCredentials.ssl
+            };
+            // Use the existing pause API endpoint
+            const success = await DashApi.qbittorrentStopTorrent(hash, connectionInfo);
+
+            // Refresh the torrents list after operation
+            if (success) {
+                await fetchTorrents();
+            }
+
+            return success;
+        } catch (error) {
+            console.error('Error stopping qBittorrent torrent:', error);
+            return false;
+        }
+    }, [loginCredentials, fetchTorrents]);
+
+    const handleDeleteTorrent = useCallback(async (hash: string, deleteFiles: boolean) => {
+        try {
+            const connectionInfo = {
+                host: loginCredentials.host,
+                port: loginCredentials.port,
+                ssl: loginCredentials.ssl
+            };
+            const success = await DashApi.qbittorrentDeleteTorrent(hash, deleteFiles, connectionInfo);
+
+            // Refresh the torrents list after operation
+            if (success) {
+                await fetchTorrents();
+            }
+
+            return success;
+        } catch (error) {
+            console.error('Error deleting qBittorrent torrent:', error);
+            return false;
+        }
+    }, [loginCredentials, fetchTorrents]);
+
     return (
         <TorrentClientWidget
             clientName='qBittorrent'
@@ -159,6 +226,9 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
             handleInputChange={handleInputChange}
             handleLogin={handleLogin}
             showLabel={config?.showLabel !== undefined ? config.showLabel : true}
+            onResumeTorrent={handleStartTorrent}
+            onPauseTorrent={handleStopTorrent}
+            onDeleteTorrent={handleDeleteTorrent}
         />
     );
 };

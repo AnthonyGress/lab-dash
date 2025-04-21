@@ -1,6 +1,6 @@
-import { ArrowDownward, ArrowUpward, CheckCircle, Download, Pause, Stop, Warning } from '@mui/icons-material';
-import { Box, CardContent, CircularProgress, Grid, IconButton, LinearProgress, TextField, Typography, useMediaQuery } from '@mui/material';
-import React from 'react';
+import { ArrowDownward, ArrowUpward, CheckCircle, Delete, Download, MoreVert, Pause, PlayArrow, Stop, Warning } from '@mui/icons-material';
+import { Box, CardContent, CircularProgress, Grid, IconButton, LinearProgress, Menu, MenuItem, TextField, Typography, useMediaQuery } from '@mui/material';
+import React, { useState } from 'react';
 
 import { theme } from '../../../../theme/theme';
 
@@ -21,7 +21,7 @@ export type TorrentClientStats = {
 export type TorrentInfo = {
     hash: string;
     name: string;
-    state: string;
+    state: string;  // Common states: 'downloading', 'seeding', 'pausedDL', 'pausedUP', 'stopped', 'error', etc.
     progress: number;
     size: number;
     dlspeed: number;
@@ -46,6 +46,9 @@ export type TorrentClientWidgetProps = {
     handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     handleLogin: () => void;
     showLabel?: boolean;
+    onResumeTorrent?: (hash: string) => Promise<boolean>;
+    onPauseTorrent?: (hash: string) => Promise<boolean>;
+    onDeleteTorrent?: (hash: string, deleteFiles: boolean) => Promise<boolean>;
 };
 
 // Format bytes to appropriate size unit
@@ -97,8 +100,243 @@ const getStatusIcon = (state: string) => {
     case 'stalledUP': return <Warning color='warning' fontSize='small' />;
     case 'completed':
     case 'checkingUP': return <CheckCircle color='success' fontSize='small' />;
+    case 'stopped':
+    case 'error': return <Stop sx={{ color: 'red' }} fontSize='small' />;
     default: return <Stop sx={{ color: 'gray' }} fontSize='small' />;
     }
+};
+
+interface TorrentItemProps {
+    torrent: TorrentInfo;
+    clientName: string;
+    onResume?: (hash: string) => Promise<boolean>;
+    onPause?: (hash: string) => Promise<boolean>;
+    onDelete?: (hash: string, deleteFiles: boolean) => Promise<boolean>;
+}
+
+const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, onResume, onPause, onDelete }) => {
+    const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+    const [isActionLoading, setIsActionLoading] = useState(false);
+
+    const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+        setMenuAnchorEl(event.currentTarget);
+    };
+
+    const handleMenuClose = () => {
+        setMenuAnchorEl(null);
+    };
+
+    const handleResume = async () => {
+        if (onResume) {
+            setIsActionLoading(true);
+            try {
+                await onResume(torrent.hash);
+            } catch (error) {
+                console.error('Failed to resume torrent:', error);
+            } finally {
+                setIsActionLoading(false);
+            }
+        }
+        handleMenuClose();
+    };
+
+    const handlePause = async () => {
+        if (onPause) {
+            setIsActionLoading(true);
+            try {
+                await onPause(torrent.hash);
+            } catch (error) {
+                console.error('Failed to pause torrent:', error);
+            } finally {
+                setIsActionLoading(false);
+            }
+        }
+        handleMenuClose();
+    };
+
+    const handleDelete = async () => {
+        if (onDelete && window.confirm(`Are you sure you want to remove "${torrent.name}"?`)) {
+            setIsActionLoading(true);
+            try {
+                const deleteFiles = window.confirm('Do you also want to delete the downloaded files?');
+                await onDelete(torrent.hash, deleteFiles);
+            } catch (error) {
+                console.error('Failed to delete torrent:', error);
+            } finally {
+                setIsActionLoading(false);
+            }
+        }
+        handleMenuClose();
+    };
+
+    // Check if the torrent is paused or stopped
+    const isPausedOrStopped = torrent.state.includes('paused') || torrent.state === 'stopped' || torrent.state === 'error';
+
+    return (
+        <Box sx={{ mb: 1, '&:last-child': { mb: 0 } }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                {getStatusIcon(torrent.state)}
+                <Typography
+                    variant='caption'
+                    noWrap
+                    sx={{
+                        ml: 0.5,
+                        maxWidth: '60%',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        color: 'white'
+                    }}
+                >
+                    {torrent.name}
+                </Typography>
+                <Typography
+                    variant='caption'
+                    sx={{ ml: 'auto', color: 'white' }}
+                >
+                    {formatProgress(torrent.progress)} / {formatBytes(torrent.size)}
+                </Typography>
+                {(onResume || onPause || onDelete) && (
+                    <IconButton
+                        size='small'
+                        onClick={handleMenuOpen}
+                        disabled={isActionLoading}
+                        sx={{
+                            p: 0.5,
+                            ml: 0.5,
+                            color: 'white',
+                            opacity: 0.7,
+                            '&:hover': { opacity: 1 }
+                        }}
+                    >
+                        {isActionLoading ? <CircularProgress size={16} /> : <MoreVert fontSize='small' />}
+                    </IconButton>
+                )}
+                <Menu
+                    anchorEl={menuAnchorEl}
+                    open={Boolean(menuAnchorEl)}
+                    onClose={handleMenuClose}
+                    anchorOrigin={{
+                        vertical: 'bottom',
+                        horizontal: 'right',
+                    }}
+                    transformOrigin={{
+                        vertical: 'top',
+                        horizontal: 'right',
+                    }}
+                    slotProps={{
+                        paper: {
+                            sx: {
+                                bgcolor: '#2a2a2a',
+                                color: 'white',
+                                border: '1px solid #444',
+                                minWidth: '120px'
+                            }
+                        }
+                    }}
+                >
+                    {clientName === 'qBittorrent' ? (
+                        // For qBittorrent: Use Start/Stop terminology
+                        <>
+                            {/* Show Start option for torrents that can be started */}
+                            {(torrent.state.includes('paused') || torrent.state === 'missingfiles' ||
+                              torrent.state === 'error' || torrent.state === 'stalledDL' ||
+                              torrent.state === 'unknown' || torrent.state === 'checkingUP' ||
+                              torrent.state === 'checkingDL' || torrent.state === 'checkingResumeData' ||
+                              torrent.state === 'stoppedDL') && (
+                                <MenuItem
+                                    onClick={handleResume}
+                                    disabled={!onResume}
+                                >
+                                    <PlayArrow fontSize='small' sx={{ mr: 1 }} />
+                                    Start
+                                </MenuItem>
+                            )}
+
+                            {/* Show Stop option for active torrents */}
+                            {(torrent.state === 'downloading' || torrent.state === 'uploading' ||
+                              torrent.state === 'metaDL' || torrent.state === 'forcedDL' ||
+                              torrent.state === 'forcedUP' || torrent.state === 'moving' ||
+                              torrent.state === 'seeding') && (
+                                <MenuItem
+                                    onClick={handlePause}
+                                    disabled={!onPause}
+                                >
+                                    <Stop fontSize='small' sx={{ mr: 1 }} />
+                                    Stop
+                                </MenuItem>
+                            )}
+                        </>
+                    ) : (
+                        // For other clients like Deluge: Use Pause/Resume terminology
+                        <>
+                            {/* Show Start option for stopped torrents */}
+                            {(torrent.state === 'stopped' || torrent.state === 'error') && (
+                                <MenuItem
+                                    onClick={handleResume}
+                                    disabled={!onResume}
+                                >
+                                    <PlayArrow fontSize='small' sx={{ mr: 1 }} />
+                                    Start
+                                </MenuItem>
+                            )}
+
+                            {/* Show Resume option only for paused torrents */}
+                            {torrent.state.includes('paused') && (
+                                <MenuItem
+                                    onClick={handleResume}
+                                    disabled={!onResume}
+                                >
+                                    <PlayArrow fontSize='small' sx={{ mr: 1 }} />
+                                    Resume
+                                </MenuItem>
+                            )}
+
+                            {/* Show Pause option for active torrents */}
+                            <MenuItem
+                                onClick={handlePause}
+                                disabled={!onPause || isPausedOrStopped}
+                            >
+                                <Pause fontSize='small' sx={{ mr: 1 }} />
+                                Pause
+                            </MenuItem>
+                        </>
+                    )}
+
+                    <MenuItem onClick={handleDelete} disabled={!onDelete}>
+                        <Delete fontSize='small' sx={{ mr: 1 }} />
+                        Remove
+                    </MenuItem>
+                </Menu>
+            </Box>
+            <LinearProgress
+                variant='determinate'
+                value={torrent.progress * 100}
+                sx={{
+                    height: 4,
+                    borderRadius: 2,
+                    mt: 0.5,
+                    '& .MuiLinearProgress-bar': {
+                        backgroundColor:
+                            torrent.state === 'downloading' ? 'primary.main' :
+                                torrent.state.includes('seed') || torrent.state.includes('upload') ? theme.palette.primary.main :
+                                    torrent.progress === 1 ? 'success.main' : 'warning.main'
+                    }
+                }}
+            />
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.2 }}>
+                <Typography variant='caption' sx={{ fontSize: '0.6rem', color: 'white' }}>
+                    {torrent.state === 'downloading' && `↓ ${formatBytes(torrent.dlspeed)}/s`}
+                    {(torrent.state === 'uploading' || torrent.state === 'seeding') &&
+                    `↑ ${formatBytes(torrent.upspeed)}/s`}
+                    {(torrent.state === 'stopped' || torrent.state === 'error' || torrent.state.includes('paused')) &&
+                    `${clientName === 'qBittorrent' ? 'Stopped' : 'Paused'}`}
+                </Typography>
+                <Typography variant='caption' sx={{ fontSize: '0.6rem', ml: 'auto', color: 'white' }}>
+                    {(torrent.state === 'downloading' && torrent.eta !== undefined) && `ETA: ${formatEta(torrent.eta)}`}
+                </Typography>
+            </Box>
+        </Box>
+    );
 };
 
 export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
@@ -111,7 +349,10 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
     loginCredentials,
     handleInputChange,
     handleLogin,
-    showLabel = true
+    showLabel = true,
+    onResumeTorrent,
+    onPauseTorrent,
+    onDeleteTorrent
 }) => {
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -187,55 +428,14 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
 
                             <Box sx={{ px: 1, overflowY: 'auto', flex: 1, mb: 1 }}>
                                 {torrents.map((torrent) => (
-                                    <Box key={torrent.hash} sx={{ mb: 1, '&:last-child': { mb: 0 } }}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                            {getStatusIcon(torrent.state)}
-                                            <Typography
-                                                variant='caption'
-                                                noWrap
-                                                sx={{
-                                                    ml: 0.5,
-                                                    maxWidth: '60%',
-                                                    overflow: 'hidden',
-                                                    textOverflow: 'ellipsis',
-                                                    color: 'white'
-                                                }}
-                                            >
-                                                {torrent.name}
-                                            </Typography>
-                                            <Typography
-                                                variant='caption'
-                                                sx={{ ml: 'auto', color: 'white' }}
-                                            >
-                                                {formatProgress(torrent.progress)} / {formatBytes(torrent.size)}
-                                            </Typography>
-                                        </Box>
-                                        <LinearProgress
-                                            variant='determinate'
-                                            value={torrent.progress * 100}
-                                            sx={{
-                                                height: 4,
-                                                borderRadius: 2,
-                                                mt: 0.5,
-                                                '& .MuiLinearProgress-bar': {
-                                                    backgroundColor:
-                                                        torrent.state === 'downloading' ? 'primary.main' :
-                                                            torrent.state.includes('seed') || torrent.state.includes('upload') ? theme.palette.primary.main :
-                                                                torrent.progress === 1 ? 'success.main' : 'warning.main'
-                                                }
-                                            }}
-                                        />
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.2 }}>
-                                            <Typography variant='caption' sx={{ fontSize: '0.6rem', color: 'white' }}>
-                                                {torrent.state === 'downloading' && `↓ ${formatBytes(torrent.dlspeed)}/s`}
-                                                {(torrent.state === 'uploading' || torrent.state === 'seeding') &&
-                                                `↑ ${formatBytes(torrent.upspeed)}/s`}
-                                            </Typography>
-                                            <Typography variant='caption' sx={{ fontSize: '0.6rem', ml: 'auto', color: 'white' }}>
-                                                {(torrent.state === 'downloading' && torrent.eta !== undefined) && `ETA: ${formatEta(torrent.eta)}`}
-                                            </Typography>
-                                        </Box>
-                                    </Box>
+                                    <TorrentItem
+                                        key={torrent.hash}
+                                        torrent={torrent}
+                                        clientName={clientName}
+                                        onResume={onResumeTorrent}
+                                        onPause={onPauseTorrent}
+                                        onDelete={onDeleteTorrent}
+                                    />
                                 ))}
                             </Box>
 

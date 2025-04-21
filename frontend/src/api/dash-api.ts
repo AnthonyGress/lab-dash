@@ -528,6 +528,109 @@ export class DashApi {
         }
     }
 
+    public static async qbittorrentStartTorrent(hash: string, connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+    }): Promise<boolean> {
+        try {
+            console.log('Starting torrent with hash:', hash);
+
+            // Create a URLSearchParams object for form data
+            const formData = new URLSearchParams();
+            formData.append('hashes', hash);
+
+            console.log('Sending form data:', formData.toString());
+
+            const response = await axios.post(
+                `${BACKEND_URL}/api/qbittorrent/torrents/start`,
+                formData.toString(),
+                {
+                    params: connectionInfo,
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    withCredentials: true
+                }
+            );
+
+            console.log('Start torrent response:', response.status, response.data);
+            return true;
+        } catch (error) {
+            console.error('qBittorrent start error:', error);
+            return false;
+        }
+    }
+
+    public static async qbittorrentStopTorrent(hash: string, connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+    }): Promise<boolean> {
+        try {
+            console.log('Stopping torrent with hash:', hash);
+
+            // Create a URLSearchParams object for form data
+            const formData = new URLSearchParams();
+            formData.append('hashes', hash);
+
+            console.log('Sending form data:', formData.toString());
+
+            const response = await axios.post(
+                `${BACKEND_URL}/api/qbittorrent/torrents/stop`,
+                formData.toString(),
+                {
+                    params: connectionInfo,
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    withCredentials: true
+                }
+            );
+
+            console.log('Stop torrent response:', response.status, response.data);
+            return true;
+        } catch (error) {
+            console.error('qBittorrent stop error:', error);
+            return false;
+        }
+    }
+
+    public static async qbittorrentDeleteTorrent(hash: string, deleteFiles: boolean = false, connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+    }): Promise<boolean> {
+        try {
+            console.log('Deleting torrent with hash:', hash, 'deleteFiles:', deleteFiles);
+
+            // Create a URLSearchParams object for form data
+            const formData = new URLSearchParams();
+            formData.append('hashes', hash);
+            formData.append('deleteFiles', deleteFiles ? 'true' : 'false');
+
+            console.log('Sending form data:', formData.toString());
+
+            const response = await axios.post(
+                `${BACKEND_URL}/api/qbittorrent/torrents/delete`,
+                formData.toString(),
+                {
+                    params: connectionInfo,
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    withCredentials: true
+                }
+            );
+
+            console.log('Delete torrent response:', response.status, response.data);
+            return true;
+        } catch (error) {
+            console.error('qBittorrent delete error:', error);
+            return false;
+        }
+    }
+
     // Deluge methods
     public static async delugeLogin(credentials: {
         username: string;
@@ -600,6 +703,69 @@ export class DashApi {
             return true;
         } catch (error) {
             console.error('Deluge logout error:', error);
+            return false;
+        }
+    }
+
+    public static async delugeResumeTorrent(hash: string, connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+    }): Promise<boolean> {
+        try {
+            await axios.post(`${BACKEND_URL}/api/deluge/torrents/resume`,
+                { hash },
+                {
+                    params: connectionInfo,
+                    withCredentials: true
+                }
+            );
+            return true;
+        } catch (error) {
+            console.error('Deluge resume error:', error);
+            return false;
+        }
+    }
+
+    public static async delugePauseTorrent(hash: string, connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+    }): Promise<boolean> {
+        try {
+            await axios.post(`${BACKEND_URL}/api/deluge/torrents/pause`,
+                { hash },
+                {
+                    params: connectionInfo,
+                    withCredentials: true
+                }
+            );
+            return true;
+        } catch (error) {
+            console.error('Deluge pause error:', error);
+            return false;
+        }
+    }
+
+    public static async delugeDeleteTorrent(hash: string, deleteFiles: boolean = false, connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+    }): Promise<boolean> {
+        try {
+            await axios.post(`${BACKEND_URL}/api/deluge/torrents/delete`,
+                {
+                    hash,
+                    deleteFiles
+                },
+                {
+                    params: connectionInfo,
+                    withCredentials: true
+                }
+            );
+            return true;
+        } catch (error) {
+            console.error('Deluge delete error:', error);
             return false;
         }
     }

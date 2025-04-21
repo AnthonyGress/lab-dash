@@ -114,7 +114,7 @@ qbittorrentRoute.get('/stats', authenticateToken, async (req: Request, res: Resp
                 downloading: torrents.filter((t: any) => t.state === 'downloading').length,
                 seeding: torrents.filter((t: any) => t.state === 'seeding' || t.state === 'uploading').length,
                 completed: torrents.filter((t: any) => t.progress === 1).length,
-                paused: torrents.filter((t: any) => t.state === 'pausedDL' || t.state === 'pausedUP').length
+                stopd: torrents.filter((t: any) => t.state === 'stopdDL' || t.state === 'stopdUP').length
             }
         };
 
@@ -173,5 +173,203 @@ qbittorrentRoute.post('/logout', authenticateToken, async (req: Request, res: Re
     } catch (error) {
         console.error('qBittorrent logout error:', error);
         res.status(500).json({ error: 'Failed to logout from qBittorrent' });
+    }
+});
+
+// start torrent(s)
+qbittorrentRoute.post('/torrents/start', authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const baseUrl = getBaseUrl(req);
+        const sessionId = req.user?.username || 'default';
+        const cookie = sessions[sessionId];
+
+        // Extract hashes from either JSON body or form-urlencoded body
+        const hashes = req.body.hashes;
+
+        console.log('qBittorrent start request received:', {
+            body: req.body,
+            bodyType: typeof req.body,
+            hashesParsed: hashes,
+            requestContentType: req.headers['content-type']
+        });
+
+        if (!cookie) {
+            res.status(401).json({ error: 'Not authenticated with qBittorrent' });
+            return;
+        }
+
+        if (!hashes) {
+            res.status(400).json({ error: 'Hash parameter is required' });
+            return;
+        }
+
+        console.log('Sending start request to qBittorrent for hash:', hashes);
+
+        const requestBody = { hashes };
+        console.log('Formatted request body:', qs.stringify(requestBody));
+
+        const response = await axios.post(`${baseUrl}/torrents/start`,
+            qs.stringify(requestBody),
+            {
+                headers: {
+                    Cookie: cookie,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            }
+        );
+
+        console.log('qBittorrent start response:', response.status, response.data);
+        res.status(200).json({ success: true });
+    } catch (error: any) {
+        console.error('qBittorrent start error:', error.message);
+        if (error.response) {
+            console.error('Response details:', {
+                status: error.response.status,
+                data: error.response.data,
+                headers: error.response.headers
+            });
+        }
+        res.status(error.response?.status || 500).json({
+            error: error.response?.data || 'Failed to start torrent'
+        });
+    }
+});
+
+// stop torrent(s)
+qbittorrentRoute.post('/torrents/stop', authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const baseUrl = getBaseUrl(req);
+        const sessionId = req.user?.username || 'default';
+        const cookie = sessions[sessionId];
+
+        // Extract hashes from either JSON body or form-urlencoded body
+        const hashes = req.body.hashes;
+
+        console.log('qBittorrent stop request received:', {
+            body: req.body,
+            bodyType: typeof req.body,
+            hashesParsed: hashes,
+            requestContentType: req.headers['content-type']
+        });
+
+        if (!cookie) {
+            res.status(401).json({ error: 'Not authenticated with qBittorrent' });
+            return;
+        }
+
+        if (!hashes) {
+            res.status(400).json({ error: 'Hash parameter is required' });
+            return;
+        }
+
+        console.log('Sending stop request to qBittorrent for hash:', hashes);
+        console.log('Full qBittorrent API URL:', `${baseUrl}/torrents/stop`);
+
+        try {
+            // Using the correct format for qBittorrent API which expects URL-encoded form data
+            const requestBody = { hashes };
+
+            console.log('Formatted request body:', qs.stringify(requestBody));
+
+            const response = await axios.post(`${baseUrl}/torrents/stop`,
+                qs.stringify(requestBody),
+                {
+                    headers: {
+                        Cookie: cookie,
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }
+                }
+            );
+
+            console.log('qBittorrent stop response:', response.status, response.data);
+            res.status(200).json({ success: true });
+        } catch (innerError: any) {
+            console.error('qBittorrent stop request failed:', innerError.message);
+            console.error('Request URL:', `${baseUrl}/torrents/stop`);
+            console.error('Request data:', { hashes });
+
+            if (innerError.response) {
+                console.error('Response status:', innerError.response.status);
+                console.error('Response data:', innerError.response.data);
+            }
+
+            throw innerError; // Rethrow to be caught by the outer catch block
+        }
+    } catch (error: any) {
+        console.error('qBittorrent stop error:', error.message);
+        if (error.response) {
+            console.error('Response details:', {
+                status: error.response.status,
+                data: error.response.data,
+                headers: error.response.headers
+            });
+        }
+        res.status(error.response?.status || 500).json({
+            error: error.response?.data || 'Failed to stop torrent'
+        });
+    }
+});
+
+// Delete torrent(s)
+qbittorrentRoute.post('/torrents/delete', authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const baseUrl = getBaseUrl(req);
+        const sessionId = req.user?.username || 'default';
+        const cookie = sessions[sessionId];
+
+        // Extract parameters from either JSON body or form-urlencoded body
+        const hashes = req.body.hashes;
+        const deleteFiles = req.body.deleteFiles;
+
+        console.log('qBittorrent delete request received:', {
+            body: req.body,
+            bodyType: typeof req.body,
+            hashesParsed: hashes,
+            deleteFilesParsed: deleteFiles,
+            requestContentType: req.headers['content-type']
+        });
+
+        if (!cookie) {
+            res.status(401).json({ error: 'Not authenticated with qBittorrent' });
+            return;
+        }
+
+        if (!hashes) {
+            res.status(400).json({ error: 'Hash parameter is required' });
+            return;
+        }
+
+        console.log('Sending delete request to qBittorrent for hash:', hashes, 'deleteFiles:', deleteFiles);
+
+        const requestBody = {
+            hashes,
+            deleteFiles: deleteFiles === true
+        };
+        console.log('Formatted request body:', qs.stringify(requestBody));
+
+        const response = await axios.post(`${baseUrl}/torrents/delete`,
+            qs.stringify(requestBody),
+            {
+                headers: {
+                    Cookie: cookie,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            }
+        );
+
+        console.log('qBittorrent delete response:', response.status, response.data);
+        res.status(200).json({ success: true });
+    } catch (error: any) {
+        console.error('qBittorrent delete error:', error.message);
+        if (error.response) {
+            console.error('Response details:', {
+                status: error.response.status,
+                data: error.response.data,
+                headers: error.response.headers
+            });
+        }
+        res.status(error.response?.status || 500).json({
+            error: error.response?.data || 'Failed to delete torrent'
+        });
     }
 });

@@ -146,6 +146,70 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
         }
     }, [isAuthenticated, fetchStats, fetchTorrents]);
 
+    // Torrent actions
+    const handleResumeTorrent = useCallback(async (hash: string) => {
+        try {
+            const connectionInfo = {
+                host: loginCredentials.host,
+                port: loginCredentials.port,
+                ssl: loginCredentials.ssl
+            };
+            const success = await DashApi.delugeResumeTorrent(hash, connectionInfo);
+
+            // Refresh the torrents list after operation
+            if (success) {
+                await fetchTorrents();
+            }
+
+            return success;
+        } catch (error) {
+            console.error('Error resuming Deluge torrent:', error);
+            return false;
+        }
+    }, [loginCredentials, fetchTorrents]);
+
+    const handlePauseTorrent = useCallback(async (hash: string) => {
+        try {
+            const connectionInfo = {
+                host: loginCredentials.host,
+                port: loginCredentials.port,
+                ssl: loginCredentials.ssl
+            };
+            const success = await DashApi.delugePauseTorrent(hash, connectionInfo);
+
+            // Refresh the torrents list after operation
+            if (success) {
+                await fetchTorrents();
+            }
+
+            return success;
+        } catch (error) {
+            console.error('Error pausing Deluge torrent:', error);
+            return false;
+        }
+    }, [loginCredentials, fetchTorrents]);
+
+    const handleDeleteTorrent = useCallback(async (hash: string, deleteFiles: boolean) => {
+        try {
+            const connectionInfo = {
+                host: loginCredentials.host,
+                port: loginCredentials.port,
+                ssl: loginCredentials.ssl
+            };
+            const success = await DashApi.delugeDeleteTorrent(hash, deleteFiles, connectionInfo);
+
+            // Refresh the torrents list after operation
+            if (success) {
+                await fetchTorrents();
+            }
+
+            return success;
+        } catch (error) {
+            console.error('Error deleting Deluge torrent:', error);
+            return false;
+        }
+    }, [loginCredentials, fetchTorrents]);
+
     return (
         <TorrentClientWidget
             clientName='Deluge'
@@ -158,6 +222,9 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
             handleInputChange={handleInputChange}
             handleLogin={handleLogin}
             showLabel={config?.showLabel !== undefined ? config.showLabel : true}
+            onResumeTorrent={handleResumeTorrent}
+            onPauseTorrent={handlePauseTorrent}
+            onDeleteTorrent={handleDeleteTorrent}
         />
     );
 };
