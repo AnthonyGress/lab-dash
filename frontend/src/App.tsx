@@ -71,6 +71,10 @@ export const App = () => {
                     backgroundPosition: 'center',
                     // backgroundAttachment: 'scroll',
                     imageRendering: 'crispEdges',
+                    '&.MuiModal-open': {
+                        paddingRight: '0px !important',
+                        overflow: 'hidden'
+                    }
                 },
             }}
         />

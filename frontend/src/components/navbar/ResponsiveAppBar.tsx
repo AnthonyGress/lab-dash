@@ -141,7 +141,12 @@ export const ResponsiveAppBar = ({ children }: Props) => {
 
     return (
         <>
-            <AppBar position='fixed' sx={{ backgroundColor: COLORS.TRANSPARENT_GRAY, backdropFilter: 'blur(6px)',width: '100vw', maxWidth: '100%', overflowX: 'hidden'
+            <AppBar position='fixed' sx={{
+                backgroundColor: COLORS.TRANSPARENT_GRAY,
+                backdropFilter: 'blur(6px)',
+                width: '100%',
+                maxWidth: '100%',
+                overflowX: 'hidden'
             }}>
                 <Container sx={{ margin: 0, padding: 0, minWidth: '100%' }}>
                     <Toolbar disableGutters sx={{ justifyContent: 'space-between', width: '100%' }}>
@@ -231,7 +236,11 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                 </IconButton>
                             </Box>
 
-                            <Drawer open={openDrawer} onClose={handleCloseDrawer} anchor='right'>
+                            <Drawer
+                                open={openDrawer}
+                                onClose={handleCloseDrawer}
+                                anchor='right'
+                            >
                                 <Box
                                     sx={{
                                         width: 225,
