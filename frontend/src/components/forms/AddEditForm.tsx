@@ -88,7 +88,9 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
     const formContext = useForm<FormValues>({
         defaultValues: {
             shortcutName: existingItem?.label || '',
-            itemType: isWidgetType(existingItem?.type) ? 'widget' : existingItem?.type || '',
+            itemType: isWidgetType(existingItem?.type) ? 'widget' :
+                (existingItem?.type === ITEM_TYPE.BLANK_WIDGET ||
+                       existingItem?.type === ITEM_TYPE.BLANK_ROW) ? existingItem?.type : existingItem?.type || '',
             url: existingItem?.url || '',
             showLabel: existingItem?.showLabel,
             icon: existingItem?.icon
@@ -232,7 +234,9 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
         if (existingItem) {
             formContext.reset({
                 shortcutName: existingItem.label || '',
-                itemType: isWidgetType(existingItem.type) ? 'widget' : existingItem.type || '',
+                itemType: isWidgetType(existingItem.type) ? 'widget' :
+                    (existingItem.type === ITEM_TYPE.BLANK_WIDGET ||
+                           existingItem.type === ITEM_TYPE.BLANK_ROW) ? existingItem.type : existingItem.type || '',
                 url: existingItem.url || '',
                 showLabel: existingItem.showLabel,
                 icon: existingItem.icon
@@ -791,6 +795,47 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                 </Grid>
                             </>
                             }
+
+                            {(selectedItemType === ITEM_TYPE.BLANK_WIDGET || selectedItemType === ITEM_TYPE.BLANK_ROW) && (
+                                <Grid>
+                                    <TextFieldElement name='shortcutName' label='Widget Name (Optional)' variant='outlined' sx={{
+                                        width: '100%',
+                                        '& .MuiOutlinedInput-root': {
+                                            '& fieldset': {
+                                                borderColor: 'text.primary',
+                                            },
+                                            '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                            '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                        },
+                                    }}
+                                    autoComplete='off'
+                                    slotProps={{
+                                        inputLabel:
+                            { style: { color: theme.palette.text.primary } }
+                                    }}
+                                    />
+                                </Grid>
+                            )}
+
+                            {(selectedItemType === ITEM_TYPE.BLANK_WIDGET || selectedItemType === ITEM_TYPE.BLANK_ROW) && (
+                                <Grid>
+                                    <CheckboxElement
+                                        label='Admin Only'
+                                        name='adminOnly'
+                                        helperText='When checked, this item will only be visible to admin users'
+                                        sx={{
+                                            ml: 1,
+                                            color: 'white',
+                                            '& .MuiSvgIcon-root': { fontSize: 30 },
+                                            '& .MuiFormHelperText-root': {
+                                                marginLeft: 1,
+                                                fontSize: '0.75rem',
+                                                color: 'rgba(255, 255, 255, 0.7)'
+                                            }
+                                        }}
+                                    />
+                                </Grid>
+                            )}
 
                             <Grid sx={{ width: '100%', display: 'flex', justifyContent: 'center', mt: 2 }}>
                                 <Button variant='contained' type='submit' sx={{ minHeight: '3rem' }} fullWidth>
