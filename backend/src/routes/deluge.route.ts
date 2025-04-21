@@ -139,7 +139,7 @@ delugeRoute.get('/stats', async (req: Request, res: Response) => {
             {
                 method: 'web.update_ui',
                 params: [
-                    ['download_rate', 'upload_rate', 'total_download', 'total_upload'],
+                    ['download_rate', 'upload_rate'],
                     {}
                 ],
                 id: 2
@@ -148,12 +148,36 @@ delugeRoute.get('/stats', async (req: Request, res: Response) => {
                 headers: { Cookie: cookie }
             });
 
+        // Get session totals data (total upload/download)
+        let totalDownload = 0;
+        let totalUpload = 0;
+        try {
+            const sessionStatus = await axios.post(`${baseUrl}`,
+                {
+                    method: 'core.get_session_status',
+                    params: [
+                        ['total_upload', 'total_download', 'total_payload_upload', 'total_payload_download']
+                    ],
+                    id: 4
+                },
+                {
+                    headers: { Cookie: cookie }
+                });
+
+            // Extract values with fallbacks to 0
+            totalDownload = sessionStatus.data.result?.total_download || 0;
+            totalUpload = sessionStatus.data.result?.total_upload || 0;
+        } catch (error: any) {
+            console.error('Failed to get Deluge session totals:', error.message);
+            // Continue with zero values if this fails
+        }
+
         // Format response to match qBittorrent structure
         const stats = {
             dl_info_speed: sessionResponse.data.result.stats.download_rate || 0,
             up_info_speed: sessionResponse.data.result.stats.upload_rate || 0,
-            dl_info_data: sessionResponse.data.result.stats.total_download || 0,
-            up_info_data: sessionResponse.data.result.stats.total_upload || 0,
+            dl_info_data: totalDownload,
+            up_info_data: totalUpload,
             torrents: {
                 total: 0,
                 downloading: 0,

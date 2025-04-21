@@ -2,6 +2,7 @@ import { ArrowDownward, ArrowUpward, CheckCircle, Delete, Download, MoreVert, Pa
 import { Box, CardContent, CircularProgress, Grid, IconButton, LinearProgress, Menu, MenuItem, TextField, Typography, useMediaQuery } from '@mui/material';
 import React, { useState } from 'react';
 
+import { PopupManager } from '../../../../components/modals/PopupManager';
 import { useAppContext } from '../../../../context/useAppContext';
 import { theme } from '../../../../theme/theme';
 
@@ -159,18 +160,49 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin,
     };
 
     const handleDelete = async () => {
-        if (onDelete && window.confirm(`Are you sure you want to remove "${torrent.name}"?`)) {
-            setIsActionLoading(true);
-            try {
-                const deleteFiles = window.confirm('Do you also want to delete the downloaded files?');
-                await onDelete(torrent.hash, deleteFiles);
-            } catch (error) {
-                console.error('Failed to delete torrent:', error);
-            } finally {
-                setIsActionLoading(false);
-            }
+        if (onDelete) {
+            handleMenuClose();
+
+            // Import Swal directly for this custom case
+            const Swal = (await import('sweetalert2')).default;
+
+            Swal.fire({
+                title: `Remove "${torrent.name}"?`,
+                icon: 'error',
+                showDenyButton: true,
+                showCancelButton: true,
+                confirmButtonText: 'Delete Files',
+                confirmButtonColor: theme.palette.error.main,
+                denyButtonText: 'Keep Files',
+                denyButtonColor: theme.palette.info.main,
+                cancelButtonText: 'Cancel',
+                reverseButtons: true,
+                focusDeny: true
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    // Delete torrent and files
+                    setIsActionLoading(true);
+                    try {
+                        await onDelete(torrent.hash, true);
+                    } catch (error) {
+                        console.error('Failed to delete torrent with files:', error);
+                    } finally {
+                        setIsActionLoading(false);
+                    }
+                } else if (result.isDenied) {
+                    // Delete torrent only, keep files
+                    setIsActionLoading(true);
+                    try {
+                        await onDelete(torrent.hash, false);
+                    } catch (error) {
+                        console.error('Failed to delete torrent (keeping files):', error);
+                    } finally {
+                        setIsActionLoading(false);
+                    }
+                }
+                // If result.dismiss, do nothing (cancel)
+            });
         }
-        handleMenuClose();
     };
 
     // Check if the torrent is paused or stopped
@@ -197,8 +229,18 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin,
                 >
                     {torrent.name}
                 </Typography>
-                <Typography variant='caption' sx={{ fontSize: '0.7rem', ml: 'auto', color: 'white' }}>
-                    {(torrent.state === 'downloading' && torrent.eta !== undefined) && `ETA: ${formatEta(torrent.eta)}`}
+                <Typography
+                    variant='caption'
+                    sx={{
+                        fontSize: isMobile ? '0.7rem' : '0.75rem',
+                        ml: 'auto',
+                        color: 'white',
+                        minWidth: '80px',
+                        textAlign: 'right',
+                        mr: 0.5
+                    }}
+                >
+                    {(torrent.state === 'downloading' && torrent.eta !== undefined) ? `ETA: ${formatEta(torrent.eta)}` : ''}
                 </Typography>
                 { (
                     <IconButton
@@ -207,7 +249,6 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin,
                         disabled={isActionLoading}
                         sx={{
                             p: 0.5,
-                            ml: 0.5,
                             color: 'white',
                             opacity: 0.7,
                             '&:hover': { opacity: 1 },
@@ -226,19 +267,10 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin,
                         horizontal: 'right',
                     }}
                     transformOrigin={{
-                        vertical: 'top',
-                        horizontal: 'right',
+                        vertical: 'center',
+                        horizontal: 'left',
                     }}
-                    slotProps={{
-                        paper: {
-                            sx: {
-                                bgcolor: '#2a2a2a',
-                                color: 'white',
-                                border: '1px solid #444',
-                                minWidth: '120px'
-                            }
-                        }
-                    }}
+
                 >
                     {clientName === 'qBittorrent' ? (
                         // For qBittorrent: Use Start/Stop terminology
@@ -252,6 +284,7 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin,
                                 <MenuItem
                                     onClick={handleResume}
                                     disabled={!onResume}
+                                    sx={{ fontSize: '0.9rem', py: 1 }}
                                 >
                                     <PlayArrow fontSize='small' sx={{ mr: 1 }} />
                                     Start
@@ -266,6 +299,7 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin,
                                 <MenuItem
                                     onClick={handlePause}
                                     disabled={!onPause}
+                                    sx={{ fontSize: '0.9rem', py: 1 }}
                                 >
                                     <Stop fontSize='small' sx={{ mr: 1 }} />
                                     Stop
@@ -280,6 +314,7 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin,
                                 <MenuItem
                                     onClick={handleResume}
                                     disabled={!onResume}
+                                    sx={{ fontSize: '0.9rem', py: 1 }}
                                 >
                                     <PlayArrow fontSize='small' sx={{ mr: 1 }} />
                                     Start
@@ -291,6 +326,7 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin,
                                 <MenuItem
                                     onClick={handleResume}
                                     disabled={!onResume}
+                                    sx={{ fontSize: '0.9rem', py: 1 }}
                                 >
                                     <PlayArrow fontSize='small' sx={{ mr: 1 }} />
                                     Resume
@@ -301,6 +337,7 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin,
                             <MenuItem
                                 onClick={handlePause}
                                 disabled={!onPause || isPausedOrStopped}
+                                sx={{ fontSize: '0.9rem', py: 1 }}
                             >
                                 <Pause fontSize='small' sx={{ mr: 1 }} />
                                 Pause
@@ -308,7 +345,7 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin,
                         </>
                     )}
 
-                    <MenuItem onClick={handleDelete} disabled={!onDelete}>
+                    <MenuItem onClick={handleDelete} disabled={!onDelete} sx={{ fontSize: '0.9rem', py: 1 }}>
                         <Delete fontSize='small' sx={{ mr: 1 }} />
                         Remove
                     </MenuItem>
@@ -330,7 +367,7 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin,
                 }}
             />
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.2 }}>
-                <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white' }}>
+                <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white', minWidth: '100px' }}>
                     {torrent.state === 'downloading' && (
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                             <ArrowDownward sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
@@ -349,7 +386,7 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin,
                 </Typography>
                 <Typography
                     variant='caption'
-                    sx={{ ml: 'auto', color: 'white', fontSize: isMobile ? '0.65rem' : '.75rem' }}
+                    sx={{ ml: 'auto', color: 'white', fontSize: '.75rem', minWidth: '100px', textAlign: 'right' }}
                 >
                     {formatProgress(torrent.progress)} / {formatBytes(torrent.size)}
                 </Typography>
@@ -475,13 +512,13 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
                                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                                         <ArrowDownward sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
-                                        <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white' }}>
+                                        <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white', minWidth: '65px', textAlign: 'right' }}>
                                             {formatBytes(stats.dl_info_speed)}/s
                                         </Typography>
                                     </Box>
                                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                         <ArrowDownward sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
-                                        <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white' }}>
+                                        <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white', minWidth: '65px', textAlign: 'right' }}>
                                             {formatBytes(stats.dl_info_data || 0)}
                                         </Typography>
                                     </Box>
@@ -490,13 +527,13 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
                                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                                         <ArrowUpward sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
-                                        <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white' }}>
+                                        <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white', minWidth: '65px', textAlign: 'right' }}>
                                             {formatBytes(stats.up_info_speed)}/s
                                         </Typography>
                                     </Box>
                                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                         <ArrowUpward sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
-                                        <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white' }}>
+                                        <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white', minWidth: '65px', textAlign: 'right' }}>
                                             {formatBytes(stats.up_info_data || 0)}
                                         </Typography>
                                     </Box>
