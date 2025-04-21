@@ -18,8 +18,8 @@ type Props = {
 }
 
 const ITEM_TYPE_OPTIONS = [
+    { id: ITEM_TYPE.APP_SHORTCUT, label: 'Shortcut' },
     { id: 'widget', label: 'Widget' },
-    { id: ITEM_TYPE.APP_SHORTCUT, label: 'App' },
     { id: ITEM_TYPE.BLANK_APP, label: 'Blank App' },
     { id: ITEM_TYPE.BLANK_WIDGET, label: 'Blank Widget' },
     { id: ITEM_TYPE.BLANK_ROW, label: 'Blank Row' },
