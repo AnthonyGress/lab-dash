@@ -445,7 +445,7 @@ export class DashApi {
                 { username, password },
                 {
                     params: { host, port, ssl },
-                    withCredentials: true
+                    withCredentials: false
                 }
             );
             return response.data.success;
@@ -481,11 +481,13 @@ export class DashApi {
         host?: string;
         port?: string;
         ssl?: boolean;
+        username?: string;
+        password?: string;
     }): Promise<any> {
         try {
             const res = await axios.get(`${BACKEND_URL}/api/qbittorrent/stats`, {
                 params: connectionInfo,
-                withCredentials: true
+                withCredentials: false
             });
             return res.data;
         } catch (error) {
@@ -498,11 +500,13 @@ export class DashApi {
         host?: string;
         port?: string;
         ssl?: boolean;
+        username?: string;
+        password?: string;
     }): Promise<any[]> {
         try {
             const res = await axios.get(`${BACKEND_URL}/api/qbittorrent/torrents`, {
                 params: connectionInfo,
-                withCredentials: true
+                withCredentials: false
             });
             return res.data;
         } catch (error) {
@@ -646,7 +650,7 @@ export class DashApi {
                 { username, password },
                 {
                     params: { host, port, ssl },
-                    withCredentials: true
+                    withCredentials: false
                 }
             );
             return response.data.success;
@@ -664,7 +668,7 @@ export class DashApi {
         try {
             const res = await axios.get(`${BACKEND_URL}/api/deluge/stats`, {
                 params: connectionInfo,
-                withCredentials: true
+                withCredentials: false
             });
             return res.data;
         } catch (error) {
@@ -681,7 +685,7 @@ export class DashApi {
         try {
             const res = await axios.get(`${BACKEND_URL}/api/deluge/torrents`, {
                 params: connectionInfo,
-                withCredentials: true
+                withCredentials: false
             });
             return res.data;
         } catch (error) {

@@ -2,6 +2,7 @@ import { ArrowDownward, ArrowUpward, CheckCircle, Delete, Download, MoreVert, Pa
 import { Box, CardContent, CircularProgress, Grid, IconButton, LinearProgress, Menu, MenuItem, TextField, Typography, useMediaQuery } from '@mui/material';
 import React, { useState } from 'react';
 
+import { useAppContext } from '../../../../context/useAppContext';
 import { theme } from '../../../../theme/theme';
 
 export type TorrentClientStats = {
@@ -109,12 +110,13 @@ const getStatusIcon = (state: string) => {
 interface TorrentItemProps {
     torrent: TorrentInfo;
     clientName: string;
+    isAdmin: boolean;
     onResume?: (hash: string) => Promise<boolean>;
     onPause?: (hash: string) => Promise<boolean>;
     onDelete?: (hash: string, deleteFiles: boolean) => Promise<boolean>;
 }
 
-const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, onResume, onPause, onDelete }) => {
+const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin, onResume, onPause, onDelete }) => {
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
     const [isActionLoading, setIsActionLoading] = useState(false);
@@ -173,6 +175,9 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, onResume
     // Check if the torrent is paused or stopped
     const isPausedOrStopped = torrent.state.includes('paused') || torrent.state === 'stopped' || torrent.state === 'error';
 
+    // Show menu button only if admin and actions are available
+    const showMenuButton = isAdmin && (onResume || onPause || onDelete);
+
     return (
         <Box sx={{ mb: 1, '&:last-child': { mb: 0 } }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -197,7 +202,7 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, onResume
                 >
                     {formatProgress(torrent.progress)} / {formatBytes(torrent.size)}
                 </Typography>
-                {(onResume || onPause || onDelete) && (
+                {showMenuButton && (
                     <IconButton
                         size='small'
                         onClick={handleMenuOpen}
@@ -366,6 +371,7 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
     onDeleteTorrent
 }) => {
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const { isAdmin } = useAppContext();
 
     // Just show error message if authentication failed
     if (!isAuthenticated) {
@@ -443,6 +449,7 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
                                         key={torrent.hash}
                                         torrent={torrent}
                                         clientName={clientName}
+                                        isAdmin={isAdmin}
                                         onResume={onResumeTorrent}
                                         onPause={onPauseTorrent}
                                         onDelete={onDeleteTorrent}

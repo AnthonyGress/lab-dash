@@ -60,13 +60,13 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
     }, [loginCredentials]);
 
     const fetchStats = useCallback(async () => {
-        if (!isAuthenticated) return;
-
         try {
             const connectionInfo = {
                 host: loginCredentials.host,
                 port: loginCredentials.port,
-                ssl: loginCredentials.ssl
+                ssl: loginCredentials.ssl,
+                username: loginCredentials.username,
+                password: loginCredentials.password
             };
             const statsData = await DashApi.delugeGetStats(connectionInfo);
             setStats(statsData);
@@ -78,16 +78,16 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
                 setAuthError('Session expired. Please login again.');
             }
         }
-    }, [isAuthenticated, loginCredentials]);
+    }, [loginCredentials]);
 
     const fetchTorrents = useCallback(async () => {
-        if (!isAuthenticated) return;
-
         try {
             const connectionInfo = {
                 host: loginCredentials.host,
                 port: loginCredentials.port,
-                ssl: loginCredentials.ssl
+                ssl: loginCredentials.ssl,
+                username: loginCredentials.username,
+                password: loginCredentials.password
             };
             const torrentsData = await DashApi.delugeGetTorrents(connectionInfo);
             // Sort by progress (downloading first) then by name
@@ -113,7 +113,7 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
                 setAuthError('Session expired. Please login again.');
             }
         }
-    }, [isAuthenticated, loginCredentials, config?.maxDisplayedTorrents]);
+    }, [loginCredentials, config?.maxDisplayedTorrents]);
 
     // Handle input changes
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -133,18 +133,18 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
 
     // Refresh stats and torrents periodically
     useEffect(() => {
-        if (isAuthenticated) {
+        // Refresh both stats and torrents when the component mounts
+        fetchStats();
+        fetchTorrents();
+
+        // Set up periodic refresh
+        const interval = setInterval(() => {
             fetchStats();
             fetchTorrents();
+        }, 5000); // Fixed interval of 5000ms as specified
 
-            const interval = setInterval(() => {
-                fetchStats();
-                fetchTorrents();
-            }, 5000); // Fixed interval of 5000ms as specified
-
-            return () => clearInterval(interval);
-        }
-    }, [isAuthenticated, fetchStats, fetchTorrents]);
+        return () => clearInterval(interval);
+    }, [fetchStats, fetchTorrents]);
 
     // Torrent actions
     const handleResumeTorrent = useCallback(async (hash: string) => {

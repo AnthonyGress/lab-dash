@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Request, Response, Router } from 'express';
+import { NextFunction, Request, Response, Router } from 'express';
 import qs from 'querystring';
 
 import { authenticateToken } from '../middleware/auth.middleware';
@@ -19,8 +19,22 @@ const getBaseUrl = (req: Request): string => {
     return `${protocol}://${host}:${port}/api/v2`;
 };
 
+// Middleware to allow direct access with credentials in query params
+const optionalAuth = (req: Request, res: Response, next: NextFunction): void => {
+    // If username and password are provided in query params, bypass auth
+    const { username, password } = req.query;
+
+    if (username && password) {
+        console.log('Using direct credentials from query params for qBittorrent API access');
+        next();
+    } else {
+        // Otherwise, use the standard auth middleware
+        authenticateToken(req, res, next);
+    }
+};
+
 // Login to qBittorrent and store auth cookie
-qbittorrentRoute.post('/login', authenticateToken, async (req: Request, res: Response) => {
+qbittorrentRoute.post('/login', async (req: Request, res: Response) => {
     try {
         const { username } = req.body;
         let { password } = req.body;
@@ -45,7 +59,8 @@ qbittorrentRoute.post('/login', authenticateToken, async (req: Request, res: Res
             });
 
         // Store cookie for future requests
-        const sessionId = req.user?.username || 'default';
+        // Use a unique identifier or default to IP address if no user
+        const sessionId = req.ip || 'default';
         if (response.headers['set-cookie']) {
             sessions[sessionId] = response.headers['set-cookie'][0];
         }
@@ -84,37 +99,87 @@ qbittorrentRoute.post('/encrypt-password', authenticateToken, async (req: Reques
 });
 
 // Get current download stats
-qbittorrentRoute.get('/stats', authenticateToken, async (req: Request, res: Response) => {
+qbittorrentRoute.get('/stats', async (req: Request, res: Response) => {
     try {
         const baseUrl = getBaseUrl(req);
-        const sessionId = req.user?.username || 'default';
-        const cookie = sessions[sessionId];
+        // Use IP address as identifier for non-authenticated users
+        const sessionId = req.user?.username || req.ip || 'default';
+        let cookie = sessions[sessionId];
+
+        // If no cookie exists, try to use credentials from config if available
+        if (!cookie && req.query.username && req.query.password) {
+            try {
+                let password = req.query.password as string;
+                const username = req.query.username as string;
+
+                // Handle encrypted password
+                if (isEncrypted(password)) {
+                    password = decrypt(password);
+                }
+
+                // Attempt to login with provided credentials
+                const loginResponse = await axios.post(
+                    `${baseUrl}/auth/login`,
+                    qs.stringify({ username, password }),
+                    {
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        }
+                    }
+                );
+
+                // Store the cookie for future requests
+                if (loginResponse.headers['set-cookie']) {
+                    cookie = loginResponse.headers['set-cookie'][0];
+                    sessions[sessionId] = cookie;
+                    console.log('Created temporary qBittorrent session for stats request');
+                }
+            } catch (loginError) {
+                console.error('qBittorrent login attempt failed:', loginError);
+                // Continue without cookie - will return default stats
+            }
+        }
 
         if (!cookie) {
-            res.status(401).json({ error: 'Not authenticated with qBittorrent' });
+            // If not authenticated and couldn't auto-login, provide basic response with empty/zero values
+            const stats = {
+                dl_info_speed: 0,
+                up_info_speed: 0,
+                dl_info_data: 0,
+                up_info_data: 0,
+                torrents: {
+                    total: 0,
+                    downloading: 0,
+                    seeding: 0,
+                    completed: 0,
+                    paused: 0
+                }
+            };
+            res.status(200).json(stats);
             return;
         }
 
-        // Get transfer information (download/upload speeds, etc.)
-        const transferResponse = await axios.get(`${baseUrl}/transfer/info`, {
+        const transferInfo = await axios.get(`${baseUrl}/transfer/info`, {
             headers: { Cookie: cookie }
         });
 
-        // Get torrent list (to count active, completed, etc.)
-        const torrentsResponse = await axios.get(`${baseUrl}/torrents/info`, {
+        const torrentsMaindata = await axios.get(`${baseUrl}/torrents/info`, {
             headers: { Cookie: cookie }
         });
 
-        // Create a simplified stats object
-        const torrents = torrentsResponse.data || [];
+        // Count torrents by state
+        const torrents = torrentsMaindata.data || [];
         const stats = {
-            ...transferResponse.data,
+            dl_info_speed: transferInfo.data.dl_info_speed || 0,
+            up_info_speed: transferInfo.data.up_info_speed || 0,
+            dl_info_data: transferInfo.data.dl_info_data || 0,
+            up_info_data: transferInfo.data.up_info_data || 0,
             torrents: {
                 total: torrents.length,
                 downloading: torrents.filter((t: any) => t.state === 'downloading').length,
                 seeding: torrents.filter((t: any) => t.state === 'seeding' || t.state === 'uploading').length,
                 completed: torrents.filter((t: any) => t.progress === 1).length,
-                stopd: torrents.filter((t: any) => t.state === 'stopdDL' || t.state === 'stopdUP').length
+                paused: torrents.filter((t: any) => t.state === 'pausedDL' || t.state === 'pausedUP').length
             }
         };
 
@@ -128,14 +193,50 @@ qbittorrentRoute.get('/stats', authenticateToken, async (req: Request, res: Resp
 });
 
 // Get list of all torrents
-qbittorrentRoute.get('/torrents', authenticateToken, async (req: Request, res: Response) => {
+qbittorrentRoute.get('/torrents', async (req: Request, res: Response) => {
     try {
         const baseUrl = getBaseUrl(req);
-        const sessionId = req.user?.username || 'default';
-        const cookie = sessions[sessionId];
+        // Use IP address as identifier for non-authenticated users
+        const sessionId = req.user?.username || req.ip || 'default';
+        let cookie = sessions[sessionId];
+
+        // If no cookie exists, try to use credentials from config if available
+        if (!cookie && req.query.username && req.query.password) {
+            try {
+                let password = req.query.password as string;
+                const username = req.query.username as string;
+
+                // Handle encrypted password
+                if (isEncrypted(password)) {
+                    password = decrypt(password);
+                }
+
+                // Attempt to login with provided credentials
+                const loginResponse = await axios.post(
+                    `${baseUrl}/auth/login`,
+                    qs.stringify({ username, password }),
+                    {
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        }
+                    }
+                );
+
+                // Store the cookie for future requests
+                if (loginResponse.headers['set-cookie']) {
+                    cookie = loginResponse.headers['set-cookie'][0];
+                    sessions[sessionId] = cookie;
+                    console.log('Created temporary qBittorrent session for torrents request');
+                }
+            } catch (loginError) {
+                console.error('qBittorrent login attempt failed:', loginError);
+                // Continue without cookie - will return empty array
+            }
+        }
 
         if (!cookie) {
-            res.status(401).json({ error: 'Not authenticated with qBittorrent' });
+            // If not authenticated and couldn't auto-login, return empty array
+            res.status(200).json([]);
             return;
         }
 

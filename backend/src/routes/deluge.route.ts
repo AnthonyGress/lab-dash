@@ -20,7 +20,7 @@ const getBaseUrl = (req: Request): string => {
 };
 
 // Login to Deluge and store auth cookie
-delugeRoute.post('/login', authenticateToken, async (req: Request, res: Response) => {
+delugeRoute.post('/login', async (req: Request, res: Response) => {
     try {
         const { username } = req.body;
         let { password } = req.body;
@@ -58,7 +58,8 @@ delugeRoute.post('/login', authenticateToken, async (req: Request, res: Response
         }
 
         // Store cookie for future requests
-        const sessionId = req.user?.username || 'default';
+        // Use a unique identifier or default to IP address if no user
+        const sessionId = req.ip || 'default';
         if (response.headers['set-cookie']) {
             sessions[sessionId] = response.headers['set-cookie'][0];
         }
@@ -73,14 +74,64 @@ delugeRoute.post('/login', authenticateToken, async (req: Request, res: Response
 });
 
 // Get current download stats
-delugeRoute.get('/stats', authenticateToken, async (req: Request, res: Response) => {
+delugeRoute.get('/stats', async (req: Request, res: Response) => {
     try {
         const baseUrl = getBaseUrl(req);
-        const sessionId = req.user?.username || 'default';
-        const cookie = sessions[sessionId];
+        // Use IP address as identifier for non-authenticated users
+        const sessionId = req.user?.username || req.ip || 'default';
+        let cookie = sessions[sessionId];
+
+        // If no cookie exists, try to use credentials from query params
+        if (!cookie && req.query.password) {
+            try {
+                let password = req.query.password as string;
+
+                // Handle encrypted password
+                if (isEncrypted(password)) {
+                    password = decrypt(password);
+                }
+
+                // Attempt to login with provided credentials
+                const loginResponse = await axios.post(`${baseUrl}`,
+                    {
+                        method: 'auth.login',
+                        params: [password],
+                        id: 1
+                    },
+                    {
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                // Store the cookie for future requests
+                if (loginResponse.data.result === true && loginResponse.headers['set-cookie']) {
+                    cookie = loginResponse.headers['set-cookie'][0];
+                    sessions[sessionId] = cookie;
+                    console.log('Created temporary Deluge session for stats request');
+                }
+            } catch (loginError) {
+                console.error('Deluge login attempt failed:', loginError);
+                // Continue without cookie - will return default stats
+            }
+        }
 
         if (!cookie) {
-            res.status(401).json({ error: 'Not authenticated with Deluge' });
+            // If not authenticated and couldn't auto-login, provide basic response with empty/zero values
+            const stats = {
+                dl_info_speed: 0,
+                up_info_speed: 0,
+                dl_info_data: 0,
+                up_info_data: 0,
+                torrents: {
+                    total: 0,
+                    downloading: 0,
+                    seeding: 0,
+                    completed: 0,
+                    paused: 0
+                }
+            };
+            res.status(200).json(stats);
             return;
         }
 
@@ -156,14 +207,51 @@ delugeRoute.get('/stats', authenticateToken, async (req: Request, res: Response)
 });
 
 // Get list of all torrents
-delugeRoute.get('/torrents', authenticateToken, async (req: Request, res: Response) => {
+delugeRoute.get('/torrents', async (req: Request, res: Response) => {
     try {
         const baseUrl = getBaseUrl(req);
-        const sessionId = req.user?.username || 'default';
-        const cookie = sessions[sessionId];
+        // Use IP address as identifier for non-authenticated users
+        const sessionId = req.user?.username || req.ip || 'default';
+        let cookie = sessions[sessionId];
+
+        // If no cookie exists, try to use credentials from query params
+        if (!cookie && req.query.password) {
+            try {
+                let password = req.query.password as string;
+
+                // Handle encrypted password
+                if (isEncrypted(password)) {
+                    password = decrypt(password);
+                }
+
+                // Attempt to login with provided credentials
+                const loginResponse = await axios.post(`${baseUrl}`,
+                    {
+                        method: 'auth.login',
+                        params: [password],
+                        id: 1
+                    },
+                    {
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                // Store the cookie for future requests
+                if (loginResponse.data.result === true && loginResponse.headers['set-cookie']) {
+                    cookie = loginResponse.headers['set-cookie'][0];
+                    sessions[sessionId] = cookie;
+                    console.log('Created temporary Deluge session for torrents request');
+                }
+            } catch (loginError) {
+                console.error('Deluge login attempt failed:', loginError);
+                // Continue without cookie - will return empty array
+            }
+        }
 
         if (!cookie) {
-            res.status(401).json({ error: 'Not authenticated with Deluge' });
+            // If not authenticated and couldn't auto-login, return empty array
+            res.status(200).json([]);
             return;
         }
 
