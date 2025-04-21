@@ -227,7 +227,7 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
             loginCredentials={loginCredentials}
             handleInputChange={handleInputChange}
             handleLogin={handleLogin}
-            showLabel={config?.showLabel !== undefined ? config.showLabel : true}
+            showLabel={config?.showLabel || false}
             onResumeTorrent={handleResumeTorrent}
             onPauseTorrent={handlePauseTorrent}
             onDeleteTorrent={handleDeleteTorrent}

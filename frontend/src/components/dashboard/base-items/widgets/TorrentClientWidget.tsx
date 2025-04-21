@@ -120,6 +120,7 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin,
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
     const [isActionLoading, setIsActionLoading] = useState(false);
+    const { editMode } = useAppContext();
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
         setMenuAnchorEl(event.currentTarget);
@@ -175,8 +176,8 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin,
     // Check if the torrent is paused or stopped
     const isPausedOrStopped = torrent.state.includes('paused') || torrent.state === 'stopped' || torrent.state === 'error';
 
-    // Show menu button only if admin and actions are available
-    const showMenuButton = isAdmin && (onResume || onPause || onDelete);
+    // Show menu button only if admin and actions are available and not in edit mode
+    const showMenuButton = isAdmin && !editMode && (onResume || onPause || onDelete);
 
     return (
         <Box sx={{ mb: 1, '&:last-child': { mb: 0 } }}>
@@ -196,13 +197,10 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin,
                 >
                     {torrent.name}
                 </Typography>
-                <Typography
-                    variant='caption'
-                    sx={{ ml: 'auto', color: 'white', fontSize: isMobile ? '0.65rem' : '.75rem' }}
-                >
-                    {formatProgress(torrent.progress)} / {formatBytes(torrent.size)}
+                <Typography variant='caption' sx={{ fontSize: '0.7rem', ml: 'auto', color: 'white' }}>
+                    {(torrent.state === 'downloading' && torrent.eta !== undefined) && `ETA: ${formatEta(torrent.eta)}`}
                 </Typography>
-                {showMenuButton && (
+                { (
                     <IconButton
                         size='small'
                         onClick={handleMenuOpen}
@@ -212,7 +210,8 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin,
                             ml: 0.5,
                             color: 'white',
                             opacity: 0.7,
-                            '&:hover': { opacity: 1 }
+                            '&:hover': { opacity: 1 },
+                            visibility: showMenuButton ? 'visible' : 'hidden'
                         }}
                     >
                         {isActionLoading ? <CircularProgress size={16} /> : <MoreVert fontSize='small' />}
@@ -344,11 +343,15 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin,
                             <span>{formatBytes(torrent.upspeed)}/s</span>
                         </Box>
                     )}
+
                     {(torrent.state === 'stopped' || torrent.state === 'error' || torrent.state.includes('paused')) &&
                     `${clientName === 'qBittorrent' ? 'Stopped' : 'Paused'}`}
                 </Typography>
-                <Typography variant='caption' sx={{ fontSize: '0.7rem', ml: 'auto', color: 'white' }}>
-                    {(torrent.state === 'downloading' && torrent.eta !== undefined) && `ETA: ${formatEta(torrent.eta)}`}
+                <Typography
+                    variant='caption'
+                    sx={{ ml: 'auto', color: 'white', fontSize: isMobile ? '0.65rem' : '.75rem' }}
+                >
+                    {formatProgress(torrent.progress)} / {formatBytes(torrent.size)}
                 </Typography>
             </Box>
         </Box>
@@ -440,7 +443,7 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
                     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                         <Box sx={{ flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', mb: 1 }}>
                             <Typography variant='caption' sx={{ px: 1, mb: 0.5, color: 'white' }}>
-                                Active Torrents ({stats.torrents?.downloading || 0})
+                                Active ({stats.torrents?.downloading || 0})
                             </Typography>
 
                             <Box sx={{ px: 1, overflowY: 'auto', flex: 1, mb: 1 }}>
@@ -457,11 +460,7 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
                                 ))}
                             </Box>
 
-                            <Typography variant='caption' sx={{ px: 1, mb: 0.5, color: 'white' }}>
-                                Seeding Torrents ({stats.torrents?.seeding || 0})
-                            </Typography>
                         </Box>
-
                         <Box sx={{ mt: 'auto', pt: 1, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                 <Box sx={{ display: 'flex', flexDirection: 'column' }}>

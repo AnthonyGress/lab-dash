@@ -231,7 +231,7 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
             loginCredentials={loginCredentials}
             handleInputChange={handleInputChange}
             handleLogin={handleLogin}
-            showLabel={config?.showLabel !== undefined ? config.showLabel : true}
+            showLabel={config?.showLabel || false}
             onResumeTorrent={handleStartTorrent}
             onPauseTorrent={handleStopTorrent}
             onDeleteTorrent={handleDeleteTorrent}
