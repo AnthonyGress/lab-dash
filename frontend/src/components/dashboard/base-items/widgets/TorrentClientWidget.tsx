@@ -91,18 +91,18 @@ const formatEta = (seconds?: number): string => {
 // Get status icon based on torrent state
 const getStatusIcon = (state: string) => {
     switch (state) {
-    case 'downloading': return <Download color='primary' fontSize='small' />;
+    case 'downloading': return <Download sx={{ color: 'white' }} fontSize='small' />;
     case 'uploading':
-    case 'seeding': return <ArrowUpward sx={{ color: theme.palette.primary.main }} fontSize='small' />;
+    case 'seeding': return <ArrowUpward sx={{ color: 'white' }} fontSize='small' />;
     case 'pausedDL':
-    case 'pausedUP': return <Pause color='warning' fontSize='small' />;
+    case 'pausedUP': return <Pause sx={{ color: 'white' }} fontSize='small' />;
     case 'stalledDL':
-    case 'stalledUP': return <Warning color='warning' fontSize='small' />;
+    case 'stalledUP': return <Warning sx={{ color: 'white' }} fontSize='small' />;
     case 'completed':
-    case 'checkingUP': return <CheckCircle color='success' fontSize='small' />;
+    case 'checkingUP': return <CheckCircle sx={{ color: 'white' }} fontSize='small' />;
     case 'stopped':
-    case 'error': return <Stop sx={{ color: 'red' }} fontSize='small' />;
-    default: return <Stop sx={{ color: 'gray' }} fontSize='small' />;
+    case 'error': return <Stop sx={{ color: 'white' }} fontSize='small' />;
+    default: return <Stop sx={{ color: 'white' }} fontSize='small' />;
     }
 };
 
@@ -115,6 +115,7 @@ interface TorrentItemProps {
 }
 
 const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, onResume, onPause, onDelete }) => {
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
     const [isActionLoading, setIsActionLoading] = useState(false);
 
@@ -181,17 +182,18 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, onResume
                     noWrap
                     sx={{
                         ml: 0.5,
-                        maxWidth: '60%',
+                        maxWidth: '50%',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
-                        color: 'white'
+                        color: 'white',
+                        fontSize: isMobile ? '0.7rem' : '.8rem'
                     }}
                 >
                     {torrent.name}
                 </Typography>
                 <Typography
                     variant='caption'
-                    sx={{ ml: 'auto', color: 'white' }}
+                    sx={{ ml: 'auto', color: 'white', fontSize: isMobile ? '0.65rem' : '.75rem' }}
                 >
                     {formatProgress(torrent.progress)} / {formatBytes(torrent.size)}
                 </Typography>
@@ -324,14 +326,23 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, onResume
                 }}
             />
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.2 }}>
-                <Typography variant='caption' sx={{ fontSize: '0.6rem', color: 'white' }}>
-                    {torrent.state === 'downloading' && `↓ ${formatBytes(torrent.dlspeed)}/s`}
-                    {(torrent.state === 'uploading' || torrent.state === 'seeding') &&
-                    `↑ ${formatBytes(torrent.upspeed)}/s`}
+                <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white' }}>
+                    {torrent.state === 'downloading' && (
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <ArrowDownward sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
+                            <span>{formatBytes(torrent.dlspeed)}/s</span>
+                        </Box>
+                    )}
+                    {(torrent.state === 'uploading' || torrent.state === 'seeding') && (
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <ArrowUpward sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
+                            <span>{formatBytes(torrent.upspeed)}/s</span>
+                        </Box>
+                    )}
                     {(torrent.state === 'stopped' || torrent.state === 'error' || torrent.state.includes('paused')) &&
                     `${clientName === 'qBittorrent' ? 'Stopped' : 'Paused'}`}
                 </Typography>
-                <Typography variant='caption' sx={{ fontSize: '0.6rem', ml: 'auto', color: 'white' }}>
+                <Typography variant='caption' sx={{ fontSize: '0.7rem', ml: 'auto', color: 'white' }}>
                     {(torrent.state === 'downloading' && torrent.eta !== undefined) && `ETA: ${formatEta(torrent.eta)}`}
                 </Typography>
             </Box>
@@ -349,7 +360,7 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
     loginCredentials,
     handleInputChange,
     handleLogin,
-    showLabel = true,
+    showLabel,
     onResumeTorrent,
     onPauseTorrent,
     onDeleteTorrent
@@ -400,7 +411,7 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
     }
 
     return (
-        <CardContent sx={{ height: '100%', padding: 2 }}>
+        <CardContent sx={{ height: '100%', padding: 2, maxWidth: '100%' }}>
             <Box sx={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -447,24 +458,24 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
                         <Box sx={{ mt: 'auto', pt: 1, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                 <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                                    <Typography variant='caption' sx={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.7)', mb: 0.5 }}>
+                                    <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)', mb: 0.5 }}>
                                         Current:
                                     </Typography>
-                                    <Typography variant='caption' sx={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.7)' }}>
+                                    <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)' }}>
                                         Session:
                                     </Typography>
                                 </Box>
 
                                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                                        <ArrowDownward sx={{ color: 'primary.main', fontSize: '0.7rem', mr: 0.3 }} />
-                                        <Typography variant='caption' sx={{ fontSize: '0.65rem', color: 'white' }}>
+                                        <ArrowDownward sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
+                                        <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white' }}>
                                             {formatBytes(stats.dl_info_speed)}/s
                                         </Typography>
                                     </Box>
                                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <ArrowDownward sx={{ color: 'primary.main', fontSize: '0.7rem', mr: 0.3 }} />
-                                        <Typography variant='caption' sx={{ fontSize: '0.65rem', color: 'white' }}>
+                                        <ArrowDownward sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
+                                        <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white' }}>
                                             {formatBytes(stats.dl_info_data || 0)}
                                         </Typography>
                                     </Box>
@@ -472,14 +483,14 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
 
                                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                                        <ArrowUpward sx={{ color: theme.palette.primary.main, fontSize: '0.7rem', mr: 0.3 }} />
-                                        <Typography variant='caption' sx={{ fontSize: '0.65rem', color: 'white' }}>
+                                        <ArrowUpward sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
+                                        <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white' }}>
                                             {formatBytes(stats.up_info_speed)}/s
                                         </Typography>
                                     </Box>
                                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <ArrowUpward sx={{ color: theme.palette.primary.main, fontSize: '0.7rem', mr: 0.3 }} />
-                                        <Typography variant='caption' sx={{ fontSize: '0.65rem', color: 'white' }}>
+                                        <ArrowUpward sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
+                                        <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white' }}>
                                             {formatBytes(stats.up_info_data || 0)}
                                         </Typography>
                                     </Box>
