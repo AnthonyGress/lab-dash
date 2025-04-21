@@ -152,7 +152,9 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
             const connectionInfo = {
                 host: loginCredentials.host,
                 port: loginCredentials.port,
-                ssl: loginCredentials.ssl
+                ssl: loginCredentials.ssl,
+                username: loginCredentials.username,
+                password: loginCredentials.password
             };
             const success = await DashApi.delugeResumeTorrent(hash, connectionInfo);
 
@@ -173,7 +175,9 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
             const connectionInfo = {
                 host: loginCredentials.host,
                 port: loginCredentials.port,
-                ssl: loginCredentials.ssl
+                ssl: loginCredentials.ssl,
+                username: loginCredentials.username,
+                password: loginCredentials.password
             };
             const success = await DashApi.delugePauseTorrent(hash, connectionInfo);
 
@@ -194,7 +198,9 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
             const connectionInfo = {
                 host: loginCredentials.host,
                 port: loginCredentials.port,
-                ssl: loginCredentials.ssl
+                ssl: loginCredentials.ssl,
+                username: loginCredentials.username,
+                password: loginCredentials.password
             };
             const success = await DashApi.delugeDeleteTorrent(hash, deleteFiles, connectionInfo);
 

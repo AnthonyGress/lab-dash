@@ -108,7 +108,6 @@ delugeRoute.get('/stats', async (req: Request, res: Response) => {
                 if (loginResponse.data.result === true && loginResponse.headers['set-cookie']) {
                     cookie = loginResponse.headers['set-cookie'][0];
                     sessions[sessionId] = cookie;
-                    console.log('Created temporary Deluge session for stats request');
                 }
             } catch (loginError) {
                 console.error('Deluge login attempt failed:', loginError);
@@ -241,7 +240,6 @@ delugeRoute.get('/torrents', async (req: Request, res: Response) => {
                 if (loginResponse.data.result === true && loginResponse.headers['set-cookie']) {
                     cookie = loginResponse.headers['set-cookie'][0];
                     sessions[sessionId] = cookie;
-                    console.log('Created temporary Deluge session for torrents request');
                 }
             } catch (loginError) {
                 console.error('Deluge login attempt failed:', loginError);
@@ -346,8 +344,42 @@ delugeRoute.post('/torrents/resume', authenticateToken, async (req: Request, res
     try {
         const baseUrl = getBaseUrl(req);
         const sessionId = req.user?.username || 'default';
-        const cookie = sessions[sessionId];
+        let cookie = sessions[sessionId];
         const { hash } = req.body;
+
+        // If no cookie exists or we have new credentials, try to use credentials from query params
+        if ((!cookie || req.query.password) && req.query.password) {
+            try {
+                let password = req.query.password as string;
+
+                // Handle encrypted password
+                if (isEncrypted(password)) {
+                    password = decrypt(password);
+                }
+
+                // Attempt to login with provided credentials
+                const loginResponse = await axios.post(`${baseUrl}`,
+                    {
+                        method: 'auth.login',
+                        params: [password],
+                        id: 1
+                    },
+                    {
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                // Store the cookie for future requests
+                if (loginResponse.data.result === true && loginResponse.headers['set-cookie']) {
+                    cookie = loginResponse.headers['set-cookie'][0];
+                    sessions[sessionId] = cookie;
+                }
+            } catch (loginError) {
+                console.error('Deluge login attempt failed:', loginError);
+                // Continue with existing cookie if available, otherwise will return an error below
+            }
+        }
 
         if (!cookie) {
             res.status(401).json({ error: 'Not authenticated with Deluge' });
@@ -389,8 +421,42 @@ delugeRoute.post('/torrents/pause', authenticateToken, async (req: Request, res:
     try {
         const baseUrl = getBaseUrl(req);
         const sessionId = req.user?.username || 'default';
-        const cookie = sessions[sessionId];
+        let cookie = sessions[sessionId];
         const { hash } = req.body;
+
+        // If no cookie exists or we have new credentials, try to use credentials from query params
+        if ((!cookie || req.query.password) && req.query.password) {
+            try {
+                let password = req.query.password as string;
+
+                // Handle encrypted password
+                if (isEncrypted(password)) {
+                    password = decrypt(password);
+                }
+
+                // Attempt to login with provided credentials
+                const loginResponse = await axios.post(`${baseUrl}`,
+                    {
+                        method: 'auth.login',
+                        params: [password],
+                        id: 1
+                    },
+                    {
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                // Store the cookie for future requests
+                if (loginResponse.data.result === true && loginResponse.headers['set-cookie']) {
+                    cookie = loginResponse.headers['set-cookie'][0];
+                    sessions[sessionId] = cookie;
+                }
+            } catch (loginError) {
+                console.error('Deluge login attempt failed:', loginError);
+                // Continue with existing cookie if available, otherwise will return an error below
+            }
+        }
 
         if (!cookie) {
             res.status(401).json({ error: 'Not authenticated with Deluge' });
@@ -432,8 +498,42 @@ delugeRoute.post('/torrents/delete', authenticateToken, async (req: Request, res
     try {
         const baseUrl = getBaseUrl(req);
         const sessionId = req.user?.username || 'default';
-        const cookie = sessions[sessionId];
+        let cookie = sessions[sessionId];
         const { hash, deleteFiles } = req.body;
+
+        // If no cookie exists or we have new credentials, try to use credentials from query params
+        if ((!cookie || req.query.password) && req.query.password) {
+            try {
+                let password = req.query.password as string;
+
+                // Handle encrypted password
+                if (isEncrypted(password)) {
+                    password = decrypt(password);
+                }
+
+                // Attempt to login with provided credentials
+                const loginResponse = await axios.post(`${baseUrl}`,
+                    {
+                        method: 'auth.login',
+                        params: [password],
+                        id: 1
+                    },
+                    {
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                // Store the cookie for future requests
+                if (loginResponse.data.result === true && loginResponse.headers['set-cookie']) {
+                    cookie = loginResponse.headers['set-cookie'][0];
+                    sessions[sessionId] = cookie;
+                }
+            } catch (loginError) {
+                console.error('Deluge login attempt failed:', loginError);
+                // Continue with existing cookie if available, otherwise will return an error below
+            }
+        }
 
         if (!cookie) {
             res.status(401).json({ error: 'Not authenticated with Deluge' });

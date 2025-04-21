@@ -536,15 +536,13 @@ export class DashApi {
         host?: string;
         port?: string;
         ssl?: boolean;
+        username?: string;
+        password?: string;
     }): Promise<boolean> {
         try {
-            console.log('Starting torrent with hash:', hash);
-
             // Create a URLSearchParams object for form data
             const formData = new URLSearchParams();
             formData.append('hashes', hash);
-
-            console.log('Sending form data:', formData.toString());
 
             const response = await axios.post(
                 `${BACKEND_URL}/api/qbittorrent/torrents/start`,
@@ -558,7 +556,6 @@ export class DashApi {
                 }
             );
 
-            console.log('Start torrent response:', response.status, response.data);
             return true;
         } catch (error) {
             console.error('qBittorrent start error:', error);
@@ -570,15 +567,13 @@ export class DashApi {
         host?: string;
         port?: string;
         ssl?: boolean;
+        username?: string;
+        password?: string;
     }): Promise<boolean> {
         try {
-            console.log('Stopping torrent with hash:', hash);
-
             // Create a URLSearchParams object for form data
             const formData = new URLSearchParams();
             formData.append('hashes', hash);
-
-            console.log('Sending form data:', formData.toString());
 
             const response = await axios.post(
                 `${BACKEND_URL}/api/qbittorrent/torrents/stop`,
@@ -592,7 +587,6 @@ export class DashApi {
                 }
             );
 
-            console.log('Stop torrent response:', response.status, response.data);
             return true;
         } catch (error) {
             console.error('qBittorrent stop error:', error);
@@ -604,16 +598,14 @@ export class DashApi {
         host?: string;
         port?: string;
         ssl?: boolean;
+        username?: string;
+        password?: string;
     }): Promise<boolean> {
         try {
-            console.log('Deleting torrent with hash:', hash, 'deleteFiles:', deleteFiles);
-
             // Create a URLSearchParams object for form data
             const formData = new URLSearchParams();
             formData.append('hashes', hash);
             formData.append('deleteFiles', deleteFiles ? 'true' : 'false');
-
-            console.log('Sending form data:', formData.toString());
 
             const response = await axios.post(
                 `${BACKEND_URL}/api/qbittorrent/torrents/delete`,
@@ -627,7 +619,6 @@ export class DashApi {
                 }
             );
 
-            console.log('Delete torrent response:', response.status, response.data);
             return true;
         } catch (error) {
             console.error('qBittorrent delete error:', error);
@@ -715,6 +706,8 @@ export class DashApi {
         host?: string;
         port?: string;
         ssl?: boolean;
+        username?: string;
+        password?: string;
     }): Promise<boolean> {
         try {
             await axios.post(`${BACKEND_URL}/api/deluge/torrents/resume`,
@@ -735,6 +728,8 @@ export class DashApi {
         host?: string;
         port?: string;
         ssl?: boolean;
+        username?: string;
+        password?: string;
     }): Promise<boolean> {
         try {
             await axios.post(`${BACKEND_URL}/api/deluge/torrents/pause`,
@@ -755,6 +750,8 @@ export class DashApi {
         host?: string;
         port?: string;
         ssl?: boolean;
+        username?: string;
+        password?: string;
     }): Promise<boolean> {
         try {
             await axios.post(`${BACKEND_URL}/api/deluge/torrents/delete`,

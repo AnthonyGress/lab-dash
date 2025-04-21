@@ -132,7 +132,6 @@ qbittorrentRoute.get('/stats', async (req: Request, res: Response) => {
                 if (loginResponse.headers['set-cookie']) {
                     cookie = loginResponse.headers['set-cookie'][0];
                     sessions[sessionId] = cookie;
-                    console.log('Created temporary qBittorrent session for stats request');
                 }
             } catch (loginError) {
                 console.error('qBittorrent login attempt failed:', loginError);
@@ -226,7 +225,6 @@ qbittorrentRoute.get('/torrents', async (req: Request, res: Response) => {
                 if (loginResponse.headers['set-cookie']) {
                     cookie = loginResponse.headers['set-cookie'][0];
                     sessions[sessionId] = cookie;
-                    console.log('Created temporary qBittorrent session for torrents request');
                 }
             } catch (loginError) {
                 console.error('qBittorrent login attempt failed:', loginError);
@@ -282,17 +280,43 @@ qbittorrentRoute.post('/torrents/start', authenticateToken, async (req: Request,
     try {
         const baseUrl = getBaseUrl(req);
         const sessionId = req.user?.username || 'default';
-        const cookie = sessions[sessionId];
+        let cookie = sessions[sessionId];
 
         // Extract hashes from either JSON body or form-urlencoded body
         const hashes = req.body.hashes;
 
-        console.log('qBittorrent start request received:', {
-            body: req.body,
-            bodyType: typeof req.body,
-            hashesParsed: hashes,
-            requestContentType: req.headers['content-type']
-        });
+        // If no cookie exists or we have new credentials, try to use credentials from query params
+        if ((!cookie || req.query.username) && req.query.username && req.query.password) {
+            try {
+                let password = req.query.password as string;
+                const username = req.query.username as string;
+
+                // Handle encrypted password
+                if (isEncrypted(password)) {
+                    password = decrypt(password);
+                }
+
+                // Attempt to login with provided credentials
+                const loginResponse = await axios.post(
+                    `${baseUrl}/auth/login`,
+                    qs.stringify({ username, password }),
+                    {
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        }
+                    }
+                );
+
+                // Store the cookie for future requests
+                if (loginResponse.headers['set-cookie']) {
+                    cookie = loginResponse.headers['set-cookie'][0];
+                    sessions[sessionId] = cookie;
+                }
+            } catch (loginError) {
+                console.error('qBittorrent login attempt failed:', loginError);
+                // Continue with existing cookie if available, otherwise will return an error below
+            }
+        }
 
         if (!cookie) {
             res.status(401).json({ error: 'Not authenticated with qBittorrent' });
@@ -304,10 +328,7 @@ qbittorrentRoute.post('/torrents/start', authenticateToken, async (req: Request,
             return;
         }
 
-        console.log('Sending start request to qBittorrent for hash:', hashes);
-
         const requestBody = { hashes };
-        console.log('Formatted request body:', qs.stringify(requestBody));
 
         const response = await axios.post(`${baseUrl}/torrents/start`,
             qs.stringify(requestBody),
@@ -319,15 +340,13 @@ qbittorrentRoute.post('/torrents/start', authenticateToken, async (req: Request,
             }
         );
 
-        console.log('qBittorrent start response:', response.status, response.data);
         res.status(200).json({ success: true });
     } catch (error: any) {
         console.error('qBittorrent start error:', error.message);
         if (error.response) {
             console.error('Response details:', {
                 status: error.response.status,
-                data: error.response.data,
-                headers: error.response.headers
+                data: error.response.data
             });
         }
         res.status(error.response?.status || 500).json({
@@ -341,17 +360,43 @@ qbittorrentRoute.post('/torrents/stop', authenticateToken, async (req: Request, 
     try {
         const baseUrl = getBaseUrl(req);
         const sessionId = req.user?.username || 'default';
-        const cookie = sessions[sessionId];
+        let cookie = sessions[sessionId];
 
         // Extract hashes from either JSON body or form-urlencoded body
         const hashes = req.body.hashes;
 
-        console.log('qBittorrent stop request received:', {
-            body: req.body,
-            bodyType: typeof req.body,
-            hashesParsed: hashes,
-            requestContentType: req.headers['content-type']
-        });
+        // If no cookie exists or we have new credentials, try to use credentials from query params
+        if ((!cookie || req.query.username) && req.query.username && req.query.password) {
+            try {
+                let password = req.query.password as string;
+                const username = req.query.username as string;
+
+                // Handle encrypted password
+                if (isEncrypted(password)) {
+                    password = decrypt(password);
+                }
+
+                // Attempt to login with provided credentials
+                const loginResponse = await axios.post(
+                    `${baseUrl}/auth/login`,
+                    qs.stringify({ username, password }),
+                    {
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        }
+                    }
+                );
+
+                // Store the cookie for future requests
+                if (loginResponse.headers['set-cookie']) {
+                    cookie = loginResponse.headers['set-cookie'][0];
+                    sessions[sessionId] = cookie;
+                }
+            } catch (loginError) {
+                console.error('qBittorrent login attempt failed:', loginError);
+                // Continue with existing cookie if available, otherwise will return an error below
+            }
+        }
 
         if (!cookie) {
             res.status(401).json({ error: 'Not authenticated with qBittorrent' });
@@ -363,14 +408,9 @@ qbittorrentRoute.post('/torrents/stop', authenticateToken, async (req: Request, 
             return;
         }
 
-        console.log('Sending stop request to qBittorrent for hash:', hashes);
-        console.log('Full qBittorrent API URL:', `${baseUrl}/torrents/stop`);
-
         try {
             // Using the correct format for qBittorrent API which expects URL-encoded form data
             const requestBody = { hashes };
-
-            console.log('Formatted request body:', qs.stringify(requestBody));
 
             const response = await axios.post(`${baseUrl}/torrents/stop`,
                 qs.stringify(requestBody),
@@ -382,13 +422,9 @@ qbittorrentRoute.post('/torrents/stop', authenticateToken, async (req: Request, 
                 }
             );
 
-            console.log('qBittorrent stop response:', response.status, response.data);
             res.status(200).json({ success: true });
         } catch (innerError: any) {
             console.error('qBittorrent stop request failed:', innerError.message);
-            console.error('Request URL:', `${baseUrl}/torrents/stop`);
-            console.error('Request data:', { hashes });
-
             if (innerError.response) {
                 console.error('Response status:', innerError.response.status);
                 console.error('Response data:', innerError.response.data);
@@ -401,8 +437,7 @@ qbittorrentRoute.post('/torrents/stop', authenticateToken, async (req: Request, 
         if (error.response) {
             console.error('Response details:', {
                 status: error.response.status,
-                data: error.response.data,
-                headers: error.response.headers
+                data: error.response.data
             });
         }
         res.status(error.response?.status || 500).json({
@@ -416,19 +451,44 @@ qbittorrentRoute.post('/torrents/delete', authenticateToken, async (req: Request
     try {
         const baseUrl = getBaseUrl(req);
         const sessionId = req.user?.username || 'default';
-        const cookie = sessions[sessionId];
+        let cookie = sessions[sessionId];
 
         // Extract parameters from either JSON body or form-urlencoded body
         const hashes = req.body.hashes;
         const deleteFiles = req.body.deleteFiles;
 
-        console.log('qBittorrent delete request received:', {
-            body: req.body,
-            bodyType: typeof req.body,
-            hashesParsed: hashes,
-            deleteFilesParsed: deleteFiles,
-            requestContentType: req.headers['content-type']
-        });
+        // If no cookie exists or we have new credentials, try to use credentials from query params
+        if ((!cookie || req.query.username) && req.query.username && req.query.password) {
+            try {
+                let password = req.query.password as string;
+                const username = req.query.username as string;
+
+                // Handle encrypted password
+                if (isEncrypted(password)) {
+                    password = decrypt(password);
+                }
+
+                // Attempt to login with provided credentials
+                const loginResponse = await axios.post(
+                    `${baseUrl}/auth/login`,
+                    qs.stringify({ username, password }),
+                    {
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        }
+                    }
+                );
+
+                // Store the cookie for future requests
+                if (loginResponse.headers['set-cookie']) {
+                    cookie = loginResponse.headers['set-cookie'][0];
+                    sessions[sessionId] = cookie;
+                }
+            } catch (loginError) {
+                console.error('qBittorrent login attempt failed:', loginError);
+                // Continue with existing cookie if available, otherwise will return an error below
+            }
+        }
 
         if (!cookie) {
             res.status(401).json({ error: 'Not authenticated with qBittorrent' });
@@ -440,13 +500,10 @@ qbittorrentRoute.post('/torrents/delete', authenticateToken, async (req: Request
             return;
         }
 
-        console.log('Sending delete request to qBittorrent for hash:', hashes, 'deleteFiles:', deleteFiles);
-
         const requestBody = {
             hashes,
             deleteFiles: deleteFiles === true
         };
-        console.log('Formatted request body:', qs.stringify(requestBody));
 
         const response = await axios.post(`${baseUrl}/torrents/delete`,
             qs.stringify(requestBody),
@@ -458,15 +515,13 @@ qbittorrentRoute.post('/torrents/delete', authenticateToken, async (req: Request
             }
         );
 
-        console.log('qBittorrent delete response:', response.status, response.data);
         res.status(200).json({ success: true });
     } catch (error: any) {
         console.error('qBittorrent delete error:', error.message);
         if (error.response) {
             console.error('Response details:', {
                 status: error.response.status,
-                data: error.response.data,
-                headers: error.response.headers
+                data: error.response.data
             });
         }
         res.status(error.response?.status || 500).json({

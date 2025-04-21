@@ -27,20 +27,6 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Debug middleware to log all incoming requests
-app.use((req, res, next) => {
-    if (req.method === 'POST' && req.path.includes('/qbittorrent/torrents/')) {
-        console.log('DEBUG - Incoming request:', {
-            method: req.method,
-            path: req.path,
-            headers: req.headers,
-            body: req.body,
-            contentType: req.headers['content-type']
-        });
-    }
-    next();
-});
-
 // Routes
 app.use('/icon-list', express.static(iconListPath));
 app.use('/icons', express.static(iconsPath));

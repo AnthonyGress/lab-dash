@@ -154,7 +154,9 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
             const connectionInfo = {
                 host: loginCredentials.host,
                 port: loginCredentials.port,
-                ssl: loginCredentials.ssl
+                ssl: loginCredentials.ssl,
+                username: loginCredentials.username,
+                password: loginCredentials.password
             };
             // Use the existing resume API endpoint
             const success = await DashApi.qbittorrentStartTorrent(hash, connectionInfo);
@@ -176,7 +178,9 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
             const connectionInfo = {
                 host: loginCredentials.host,
                 port: loginCredentials.port,
-                ssl: loginCredentials.ssl
+                ssl: loginCredentials.ssl,
+                username: loginCredentials.username,
+                password: loginCredentials.password
             };
             // Use the existing pause API endpoint
             const success = await DashApi.qbittorrentStopTorrent(hash, connectionInfo);
@@ -198,7 +202,9 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
             const connectionInfo = {
                 host: loginCredentials.host,
                 port: loginCredentials.port,
-                ssl: loginCredentials.ssl
+                ssl: loginCredentials.ssl,
+                username: loginCredentials.username,
+                password: loginCredentials.password
             };
             const success = await DashApi.qbittorrentDeleteTorrent(hash, deleteFiles, connectionInfo);
 
