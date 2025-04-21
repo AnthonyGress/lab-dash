@@ -48,6 +48,13 @@ qbittorrentRoute.post('/login', async (req: Request, res: Response) => {
         // Handle encrypted password
         if (isEncrypted(password)) {
             password = decrypt(password);
+            // Check if decryption failed (returns empty string)
+            if (!password) {
+                res.status(400).json({
+                    error: 'Failed to decrypt password. It may have been encrypted with a different key. Please update your credentials.'
+                });
+                return;
+            }
         }
 
         const response = await axios.post(`${baseUrl}/auth/login`,
@@ -115,6 +122,26 @@ qbittorrentRoute.get('/stats', async (req: Request, res: Response) => {
                 // Handle encrypted password
                 if (isEncrypted(password)) {
                     password = decrypt(password);
+                    // Check if decryption failed (returns empty string)
+                    if (!password) {
+                        console.warn('Failed to decrypt password for auto-login. Credentials may need to be updated.');
+                        // Return empty stats instead of failing
+                        res.status(200).json({
+                            dl_info_speed: 0,
+                            up_info_speed: 0,
+                            dl_info_data: 0,
+                            up_info_data: 0,
+                            torrents: {
+                                total: 0,
+                                downloading: 0,
+                                seeding: 0,
+                                completed: 0,
+                                paused: 0
+                            },
+                            decryptionError: true
+                        });
+                        return;
+                    }
                 }
 
                 // Attempt to login with provided credentials
@@ -208,6 +235,13 @@ qbittorrentRoute.get('/torrents', async (req: Request, res: Response) => {
                 // Handle encrypted password
                 if (isEncrypted(password)) {
                     password = decrypt(password);
+                    // Check if decryption failed (returns empty string)
+                    if (!password) {
+                        console.warn('Failed to decrypt password for auto-login. Credentials may need to be updated.');
+                        // Return empty array instead of failing
+                        res.status(200).json([]);
+                        return;
+                    }
                 }
 
                 // Attempt to login with provided credentials
@@ -275,7 +309,7 @@ qbittorrentRoute.post('/logout', authenticateToken, async (req: Request, res: Re
     }
 });
 
-// start torrent(s)
+// Start torrent(s)
 qbittorrentRoute.post('/torrents/start', authenticateToken, async (req: Request, res: Response) => {
     try {
         const baseUrl = getBaseUrl(req);
@@ -286,7 +320,7 @@ qbittorrentRoute.post('/torrents/start', authenticateToken, async (req: Request,
         const hashes = req.body.hashes;
 
         // If no cookie exists or we have new credentials, try to use credentials from query params
-        if ((!cookie || req.query.username) && req.query.username && req.query.password) {
+        if ((!cookie || req.query.password) && req.query.username && req.query.password) {
             try {
                 let password = req.query.password as string;
                 const username = req.query.username as string;
@@ -294,6 +328,13 @@ qbittorrentRoute.post('/torrents/start', authenticateToken, async (req: Request,
                 // Handle encrypted password
                 if (isEncrypted(password)) {
                     password = decrypt(password);
+                    // Check if decryption failed (returns empty string)
+                    if (!password) {
+                        res.status(400).json({
+                            error: 'Failed to decrypt password. It may have been encrypted with a different key. Please update your credentials.'
+                        });
+                        return;
+                    }
                 }
 
                 // Attempt to login with provided credentials
@@ -334,28 +375,21 @@ qbittorrentRoute.post('/torrents/start', authenticateToken, async (req: Request,
             qs.stringify(requestBody),
             {
                 headers: {
-                    Cookie: cookie,
-                    'Content-Type': 'application/x-www-form-urlencoded'
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Cookie': cookie
                 }
-            }
-        );
+            });
 
         res.status(200).json({ success: true });
     } catch (error: any) {
         console.error('qBittorrent start error:', error.message);
-        if (error.response) {
-            console.error('Response details:', {
-                status: error.response.status,
-                data: error.response.data
-            });
-        }
         res.status(error.response?.status || 500).json({
             error: error.response?.data || 'Failed to start torrent'
         });
     }
 });
 
-// stop torrent(s)
+// Stop torrent(s)
 qbittorrentRoute.post('/torrents/stop', authenticateToken, async (req: Request, res: Response) => {
     try {
         const baseUrl = getBaseUrl(req);
@@ -366,7 +400,7 @@ qbittorrentRoute.post('/torrents/stop', authenticateToken, async (req: Request, 
         const hashes = req.body.hashes;
 
         // If no cookie exists or we have new credentials, try to use credentials from query params
-        if ((!cookie || req.query.username) && req.query.username && req.query.password) {
+        if ((!cookie || req.query.password) && req.query.username && req.query.password) {
             try {
                 let password = req.query.password as string;
                 const username = req.query.username as string;
@@ -374,6 +408,13 @@ qbittorrentRoute.post('/torrents/stop', authenticateToken, async (req: Request, 
                 // Handle encrypted password
                 if (isEncrypted(password)) {
                     password = decrypt(password);
+                    // Check if decryption failed (returns empty string)
+                    if (!password) {
+                        res.status(400).json({
+                            error: 'Failed to decrypt password. It may have been encrypted with a different key. Please update your credentials.'
+                        });
+                        return;
+                    }
                 }
 
                 // Attempt to login with provided credentials
@@ -453,12 +494,12 @@ qbittorrentRoute.post('/torrents/delete', authenticateToken, async (req: Request
         const sessionId = req.user?.username || 'default';
         let cookie = sessions[sessionId];
 
-        // Extract parameters from either JSON body or form-urlencoded body
+        // Extract parameters
         const hashes = req.body.hashes;
-        const deleteFiles = req.body.deleteFiles;
+        const deleteFiles = req.body.deleteFiles === true;
 
         // If no cookie exists or we have new credentials, try to use credentials from query params
-        if ((!cookie || req.query.username) && req.query.username && req.query.password) {
+        if ((!cookie || req.query.password) && req.query.username && req.query.password) {
             try {
                 let password = req.query.password as string;
                 const username = req.query.username as string;
@@ -466,6 +507,13 @@ qbittorrentRoute.post('/torrents/delete', authenticateToken, async (req: Request
                 // Handle encrypted password
                 if (isEncrypted(password)) {
                     password = decrypt(password);
+                    // Check if decryption failed (returns empty string)
+                    if (!password) {
+                        res.status(400).json({
+                            error: 'Failed to decrypt password. It may have been encrypted with a different key. Please update your credentials.'
+                        });
+                        return;
+                    }
                 }
 
                 // Attempt to login with provided credentials

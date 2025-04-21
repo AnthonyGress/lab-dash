@@ -34,6 +34,13 @@ delugeRoute.post('/login', async (req: Request, res: Response) => {
         // Handle encrypted password
         if (isEncrypted(password)) {
             password = decrypt(password);
+            // Check if decryption failed (returns empty string)
+            if (!password) {
+                res.status(400).json({
+                    error: 'Failed to decrypt password. It may have been encrypted with a different key. Please update your credentials.'
+                });
+                return;
+            }
         }
 
         // Deluge WebUI uses a different auth mechanism
@@ -89,6 +96,26 @@ delugeRoute.get('/stats', async (req: Request, res: Response) => {
                 // Handle encrypted password
                 if (isEncrypted(password)) {
                     password = decrypt(password);
+                    // Check if decryption failed (returns empty string)
+                    if (!password) {
+                        console.warn('Failed to decrypt password for auto-login. Credentials may need to be updated.');
+                        // Return empty stats instead of failing
+                        res.status(200).json({
+                            dl_info_speed: 0,
+                            up_info_speed: 0,
+                            dl_info_data: 0,
+                            up_info_data: 0,
+                            torrents: {
+                                total: 0,
+                                downloading: 0,
+                                seeding: 0,
+                                completed: 0,
+                                paused: 0
+                            },
+                            decryptionError: true
+                        });
+                        return;
+                    }
                 }
 
                 // Attempt to login with provided credentials
@@ -245,6 +272,13 @@ delugeRoute.get('/torrents', async (req: Request, res: Response) => {
                 // Handle encrypted password
                 if (isEncrypted(password)) {
                     password = decrypt(password);
+                    // Check if decryption failed (returns empty string)
+                    if (!password) {
+                        console.warn('Failed to decrypt password for auto-login. Credentials may need to be updated.');
+                        // Return empty array instead of failing
+                        res.status(200).json([]);
+                        return;
+                    }
                 }
 
                 // Attempt to login with provided credentials
@@ -379,6 +413,13 @@ delugeRoute.post('/torrents/resume', authenticateToken, async (req: Request, res
                 // Handle encrypted password
                 if (isEncrypted(password)) {
                     password = decrypt(password);
+                    // Check if decryption failed (returns empty string)
+                    if (!password) {
+                        res.status(400).json({
+                            error: 'Failed to decrypt password. It may have been encrypted with a different key. Please update your credentials.'
+                        });
+                        return;
+                    }
                 }
 
                 // Attempt to login with provided credentials
@@ -456,6 +497,13 @@ delugeRoute.post('/torrents/pause', authenticateToken, async (req: Request, res:
                 // Handle encrypted password
                 if (isEncrypted(password)) {
                     password = decrypt(password);
+                    // Check if decryption failed (returns empty string)
+                    if (!password) {
+                        res.status(400).json({
+                            error: 'Failed to decrypt password. It may have been encrypted with a different key. Please update your credentials.'
+                        });
+                        return;
+                    }
                 }
 
                 // Attempt to login with provided credentials
@@ -533,6 +581,13 @@ delugeRoute.post('/torrents/delete', authenticateToken, async (req: Request, res
                 // Handle encrypted password
                 if (isEncrypted(password)) {
                     password = decrypt(password);
+                    // Check if decryption failed (returns empty string)
+                    if (!password) {
+                        res.status(400).json({
+                            error: 'Failed to decrypt password. It may have been encrypted with a different key. Please update your credentials.'
+                        });
+                        return;
+                    }
                 }
 
                 // Attempt to login with provided credentials

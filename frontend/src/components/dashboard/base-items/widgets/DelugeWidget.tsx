@@ -50,9 +50,14 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
             if (!success) {
                 setAuthError('Login failed. Check your credentials and connection.');
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Login error:', error);
-            setAuthError('Connection error. Check your Deluge WebUI settings.');
+            // Check for decryption error
+            if (error.response?.data?.error?.includes('Failed to decrypt password')) {
+                setAuthError('Failed to decrypt password. Please update your credentials in the widget settings.');
+            } else {
+                setAuthError('Connection error. Check your Deluge WebUI settings.');
+            }
             setIsAuthenticated(false);
         } finally {
             setIsLoading(false);
@@ -69,6 +74,14 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
                 password: loginCredentials.password
             };
             const statsData = await DashApi.delugeGetStats(connectionInfo);
+
+            // Check for decryption error
+            if (statsData.decryptionError) {
+                setIsAuthenticated(false);
+                setAuthError('Failed to decrypt password. Please update your credentials in the widget settings.');
+                return;
+            }
+
             setStats(statsData);
         } catch (error) {
             console.error('Error fetching Deluge stats:', error);

@@ -51,9 +51,14 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
             if (!success) {
                 setAuthError('Login failed. Check your credentials and connection.');
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Login error:', error);
-            setAuthError('Connection error. Check your qBittorrent WebUI settings.');
+            // Check for decryption error
+            if (error.response?.data?.error?.includes('Failed to decrypt password')) {
+                setAuthError('Failed to decrypt password. Please update your credentials in the widget settings.');
+            } else {
+                setAuthError('Connection error. Check your qBittorrent WebUI settings.');
+            }
             setIsAuthenticated(false);
         } finally {
             setIsLoading(false);
@@ -70,6 +75,14 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
                 password: loginCredentials.password
             };
             const statsData = await DashApi.qbittorrentGetStats(connectionInfo);
+
+            // Check for decryption error
+            if (statsData.decryptionError) {
+                setIsAuthenticated(false);
+                setAuthError('Failed to decrypt password. Please update your credentials in the widget settings.');
+                return;
+            }
+
             setStats(statsData);
         } catch (error) {
             console.error('Error fetching qBittorrent stats:', error);
@@ -91,6 +104,14 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
                 password: loginCredentials.password
             };
             const torrentsData = await DashApi.qbittorrentGetTorrents(connectionInfo);
+
+            // Check if an empty array was returned due to decryption error
+            if (Array.isArray(torrentsData) && torrentsData.length === 0 && loginCredentials.username && loginCredentials.password) {
+                // If we have credentials but get empty results, it could be a decryption error
+                // We'll handle this case by checking the auth status in the next stats fetch
+                setTorrents([]);
+                return;
+            }
 
             // Sort by progress (downloading first) then by name
             const sortedTorrents = torrentsData.sort((a, b) => {
@@ -167,8 +188,13 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
             }
 
             return success;
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error starting qBittorrent torrent:', error);
+            // Check for decryption error
+            if (error.response?.data?.error?.includes('Failed to decrypt password')) {
+                setAuthError('Failed to decrypt password. Please update your credentials in the widget settings.');
+                setIsAuthenticated(false);
+            }
             return false;
         }
     }, [loginCredentials, fetchTorrents]);
@@ -191,8 +217,13 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
             }
 
             return success;
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error stopping qBittorrent torrent:', error);
+            // Check for decryption error
+            if (error.response?.data?.error?.includes('Failed to decrypt password')) {
+                setAuthError('Failed to decrypt password. Please update your credentials in the widget settings.');
+                setIsAuthenticated(false);
+            }
             return false;
         }
     }, [loginCredentials, fetchTorrents]);
@@ -214,8 +245,13 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
             }
 
             return success;
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error deleting qBittorrent torrent:', error);
+            // Check for decryption error
+            if (error.response?.data?.error?.includes('Failed to decrypt password')) {
+                setAuthError('Failed to decrypt password. Please update your credentials in the widget settings.');
+                setIsAuthenticated(false);
+            }
             return false;
         }
     }, [loginCredentials, fetchTorrents]);
