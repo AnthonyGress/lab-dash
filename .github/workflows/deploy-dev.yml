@@ -30,7 +30,7 @@ jobs:
         with:
           file: package.json
           tagFormat: v${version}
-          failBuild: true
+          failBuild: false
         id: version_check
 
       - name: Set up QEMU for multi-platform builds

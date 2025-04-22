@@ -181,11 +181,17 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                mb: 1,
-                fontSize: '0.9rem',
-                color: 'rgba(255, 255, 255, 0.8)'
+                mb: 0,
+                mt: -.5,
+                fontSize: '0.8rem',
+                color: 'rgba(255, 255, 255, 0.8)',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                zIndex: 1
             }}>
-                <BsGeoAltFill style={{ marginRight: '4px', fontSize: '0.9rem' }} />
+                <BsGeoAltFill style={{ marginRight: '2px', fontSize: '0.8rem' }} />
                 <Typography variant='body2' sx={{ fontWeight: 'medium' }}>
                     {displayLocation}
                 </Typography>
@@ -195,10 +201,10 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
 
     const renderCurrentWeatherItem = () => {
         return weatherData &&
-        <Box mt={2}>
+        <Box mt={locationName ? 2 : 0.5} mb={1}>
             <Box sx={styles.center}>
                 <Box>{weatherDescriptions[weatherData?.current?.weathercode]?.icon}</Box>
-                <Box ml={1} sx={{ fontSize: '1.5rem' }}>{convertTemperature(weatherData.current?.temperature_2m)}°{isFahrenheit ? 'F' : 'C'}</Box>
+                <Box ml={1} sx={{ fontSize: '1.4rem' }}>{convertTemperature(weatherData.current?.temperature_2m)}°{isFahrenheit ? 'F' : 'C'}</Box>
             </Box>
         </Box>;
     };
@@ -212,8 +218,15 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
             const sunset = weatherData.daily?.sunset[index] || 'N/A';
 
             return (
-                <Grid sx={styles.vcenter} key={index}>
-                    <Box>{getDay(weatherData.daily?.time[index])}</Box>
+                <Grid sx={{
+                    ...styles.vcenter,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    py: 0
+                }} key={index}>
+                    <Box sx={{ textAlign: 'center', mb: 0.5, fontSize: '1rem', lineHeight: 1 }}>{getDay(weatherData.daily?.time[index])}</Box>
                     <Tooltip
                         title={
                             <Box sx={{ p: 2 }}>
@@ -244,17 +257,20 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
                         disableHoverListener
                         disableTouchListener
                     >
-                        <Box>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                             <Box
                                 onClick={(e) =>{
                                     e.stopPropagation(); // Prevents tooltip from closing when clicking inside
                                     setOpenTooltipIndex(openTooltipIndex === index ? null : index);}
                                 }
-                                sx={{ cursor: 'pointer' }}
+                                sx={{
+                                    cursor: 'pointer',
+                                    mt: -0.25,
+                                }}
                             >
                                 {weatherInfo.icon}
                             </Box>
-                            <Box sx={{ fontSize: { sm: '1.25rem', xl: '1.5rem' } }}>
+                            <Box sx={{ fontSize: { xs: '1rem', sm: '1rem', xl: '1.25rem' }, textAlign: 'center', mt: -0.5, lineHeight: 1.1 }}>
                                 {convertTemperature(weatherData.daily?.temperature_2m_max[index])}°
                                 {isFahrenheit ? 'F' : 'C'}
                             </Box>
@@ -272,15 +288,19 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
             alignItems: 'center',
             justifyContent: 'center',
             height: '100%',
+            position: 'relative',
+            overflow: 'hidden',
+            pt: 1,
+            pb: 0
         }}>
             {weatherData ? (
-                <Grid>
+                <Grid sx={{ width: '100%' }}>
                     {/* Location Name */}
                     {renderLocationName()}
                     {/* 1 Day */}
                     {renderCurrentWeatherItem()}
                     {/* 5 Day */}
-                    <Grid container gap={{ xs: 3, sm: 2, md: 4, lg: 4, xl: 5 }} sx={{ px: 1 }}>
+                    <Grid container gap={{ xs: 3, sm: 3, md: 3.5, lg: 4.5, xl: 5.5 }} sx={{ px: 1, mt: 0, justifyContent: 'center' }}>
                         { forecastDays > 1 && renderWeatherItem() }
                     </Grid>
                 </Grid>
@@ -293,7 +313,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        minHeight: { xs: 150, sm: 150, md: 150 },
+                        minHeight: { xs: 120, sm: 120, md: 120 },
                     }}
                 >
                     <Skeleton
