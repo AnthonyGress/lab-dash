@@ -121,9 +121,6 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
 
         try {
             const piholeStats = await DashApi.getPiholeStats(piholeConfig);
-            console.log('Pi-hole API response:', piholeStats);
-            console.log('Pi-hole percentage value:', piholeStats.ads_percentage_today,
-                'Type:', typeof piholeStats.ads_percentage_today);
 
             // Set stats from API response
             setStats(piholeStats);
@@ -403,12 +400,6 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
 
     // Format the percentage text
     const percentageText = blockPercentage.toFixed(1);
-
-    console.log('Rendered percentage values:', {
-        original: stats.ads_percentage_today,
-        parsed: blockPercentage,
-        formatted: percentageText
-    });
 
     return (
         <Box sx={{ p: 0.5, height: '100%' }}>

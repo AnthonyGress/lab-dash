@@ -12,18 +12,32 @@ import { theme } from '../../../../../theme/theme';
 import { convertSecondsToUptime } from '../../../../../utils/utils';
 import { CenteredModal } from '../../../../modals/CenteredModal';
 
+interface SystemMonitorWidgetProps {
+    config?: {
+        temperatureUnit?: string;
+    };
+}
 
-export const SystemMonitorWidget = () => {
+export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
     const [systemInformation, setSystemInformation] = useState<any>();
     const [memoryInformation, setMemoryInformation] = useState<any>(0);
     const [diskInformation, setDiskInformation] = useState<any>();
     const [openSystemModal, setOpenSystemModal] = useState(false);
+    const [isFahrenheit, setIsFahrenheit] = useState(config?.temperatureUnit !== 'celsius');
 
     const isMobile = useIsMobile();
 
     // Helper function to format space dynamically (GB or TB)
     const formatSpace = (space: number): string => {
         return space >= 1000 ? `${(space / 1000).toFixed(2)} TB` : `${space.toFixed(2)} GB`;
+    };
+
+    // Helper function to convert temperature based on unit
+    const formatTemperature = (tempCelsius: number): number => {
+        if (isFahrenheit) {
+            return Math.round((tempCelsius * 9/5) + 32);
+        }
+        return Math.round(tempCelsius);
     };
 
     const getRamPercentage = (systemData: any) => {
@@ -88,15 +102,18 @@ export const SystemMonitorWidget = () => {
     };
 
     useEffect(() => {
+        // Update temperature unit preference from config
+        setIsFahrenheit(config?.temperatureUnit !== 'celsius');
+
         getSystemInfo();
 
         // fetch system info every 15 seconds
         const interval = setInterval(() => {
             getSystemInfo();
-        }, 10000); // 15000 ms = 15 seconds
+        }, 10000); // 10000 ms = 10 seconds
 
         return () => clearInterval(interval);
-    }, []);
+    }, [config?.temperatureUnit]);
 
     return (
         <Grid container gap={0} sx={{ display: 'flex', width: '100%', justifyContent: 'center' }}>
@@ -121,7 +138,12 @@ export const SystemMonitorWidget = () => {
                     <GaugeWidget title='CPU' value={systemInformation?.cpu?.currentLoad ? Math.round(systemInformation?.cpu?.currentLoad) : 0} />
                 </Grid>
                 <Grid>
-                    <GaugeWidget title='TEMP' value={systemInformation?.cpu?.main ? Math.round(systemInformation?.cpu?.main) : 0} temperature/>
+                    <GaugeWidget
+                        title='TEMP'
+                        value={systemInformation?.cpu?.main ? formatTemperature(systemInformation?.cpu?.main) : 0}
+                        temperature
+                        isFahrenheit={isFahrenheit}
+                    />
                 </Grid>
                 <Grid>
                     <GaugeWidget title='RAM' value={memoryInformation} />
@@ -138,8 +160,9 @@ export const SystemMonitorWidget = () => {
                     <Typography><b>OS:</b> {systemInformation?.system?.distro} {systemInformation?.system?.codename} {systemInformation?.system?.release}</Typography>
                     <Typography><b>Kernel:</b> {systemInformation?.system?.kernel}</Typography>
                     <Typography><b>Uptime:</b> {convertSecondsToUptime(systemInformation?.system?.uptime)}</Typography>
+                    <Typography><b>CPU Temperature:</b> {systemInformation?.cpu?.main ? formatTemperature(systemInformation?.cpu?.main) : 0}°{isFahrenheit ? 'F' : 'C'}</Typography>
                     <Typography><b>Disk Mount:</b> {diskInformation?.mount}</Typography>
-                    <Typography><b>Disk Usage:</b> {`${diskInformation?.usedPercentage.toFixed(0)}%`}</Typography>
+                    <Typography><b>Disk Usage:</b> {`${diskInformation?.usedPercentage?.toFixed(0)}%`}</Typography>
                     <Typography><b>Disk Total:</b> {`${diskInformation?.totalSpace} GB`}</Typography>
                 </Box>
             </CenteredModal>

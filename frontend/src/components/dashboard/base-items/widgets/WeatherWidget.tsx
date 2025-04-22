@@ -8,6 +8,7 @@ import { BsFillCloudRainFill } from 'react-icons/bs';
 import { BsCloudRainHeavyFill } from 'react-icons/bs';
 import { BsCloudHaze2Fill } from 'react-icons/bs';
 import { BsSunFill } from 'react-icons/bs';
+import { BsGeoAltFill } from 'react-icons/bs';
 
 import { DashApi } from '../../../../api/dash-api';
 import { FIFTEEN_MIN_IN_MS } from '../../../../constants/constants';
@@ -28,6 +29,11 @@ interface WeatherData {
 interface WeatherWidgetProps {
     config?: {
         temperatureUnit?: string;
+        location?: {
+            name: string;
+            latitude: number;
+            longitude: number;
+        } | null;
     };
 }
 
@@ -66,19 +72,31 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
     const [forecastDays, setForecastDays] = useState(5);
     const [isFahrenheit, setIsFahrenheit] = useState(config?.temperatureUnit !== 'celsius');
     const [openTooltipIndex, setOpenTooltipIndex] = useState<number | null>(null);
+    const [locationName, setLocationName] = useState<string | null>(null);
 
     useEffect(() => {
         setIsFahrenheit(config?.temperatureUnit !== 'celsius');
-    }, [config?.temperatureUnit]);
 
-    useEffect(() => {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const { latitude, longitude } = position.coords;
-                setLocation({ latitude, longitude });
-            },
-            (error) => console.error('Error fetching location:', error)
-        );
+        // Set location from config if available (highest priority)
+        if (config?.location?.latitude && config?.location?.longitude) {
+            setLocation({
+                latitude: config.location.latitude,
+                longitude: config.location.longitude
+            });
+
+            if (config.location.name) {
+                setLocationName(config.location.name);
+            }
+        } else {
+            // Browser geolocation fallback
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    setLocation({ latitude, longitude });
+                },
+                (error) => console.error('Error fetching location:', error)
+            );
+        }
 
         const handleClickOutside = () => {
             setOpenTooltipIndex(null); // Close tooltip when clicking anywhere
@@ -89,14 +107,13 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
         return () => {
             document.removeEventListener('click', handleClickOutside);
         };
-    }, []);
+    }, [config]);
 
     useEffect(() => {
         const fetchWeather = async () => {
             try {
                 let data;
                 if (!location?.latitude || !location.longitude) {
-
                     data = await DashApi.getWeather();
                 } else {
                     data = await DashApi.getWeather(location.latitude, location.longitude);
@@ -119,6 +136,62 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
 
 
     const convertTemperature = (temp: number) => (isFahrenheit ? Math.round((temp * 9) / 5 + 32) : Math.round(temp));
+
+    const renderLocationName = () => {
+        if (!locationName) return null;
+
+        // Parse location parts from the full name
+        const locationParts = locationName.split(',').map(part => part.trim());
+        const city = locationParts[0];
+
+        let displayLocation = '';
+
+        // Check if this is a US location
+        const isUS = locationParts.some(part =>
+            part === 'United States' ||
+            part === 'USA' ||
+            part === 'US'
+        );
+
+        if (isUS) {
+            // For US locations, try to find the state
+            // States can be in the format "Florida" or "FL"
+            const statePattern = /\b(AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|Alabama|Alaska|Arizona|Arkansas|California|Colorado|Connecticut|Delaware|Florida|Georgia|Hawaii|Idaho|Illinois|Indiana|Iowa|Kansas|Kentucky|Louisiana|Maine|Maryland|Massachusetts|Michigan|Minnesota|Mississippi|Missouri|Montana|Nebraska|Nevada|New\s+Hampshire|New\s+Jersey|New\s+Mexico|New\s+York|North\s+Carolina|North\s+Dakota|Ohio|Oklahoma|Oregon|Pennsylvania|Rhode\s+Island|South\s+Carolina|South\s+Dakota|Tennessee|Texas|Utah|Vermont|Virginia|Washington|West\s+Virginia|Wisconsin|Wyoming)\b/i;
+
+            // Find the part that contains a state
+            const statePart = locationParts.find(part => statePattern.test(part));
+
+            if (statePart) {
+                displayLocation = `${city}, ${statePart}`;
+            } else {
+                // Fallback to city and country if state not found
+                displayLocation = `${city}, US`;
+            }
+        } else if (locationParts.length >= 2) {
+            // For non-US locations, show City, Country
+            const country = locationParts[locationParts.length - 1];
+            displayLocation = `${city}, ${country}`;
+        } else {
+            // Fallback to just the city
+            displayLocation = city;
+        }
+
+        return (
+            <Box sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mb: 1,
+                fontSize: '0.9rem',
+                color: 'rgba(255, 255, 255, 0.8)'
+            }}>
+                <BsGeoAltFill style={{ marginRight: '4px', fontSize: '0.9rem' }} />
+                <Typography variant='body2' sx={{ fontWeight: 'medium' }}>
+                    {displayLocation}
+                </Typography>
+            </Box>
+        );
+    };
 
     const renderCurrentWeatherItem = () => {
         return weatherData &&
@@ -202,6 +275,8 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
         }}>
             {weatherData ? (
                 <Grid>
+                    {/* Location Name */}
+                    {renderLocationName()}
                     {/* 1 Day */}
                     {renderCurrentWeatherItem()}
                     {/* 5 Day */}

@@ -1,8 +1,8 @@
-import { Box, Button, FormControlLabel, Grid2 as Grid, Radio, RadioGroup, Typography, useMediaQuery } from '@mui/material';
+import ClearIcon from '@mui/icons-material/Clear';
+import { Autocomplete, Box, Button, FormControlLabel, Grid2 as Grid, Radio, RadioGroup, TextField, Typography, useMediaQuery } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { CheckboxElement, FormContainer, SelectElement, TextFieldElement } from 'react-hook-form-mui';
-
 
 import { IconSearch } from './IconSearch';
 import { DashApi } from '../../api/dash-api';
@@ -52,6 +52,7 @@ type FormValues = {
     showLabel?: boolean;
     widgetType?: string;
     temperatureUnit?: string;
+    location?: { name: string; latitude: number; longitude: number } | null;
     adminOnly?: boolean;
     isWol?: boolean;
     macAddress?: string;
@@ -71,12 +72,23 @@ type FormValues = {
     piholeApiToken?: string;
 };
 
+interface LocationOption {
+    id: string;
+    name: string;
+    latitude: number;
+    longitude: number;
+}
+
 export const AddEditForm = ({ handleClose, existingItem }: Props) => {
     const { formState: { errors } } = useForm();
     const { dashboardLayout, addItem, updateItem } = useAppContext();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [customIconFile, setCustomIconFile] = useState<File | null>(null);
     const [editingWolShortcut, setEditingWolShortcut] = useState(false);
+    const [locationSearch, setLocationSearch] = useState('');
+    const [locationOptions, setLocationOptions] = useState<LocationOption[]>([]);
+    const [selectedLocation, setSelectedLocation] = useState<LocationOption | null>(null);
+    const [isSearching, setIsSearching] = useState(false);
 
     // Initialize client type from existing item or default to qBittorrent
     const [torrentClientType, setTorrentClientType] = useState<string>(
@@ -85,18 +97,57 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             : TORRENT_CLIENT_TYPE.QBITTORRENT
     );
 
-    const formContext = useForm<FormValues>({
-        defaultValues: {
+    const formContext = useForm<FormValues>();
+
+    // Reset and initialize form when existingItem changes or when component mounts
+    useEffect(() => {
+        // Determine initial values based on existingItem
+        const initialItemType = isWidgetType(existingItem?.type)
+            ? 'widget'
+            : (existingItem?.type === ITEM_TYPE.BLANK_WIDGET || existingItem?.type === ITEM_TYPE.BLANK_ROW)
+                ? existingItem?.type
+                : existingItem?.type || '';
+
+        const initialWidgetType = isWidgetType(existingItem?.type)
+            ? existingItem?.type
+            : '';
+
+        const initialShowLabel = existingItem?.type === ITEM_TYPE.PIHOLE_WIDGET
+            ? (existingItem.showLabel !== undefined ? existingItem.showLabel : true)
+            : (existingItem?.showLabel !== undefined ? existingItem.showLabel : false);
+
+        // Initialize location state if it exists
+        if (existingItem?.config?.location) {
+            setSelectedLocation(existingItem.config.location as LocationOption);
+            setLocationSearch(existingItem.config.location.name || '');
+        } else {
+            setSelectedLocation(null);
+            setLocationSearch('');
+        }
+
+        // Initialize other component state
+        setTorrentClientType(
+            existingItem?.config?.clientType === TORRENT_CLIENT_TYPE.DELUGE
+                ? TORRENT_CLIENT_TYPE.DELUGE
+                : TORRENT_CLIENT_TYPE.QBITTORRENT
+        );
+        setCustomIconFile(null);
+        setEditingWolShortcut(existingItem?.config?.isWol || false);
+
+        // Reset the form with the existing item data
+        formContext.reset({
             shortcutName: existingItem?.label || '',
-            itemType: isWidgetType(existingItem?.type) ? 'widget' :
-                (existingItem?.type === ITEM_TYPE.BLANK_WIDGET ||
-                       existingItem?.type === ITEM_TYPE.BLANK_ROW) ? existingItem?.type : existingItem?.type || '',
+            itemType: initialItemType,
             url: existingItem?.url || '',
-            showLabel: undefined,
+            showLabel: initialShowLabel,
             icon: existingItem?.icon
-                ? { path: existingItem.icon.path, name: existingItem.icon.name, source: existingItem.icon.source || '' }
+                ? {
+                    path: existingItem.icon.path,
+                    name: existingItem.icon.name,
+                    source: existingItem.icon.source || ''
+                }
                 : null,
-            widgetType: isWidgetType(existingItem?.type) ? existingItem?.type : '',
+            widgetType: initialWidgetType,
             torrentClientType: existingItem?.config?.clientType || TORRENT_CLIENT_TYPE.QBITTORRENT,
             temperatureUnit: existingItem?.config?.temperatureUnit || 'fahrenheit',
             adminOnly: existingItem?.adminOnly || false,
@@ -114,10 +165,13 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             tcMaxDisplayedTorrents: existingItem?.config?.maxDisplayedTorrents || 5,
             piholeHost: existingItem?.config?.piholeHost || existingItem?.config?.host || '',
             piholePort: existingItem?.config?.piholePort || existingItem?.config?.port || '',
-            piholeSsl: existingItem?.config?.piholeSsl !== undefined ? existingItem?.config?.piholeSsl : existingItem?.config?.ssl || false,
+            piholeSsl: existingItem?.config?.piholeSsl !== undefined
+                ? existingItem?.config?.piholeSsl
+                : existingItem?.config?.ssl || false,
             piholeApiToken: existingItem?.config?.piholeApiToken || existingItem?.config?.apiToken || '',
-        }
-    });
+            location: existingItem?.config?.location || null,
+        });
+    }, [existingItem, formContext]);
 
     // Helper function to check if a type is a widget type
     function isWidgetType(type?: string): boolean {
@@ -160,6 +214,70 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
         }
     }, [watchedTorrentClientType, formContext]);
 
+    useEffect(() => {
+        // Debounce location search and fetch results
+        const fetchLocations = async () => {
+            if (locationSearch.length < 2) {
+                setLocationOptions([]);
+                return;
+            }
+
+            setIsSearching(true);
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationSearch)}&limit=5`);
+                const data = await response.json();
+
+                // Create a Map to track seen names and ensure uniqueness
+                const uniqueLocations = new Map();
+
+                // Process each location, ensuring uniqueness
+                data.forEach((item: any) => {
+                    const name = item.display_name;
+                    // Use a combination of place_id and name as the unique key
+                    const uniqueId = `${item.place_id}_${name}`;
+
+                    if (!uniqueLocations.has(name)) {
+                        uniqueLocations.set(name, {
+                            id: uniqueId,
+                            name: name,
+                            latitude: parseFloat(item.lat),
+                            longitude: parseFloat(item.lon)
+                        });
+                    }
+                });
+
+                // Convert the Map values to an array
+                const results = Array.from(uniqueLocations.values());
+
+                setLocationOptions(results);
+            } catch (error) {
+                console.error('Error fetching locations:', error);
+                setLocationOptions([]);
+            } finally {
+                setIsSearching(false);
+            }
+        };
+
+        const timer = setTimeout(() => {
+            if (locationSearch) {
+                fetchLocations();
+            }
+        }, 500); // 500ms debounce
+
+        return () => clearTimeout(timer);
+    }, [locationSearch]);
+
+    // When a location is selected, update the form values
+    useEffect(() => {
+        if (selectedLocation) {
+            formContext.setValue('location', {
+                name: selectedLocation.name,
+                latitude: selectedLocation.latitude,
+                longitude: selectedLocation.longitude
+            });
+        }
+    }, [selectedLocation]);
+
     const handleCustomIconSelect = (file: File | null) => {
         setCustomIconFile(file);
     };
@@ -183,6 +301,11 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
 
         let config = undefined;
         if (data.itemType === 'widget' && data.widgetType === ITEM_TYPE.WEATHER_WIDGET) {
+            config = {
+                temperatureUnit: data.temperatureUnit || 'fahrenheit',
+                location: data.location || undefined
+            };
+        } else if (data.itemType === 'widget' && data.widgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET) {
             config = {
                 temperatureUnit: data.temperatureUnit || 'fahrenheit'
             };
@@ -263,55 +386,59 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             }
 
             formContext.reset();
-            handleClose();
+            handleFormClose();
         } catch (error) {
             console.error('Error submitting form:', error);
         }
     };
 
-    useEffect(() => {
-        if (existingItem) {
-            formContext.reset({
-                shortcutName: existingItem.label || '',
-                itemType: isWidgetType(existingItem.type) ? 'widget' :
-                    (existingItem.type === ITEM_TYPE.BLANK_WIDGET ||
-                           existingItem.type === ITEM_TYPE.BLANK_ROW) ? existingItem.type : existingItem.type || '',
-                url: existingItem.url || '',
-                showLabel: existingItem.type === ITEM_TYPE.PIHOLE_WIDGET ?
-                    (existingItem.showLabel !== undefined ? existingItem.showLabel : true) :
-                    (existingItem.showLabel !== undefined ? existingItem.showLabel : false),
-                icon: existingItem.icon
-                    ? { path: existingItem.icon.path, name: existingItem.icon.name, source: existingItem.icon.source || '' }
-                    : null,
-                widgetType: isWidgetType(existingItem.type) ? existingItem.type : '',
-                torrentClientType: existingItem.config?.clientType || TORRENT_CLIENT_TYPE.QBITTORRENT,
-                temperatureUnit: existingItem.config?.temperatureUnit || 'fahrenheit',
-                adminOnly: existingItem.adminOnly || false,
-                isWol: existingItem.config?.isWol || false,
-                macAddress: existingItem.config?.macAddress || '',
-                broadcastAddress: existingItem.config?.broadcastAddress || '',
-                port: existingItem.config?.port || '',
-                // Torrent client config
-                tcHost: existingItem.config?.host || 'localhost',
-                tcPort: existingItem.config?.port ||
-                    (existingItem.config?.clientType === TORRENT_CLIENT_TYPE.DELUGE ? '8112' : '8080'),
-                tcSsl: existingItem.config?.ssl || false,
-                tcUsername: existingItem.config?.username || '',
-                tcPassword: existingItem.config?.password || '',
-                tcMaxDisplayedTorrents: existingItem.config?.maxDisplayedTorrents || 5,
-                piholeHost: existingItem.config?.piholeHost || existingItem.config?.host || '',
-                piholePort: existingItem.config?.piholePort || existingItem.config?.port || '',
-                piholeSsl: existingItem.config?.piholeSsl !== undefined ? existingItem.config?.piholeSsl : existingItem.config?.ssl || false,
-                piholeApiToken: existingItem.config?.piholeApiToken || existingItem.config?.apiToken || '',
-            });
-        }
-    }, [existingItem, formContext]);
+    // Function to completely reset form when closing
+    const handleFormClose = () => {
+        // Reset all component state
+        setLocationSearch('');
+        setSelectedLocation(null);
+        setLocationOptions([]);
+        setCustomIconFile(null);
+        setEditingWolShortcut(false);
+
+        // Reset form values to empty/default values
+        formContext.reset({
+            shortcutName: '',
+            itemType: '',
+            url: '',
+            showLabel: false,
+            icon: null,
+            widgetType: '',
+            torrentClientType: TORRENT_CLIENT_TYPE.QBITTORRENT,
+            temperatureUnit: 'fahrenheit',
+            adminOnly: false,
+            isWol: false,
+            macAddress: '',
+            broadcastAddress: '',
+            port: '',
+            tcHost: 'localhost',
+            tcPort: '8080',
+            tcSsl: false,
+            tcUsername: '',
+            tcPassword: '',
+            tcMaxDisplayedTorrents: 5,
+            piholeHost: '',
+            piholePort: '',
+            piholeSsl: false,
+            piholeApiToken: '',
+            location: null,
+        });
+
+        // This ensures that when the form is reopened, the initial effect will run and set values from existingItem
+        handleClose();
+    };
 
     return (
         <Grid
             container
             justifyContent='center'
             alignItems='center'
+            key={existingItem ? `item-${existingItem.id}` : 'new-item'}
         >
             <Grid>
                 <Box
@@ -322,7 +449,11 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                         backgroundColor: COLORS.GRAY,
                     }}
                 >
-                    <FormContainer onSuccess={handleSubmit} formContext={formContext}>
+                    <FormContainer
+                        onSuccess={handleSubmit}
+                        formContext={formContext}
+                        key={existingItem ? `form-${existingItem.id}` : 'new-form'}
+                    >
                         <Grid container spacing={2} sx={styles.vcenter}>
                             <Grid>
                                 <SelectElement label='Item Type' name='itemType' options={ITEM_TYPE_OPTIONS} required fullWidth sx={{
@@ -450,6 +581,106 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
 
                             {/* Weather widget configuration */}
                             {selectedItemType === 'widget' && selectedWidgetType === ITEM_TYPE.WEATHER_WIDGET && (
+                                <>
+                                    <Grid>
+                                        <SelectElement
+                                            label='Temperature Unit'
+                                            name='temperatureUnit'
+                                            options={TEMPERATURE_UNIT_OPTIONS}
+                                            required
+                                            fullWidth
+                                            sx={{
+                                                '& .MuiOutlinedInput-root': {
+                                                    '& fieldset': {
+                                                        borderColor: 'text.primary',
+                                                    },
+                                                    '.MuiSvgIcon-root ': {
+                                                        fill: theme.palette.text.primary,
+                                                    },
+                                                    '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                                },
+                                                width: '100%',
+                                                minWidth: isMobile ? '50vw' :'20vw',
+                                                '& .MuiMenuItem-root:hover': {
+                                                    backgroundColor: `${COLORS.LIGHT_GRAY_HOVER} !important`,
+                                                },
+                                                '& .MuiMenuItem-root.Mui-selected': {
+                                                    backgroundColor: `${theme.palette.primary.main} !important`,
+                                                    color: 'white',
+                                                },
+                                                '& .MuiMenuItem-root.Mui-selected:hover': {
+                                                    backgroundColor: `${theme.palette.primary.main} !important`,
+                                                    color: 'white',
+                                                }
+                                            }}
+                                            slotProps={{
+                                                inputLabel: { style: { color: theme.palette.text.primary } }
+                                            }}
+                                        />
+                                    </Grid>
+                                    <Grid>
+                                        <Autocomplete
+                                            options={locationOptions}
+                                            getOptionLabel={(option) => {
+                                                // Handle both string and LocationOption types
+                                                if (typeof option === 'string') {
+                                                    return option;
+                                                }
+                                                return option.name;
+                                            }}
+                                            inputValue={locationSearch}
+                                            onInputChange={(_, newValue) => {
+                                                setLocationSearch(newValue);
+                                            }}
+                                            onChange={(_, newValue) => {
+                                                // Handle both string and LocationOption types
+                                                if (typeof newValue === 'string' || !newValue) {
+                                                    setSelectedLocation(null);
+                                                    formContext.setValue('location', null);
+                                                } else {
+                                                    setSelectedLocation(newValue);
+                                                }
+                                            }}
+                                            loading={isSearching}
+                                            loadingText='Searching...'
+                                            noOptionsText={locationSearch.length < 2 ? 'Type to search...' : 'No locations found'}
+                                            fullWidth
+                                            isOptionEqualToValue={(option, value) => option.id === value.id}
+                                            clearOnBlur={false}
+                                            clearOnEscape
+                                            value={selectedLocation}
+                                            freeSolo
+                                            clearIcon={<ClearIcon style={{ color: theme.palette.text.primary }} />}
+                                            renderInput={(params) => (
+                                                <TextField
+                                                    {...params}
+                                                    label='Search location'
+                                                    variant='outlined'
+                                                    sx={{
+                                                        width: '100%',
+                                                        mt: 2,
+                                                        mb: 2,
+                                                        '& .MuiOutlinedInput-root': {
+                                                            '& fieldset': {
+                                                                borderColor: 'text.primary',
+                                                            },
+                                                            '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                                            '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                                        }
+                                                    }}
+                                                    InputLabelProps={{
+                                                        style: { color: theme.palette.text.primary }
+                                                    }}
+                                                />
+                                            )}
+                                        />
+                                    </Grid>
+                                </>
+                            )}
+
+                            {/* System Monitor widget configuration */}
+                            {selectedItemType === 'widget' && selectedWidgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET && (
                                 <Grid>
                                     <SelectElement
                                         label='Temperature Unit'

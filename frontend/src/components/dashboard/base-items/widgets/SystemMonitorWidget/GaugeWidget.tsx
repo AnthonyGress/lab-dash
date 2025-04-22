@@ -12,28 +12,40 @@ interface GaugeWidgetProps {
   title: string;
   size?: number;
   temperature?: boolean;
+  isFahrenheit?: boolean;
   total?: number;
 }
 
-export const GaugeWidget: React.FC<GaugeWidgetProps> = ({ value, title, size, temperature, total }) => {
+export const GaugeWidget: React.FC<GaugeWidgetProps> = ({ value, title, size, temperature, isFahrenheit, total }) => {
+    // Calculate the maximum value for temperature gauge based on the unit
+    const maxValue = temperature
+        ? (isFahrenheit ? 212 : 100) // Max temp: 212°F or 100°C
+        : (total ? total : 100);     // Default max for non-temperature gauges
 
     return (
         <Box position='relative' display='inline-flex'>
             {/* Gauge Chart */}
-            <Gauge value={value} valueMax={total ? total : 100} startAngle={-150} endAngle={150} cornerRadius='50%' sx={
-                { '& .MuiGauge-valueText': { display: 'none' },
-                    [`& .${gaugeClasses.valueArc}`]: {
-                        fill: 'primary.main',
-                    },
-                    [`& .${gaugeClasses.referenceArc}`]: {
-                        fill: theme.palette.text.disabled,
-                    },
-                    width: { xs: 108, sm: 80, md: 108, xl: 135 },
-                    height: { xs: 135, sm: 120, md: 130, xl: 135 },
-                    pointerEvents: 'none', // Allows scrolling through the SVG
-                    touchAction: 'none',
+            <Gauge
+                value={value}
+                valueMax={maxValue}
+                startAngle={-150}
+                endAngle={150}
+                cornerRadius='50%'
+                sx={
+                    { '& .MuiGauge-valueText': { display: 'none' },
+                        [`& .${gaugeClasses.valueArc}`]: {
+                            fill: 'primary.main',
+                        },
+                        [`& .${gaugeClasses.referenceArc}`]: {
+                            fill: theme.palette.text.disabled,
+                        },
+                        width: { xs: 108, sm: 80, md: 108, xl: 135 },
+                        height: { xs: 135, sm: 120, md: 130, xl: 135 },
+                        pointerEvents: 'none', // Allows scrolling through the SVG
+                        touchAction: 'none',
+                    }
                 }
-            } />
+            />
             {/* Center Content */}
             <Box
                 position='absolute'
@@ -48,7 +60,7 @@ export const GaugeWidget: React.FC<GaugeWidgetProps> = ({ value, title, size, te
                 }}
             >
                 <Typography fontSize={{ xs: 20, sm: 17, md: 22, lg: 20 }} fontWeight='bold'>
-                    {value}{temperature ? '°C': '%'}
+                    {value}{temperature ? (isFahrenheit ? '°F' : '°C') : '%'}
                 </Typography>
             </Box>
             <Box

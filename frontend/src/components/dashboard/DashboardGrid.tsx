@@ -149,7 +149,7 @@ export const DashboardGrid: React.FC = () => {
                                 case ITEM_TYPE.DATE_TIME_WIDGET:
                                     return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
                                 case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
-                                    return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
+                                    return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
                                 case ITEM_TYPE.PIHOLE_WIDGET:
                                     return <SortablePihole key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
                                 case ITEM_TYPE.TORRENT_CLIENT:
@@ -193,7 +193,7 @@ export const DashboardGrid: React.FC = () => {
                                 case ITEM_TYPE.DATE_TIME_WIDGET:
                                     return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} isOverlay/>;
                                 case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
-                                    return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} isOverlay/>;
+                                    return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
                                 case ITEM_TYPE.PIHOLE_WIDGET:
                                     return <SortablePihole key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
                                 case ITEM_TYPE.TORRENT_CLIENT:

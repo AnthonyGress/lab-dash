@@ -10,12 +10,15 @@ type Props = {
     id: string;
     editMode: boolean;
     isOverlay?: boolean;
+    config?: {
+        temperatureUnit?: string;
+        [key: string]: any;
+    };
     onDelete?: () => void;
     onEdit?: () => void;
-
 };
 
-export const SortableSystemMonitorWidget: React.FC<Props> = ({ id, editMode, isOverlay = false, onDelete, onEdit }) => {
+export const SortableSystemMonitorWidget: React.FC<Props> = ({ id, editMode, isOverlay = false, config, onDelete, onEdit }) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
     return (
@@ -32,7 +35,7 @@ export const SortableSystemMonitorWidget: React.FC<Props> = ({ id, editMode, isO
             }}
         >
             <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit}>
-                <SystemMonitorWidget />
+                <SystemMonitorWidget config={config} />
             </WidgetContainer>
         </Grid2>
     );
