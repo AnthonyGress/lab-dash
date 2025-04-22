@@ -98,7 +98,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                 (existingItem?.type === ITEM_TYPE.BLANK_WIDGET ||
                        existingItem?.type === ITEM_TYPE.BLANK_ROW) ? existingItem?.type : existingItem?.type || '',
             url: existingItem?.url || '',
-            showLabel: existingItem?.showLabel,
+            showLabel: undefined,
             icon: existingItem?.icon
                 ? { path: existingItem.icon.path, name: existingItem.icon.name, source: existingItem.icon.source || '' }
                 : null,
@@ -141,6 +141,20 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
     const selectedWidgetType = formContext.watch('widgetType');
     const isWol = formContext.watch('isWol', false);
     const watchedTorrentClientType = formContext.watch('torrentClientType');
+
+    // Set default showLabel based on widget type
+    useEffect(() => {
+        if (selectedItemType === 'widget') {
+            // Only set the default if there's no existing value (to avoid overriding user choice)
+            if (formContext.getValues('showLabel') === undefined || (!existingItem && selectedWidgetType === ITEM_TYPE.PIHOLE_WIDGET)) {
+                if (selectedWidgetType === ITEM_TYPE.PIHOLE_WIDGET) {
+                    formContext.setValue('showLabel', true);
+                } else {
+                    formContext.setValue('showLabel', false);
+                }
+            }
+        }
+    }, [selectedItemType, selectedWidgetType, formContext, existingItem]);
 
     useEffect(() => {
         if (watchedTorrentClientType) {
@@ -269,7 +283,9 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                     (existingItem.type === ITEM_TYPE.BLANK_WIDGET ||
                            existingItem.type === ITEM_TYPE.BLANK_ROW) ? existingItem.type : existingItem.type || '',
                 url: existingItem.url || '',
-                showLabel: existingItem.showLabel,
+                showLabel: existingItem.type === ITEM_TYPE.PIHOLE_WIDGET ?
+                    (existingItem.showLabel !== undefined ? existingItem.showLabel : true) :
+                    (existingItem.showLabel !== undefined ? existingItem.showLabel : false),
                 icon: existingItem.icon
                     ? { path: existingItem.icon.path, name: existingItem.icon.name, source: existingItem.icon.source || '' }
                     : null,
@@ -631,7 +647,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                         />
                                     </Grid>
                                     <Grid>
-                                        <CheckboxElement label='Show Name' name='showLabel' sx={{ ml: 1, color: 'white', '& .MuiSvgIcon-root': { fontSize: 30 } }}/>
+                                        <CheckboxElement label='Show Name' name='showLabel' defaultChecked={false} sx={{ ml: 1, color: 'white', '& .MuiSvgIcon-root': { fontSize: 30 } }}/>
                                     </Grid>
                                 </>
                             )}
@@ -724,6 +740,8 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                         <CheckboxElement
                                             label='Show Name'
                                             name='showLabel'
+                                            defaultChecked={true}
+                                            checked={formContext.watch('showLabel')}
                                             sx={{
                                                 ml: 1,
                                                 color: 'white',
@@ -911,7 +929,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                     />
                                 </Grid>
                                 <Grid>
-                                    <CheckboxElement label='Show Name' name='showLabel' sx={{ ml: 1, color: 'white', '& .MuiSvgIcon-root': { fontSize: 30 },  }}/>
+                                    <CheckboxElement label='Show Name' name='showLabel' defaultChecked={false} sx={{ ml: 1, color: 'white', '& .MuiSvgIcon-root': { fontSize: 30 },  }}/>
                                 </Grid>
                                 <Grid>
                                     <CheckboxElement

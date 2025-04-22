@@ -293,6 +293,45 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
         return remainingTime;
     };
 
+    // Create base URL for Pi-hole admin panel
+    const getBaseUrl = () => {
+        if (!piholeConfig.host) return '';
+
+        const protocol = piholeConfig.ssl ? 'https' : 'http';
+        const port = piholeConfig.port ? `:${piholeConfig.port}` : '';
+        return `${protocol}://${piholeConfig.host}${port}/admin`;
+    };
+
+    // Handle opening the Pi-hole admin dashboard (default page)
+    const handleOpenPiholeAdmin = () => {
+        const baseUrl = getBaseUrl();
+        if (baseUrl) window.open(baseUrl, '_blank');
+    };
+
+    // Handle opening the queries page (percentage blocked)
+    const handleOpenQueriesPage = () => {
+        const baseUrl = getBaseUrl();
+        if (baseUrl) window.open(`${baseUrl}/queries.php`, '_blank');
+    };
+
+    // Handle opening the blocked queries page
+    const handleOpenBlockedPage = () => {
+        const baseUrl = getBaseUrl();
+        if (baseUrl) window.open(`${baseUrl}/queries.php?forwarddest=blocked`, '_blank');
+    };
+
+    // Handle opening the network page (queries today)
+    const handleOpenNetworkPage = () => {
+        const baseUrl = getBaseUrl();
+        if (baseUrl) window.open(`${baseUrl}/network.php`, '_blank');
+    };
+
+    // Handle opening the adlists page
+    const handleOpenAdlistsPage = () => {
+        const baseUrl = getBaseUrl();
+        if (baseUrl) window.open(`${baseUrl}/groups-adlists.php`, '_blank');
+    };
+
     if (error) {
         return (
             <Box sx={{
@@ -372,39 +411,56 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
     });
 
     return (
-        <Box sx={{ p: 2, height: '100%' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, mt: 1.5 }}>
-                {piholeConfig.showLabel && (
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <img
-                            src={`${BACKEND_URL}/icons/pihole.svg`}
-                            alt='Pi-hole logo'
-                            style={{
-                                width: '35px',
-                                height: '35px',
-                                marginRight: '8px'
+        <Box sx={{ p: 0.5, height: '100%' }}>
+            <Box sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                mb: 0.5,
+            }}>
+                {/* Left side - Pi-hole title */}
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    {piholeConfig.showLabel && (
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    opacity: 0.8
+                                }
                             }}
-                        />
-                        <Typography variant='h6' gutterBottom sx={{ mb: 0 }}>
-                            Pi-hole
-                        </Typography>
-                    </Box>
-                )}
+                            onClick={handleOpenPiholeAdmin}
+                        >
+                            <img
+                                src={`${BACKEND_URL}/icons/pihole.svg`}
+                                alt='Pi-hole logo'
+                                style={{
+                                    width: '30px',
+                                    height: '30px',
+                                }}
+                            />
+                            <Typography variant='h6' sx={{ mb: 0, fontSize: '1rem' }}>
+                                Pi-hole
+                            </Typography>
+                        </Box>
+                    )}
+                </Box>
 
-                {/* Blocking controls */}
+                {/* Right side - Disable/Enable button */}
                 <Button
                     variant='text'
                     startIcon={isBlocking ? <MdPause /> : <MdPlayArrow />}
                     onClick={isBlocking ? handleDisableMenuClick : handleEnableBlocking}
                     disabled={isDisablingBlocking}
                     sx={{
-                        height: 30,
-                        fontSize: '0.75rem',
+                        height: 25,
+                        fontSize: '0.7rem',
                         color: 'white',
                         '&:hover': {
                             backgroundColor: 'rgba(255, 255, 255, 0.1)'
                         },
-                        ml: piholeConfig.showLabel ? undefined : 'auto' // Push button to the right when label is hidden
+                        ml: 'auto'
                     }}
                 >
                     {isBlocking ? 'Disable' : (disableEndTime ? `Resume (${formatRemainingTime()})` : 'Resume')}
@@ -426,27 +482,34 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 </Menu>
             </Box>
 
-            <Grid container spacing={2}>
+            <Grid container spacing={0.4}>
                 {/* Blocked Today */}
                 <Grid item xs={6}>
                     <Paper
                         elevation={0}
+                        onClick={handleOpenBlockedPage}
                         sx={{
-                            backgroundColor: '#74281E', // Red
-                            p: 2,
+                            backgroundColor: '#74281E',
+                            p: '5px 8px',
+                            minHeight: '60px',
                             height: '100%',
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            color: 'white'
+                            color: 'white',
+                            cursor: 'pointer',
+                            '&:hover': {
+                                opacity: 0.9,
+                                boxShadow: 2
+                            }
                         }}
                     >
-                        <MdBlockFlipped style={{ fontSize: '2rem' }} />
-                        <Typography variant='subtitle1' align='center'>
+                        <MdBlockFlipped style={{ fontSize: '1.6rem' }} />
+                        <Typography variant='body2' align='center' sx={{ mt: 0, mb: 0, fontSize: '0.75rem' }}>
                             Blocked Today
                         </Typography>
-                        <Typography variant='h6' align='center' fontWeight='bold'>
+                        <Typography variant='subtitle2' align='center' fontWeight='bold' sx={{ fontSize: '0.95rem', lineHeight: 1 }}>
                             {formatNumber(stats.ads_blocked_today || 0)}
                         </Typography>
                     </Paper>
@@ -456,24 +519,31 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 <Grid item xs={6}>
                     <Paper
                         elevation={0}
+                        onClick={handleOpenQueriesPage}
                         sx={{
-                            backgroundColor: '#8E5B0A', // Orange
-                            p: 2,
+                            backgroundColor: '#8E5B0A',
+                            p: '5px 8px',
+                            minHeight: '60px',
                             height: '100%',
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            color: 'white'
+                            color: 'white',
+                            cursor: 'pointer',
+                            '&:hover': {
+                                opacity: 0.9,
+                                boxShadow: 2
+                            }
                         }}
                     >
-                        <Box sx={{ display: 'flex', alignItems: 'center', fontSize: '2rem' }}>
-                            <FaPercentage style={{ fontSize: '2rem' }} />
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <FaPercentage style={{ fontSize: '1.6rem' }} />
                         </Box>
-                        <Typography variant='subtitle1' align='center'>
+                        <Typography variant='body2' align='center' sx={{ mt: 0, mb: 0, fontSize: '0.75rem' }}>
                             Percent Blocked
                         </Typography>
-                        <Typography variant='h6' align='center' fontWeight='bold'>
+                        <Typography variant='subtitle2' align='center' fontWeight='bold' sx={{ fontSize: '0.95rem', lineHeight: 1 }}>
                             {percentageText}%
                         </Typography>
                     </Paper>
@@ -483,22 +553,29 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 <Grid item xs={6}>
                     <Paper
                         elevation={0}
+                        onClick={handleOpenNetworkPage}
                         sx={{
-                            backgroundColor: '#006179', // blue
-                            p: 2,
+                            backgroundColor: '#006179',
+                            p: '5px 8px',
+                            minHeight: '60px',
                             height: '100%',
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            color: 'white'
+                            color: 'white',
+                            cursor: 'pointer',
+                            '&:hover': {
+                                opacity: 0.9,
+                                boxShadow: 2
+                            }
                         }}
                     >
-                        <FaGlobe style={{ fontSize: '2rem' }} />
-                        <Typography variant='subtitle1' align='center'>
+                        <FaGlobe style={{ fontSize: '1.6rem' }} />
+                        <Typography variant='body2' align='center' sx={{ mt: 0, mb: 0, fontSize: '0.75rem' }}>
                             Queries Today
                         </Typography>
-                        <Typography variant='h6' align='center' fontWeight='bold'>
+                        <Typography variant='subtitle2' align='center' fontWeight='bold' sx={{ fontSize: '0.95rem', lineHeight: 1 }}>
                             {formatNumber(stats.dns_queries_today || 0)}
                         </Typography>
                     </Paper>
@@ -508,22 +585,29 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 <Grid item xs={6}>
                     <Paper
                         elevation={0}
+                        onClick={handleOpenAdlistsPage}
                         sx={{
-                            backgroundColor: '#004A28', // Green
-                            p: 2,
+                            backgroundColor: '#004A28',
+                            p: '5px 8px',
+                            minHeight: '60px',
                             height: '100%',
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            color: 'white'
+                            color: 'white',
+                            cursor: 'pointer',
+                            '&:hover': {
+                                opacity: 0.9,
+                                boxShadow: 2
+                            }
                         }}
                     >
-                        <FaList style={{ fontSize: '2rem' }} />
-                        <Typography variant='subtitle1' align='center'>
+                        <FaList style={{ fontSize: '1.6rem' }} />
+                        <Typography variant='body2' align='center' sx={{ mt: 0, mb: 0, fontSize: '0.75rem' }}>
                             Domains on Adlists
                         </Typography>
-                        <Typography variant='h6' align='center' fontWeight='bold'>
+                        <Typography variant='subtitle2' align='center' fontWeight='bold' sx={{ fontSize: '0.95rem', lineHeight: 1 }}>
                             {formatNumber(stats.domains_being_blocked || 0)}
                         </Typography>
                     </Paper>
@@ -532,8 +616,8 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
 
             {/* Status indicator */}
             {!isBlocking && (
-                <Box sx={{ mt: 2, textAlign: 'center' }}>
-                    <Typography variant='body2' color='error'>
+                <Box sx={{ mt: 0.2, textAlign: 'center' }}>
+                    <Typography variant='caption' color='error' sx={{ fontSize: '0.6rem' }}>
                         {disableEndTime
                             ? `Blocking disabled. Will resume in ${formatRemainingTime()}`
                             : 'Blocking disabled indefinitely'}
