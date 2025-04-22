@@ -1,4 +1,4 @@
-import { Box, Button, CircularProgress, Grid, Menu, MenuItem, Paper, TextField, Typography } from '@mui/material';
+import { Box, Button, CircularProgress, Grid2 as Grid, Menu, MenuItem, Paper, TextField, Typography } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
 import { FaGlobe, FaList, FaPercentage } from 'react-icons/fa';
 import { MdBlockFlipped, MdDns, MdPause, MdPlayArrow } from 'react-icons/md';
@@ -484,7 +484,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
 
             <Grid container spacing={0.4}>
                 {/* Blocked Today */}
-                <Grid item xs={6}>
+                <Grid size={{ xs: 6 }}>
                     <Paper
                         elevation={0}
                         onClick={handleOpenBlockedPage}
@@ -516,7 +516,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 </Grid>
 
                 {/* Percent Blocked */}
-                <Grid item xs={6}>
+                <Grid size={{ xs: 6 }}>
                     <Paper
                         elevation={0}
                         onClick={handleOpenQueriesPage}
@@ -550,7 +550,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 </Grid>
 
                 {/* Queries Today */}
-                <Grid item xs={6}>
+                <Grid size={{ xs: 6 }}>
                     <Paper
                         elevation={0}
                         onClick={handleOpenNetworkPage}
@@ -582,7 +582,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 </Grid>
 
                 {/* Domains on Adlists */}
-                <Grid item xs={6}>
+                <Grid size={{ xs: 6 }}>
                     <Paper
                         elevation={0}
                         onClick={handleOpenAdlistsPage}

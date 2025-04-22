@@ -10,7 +10,7 @@ import { useAppContext } from '../../context/useAppContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { COLORS, styles } from '../../theme/styles';
 import { theme } from '../../theme/theme';
-import { DashboardItem, Icon, ITEM_TYPE, NewItem } from '../../types';
+import { DashboardItem, Icon, ITEM_TYPE, NewItem, TORRENT_CLIENT_TYPE } from '../../types';
 import { isEncrypted } from '../../utils/utils';
 
 type Props = {
@@ -38,12 +38,6 @@ const TEMPERATURE_UNIT_OPTIONS = [
     { id: 'fahrenheit', label: 'Fahrenheit (°F)' },
     { id: 'celsius', label: 'Celsius (°C)' }
 ];
-
-// Define torrent client types
-export enum TORRENT_CLIENT_TYPE {
-    QBITTORRENT = 'qbittorrent',
-    DELUGE = 'deluge'
-}
 
 const TORRENT_CLIENT_OPTIONS = [
     { id: TORRENT_CLIENT_TYPE.QBITTORRENT, label: 'qBittorrent' },

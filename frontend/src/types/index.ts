@@ -10,6 +10,11 @@ export enum ITEM_TYPE {
     BLANK_ROW = 'blank-row'
 }
 
+export enum TORRENT_CLIENT_TYPE {
+    QBITTORRENT = 'qbittorrent',
+    DELUGE = 'deluge'
+}
+
 export type NewItem = {
     name?: string;
     icon?: { path: string; name: string; source?: string };

@@ -14,12 +14,10 @@ import {
 import { Box, Grid2 as Grid } from '@mui/material';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
-
 import { SortableDeluge } from './sortable-items/widgets/SortableDeluge';
 import { useAppContext } from '../../context/useAppContext';
-import { DashboardItem, ITEM_TYPE } from '../../types';
+import { DashboardItem, ITEM_TYPE, TORRENT_CLIENT_TYPE } from '../../types';
 import { AddEditForm } from '../forms/AddEditForm';
-import { TORRENT_CLIENT_TYPE } from '../forms/AddEditForm';
 import { CenteredModal } from '../modals/CenteredModal';
 import { ConfirmationOptions, PopupManager } from '../modals/PopupManager';
 import { BlankAppShortcut } from './base-items/apps/BlankAppShortcut';
