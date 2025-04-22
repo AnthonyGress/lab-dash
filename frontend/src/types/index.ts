@@ -2,10 +2,17 @@ export enum ITEM_TYPE {
     WEATHER_WIDGET = 'weather-widget',
     DATE_TIME_WIDGET = 'date-time-widget',
     SYSTEM_MONITOR_WIDGET = 'system-monitor-widget',
+    TORRENT_CLIENT = 'torrent-client',
+    PIHOLE_WIDGET = 'pihole-widget',
     APP_SHORTCUT = 'app-shortcut',
     BLANK_APP = 'blank-app',
     BLANK_WIDGET = 'blank-widget',
     BLANK_ROW = 'blank-row'
+}
+
+export enum TORRENT_CLIENT_TYPE {
+    QBITTORRENT = 'qbittorrent',
+    DELUGE = 'deluge'
 }
 
 export type NewItem = {

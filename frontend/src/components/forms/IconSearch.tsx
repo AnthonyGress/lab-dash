@@ -149,6 +149,14 @@ export const IconSearch = ({ control, errors, onCustomIconSelect }: Props) => {
                                         '&:hover': {
                                             backgroundColor: `${COLORS.LIGHT_GRAY_HOVER} !important`
                                         },
+                                        '&.Mui-selected': {
+                                            backgroundColor: `${theme.palette.primary.main} !important`,
+                                            color: 'white',
+                                        },
+                                        '&.Mui-selected:hover': {
+                                            backgroundColor: `${theme.palette.primary.main} !important`,
+                                            color: 'white',
+                                        }
                                     }} key={shortid.generate()}>
                                         <img
                                             src={option.source === 'custom-pending' ? option.path : getIconPath(option.path)}

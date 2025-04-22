@@ -18,6 +18,8 @@ html, body {
   background-attachment: scroll;
   image-rendering: crisp-edges;
   -webkit-touch-callout: none !important;
+  /* Fix to prevent layout shift when modals open */
+  padding-right: 0 !important; /* Prevent padding added by MUI */
 }
 
 body {

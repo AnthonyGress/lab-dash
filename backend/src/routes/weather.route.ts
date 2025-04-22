@@ -55,5 +55,6 @@ weatherRoute.get('/', async (req: Request, res: Response): Promise<void> => {
 
     } catch (error) {
         console.error('Error fetching weather:', error);
+        res.status(500).json({ error: 'Error fetching weather data' });
     }
 });

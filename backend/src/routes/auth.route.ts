@@ -209,12 +209,9 @@ authRoute.post('/refresh', async (req: Request, res: Response) => {
         );
 
         if (userIndex === -1) {
-            res.status(401).json({ message: 'Refresh token not found' });
-
-
+            // If token is not found, clean up any potentially invalid tokens
             if (refreshToken) {
                 // Find and remove the refresh token
-
                 const updatedUsers = users.map(user => {
                     if (user.refreshTokens?.includes(refreshToken)) {
                         return {
@@ -243,7 +240,6 @@ authRoute.post('/refresh', async (req: Request, res: Response) => {
                 path: '/api/auth/refresh'
             });
 
-            // Also clear the refresh_token cookie with the updated path from the refresh route
             res.clearCookie('refresh_token', {
                 httpOnly: true,
                 secure: false,
@@ -252,6 +248,9 @@ authRoute.post('/refresh', async (req: Request, res: Response) => {
             });
 
             console.log('Cookies cleared on server');
+
+            // Send response AFTER clearing cookies, not before
+            res.status(401).json({ message: 'Refresh token not found' });
             return;
         }
 

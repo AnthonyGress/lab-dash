@@ -54,3 +54,21 @@ export const isValidHttpUrl = (url: string) => {
     const httpHttpsPattern = /^https?:\/\/\S+$/i;
     return httpHttpsPattern.test(url);
 };
+
+/**
+ * Formats a number with comma as thousands separator
+ * @param value - The number to format
+ * @returns Formatted number as string with commas
+ */
+export const formatNumber = (value: number): string => {
+    return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+};
+
+/**
+ * Checks if a string appears to be encrypted (starts with ENC: prefix)
+ * @param text - The string to check
+ * @returns True if the string starts with 'ENC:', false otherwise
+ */
+export const isEncrypted = (text: string): boolean => {
+    return text?.startsWith('ENC:') || false;
+};
