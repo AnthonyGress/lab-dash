@@ -24,6 +24,7 @@ import { Logo } from '../Logo';
 import { CenteredModal } from '../modals/CenteredModal';
 import { PopupManager } from '../modals/PopupManager';
 import { UpdateModal } from '../modals/UpdateModal';
+import { VersionModal } from '../modals/VersionModal';
 import { GlobalSearch } from '../search/GlobalSearch';
 
 const DrawerHeader = styled('div')(() => ({
@@ -42,6 +43,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
     const [openDrawer, setOpenDrawer] = useState(false);
     const [openAddModal, setOpenAddModal] = useState(false);
     const [openUpdateModal, setOpenUpdateModal] = useState(false);
+    const [openVersionModal, setOpenVersionModal] = useState(false);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const {
         dashboardLayout,
@@ -138,6 +140,10 @@ export const ResponsiveAppBar = ({ children }: Props) => {
         handleCloseDrawer();
     };
 
+    const handleOpenVersionModal = () => {
+        setOpenVersionModal(true);
+        handleCloseDrawer();
+    };
 
     return (
         <>
@@ -325,14 +331,14 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                         )}
                                         {/* Version Info */}
                                         <ListItem disablePadding>
-                                            <ListItemButton>
+                                            <ListItemButton onClick={handleOpenVersionModal}>
                                                 <ListItemIcon>
                                                     <FaInfoCircle style={{ color: theme.palette.text.primary, fontSize: 22, marginLeft: '-4px' }} />
                                                 </ListItemIcon>
                                                 <ListItemText
                                                     primary={
                                                         <Typography>
-                                                                    v{getAppVersion()}
+                                                            v{getAppVersion()}
                                                         </Typography>
                                                     }
                                                 />
@@ -412,6 +418,11 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                     handleClose={handleCloseUpdateModal}
                     latestVersion={latestVersion}
                     isAdmin={isAdmin}
+                />
+                {/* Version Modal */}
+                <VersionModal
+                    open={openVersionModal}
+                    handleClose={() => setOpenVersionModal(false)}
                 />
             </AppBar>
             <Box sx={{
