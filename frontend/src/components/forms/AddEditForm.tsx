@@ -726,6 +726,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                     <CheckboxElement
                                         label='Admin Only'
                                         name='adminOnly'
+                                        checked={formContext.watch('adminOnly')}
                                         helperText='When checked, this item will only be visible to admin users'
                                         sx={{
                                             ml: 1,
@@ -841,6 +842,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                         <CheckboxElement
                                             label='Use SSL'
                                             name='tcSsl'
+                                            checked={formContext.watch('tcSsl')}
                                             sx={{
                                                 ml: 1,
                                                 color: 'white',
@@ -872,7 +874,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                         />
                                     </Grid>
                                     <Grid>
-                                        <CheckboxElement label='Show Name' name='showLabel' defaultChecked={false} sx={{ ml: 1, color: 'white', '& .MuiSvgIcon-root': { fontSize: 30 } }}/>
+                                        <CheckboxElement label='Show Name' name='showLabel' checked={formContext.watch('showLabel')} sx={{ ml: 1, color: 'white', '& .MuiSvgIcon-root': { fontSize: 30 } }}/>
                                     </Grid>
                                 </>
                             )}
@@ -954,6 +956,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                         <CheckboxElement
                                             label='Use SSL'
                                             name='piholeSsl'
+                                            checked={formContext.watch('piholeSsl')}
                                             sx={{
                                                 ml: 1,
                                                 color: 'white',
@@ -965,7 +968,6 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                         <CheckboxElement
                                             label='Show Name'
                                             name='showLabel'
-                                            defaultChecked={true}
                                             checked={formContext.watch('showLabel')}
                                             sx={{
                                                 ml: 1,
@@ -1001,6 +1003,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                     <CheckboxElement
                                         label='Wake-on-LAN'
                                         name='isWol'
+                                        checked={formContext.watch('isWol')}
                                         helperText='Enable to create a Wake-on-LAN shortcut'
                                         sx={{
                                             ml: 1,
@@ -1154,12 +1157,13 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                     />
                                 </Grid>
                                 <Grid>
-                                    <CheckboxElement label='Show Name' name='showLabel' defaultChecked={false} sx={{ ml: 1, color: 'white', '& .MuiSvgIcon-root': { fontSize: 30 },  }}/>
+                                    <CheckboxElement label='Show Name' name='showLabel' sx={{ ml: 1, color: 'white', '& .MuiSvgIcon-root': { fontSize: 30 } }}/>
                                 </Grid>
                                 <Grid>
                                     <CheckboxElement
                                         label='Admin Only'
                                         name='adminOnly'
+                                        checked={formContext.watch('adminOnly')}
                                         helperText='When checked, this item will only be visible to admin users'
                                         sx={{
                                             ml: 1,
@@ -1202,6 +1206,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                     <CheckboxElement
                                         label='Admin Only'
                                         name='adminOnly'
+                                        checked={formContext.watch('adminOnly')}
                                         helperText='When checked, this item will only be visible to admin users'
                                         sx={{
                                             ml: 1,

@@ -1,10 +1,12 @@
 import { ArrowDownward, ArrowUpward, CheckCircle, Delete, Download, MoreVert, Pause, PlayArrow, Stop, Warning } from '@mui/icons-material';
-import { Box, CardContent, CircularProgress, Grid, IconButton, LinearProgress, Menu, MenuItem, TextField, Typography, useMediaQuery } from '@mui/material';
+import { Box, CardContent, CircularProgress, Grid, IconButton, LinearProgress, Link, Menu, MenuItem, TextField, Tooltip, Typography, useMediaQuery } from '@mui/material';
 import React, { useState } from 'react';
 
 import { PopupManager } from '../../../../components/modals/PopupManager';
+import { BACKEND_URL } from '../../../../constants/constants';
 import { useAppContext } from '../../../../context/useAppContext';
 import { theme } from '../../../../theme/theme';
+import { TORRENT_CLIENT_TYPE } from '../../../../types';
 
 export type TorrentClientStats = {
     dl_info_speed: number;
@@ -212,8 +214,20 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin,
     const showMenuButton = isAdmin && !editMode && (onResume || onPause || onDelete);
 
     return (
-        <Box sx={{ mb: 1, '&:last-child': { mb: 0 } }}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <Box sx={{
+            mb: 1.5,
+            '&:last-child': { mb: 0 },
+            p: 1,
+            borderRadius: '4px',
+            backgroundColor: 'rgba(255,255,255,0.05)',
+            transition: 'all 0.2s ease',
+            '&:hover': {
+                backgroundColor: 'rgba(255,255,255,0.08)'
+            },
+            width: '100%',
+            boxSizing: 'border-box'
+        }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                 {getStatusIcon(torrent.state)}
                 <Typography
                     variant='caption'
@@ -242,7 +256,7 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin,
                 >
                     {(torrent.state === 'downloading' && torrent.eta !== undefined) ? `ETA: ${formatEta(torrent.eta)}` : ''}
                 </Typography>
-                { (
+                {showMenuButton && (
                     <IconButton
                         size='small'
                         onClick={handleMenuOpen}
@@ -251,8 +265,7 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin,
                             p: 0.5,
                             color: 'white',
                             opacity: 0.7,
-                            '&:hover': { opacity: 1 },
-                            visibility: showMenuButton ? 'visible' : 'hidden'
+                            '&:hover': { opacity: 1 }
                         }}
                     >
                         {isActionLoading ? <CircularProgress size={16} /> : <MoreVert fontSize='small' />}
@@ -413,6 +426,33 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const { isAdmin } = useAppContext();
 
+    // Create base URL for torrent client web UI
+    const getBaseUrl = () => {
+        if (!loginCredentials.host) return '';
+
+        const protocol = loginCredentials.ssl ? 'https' : 'http';
+        const port = loginCredentials.port ? `:${loginCredentials.port}` : '';
+
+        return `${protocol}://${loginCredentials.host}${port}`;
+    };
+
+    // Handle opening the torrent client web UI
+    const handleOpenWebUI = () => {
+        const baseUrl = getBaseUrl();
+
+        if (baseUrl) {
+            // Use a secure method to open the URL
+            // This creates a temporary anchor element and triggers a click
+            const linkElement = document.createElement('a');
+            linkElement.href = baseUrl;
+            linkElement.target = '_blank';
+            linkElement.rel = 'noopener noreferrer';
+            document.body.appendChild(linkElement);
+            linkElement.click();
+            document.body.removeChild(linkElement);
+        }
+    };
+
     // Just show error message if authentication failed
     if (!isAuthenticated) {
         return (
@@ -427,9 +467,20 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
                     }}
                 >
                     {showLabel && (
-                        <Typography variant='h6' align='center' gutterBottom sx={{ color: 'white' }}>
-                            {clientName}
-                        </Typography>
+                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 1 }}>
+                            <img
+                                src={`${BACKEND_URL}/icons/${clientName.toLowerCase().includes('qbittorrent') ? 'qbittorrent.svg' : 'deluge.svg'}`}
+                                alt={clientName}
+                                style={{
+                                    width: '24px',
+                                    height: '24px',
+                                    marginRight: '8px'
+                                }}
+                            />
+                            <Typography variant='h6' align='center' gutterBottom sx={{ color: 'white', mb: 0 }}>
+                                {clientName}
+                            </Typography>
+                        </Box>
                     )}
 
                     {authError ? (
@@ -457,49 +508,183 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
     }
 
     return (
-        <CardContent sx={{ height: '100%', padding: 2, maxWidth: '100%' }}>
+        <CardContent sx={{ height: '100%', padding: 2, maxWidth: '100%', width: '100%' }}>
             <Box sx={{
                 display: 'flex',
                 flexDirection: 'column',
                 height: '100%',
-                color: 'white'
+                color: 'white',
+                width: '100%'
             }}>
                 {showLabel && (
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                        <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ color: 'white' }}>
-                            {clientName}
-                        </Typography>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, width: '100%' }}>
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    opacity: 0.8
+                                }
+                            }}
+                            onClick={handleOpenWebUI}
+                        >
+                            <img
+                                src={`${BACKEND_URL}/icons/${clientName.toLowerCase().includes('qbittorrent') ? 'qbittorrent.svg' : 'deluge.svg'}`}
+                                alt={clientName}
+                                style={{
+                                    width: '24px',
+                                    height: '24px',
+                                    marginRight: '8px'
+                                }}
+                            />
+                            <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ color: 'white' }}>
+                                {clientName}
+                            </Typography>
+                        </Box>
                     </Box>
                 )}
 
                 {!stats ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1, width: '100%' }}>
                         <CircularProgress />
                     </Box>
                 ) : (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                        <Box sx={{ flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', mb: 1 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
+                        <Box sx={{ flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', mb: 1, width: '100%' }}>
                             <Typography variant='caption' sx={{ px: 1, mb: 0.5, color: 'white' }}>
                                 Active ({stats.torrents?.downloading || 0})
                             </Typography>
 
-                            <Box sx={{ px: 1, overflowY: 'auto', flex: 1, mb: 1 }}>
-                                {torrents.map((torrent) => (
-                                    <TorrentItem
-                                        key={torrent.hash}
-                                        torrent={torrent}
-                                        clientName={clientName}
-                                        isAdmin={isAdmin}
-                                        onResume={onResumeTorrent}
-                                        onPause={onPauseTorrent}
-                                        onDelete={onDeleteTorrent}
-                                    />
-                                ))}
+                            <Box sx={{
+                                px: 1.5,
+                                pt: 1.5,
+                                pb: 1,
+                                overflowY: 'auto',
+                                height: '225px',
+                                maxHeight: '225px',
+                                mb: 1,
+                                width: '100%',
+                                minWidth: '100%',
+                                flex: '1 1 auto',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                borderRadius: '4px',
+                                backgroundColor: 'rgba(0,0,0,0.1)',
+                                '&::-webkit-scrollbar': {
+                                    width: '4px',
+                                },
+                                '&::-webkit-scrollbar-track': {
+                                    background: 'rgba(255,255,255,0.05)',
+                                },
+                                '&::-webkit-scrollbar-thumb': {
+                                    background: 'rgba(255,255,255,0.2)',
+                                    borderRadius: '2px',
+                                },
+                                '&::-webkit-scrollbar-thumb:hover': {
+                                    background: 'rgba(255,255,255,0.3)',
+                                },
+                                display: 'block',
+                                boxSizing: 'border-box',
+                                position: 'relative'
+                            }}>
+                                {torrents.length > 0 ? (
+                                    torrents.map((torrent) => (
+                                        <TorrentItem
+                                            key={torrent.hash}
+                                            torrent={torrent}
+                                            clientName={clientName}
+                                            isAdmin={isAdmin}
+                                            onResume={onResumeTorrent}
+                                            onPause={onPauseTorrent}
+                                            onDelete={onDeleteTorrent}
+                                        />
+                                    ))
+                                ) : (
+                                    <>
+                                        <Box sx={{
+                                            display: 'flex',
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            height: '100%',
+                                            width: '100%',
+                                            color: 'rgba(255,255,255,0.5)',
+                                            fontSize: '0.85rem',
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            right: 0,
+                                            bottom: 0,
+                                            zIndex: 1
+                                        }}>
+                                            No active torrents
+                                        </Box>
+                                        {/* Hidden sample torrent item to maintain width - but not visible */}
+                                        <Box sx={{
+                                            opacity: 0,
+                                            pointerEvents: 'none',
+                                            position: 'absolute',
+                                            visibility: 'hidden'
+                                        }}>
+                                            <Box sx={{
+                                                mb: 1.5,
+                                                p: 1,
+                                                borderRadius: '4px',
+                                                width: '100%',
+                                                boxSizing: 'border-box'
+                                            }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                                                    <Download sx={{ color: 'white' }} fontSize='small' />
+                                                    <Typography
+                                                        variant='caption'
+                                                        noWrap
+                                                        sx={{
+                                                            ml: 0.5,
+                                                            maxWidth: '50%',
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis',
+                                                            color: 'white',
+                                                            fontSize: isMobile ? '0.7rem' : '.8rem'
+                                                        }}
+                                                    >
+                                                        Sample Torrent Name.mkv
+                                                    </Typography>
+                                                    <Typography
+                                                        variant='caption'
+                                                        sx={{
+                                                            fontSize: isMobile ? '0.7rem' : '0.75rem',
+                                                            ml: 'auto',
+                                                            color: 'white',
+                                                            minWidth: '80px',
+                                                            textAlign: 'right',
+                                                            mr: 0.5
+                                                        }}
+                                                    >
+                                                        ETA: 1h 30m
+                                                    </Typography>
+                                                </Box>
+                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.2 }}>
+                                                    <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white', minWidth: '100px' }}>
+                                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                            <ArrowDownward sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
+                                                            <span>3.2 MB/s</span>
+                                                        </Box>
+                                                    </Typography>
+                                                    <Typography
+                                                        variant='caption'
+                                                        sx={{ ml: 'auto', color: 'white', fontSize: '.75rem', minWidth: '100px', textAlign: 'right' }}
+                                                    >
+                                                        45.2% / 1.24 GB
+                                                    </Typography>
+                                                </Box>
+                                            </Box>
+                                        </Box>
+                                    </>
+                                )}
                             </Box>
 
                         </Box>
-                        <Box sx={{ mt: 'auto', pt: 1, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <Box sx={{ mt: 'auto', pt: 1, borderTop: '1px solid rgba(255,255,255,0.1)', width: '100%' }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
                                 <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                                     <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)', mb: 0.5 }}>
                                         Current:
