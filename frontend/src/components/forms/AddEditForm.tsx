@@ -65,7 +65,6 @@ type FormValues = {
     tcSsl?: boolean;
     tcUsername?: string;
     tcPassword?: string;
-    tcMaxDisplayedTorrents?: number;
     piholeHost?: string;
     piholePort?: string;
     piholeSsl?: boolean;
@@ -162,7 +161,6 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             tcSsl: existingItem?.config?.ssl || false,
             tcUsername: existingItem?.config?.username || '',
             tcPassword: existingItem?.config?.password || '',
-            tcMaxDisplayedTorrents: existingItem?.config?.maxDisplayedTorrents || 5,
             piholeHost: existingItem?.config?.piholeHost || existingItem?.config?.host || '',
             piholePort: existingItem?.config?.piholePort || existingItem?.config?.port || '',
             piholeSsl: existingItem?.config?.piholeSsl !== undefined
@@ -194,8 +192,8 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
     useEffect(() => {
         if (selectedItemType === 'widget') {
             // Only set the default if there's no existing value (to avoid overriding user choice)
-            if (formContext.getValues('showLabel') === undefined || (!existingItem && selectedWidgetType === ITEM_TYPE.PIHOLE_WIDGET)) {
-                if (selectedWidgetType === ITEM_TYPE.PIHOLE_WIDGET) {
+            if (formContext.getValues('showLabel') === undefined || (!existingItem && (selectedWidgetType === ITEM_TYPE.PIHOLE_WIDGET || selectedWidgetType === ITEM_TYPE.TORRENT_CLIENT))) {
+                if (selectedWidgetType === ITEM_TYPE.PIHOLE_WIDGET || selectedWidgetType === ITEM_TYPE.TORRENT_CLIENT) {
                     formContext.setValue('showLabel', true);
                 } else {
                     formContext.setValue('showLabel', false);
@@ -348,7 +346,6 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                 ssl: data.tcSsl,
                 username: data.tcUsername,
                 password: encryptedPassword,
-                maxDisplayedTorrents: data.tcMaxDisplayedTorrents,
                 showLabel: data.showLabel
             };
         } else if (data.itemType === ITEM_TYPE.APP_SHORTCUT && data.isWol) {
@@ -421,7 +418,6 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             tcSsl: false,
             tcUsername: '',
             tcPassword: '',
-            tcMaxDisplayedTorrents: 5,
             piholeHost: '',
             piholePort: '',
             piholeSsl: false,
@@ -851,30 +847,12 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                         />
                                     </Grid>
                                     <Grid>
-                                        <TextFieldElement
-                                            name='tcMaxDisplayedTorrents'
-                                            label='Max Displayed Torrents'
-                                            type='number'
-                                            variant='outlined'
-                                            fullWidth
-                                            autoComplete='off'
-                                            sx={{
-                                                width: '100%',
-                                                '& .MuiOutlinedInput-root': {
-                                                    '& fieldset': {
-                                                        borderColor: 'text.primary',
-                                                    },
-                                                    '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                                                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
-                                                },
-                                            }}
-                                            slotProps={{
-                                                inputLabel: { style: { color: theme.palette.text.primary } }
-                                            }}
+                                        <CheckboxElement
+                                            label='Show Name'
+                                            name='showLabel'
+                                            checked={formContext.watch('showLabel')}
+                                            sx={{ ml: 1, color: 'white', '& .MuiSvgIcon-root': { fontSize: 30 } }}
                                         />
-                                    </Grid>
-                                    <Grid>
-                                        <CheckboxElement label='Show Name' name='showLabel' checked={formContext.watch('showLabel')} sx={{ ml: 1, color: 'white', '& .MuiSvgIcon-root': { fontSize: 30 } }}/>
                                     </Grid>
                                 </>
                             )}
