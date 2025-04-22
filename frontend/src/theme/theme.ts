@@ -51,7 +51,15 @@ export const theme = createTheme({
             styleOverrides: {
                 root: {
                     '&:hover': {
-                        backgroundColor: COLORS.GRAY, // Custom hover color globally
+                        backgroundColor: `${COLORS.LIGHT_GRAY_HOVER} !important`, // Custom hover color globally
+                    },
+                    '&.Mui-selected': {
+                        backgroundColor: `${COLORS.PURPLE} !important`,
+                        color: 'white',
+                    },
+                    '&.Mui-selected:hover': {
+                        backgroundColor: `${COLORS.PURPLE} !important`,
+                        color: 'white',
                     },
                 },
             },
@@ -61,6 +69,19 @@ export const theme = createTheme({
                 paper: {
                     '& .MuiAutocomplete-noOptions': {
                         color: '#C9C9C9',
+                    },
+                },
+                option: {
+                    '&:hover': {
+                        backgroundColor: `${COLORS.LIGHT_GRAY_HOVER} !important`,
+                    },
+                    '&[aria-selected="true"]': {
+                        backgroundColor: `${COLORS.PURPLE} !important`,
+                        color: 'white',
+                    },
+                    '&[aria-selected="true"]:hover': {
+                        backgroundColor: `${COLORS.PURPLE} !important`,
+                        color: 'white',
                     },
                 },
             },
@@ -127,7 +148,24 @@ export const theme = createTheme({
                     fill: '#ffffff', // White text for step icons
                 }
             }
-        }
+        },
+        MuiListItemButton: {
+            styleOverrides: {
+                root: {
+                    '&:hover': {
+                        backgroundColor: `${COLORS.LIGHT_GRAY_HOVER} !important`,
+                    },
+                    '&.Mui-selected': {
+                        backgroundColor: `${COLORS.PURPLE} !important`,
+                        color: 'white',
+                    },
+                    '&.Mui-selected:hover': {
+                        backgroundColor: `${COLORS.PURPLE} !important`,
+                        color: 'white',
+                    },
+                },
+            },
+        },
     },
 });
 

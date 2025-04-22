@@ -253,7 +253,7 @@ export class DashApi {
         return null;
     }
 
-    public static async getWeather(latitude?: number, longitude?: number): Promise<any> {
+    public static async getWeather(latitude: number, longitude: number): Promise<any> {
         const res = await axios.get(`${BACKEND_URL}/api/weather`, {
             params: {
                 latitude,
@@ -427,6 +427,454 @@ export class DashApi {
             } else {
                 throw new Error('Network error occurred while sending Wake-on-LAN packet');
             }
+        }
+    }
+
+    // qBittorrent methods
+    public static async qbittorrentLogin(credentials: {
+        username: string;
+        password: string;
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+    }): Promise<boolean> {
+        try {
+            const { host, port, ssl, username, password } = credentials;
+            const response = await axios.post(
+                `${BACKEND_URL}/api/qbittorrent/login`,
+                { username, password },
+                {
+                    params: { host, port, ssl },
+                    withCredentials: false
+                }
+            );
+            return response.data.success;
+        } catch (error) {
+            console.error('Failed to login to qBittorrent:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Encrypts a password using the backend encryption
+     * @param password The password to encrypt
+     * @returns The encrypted password or the original if encryption fails
+     */
+    public static async encryptPassword(password: string): Promise<string> {
+        if (!password) return '';
+
+        try {
+            const response = await axios.post(
+                `${BACKEND_URL}/api/qbittorrent/encrypt-password`,
+                { password },
+                { withCredentials: true }
+            );
+
+            return response.data.encryptedPassword;
+        } catch (error) {
+            console.error('Failed to encrypt password:', error);
+            return password; // Return the original password if encryption fails
+        }
+    }
+
+    public static async qbittorrentGetStats(connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+        username?: string;
+        password?: string;
+    }): Promise<any> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/qbittorrent/stats`, {
+                params: connectionInfo,
+                withCredentials: false
+            });
+            return res.data;
+        } catch (error) {
+            console.error('qBittorrent stats error:', error);
+            throw error;
+        }
+    }
+
+    public static async qbittorrentGetTorrents(connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+        username?: string;
+        password?: string;
+    }): Promise<any[]> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/qbittorrent/torrents`, {
+                params: connectionInfo,
+                withCredentials: false
+            });
+            return res.data;
+        } catch (error) {
+            console.error('qBittorrent torrents error:', error);
+            return [];
+        }
+    }
+
+    public static async qbittorrentLogout(connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+    }): Promise<boolean> {
+        try {
+            await axios.post(`${BACKEND_URL}/api/qbittorrent/logout`, {}, {
+                params: connectionInfo,
+                withCredentials: true
+            });
+            return true;
+        } catch (error) {
+            console.error('qBittorrent logout error:', error);
+            return false;
+        }
+    }
+
+    public static async qbittorrentStartTorrent(hash: string, connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+        username?: string;
+        password?: string;
+    }): Promise<boolean> {
+        try {
+            // Create a URLSearchParams object for form data
+            const formData = new URLSearchParams();
+            formData.append('hashes', hash);
+
+            const response = await axios.post(
+                `${BACKEND_URL}/api/qbittorrent/torrents/start`,
+                formData.toString(),
+                {
+                    params: connectionInfo,
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    withCredentials: true
+                }
+            );
+
+            return true;
+        } catch (error) {
+            console.error('qBittorrent start error:', error);
+            return false;
+        }
+    }
+
+    public static async qbittorrentStopTorrent(hash: string, connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+        username?: string;
+        password?: string;
+    }): Promise<boolean> {
+        try {
+            // Create a URLSearchParams object for form data
+            const formData = new URLSearchParams();
+            formData.append('hashes', hash);
+
+            const response = await axios.post(
+                `${BACKEND_URL}/api/qbittorrent/torrents/stop`,
+                formData.toString(),
+                {
+                    params: connectionInfo,
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    withCredentials: true
+                }
+            );
+
+            return true;
+        } catch (error) {
+            console.error('qBittorrent stop error:', error);
+            return false;
+        }
+    }
+
+    public static async qbittorrentDeleteTorrent(hash: string, deleteFiles: boolean = false, connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+        username?: string;
+        password?: string;
+    }): Promise<boolean> {
+        try {
+            // Create a URLSearchParams object for form data
+            const formData = new URLSearchParams();
+            formData.append('hashes', hash);
+            formData.append('deleteFiles', deleteFiles ? 'true' : 'false');
+
+            const response = await axios.post(
+                `${BACKEND_URL}/api/qbittorrent/torrents/delete`,
+                formData.toString(),
+                {
+                    params: connectionInfo,
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    withCredentials: true
+                }
+            );
+
+            return true;
+        } catch (error) {
+            console.error('qBittorrent delete error:', error);
+            return false;
+        }
+    }
+
+    // Deluge methods
+    public static async delugeLogin(credentials: {
+        username: string;
+        password: string;
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+    }): Promise<boolean> {
+        try {
+            const { host, port, ssl, username, password } = credentials;
+            const response = await axios.post(
+                `${BACKEND_URL}/api/deluge/login`,
+                { username, password },
+                {
+                    params: { host, port, ssl },
+                    withCredentials: false
+                }
+            );
+            return response.data.success;
+        } catch (error) {
+            console.error('Failed to login to Deluge:', error);
+            return false;
+        }
+    }
+
+    public static async delugeGetStats(connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+    }): Promise<any> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/deluge/stats`, {
+                params: connectionInfo,
+                withCredentials: false
+            });
+            return res.data;
+        } catch (error) {
+            console.error('Deluge stats error:', error);
+            throw error;
+        }
+    }
+
+    public static async delugeGetTorrents(connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+    }): Promise<any[]> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/deluge/torrents`, {
+                params: connectionInfo,
+                withCredentials: false
+            });
+            return res.data;
+        } catch (error) {
+            console.error('Deluge torrents error:', error);
+            return [];
+        }
+    }
+
+    public static async delugeLogout(connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+    }): Promise<boolean> {
+        try {
+            await axios.post(`${BACKEND_URL}/api/deluge/logout`, {}, {
+                params: connectionInfo,
+                withCredentials: true
+            });
+            return true;
+        } catch (error) {
+            console.error('Deluge logout error:', error);
+            return false;
+        }
+    }
+
+    public static async delugeResumeTorrent(hash: string, connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+        username?: string;
+        password?: string;
+    }): Promise<boolean> {
+        try {
+            await axios.post(`${BACKEND_URL}/api/deluge/torrents/resume`,
+                { hash },
+                {
+                    params: connectionInfo,
+                    withCredentials: true
+                }
+            );
+            return true;
+        } catch (error) {
+            console.error('Deluge resume error:', error);
+            return false;
+        }
+    }
+
+    public static async delugePauseTorrent(hash: string, connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+        username?: string;
+        password?: string;
+    }): Promise<boolean> {
+        try {
+            await axios.post(`${BACKEND_URL}/api/deluge/torrents/pause`,
+                { hash },
+                {
+                    params: connectionInfo,
+                    withCredentials: true
+                }
+            );
+            return true;
+        } catch (error) {
+            console.error('Deluge pause error:', error);
+            return false;
+        }
+    }
+
+    public static async delugeDeleteTorrent(hash: string, deleteFiles: boolean = false, connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+        username?: string;
+        password?: string;
+    }): Promise<boolean> {
+        try {
+            await axios.post(`${BACKEND_URL}/api/deluge/torrents/delete`,
+                {
+                    hash,
+                    deleteFiles
+                },
+                {
+                    params: connectionInfo,
+                    withCredentials: true
+                }
+            );
+            return true;
+        } catch (error) {
+            console.error('Deluge delete error:', error);
+            return false;
+        }
+    }
+
+    // Pi-hole methods
+    public static async getPiholeStats(connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+        apiToken?: string;
+    }): Promise<any> {
+        try {
+            const params: any = {};
+
+            if (connectionInfo) {
+                if (connectionInfo.host) params.host = connectionInfo.host;
+                if (connectionInfo.port) params.port = connectionInfo.port;
+                if (connectionInfo.ssl !== undefined) params.ssl = connectionInfo.ssl;
+                if (connectionInfo.apiToken) params.apiToken = connectionInfo.apiToken;
+            }
+
+            const res = await axios.get(`${BACKEND_URL}/api/pihole/stats`, {
+                params,
+                withCredentials: true
+            });
+
+            if (res.data.success) {
+                return res.data.data;
+            } else {
+                if (res.data.decryptionError) {
+                    throw new Error('Failed to decrypt Pi-hole API token');
+                }
+                throw new Error(res.data.error || 'Failed to get Pi-hole statistics');
+            }
+        } catch (error) {
+            console.error('Pi-hole stats error:', error);
+            throw error;
+        }
+    }
+
+    public static async encryptPiholeToken(apiToken: string): Promise<string> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/pihole/encrypt-token`,
+                { apiToken },
+                { withCredentials: true }
+            );
+            return res.data.encryptedToken;
+        } catch (error) {
+            console.error('Failed to encrypt Pi-hole token:', error);
+            throw error;
+        }
+    }
+
+    // New method to disable Pi-hole blocking
+    public static async disablePihole(connectionInfo: {
+        host: string;
+        port: string;
+        ssl: boolean;
+        apiToken: string;
+    }, seconds?: number): Promise<boolean> {
+        try {
+            const params: any = {
+                host: connectionInfo.host,
+                port: connectionInfo.port,
+                ssl: connectionInfo.ssl,
+                apiToken: connectionInfo.apiToken
+            };
+
+            if (seconds !== undefined && seconds !== null) {
+                params.seconds = seconds;
+            }
+
+            const res = await axios.post(`${BACKEND_URL}/api/pihole/disable`, {}, {
+                params,
+                withCredentials: true
+            });
+
+            return res.data.success === true;
+        } catch (error) {
+            console.error('Failed to disable Pi-hole:', error);
+            throw error;
+        }
+    }
+
+    // New method to enable Pi-hole blocking
+    public static async enablePihole(connectionInfo: {
+        host: string;
+        port: string;
+        ssl: boolean;
+        apiToken: string;
+    }): Promise<boolean> {
+        try {
+            const params: any = {
+                host: connectionInfo.host,
+                port: connectionInfo.port,
+                ssl: connectionInfo.ssl,
+                apiToken: connectionInfo.apiToken
+            };
+
+            const res = await axios.post(`${BACKEND_URL}/api/pihole/enable`, {}, {
+                params,
+                withCredentials: true
+            });
+
+            return res.data.success === true;
+        } catch (error) {
+            console.error('Failed to enable Pi-hole:', error);
+            throw error;
         }
     }
 }

@@ -24,6 +24,7 @@ import { Logo } from '../Logo';
 import { CenteredModal } from '../modals/CenteredModal';
 import { PopupManager } from '../modals/PopupManager';
 import { UpdateModal } from '../modals/UpdateModal';
+import { VersionModal } from '../modals/VersionModal';
 import { GlobalSearch } from '../search/GlobalSearch';
 
 const DrawerHeader = styled('div')(() => ({
@@ -42,6 +43,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
     const [openDrawer, setOpenDrawer] = useState(false);
     const [openAddModal, setOpenAddModal] = useState(false);
     const [openUpdateModal, setOpenUpdateModal] = useState(false);
+    const [openVersionModal, setOpenVersionModal] = useState(false);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const {
         dashboardLayout,
@@ -138,10 +140,19 @@ export const ResponsiveAppBar = ({ children }: Props) => {
         handleCloseDrawer();
     };
 
+    const handleOpenVersionModal = () => {
+        setOpenVersionModal(true);
+        handleCloseDrawer();
+    };
 
     return (
         <>
-            <AppBar position='fixed' sx={{ backgroundColor: COLORS.TRANSPARENT_GRAY, backdropFilter: 'blur(6px)',width: '100vw', maxWidth: '100%', overflowX: 'hidden'
+            <AppBar position='fixed' sx={{
+                backgroundColor: COLORS.TRANSPARENT_GRAY,
+                backdropFilter: 'blur(6px)',
+                width: '100%',
+                maxWidth: '100%',
+                overflowX: 'hidden'
             }}>
                 <Container sx={{ margin: 0, padding: 0, minWidth: '100%' }}>
                     <Toolbar disableGutters sx={{ justifyContent: 'space-between', width: '100%' }}>
@@ -231,7 +242,11 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                 </IconButton>
                             </Box>
 
-                            <Drawer open={openDrawer} onClose={handleCloseDrawer} anchor='right'>
+                            <Drawer
+                                open={openDrawer}
+                                onClose={handleCloseDrawer}
+                                anchor='right'
+                            >
                                 <Box
                                     sx={{
                                         width: 225,
@@ -316,14 +331,14 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                         )}
                                         {/* Version Info */}
                                         <ListItem disablePadding>
-                                            <ListItemButton>
+                                            <ListItemButton onClick={handleOpenVersionModal}>
                                                 <ListItemIcon>
                                                     <FaInfoCircle style={{ color: theme.palette.text.primary, fontSize: 22, marginLeft: '-4px' }} />
                                                 </ListItemIcon>
                                                 <ListItemText
                                                     primary={
                                                         <Typography>
-                                                                    v{getAppVersion()}
+                                                            v{getAppVersion()}
                                                         </Typography>
                                                     }
                                                 />
@@ -403,6 +418,11 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                     handleClose={handleCloseUpdateModal}
                     latestVersion={latestVersion}
                     isAdmin={isAdmin}
+                />
+                {/* Version Modal */}
+                <VersionModal
+                    open={openVersionModal}
+                    handleClose={() => setOpenVersionModal(false)}
                 />
             </AppBar>
             <Box sx={{

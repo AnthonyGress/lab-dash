@@ -3,22 +3,26 @@ import { CSS } from '@dnd-kit/utilities';
 import { Grid2 } from '@mui/material';
 import React from 'react';
 
-import { SystemMonitorWidget } from '../../base-items/widgets/SystemMonitorWidget/SystemMonitorWidget';
+import { QBittorrentWidget } from '../../base-items/widgets/QBittorrentWidget';
 import { WidgetContainer } from '../../base-items/widgets/WidgetContainer';
 
-type Props = {
+interface Props {
     id: string;
-    editMode: boolean;
+    editMode?: boolean;
     isOverlay?: boolean;
-    config?: {
-        temperatureUnit?: string;
-        [key: string]: any;
-    };
     onDelete?: () => void;
     onEdit?: () => void;
-};
+    config?: any;
+}
 
-export const SortableSystemMonitorWidget: React.FC<Props> = ({ id, editMode, isOverlay = false, config, onDelete, onEdit }) => {
+export const SortableQBittorrent: React.FC<Props> = ({
+    id,
+    editMode = false,
+    isOverlay = false,
+    onDelete,
+    onEdit,
+    config
+}) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
     return (
@@ -31,11 +35,11 @@ export const SortableSystemMonitorWidget: React.FC<Props> = ({ id, editMode, isO
                 transition,
                 transform: transform ? CSS.Translate.toString(transform) : undefined,
                 opacity: isOverlay ? .6 : 1,
-                visibility: isDragging ? 'hidden' : 'visible'
+                visibility: isDragging ? 'hidden' : 'visible',
             }}
         >
             <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit}>
-                <SystemMonitorWidget config={config} />
+                <QBittorrentWidget config={config} />
             </WidgetContainer>
         </Grid2>
     );
