@@ -770,4 +770,111 @@ export class DashApi {
             return false;
         }
     }
+
+    // Pi-hole methods
+    public static async getPiholeStats(connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+        apiToken?: string;
+    }): Promise<any> {
+        try {
+            const params: any = {};
+
+            if (connectionInfo) {
+                if (connectionInfo.host) params.host = connectionInfo.host;
+                if (connectionInfo.port) params.port = connectionInfo.port;
+                if (connectionInfo.ssl !== undefined) params.ssl = connectionInfo.ssl;
+                if (connectionInfo.apiToken) params.apiToken = connectionInfo.apiToken;
+            }
+
+            const res = await axios.get(`${BACKEND_URL}/api/pihole/stats`, {
+                params,
+                withCredentials: true
+            });
+
+            if (res.data.success) {
+                return res.data.data;
+            } else {
+                if (res.data.decryptionError) {
+                    throw new Error('Failed to decrypt Pi-hole API token');
+                }
+                throw new Error(res.data.error || 'Failed to get Pi-hole statistics');
+            }
+        } catch (error) {
+            console.error('Pi-hole stats error:', error);
+            throw error;
+        }
+    }
+
+    public static async encryptPiholeToken(apiToken: string): Promise<string> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/pihole/encrypt-token`,
+                { apiToken },
+                { withCredentials: true }
+            );
+            return res.data.encryptedToken;
+        } catch (error) {
+            console.error('Failed to encrypt Pi-hole token:', error);
+            throw error;
+        }
+    }
+
+    // New method to disable Pi-hole blocking
+    public static async disablePihole(connectionInfo: {
+        host: string;
+        port: string;
+        ssl: boolean;
+        apiToken: string;
+    }, seconds?: number): Promise<boolean> {
+        try {
+            const params: any = {
+                host: connectionInfo.host,
+                port: connectionInfo.port,
+                ssl: connectionInfo.ssl,
+                apiToken: connectionInfo.apiToken
+            };
+
+            if (seconds !== undefined && seconds !== null) {
+                params.seconds = seconds;
+            }
+
+            const res = await axios.post(`${BACKEND_URL}/api/pihole/disable`, {}, {
+                params,
+                withCredentials: true
+            });
+
+            return res.data.success === true;
+        } catch (error) {
+            console.error('Failed to disable Pi-hole:', error);
+            throw error;
+        }
+    }
+
+    // New method to enable Pi-hole blocking
+    public static async enablePihole(connectionInfo: {
+        host: string;
+        port: string;
+        ssl: boolean;
+        apiToken: string;
+    }): Promise<boolean> {
+        try {
+            const params: any = {
+                host: connectionInfo.host,
+                port: connectionInfo.port,
+                ssl: connectionInfo.ssl,
+                apiToken: connectionInfo.apiToken
+            };
+
+            const res = await axios.post(`${BACKEND_URL}/api/pihole/enable`, {}, {
+                params,
+                withCredentials: true
+            });
+
+            return res.data.success === true;
+        } catch (error) {
+            console.error('Failed to enable Pi-hole:', error);
+            throw error;
+        }
+    }
 }

@@ -11,6 +11,7 @@ import { useIsMobile } from '../../hooks/useIsMobile';
 import { COLORS, styles } from '../../theme/styles';
 import { theme } from '../../theme/theme';
 import { DashboardItem, Icon, ITEM_TYPE, NewItem } from '../../types';
+import { isEncrypted } from '../../utils/utils';
 
 type Props = {
     handleClose: () => void
@@ -29,6 +30,7 @@ const WIDGET_OPTIONS = [
     { id: ITEM_TYPE.DATE_TIME_WIDGET, label: 'Date & Time' },
     { id: ITEM_TYPE.WEATHER_WIDGET, label: 'Weather' },
     { id: ITEM_TYPE.SYSTEM_MONITOR_WIDGET, label: 'System Monitor' },
+    { id: ITEM_TYPE.PIHOLE_WIDGET, label: 'Pi-hole' },
     { id: ITEM_TYPE.TORRENT_CLIENT, label: 'Torrent Client' }
 ];
 
@@ -69,6 +71,10 @@ type FormValues = {
     tcUsername?: string;
     tcPassword?: string;
     tcMaxDisplayedTorrents?: number;
+    piholeHost?: string;
+    piholePort?: string;
+    piholeSsl?: boolean;
+    piholeApiToken?: string;
 };
 
 export const AddEditForm = ({ handleClose, existingItem }: Props) => {
@@ -111,7 +117,11 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             tcSsl: existingItem?.config?.ssl || false,
             tcUsername: existingItem?.config?.username || '',
             tcPassword: existingItem?.config?.password || '',
-            tcMaxDisplayedTorrents: existingItem?.config?.maxDisplayedTorrents || 5
+            tcMaxDisplayedTorrents: existingItem?.config?.maxDisplayedTorrents || 5,
+            piholeHost: existingItem?.config?.piholeHost || existingItem?.config?.host || '',
+            piholePort: existingItem?.config?.piholePort || existingItem?.config?.port || '',
+            piholeSsl: existingItem?.config?.piholeSsl !== undefined ? existingItem?.config?.piholeSsl : existingItem?.config?.ssl || false,
+            piholeApiToken: existingItem?.config?.piholeApiToken || existingItem?.config?.apiToken || '',
         }
     });
 
@@ -122,7 +132,8 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             ITEM_TYPE.WEATHER_WIDGET,
             ITEM_TYPE.DATE_TIME_WIDGET,
             ITEM_TYPE.SYSTEM_MONITOR_WIDGET,
-            ITEM_TYPE.TORRENT_CLIENT
+            ITEM_TYPE.TORRENT_CLIENT,
+            ITEM_TYPE.PIHOLE_WIDGET
         ].includes(type as ITEM_TYPE);
     }
 
@@ -167,11 +178,31 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             config = {
                 temperatureUnit: data.temperatureUnit || 'fahrenheit'
             };
+        } else if (data.itemType === 'widget' && data.widgetType === ITEM_TYPE.PIHOLE_WIDGET) {
+            // Encrypt the API token if needed
+            let encryptedToken = data.piholeApiToken || '';
+
+            if (encryptedToken && !isEncrypted(encryptedToken)) {
+                try {
+                    encryptedToken = await DashApi.encryptPiholeToken(encryptedToken);
+                } catch (error) {
+                    console.error('Error encrypting Pi-hole API token:', error);
+                }
+            }
+
+            config = {
+                host: data.piholeHost,
+                port: data.piholePort,
+                ssl: data.piholeSsl,
+                apiToken: encryptedToken,
+                refreshInterval: 10000, // 10 seconds default
+                showLabel: data.showLabel
+            };
         } else if (data.itemType === 'widget' && data.widgetType === ITEM_TYPE.TORRENT_CLIENT) {
             // Encrypt password using backend API
             let encryptedPassword = data.tcPassword || '';
 
-            if (encryptedPassword) {
+            if (encryptedPassword && !isEncrypted(encryptedPassword)) {
                 try {
                     encryptedPassword = await DashApi.encryptPassword(encryptedPassword);
                 } catch (error) {
@@ -257,7 +288,11 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                 tcSsl: existingItem.config?.ssl || false,
                 tcUsername: existingItem.config?.username || '',
                 tcPassword: existingItem.config?.password || '',
-                tcMaxDisplayedTorrents: existingItem.config?.maxDisplayedTorrents || 5
+                tcMaxDisplayedTorrents: existingItem.config?.maxDisplayedTorrents || 5,
+                piholeHost: existingItem.config?.piholeHost || existingItem.config?.host || '',
+                piholePort: existingItem.config?.piholePort || existingItem.config?.port || '',
+                piholeSsl: existingItem.config?.piholeSsl !== undefined ? existingItem.config?.piholeSsl : existingItem.config?.ssl || false,
+                piholeApiToken: existingItem.config?.piholeApiToken || existingItem.config?.apiToken || '',
             });
         }
     }, [existingItem, formContext]);
@@ -597,6 +632,104 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                     </Grid>
                                     <Grid>
                                         <CheckboxElement label='Show Name' name='showLabel' sx={{ ml: 1, color: 'white', '& .MuiSvgIcon-root': { fontSize: 30 } }}/>
+                                    </Grid>
+                                </>
+                            )}
+
+                            {/* Pi-hole widget configuration */}
+                            {selectedItemType === 'widget' && selectedWidgetType === ITEM_TYPE.PIHOLE_WIDGET && (
+                                <>
+                                    <Grid>
+                                        <TextFieldElement
+                                            name='piholeHost'
+                                            label='Pi-hole Host'
+                                            variant='outlined'
+                                            fullWidth
+                                            autoComplete='off'
+                                            required
+                                            sx={{
+                                                width: '100%',
+                                                '& .MuiOutlinedInput-root': {
+                                                    '& fieldset': {
+                                                        borderColor: 'text.primary',
+                                                    },
+                                                    '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                                },
+                                            }}
+                                            slotProps={{
+                                                inputLabel: { style: { color: theme.palette.text.primary } }
+                                            }}
+                                        />
+                                    </Grid>
+                                    <Grid>
+                                        <TextFieldElement
+                                            name='piholePort'
+                                            label='Port'
+                                            variant='outlined'
+                                            fullWidth
+                                            autoComplete='off'
+                                            required
+                                            sx={{
+                                                width: '100%',
+                                                '& .MuiOutlinedInput-root': {
+                                                    '& fieldset': {
+                                                        borderColor: 'text.primary',
+                                                    },
+                                                    '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                                },
+                                            }}
+                                            slotProps={{
+                                                inputLabel: { style: { color: theme.palette.text.primary } }
+                                            }}
+                                        />
+                                    </Grid>
+                                    <Grid>
+                                        <TextFieldElement
+                                            name='piholeApiToken'
+                                            label='API Token'
+                                            type='password'
+                                            variant='outlined'
+                                            fullWidth
+                                            autoComplete='off'
+                                            required
+                                            sx={{
+                                                width: '100%',
+                                                '& .MuiOutlinedInput-root': {
+                                                    '& fieldset': {
+                                                        borderColor: 'text.primary',
+                                                    },
+                                                    '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                                },
+                                            }}
+                                            slotProps={{
+                                                inputLabel: { style: { color: theme.palette.text.primary } }
+                                            }}
+                                        />
+                                    </Grid>
+                                    <Grid>
+                                        <CheckboxElement
+                                            label='Use SSL'
+                                            name='piholeSsl'
+                                            sx={{
+                                                ml: 1,
+                                                color: 'white',
+                                                '& .MuiSvgIcon-root': { fontSize: 30 }
+                                            }}
+                                        />
+                                    </Grid>
+                                    <Grid>
+                                        <CheckboxElement
+                                            label='Show Name'
+                                            name='showLabel'
+                                            sx={{
+                                                ml: 1,
+                                                color: 'white',
+                                                '& .MuiSvgIcon-root': { fontSize: 30 }
+                                            }}
+                                        />
                                     </Grid>
                                 </>
                             )}

@@ -3,8 +3,9 @@ import { Router } from 'express';
 import { appShortcutRoute } from './app-shortcut.route';
 import { authRoute } from './auth.route';
 import { configRoute } from './config.route';
-import { healthRoute } from './health.route';
 import { delugeRoute } from './deluge.route';
+import { healthRoute } from './health.route';
+import { piholeRoute } from './pihole.route';
 import { qbittorrentRoute } from './qbittorrent.route';
 import { systemRoute } from './system.route';
 import { weatherRoute } from './weather.route';
@@ -19,5 +20,6 @@ router.use('/health', healthRoute);
 router.use('/app-shortcut', appShortcutRoute);
 router.use('/qbittorrent', qbittorrentRoute);
 router.use('/deluge', delugeRoute);
+router.use('/pihole', piholeRoute);
 
 export default router;

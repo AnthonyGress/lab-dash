@@ -26,6 +26,7 @@ import { BlankAppShortcut } from './base-items/apps/BlankAppShortcut';
 import { BlankWidget } from './base-items/widgets/BlankWidget';
 import { SortableAppShortcut } from './sortable-items/apps/SortableAppShortcut';
 import { SortableDateTimeWidget } from './sortable-items/widgets/SortableDateTime';
+import { SortablePihole } from './sortable-items/widgets/SortablePihole';
 import { SortableQBittorrent } from './sortable-items/widgets/SortableQBittorrent';
 import { SortableSystemMonitorWidget } from './sortable-items/widgets/SortableSystemMonitor';
 import { SortableWeatherWidget } from './sortable-items/widgets/SortableWeather';
@@ -151,6 +152,8 @@ export const DashboardGrid: React.FC = () => {
                                     return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
                                 case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
                                     return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
+                                case ITEM_TYPE.PIHOLE_WIDGET:
+                                    return <SortablePihole key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
                                 case ITEM_TYPE.TORRENT_CLIENT:
                                     return item.config?.clientType === TORRENT_CLIENT_TYPE.DELUGE
                                         ? <SortableDeluge key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>
@@ -193,6 +196,8 @@ export const DashboardGrid: React.FC = () => {
                                     return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} isOverlay/>;
                                 case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
                                     return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} isOverlay/>;
+                                case ITEM_TYPE.PIHOLE_WIDGET:
+                                    return <SortablePihole key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
                                 case ITEM_TYPE.TORRENT_CLIENT:
                                     return item.config?.clientType === TORRENT_CLIENT_TYPE.DELUGE
                                         ? <SortableDeluge key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>

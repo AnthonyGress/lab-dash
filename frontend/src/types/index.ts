@@ -3,6 +3,7 @@ export enum ITEM_TYPE {
     DATE_TIME_WIDGET = 'date-time-widget',
     SYSTEM_MONITOR_WIDGET = 'system-monitor-widget',
     TORRENT_CLIENT = 'torrent-client',
+    PIHOLE_WIDGET = 'pihole-widget',
     APP_SHORTCUT = 'app-shortcut',
     BLANK_APP = 'blank-app',
     BLANK_WIDGET = 'blank-widget',
