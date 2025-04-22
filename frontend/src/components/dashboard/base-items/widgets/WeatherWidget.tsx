@@ -1,5 +1,5 @@
 import { Box, Button, Card, CardContent, CircularProgress, Grid2 as Grid, Skeleton, Tooltip, Typography } from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { BsCloudLightningRainFill } from 'react-icons/bs';
 import { BsCloudSunFill } from 'react-icons/bs';
 import { BsCloudSnowFill } from 'react-icons/bs';
@@ -69,15 +69,25 @@ const weatherDescriptions: Record<number, { description: string; icon: JSX.Eleme
 export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
     const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
     const [forecastDays, setForecastDays] = useState(5);
     const [isFahrenheit, setIsFahrenheit] = useState(config?.temperatureUnit !== 'celsius');
     const [openTooltipIndex, setOpenTooltipIndex] = useState<number | null>(null);
     const [locationName, setLocationName] = useState<string | null>(null);
+    const timerRef = useRef<number | null>(null);
+    const locationSet = useRef(false);
 
+    // Handle config changes and location setup
     useEffect(() => {
         setIsFahrenheit(config?.temperatureUnit !== 'celsius');
 
-        // Set location from config if available (highest priority)
+        // Clear any existing weather fetch timer
+        if (timerRef.current !== null) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+        }
+
+        // If location already exists in config, use that with highest priority
         if (config?.location?.latitude && config?.location?.longitude) {
             setLocation({
                 latitude: config.location.latitude,
@@ -87,14 +97,26 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
             if (config.location.name) {
                 setLocationName(config.location.name);
             }
+
+            locationSet.current = true;
         } else {
-            // Browser geolocation fallback
+            // Reset location set flag when no config location is available
+            locationSet.current = false;
+
+            // If no config location, try browser geolocation
             navigator.geolocation.getCurrentPosition(
                 (position) => {
                     const { latitude, longitude } = position.coords;
                     setLocation({ latitude, longitude });
+                    locationSet.current = true;
                 },
-                (error) => console.error('Error fetching location:', error)
+                (error) => {
+                    console.error('Error fetching location:', error);
+                    // No fallback to IP-based location anymore
+                    setLocation(null);
+                    locationSet.current = true;
+                    setIsLoading(false);
+                }
             );
         }
 
@@ -106,34 +128,55 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
 
         return () => {
             document.removeEventListener('click', handleClickOutside);
+            if (timerRef.current !== null) {
+                clearInterval(timerRef.current);
+                timerRef.current = null;
+            }
         };
     }, [config]);
 
+    // Handle weather data fetching
     useEffect(() => {
+        // Only fetch if location has been determined
+        if (!locationSet.current || !location) {
+            return;
+        }
+
         const fetchWeather = async () => {
             try {
-                let data;
-                if (!location?.latitude || !location.longitude) {
-                    data = await DashApi.getWeather();
+                setIsLoading(true);
+                // Only fetch when we have explicit coordinates
+                if (location.latitude && location.longitude) {
+                    const data = await DashApi.getWeather(location.latitude, location.longitude);
+                    setWeatherData(data);
                 } else {
-                    data = await DashApi.getWeather(location.latitude, location.longitude);
+                    // If no coordinates are available, don't fetch
+                    console.error('No coordinates available for weather fetch');
+                    setWeatherData(null);
                 }
-                setWeatherData(data);
             } catch (error) {
-                console.log('Error fetching weather:', error);
+                console.error('Error fetching weather:', error);
+                setWeatherData(null);
+            } finally {
+                setIsLoading(false);
             }
         };
 
+        // Fetch weather immediately
         fetchWeather();
 
-        // every 15 min
-        const interval = setInterval(() => {
+        // Set up interval for periodic refresh
+        timerRef.current = window.setInterval(() => {
             fetchWeather();
-        }, FIFTEEN_MIN_IN_MS); // Fetch every 15 minutes
+        }, FIFTEEN_MIN_IN_MS);
 
-        return () => clearInterval(interval); // Cleanup on unmount
-    }, [location, forecastDays]);
-
+        return () => {
+            if (timerRef.current !== null) {
+                clearInterval(timerRef.current);
+                timerRef.current = null;
+            }
+        };
+    }, [location, locationSet.current]);
 
     const convertTemperature = (temp: number) => (isFahrenheit ? Math.round((temp * 9) / 5 + 32) : Math.round(temp));
 
@@ -293,7 +336,21 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
             pt: 1,
             pb: 0
         }}>
-            {weatherData ? (
+            {isLoading ? (
+                <Box
+                    sx={{
+                        width: '100%',
+                        height: '100%',
+                        aspectRatio: '16/9',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minHeight: { xs: 120, sm: 120, md: 120 },
+                    }}
+                >
+                    <CircularProgress />
+                </Box>
+            ) : weatherData ? (
                 <Grid sx={{ width: '100%' }}>
                     {/* Location Name */}
                     {renderLocationName()}
