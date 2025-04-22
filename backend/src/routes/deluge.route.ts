@@ -10,7 +10,6 @@ export const delugeRoute = Router();
 // Store auth cookies for Deluge sessions
 const sessions: Record<string, string> = {};
 
-// Helper: Get Deluge base URL from request
 const getBaseUrl = (req: Request): string => {
     const host = req.query.host as string || 'localhost';
     const port = req.query.port as string || '8112';
@@ -19,7 +18,6 @@ const getBaseUrl = (req: Request): string => {
     return `${protocol}://${host}:${port}/json`;
 };
 
-// Login to Deluge and store auth cookie
 delugeRoute.post('/login', async (req: Request, res: Response) => {
     try {
         const { username } = req.body;
@@ -43,7 +41,6 @@ delugeRoute.post('/login', async (req: Request, res: Response) => {
             }
         }
 
-        // Deluge WebUI uses a different auth mechanism
         const response = await axios.post(`${baseUrl}`,
             {
                 method: 'auth.login',

@@ -6,7 +6,6 @@ import { decrypt, encrypt, isEncrypted } from '../utils/crypto';
 
 export const piholeRoute = Router();
 
-// Helper: Get Pi-hole base URL from request
 const getBaseUrl = (req: Request): string => {
     const host = req.query.host as string || 'localhost';
     const port = req.query.port as string || '80';
@@ -15,7 +14,6 @@ const getBaseUrl = (req: Request): string => {
     return `${protocol}://${host}:${port}/admin`;
 };
 
-// Helper to get API token
 const getApiToken = (req: Request): string => {
     let apiToken = req.query.apiToken as string || '';
 
@@ -32,7 +30,7 @@ const getApiToken = (req: Request): string => {
     return apiToken;
 };
 
-// Get Pi-hole statistics (compatible with both v5 and v6 API)
+// Get Pi-hole statistics
 piholeRoute.get('/stats', async (req: Request, res: Response) => {
     try {
         const baseUrl = getBaseUrl(req);
@@ -54,7 +52,6 @@ piholeRoute.get('/stats', async (req: Request, res: Response) => {
             }
         }
 
-        // Make request to the Pi-hole API (summary endpoint works in both v5 and v6)
         const response = await axios.get(`${baseUrl}/api.php`, {
             params: {
                 summary: '',
@@ -63,7 +60,6 @@ piholeRoute.get('/stats', async (req: Request, res: Response) => {
             timeout: 5000 // 5 second timeout
         });
 
-        // Handle different API versions gracefully
         if (!response.data || response.data.status === 'error') {
             throw new Error('Failed to get Pi-hole statistics');
         }

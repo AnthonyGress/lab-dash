@@ -10,7 +10,6 @@ export const qbittorrentRoute = Router();
 // Store auth cookies for qBittorrent sessions
 const sessions: Record<string, string> = {};
 
-// Helper: Get qBittorrent base URL from request
 const getBaseUrl = (req: Request): string => {
     const host = req.query.host as string || 'localhost';
     const port = req.query.port as string || '8080';
@@ -19,21 +18,6 @@ const getBaseUrl = (req: Request): string => {
     return `${protocol}://${host}:${port}/api/v2`;
 };
 
-// Middleware to allow direct access with credentials in query params
-const optionalAuth = (req: Request, res: Response, next: NextFunction): void => {
-    // If username and password are provided in query params, bypass auth
-    const { username, password } = req.query;
-
-    if (username && password) {
-        console.log('Using direct credentials from query params for qBittorrent API access');
-        next();
-    } else {
-        // Otherwise, use the standard auth middleware
-        authenticateToken(req, res, next);
-    }
-};
-
-// Login to qBittorrent and store auth cookie
 qbittorrentRoute.post('/login', async (req: Request, res: Response) => {
     try {
         const { username } = req.body;
@@ -450,7 +434,6 @@ qbittorrentRoute.post('/torrents/stop', authenticateToken, async (req: Request, 
         }
 
         try {
-            // Using the correct format for qBittorrent API which expects URL-encoded form data
             const requestBody = { hashes };
 
             const response = await axios.post(`${baseUrl}/torrents/stop`,
