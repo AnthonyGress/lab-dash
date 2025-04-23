@@ -39,7 +39,7 @@ export const GaugeWidget: React.FC<GaugeWidgetProps> = ({ value, title, size, te
                         [`& .${gaugeClasses.referenceArc}`]: {
                             fill: theme.palette.text.disabled,
                         },
-                        width: { xs: 108, sm: 80, md: 108, xl: 135 },
+                        width: { xs: 108, sm: 100, md: 108, xl: 135 },
                         height: { xs: 135, sm: 120, md: 130, xl: 135 },
                         pointerEvents: 'none', // Allows scrolling through the SVG
                         touchAction: 'none',
