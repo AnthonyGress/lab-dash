@@ -230,7 +230,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                             sx={{
                                                 '& .MuiBadge-badge': {
                                                     top: 0,
-                                                    right: 5
+                                                    right: -5
                                                 }
                                             }}
                                         >
@@ -438,15 +438,17 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                 </Box>
                 {
                     editMode
-                        ? <Box position='absolute' sx={{ top: { xs: '66px', md: '70px' }, zIndex: 99, display: 'flex', justifyContent: 'flex-end', width: '100%', px: 3, gap: 2 }}>
+                        ? <Box position='absolute' sx={{ top: { xs: '66px', sm: '77px', md: '70px' }, zIndex: 99, display: 'flex', justifyContent: 'flex-end', width: '100%', px: 3, gap: 2 }}>
                             <Button variant='contained' onClick={handleEditCancel} sx={{ backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT, color: 'black', borderRadius: '999px', height: '1.7rem', width: '4.5rem' }}>Cancel</Button>
                             <Button variant='contained' onClick={handleSave}  sx={{ backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT, color: 'black', borderRadius: '999px', height: '1.7rem', width: '4.5rem' }}>Done</Button>
                         </Box>
                         :
-                        currentPath === '/' && config?.search && <Box position='absolute' sx={{ top: { xs: '49px', sm: '55px' }, zIndex: 99, display: { xs: 'flex', md: 'none' }, justifyContent: 'center', width: '100%' }} mt={.5}>
+                        currentPath === '/' && config?.search && <Box position='absolute' sx={{ top: { xs: '49px', sm: '58px' }, zIndex: 99, display: { xs: 'flex', md: 'none' }, justifyContent: 'center', width: '100%' }} mt={.5}>
                             <GlobalSearch />
                         </Box>
                 }
+
+                <Box sx={{ pb: 1, height: '100%', display: { xs: 'none', sm: 'block', md: 'none' } }} />
                 {children}
             </Box>
         </>
