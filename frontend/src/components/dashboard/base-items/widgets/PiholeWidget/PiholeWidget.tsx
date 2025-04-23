@@ -742,10 +742,10 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 alignItems: 'center',
                 p: 2
             }}>
-                <Typography variant='subtitle1' color='error' align='center'>
+                <Typography variant='subtitle1' align='center'>
                     {error}
                 </Typography>
-                <Typography variant='caption' color='textSecondary' align='center' sx={{ mt: 1, fontSize: '0.7rem' }}>
+                <Typography variant='caption' align='center' sx={{ mt: 1, fontSize: '0.8rem' }}>
                     {authFailed ?
                         `Using ${piholeConfig.apiToken ? 'API token' : 'password'} authentication` :
                         'Check your Pi-hole configuration and network connection'}
@@ -1015,7 +1015,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
             {/* Status indicator */}
             {!isBlocking && (
                 <Box sx={{ mt: 0.2, textAlign: 'center' }}>
-                    <Typography variant='caption' color='error' sx={{ fontSize: '0.6rem' }}>
+                    <Typography variant='caption' color='white' sx={{ fontSize: '0.6rem' }}>
                         {remainingTime
                             ? `Blocking disabled. Will resume in ${remainingTime}`
                             : 'Blocking disabled indefinitely'}
