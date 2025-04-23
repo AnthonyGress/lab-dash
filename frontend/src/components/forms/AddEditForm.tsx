@@ -70,6 +70,7 @@ type FormValues = {
     piholeSsl?: boolean;
     piholeApiToken?: string;
     piholePassword?: string;
+    piholeName?: string;
 };
 
 interface LocationOption {
@@ -169,6 +170,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                 : existingItem?.config?.ssl || false,
             piholeApiToken: existingItem?.config?.piholeApiToken || existingItem?.config?.apiToken || '',
             piholePassword: existingItem?.config?.password || '',
+            piholeName: existingItem?.config?.displayName || '',
             location: existingItem?.config?.location || null,
         });
     }, [existingItem, formContext]);
@@ -336,7 +338,8 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                 ssl: data.piholeSsl,
                 apiToken: encryptedToken,
                 password: encryptedPassword,
-                showLabel: data.showLabel
+                showLabel: data.showLabel,
+                displayName: data.piholeName || 'Pi-hole'
             };
         } else if (data.itemType === 'widget' && data.widgetType === ITEM_TYPE.TORRENT_CLIENT) {
             // Encrypt password using backend API
@@ -434,6 +437,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             piholeSsl: false,
             piholeApiToken: '',
             piholePassword: '',
+            piholeName: '',
             location: null,
         });
 
@@ -924,6 +928,28 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                             fullWidth
                                             autoComplete='off'
                                             required
+                                            sx={{
+                                                width: '100%',
+                                                '& .MuiOutlinedInput-root': {
+                                                    '& fieldset': {
+                                                        borderColor: 'text.primary',
+                                                    },
+                                                    '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                                },
+                                            }}
+                                            slotProps={{
+                                                inputLabel: { style: { color: theme.palette.text.primary } }
+                                            }}
+                                        />
+                                    </Grid>
+                                    <Grid>
+                                        <TextFieldElement
+                                            name='piholeName'
+                                            label='Display Name'
+                                            variant='outlined'
+                                            placeholder='Pi-hole'
+                                            fullWidth
                                             sx={{
                                                 width: '100%',
                                                 '& .MuiOutlinedInput-root': {

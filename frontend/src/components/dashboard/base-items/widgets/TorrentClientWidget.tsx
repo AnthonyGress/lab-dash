@@ -1,5 +1,5 @@
 import { ArrowDownward, ArrowUpward, CheckCircle, Delete, Download, MoreVert, Pause, PlayArrow, Stop, Warning } from '@mui/icons-material';
-import { Box, CardContent, CircularProgress, Grid, IconButton, LinearProgress, Link, Menu, MenuItem, TextField, Tooltip, Typography, useMediaQuery } from '@mui/material';
+import { Box, Button, CardContent, CircularProgress, Grid, IconButton, LinearProgress, Link, Menu, MenuItem, TextField, Tooltip, Typography, useMediaQuery } from '@mui/material';
 import React, { useState } from 'react';
 
 import { PopupManager } from '../../../../components/modals/PopupManager';
@@ -453,7 +453,7 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
         }
     };
 
-    // Just show error message if authentication failed
+    // Just show error message and retry button if authentication failed
     if (!isAuthenticated) {
         return (
             <CardContent sx={{ height: '100%', padding: 2 }}>
@@ -502,6 +502,17 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
                     )}
 
                     {isLoading && <CircularProgress size={24} />}
+
+                    {!isLoading && (
+                        <Button
+                            variant='contained'
+                            color='primary'
+                            onClick={handleLogin}
+                            sx={{ mt: 2 }}
+                        >
+                            Retry
+                        </Button>
+                    )}
                 </Box>
             </CardContent>
         );

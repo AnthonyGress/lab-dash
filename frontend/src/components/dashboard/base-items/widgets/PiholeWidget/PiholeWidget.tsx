@@ -20,6 +20,7 @@ type PiholeWidgetConfig = {
     password?: string;
     refreshInterval?: number;
     showLabel?: boolean;
+    displayName?: string;
 };
 
 type PiholeStats = {
@@ -42,8 +43,18 @@ const initialStats: PiholeStats = {
 
 export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
     const { config } = props;
+
+    // Reference to track if this is the first render
+    const isFirstRender = useRef(true);
+
     const [isLoading, setIsLoading] = useState(false);
-    const [isConfigured, setIsConfigured] = useState(false);
+    const [isConfigured, setIsConfigured] = useState(() => {
+        // Initialize with a proper check of the config
+        if (config) {
+            return !!config.host && (!!config.apiToken || !!config.password);
+        }
+        return false;
+    });
     const [stats, setStats] = useState<PiholeStats>(initialStats);
     const [error, setError] = useState<string | null>(null);
     const [piholeConfig, setPiholeConfig] = useState({
@@ -52,7 +63,8 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
         ssl: config?.ssl || false,
         apiToken: config?.apiToken || '',
         password: config?.password || '',
-        showLabel: config?.showLabel
+        showLabel: config?.showLabel,
+        displayName: config?.displayName || 'Pi-hole'
     });
 
     // State for disable/enable blocking functionality
@@ -82,9 +94,33 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
     useEffect(() => {
         isMountedRef.current = true;
 
+        // Special initialization logic for first render
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+
+            // Force configuration validation on mount
+            const isValid = !!piholeConfig.host && (!!piholeConfig.apiToken || !!piholeConfig.password);
+            if (isValid !== isConfigured) {
+                setIsConfigured(isValid);
+            }
+
+            // If valid, trigger an initial status check
+            if (isValid) {
+                setIsLoading(true);
+
+                // Use a small timeout to ensure state updates have completed
+                setTimeout(() => {
+                    if (isMountedRef.current && !error && !authFailed) {
+                        checkPiholeStatus();
+                    }
+                }, 200);
+            }
+        }
+
         return () => {
             isMountedRef.current = false;
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Determine if we're using Pi-hole v6 based on authentication method
@@ -99,9 +135,9 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
         // Skip requests if the component is unmounted
         if (!isMountedRef.current) return;
 
-        // Skip if not properly configured or authentication failed
+        // Skip if not properly configured or authentication failed or existing error
         if (!isConfigured || !piholeConfig.host ||
-            (!piholeConfig.apiToken && !piholeConfig.password) || authFailed) {
+            (!piholeConfig.apiToken && !piholeConfig.password) || authFailed || error) {
             return;
         }
 
@@ -186,9 +222,13 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                             }));
                         }
                     }
-                } catch (statusError) {
-                    // Don't set error state here to avoid disrupting the UI
-                    // Just continue silently to fetch stats
+                } catch (statusError: any) {
+                    // Handle status check errors for v6
+                    if (statusError.response?.status === 400) {
+                        setAuthFailed(true);
+                        setError('Bad Request: Invalid configuration or authentication data');
+                        return; // Exit early to avoid the stats request
+                    }
                 }
             }
 
@@ -235,10 +275,28 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 } else if (err.response?.status === 401) {
                     setAuthFailed(true);
                     setError('Authentication failed. Please check your Pi-hole credentials in widget settings.');
+                } else if (err.response?.status === 403) {
+                    setAuthFailed(true);
+                    setError('Access forbidden. Please check your Pi-hole credentials in widget settings.');
+                } else if (err.response?.status === 400) {
+                    setAuthFailed(true);
+                    setError('Bad Request: Invalid configuration or authentication data');
+                } else if (err.message?.includes('Network Error') || err.message?.includes('timeout')) {
+                    // Network errors like timeouts or connection refused
+                    setAuthFailed(true); // Use authFailed to prevent further requests
+                    setError(`Connection failed: ${err.message}. Please check if Pi-hole is running.`);
                 } else if (err.message) {
+                    setAuthFailed(true); // Use authFailed to prevent further requests for all error types
                     setError(err.message);
                 } else {
+                    setAuthFailed(true);
                     setError('Failed to connect to Pi-hole. Please check your configuration.');
+                }
+
+                // Clear any scheduled checks
+                if (statusCheckIntervalRef.current) {
+                    clearTimeout(statusCheckIntervalRef.current);
+                    statusCheckIntervalRef.current = null;
                 }
             }
         } finally {
@@ -263,8 +321,8 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
             refreshIntervalRef.current = null;
         }
 
-        // Only set up the polling if configured and not auth failed
-        if (isConfigured && !authFailed) {
+        // Only set up the polling if configured and not auth failed and no error
+        if (isConfigured && !authFailed && !error) {
             // Set loading state on initial mount
             if (!stats.domains_being_blocked) {
                 setIsLoading(true);
@@ -287,20 +345,29 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 // Skip if the component is unmounted
                 if (!isMountedRef.current) return;
 
+                // Skip if an error occurred or auth failed
+                if (error || authFailed) return;
+
                 // Store the timeout ID for cleanup
                 statusCheckIntervalRef.current = setTimeout(async () => {
-                    await checkPiholeStatus();
-
-                    // Recalculate the interval based on the current state
-                    let nextInterval = 30000; // 30 seconds for enabled state
-
-                    if (!isBlocking) {
-                        // Use 5 seconds for disabled with timer, 10 seconds for indefinite
-                        nextInterval = disableEndTime !== null ? 5000 : 10000;
+                    // Double-check error and auth state before making the call
+                    if (!error && !authFailed) {
+                        await checkPiholeStatus();
                     }
 
-                    // Schedule the next check with the updated interval
-                    scheduleNextCheck();
+                    // Only schedule next check if no errors occurred
+                    if (!error && !authFailed) {
+                        // Recalculate the interval based on the current state
+                        let nextInterval = 30000; // 30 seconds for enabled state
+
+                        if (!isBlocking) {
+                            // Use 5 seconds for disabled with timer, 10 seconds for indefinite
+                            nextInterval = disableEndTime !== null ? 5000 : 10000;
+                        }
+
+                        // Schedule the next check with the updated interval
+                        scheduleNextCheck();
+                    }
                 }, checkInterval) as unknown as NodeJS.Timeout;
             };
 
@@ -320,27 +387,85 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 refreshIntervalRef.current = null;
             }
         };
-    }, [isConfigured, authFailed, isBlocking, disableEndTime, checkPiholeStatus, stats.domains_being_blocked]);
+    }, [isConfigured, authFailed, isBlocking, disableEndTime, checkPiholeStatus, stats.domains_being_blocked, error]);
 
     // Update config when props change
     useEffect(() => {
-        if (config) {
-            setPiholeConfig({
-                host: config.host || 'pi.hole',
-                port: config.port || '80',
-                ssl: config.ssl || false,
-                apiToken: config.apiToken || '',
-                password: config.password || '',
-                showLabel: config.showLabel
-            });
-
-            // Consider configured if we have a host and either a token or password
-            const isValid = !!config.host && (!!config.apiToken || !!config.password);
-            setIsConfigured(isValid);
-
-            // Reset auth failed state when configuration changes
-            setAuthFailed(false);
+        // Special case: config might be undefined initially and then populated later
+        if (!config) {
+            if (isConfigured) {
+                setIsConfigured(false);
+            }
+            return;
         }
+
+        const newConfig = {
+            host: config.host || 'pi.hole',
+            port: config.port || '80',
+            ssl: config.ssl || false,
+            apiToken: config.apiToken || '',
+            password: config.password || '',
+            showLabel: config.showLabel,
+            displayName: config.displayName || 'Pi-hole'
+        };
+
+        // Check if this is a valid configuration
+        const isValid = !!config.host && (!!config.apiToken || !!config.password);
+
+        // If configured state doesn't match validity, update it
+        if (isValid !== isConfigured) {
+            setIsConfigured(isValid);
+        }
+
+        // Only update if config has actually changed
+        const configChanged =
+            newConfig.host !== piholeConfig.host ||
+            newConfig.port !== piholeConfig.port ||
+            newConfig.ssl !== piholeConfig.ssl ||
+            newConfig.apiToken !== piholeConfig.apiToken ||
+            newConfig.password !== piholeConfig.password;
+
+        if (configChanged) {
+            // Update config
+            setPiholeConfig(newConfig);
+
+            // Reset error and auth states since config changed
+            setAuthFailed(false);
+            setError(null);
+
+            // Reset stats
+            setStats(initialStats);
+
+            // Clear any polling timeouts
+            if (statusCheckIntervalRef.current) {
+                clearTimeout(statusCheckIntervalRef.current);
+                statusCheckIntervalRef.current = null;
+            }
+
+            if (refreshIntervalRef.current) {
+                clearInterval(refreshIntervalRef.current);
+                refreshIntervalRef.current = null;
+            }
+
+            // Show loading state and trigger immediate check
+            if (isValid) {
+                setIsLoading(true);
+                // Small delay to ensure state updates are processed
+                setTimeout(() => {
+                    if (isMountedRef.current) {
+                        checkPiholeStatus();
+                    }
+                }, 200);
+            }
+        } else {
+            // Just update the display settings if those changed
+            setPiholeConfig(prev => ({
+                ...prev,
+                showLabel: config.showLabel,
+                displayName: config.displayName || 'Pi-hole'
+            }));
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [config]);
 
     // Define updateRemainingTime before using it in the effect
@@ -524,6 +649,12 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
             if (err.pihole?.requiresReauth) {
                 setAuthFailed(true);
                 setError('Authentication failed. Please check your Pi-hole credentials in widget settings.');
+            } else if (err.response?.status === 401 || err.response?.status === 403) {
+                setAuthFailed(true);
+                setError('Authentication failed. Please check your Pi-hole credentials in widget settings.');
+            } else if (err.message?.includes('Network Error') || err.message?.includes('timeout')) {
+                setAuthFailed(true);
+                setError(`Connection failed: ${err.message}. Please check if Pi-hole is running.`);
             } else {
                 // Generic error
                 setError(err.message || 'Failed to disable Pi-hole blocking');
@@ -580,6 +711,12 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
             if (err.pihole?.requiresReauth) {
                 setAuthFailed(true);
                 setError('Authentication failed. Please check your Pi-hole credentials in widget settings.');
+            } else if (err.response?.status === 401 || err.response?.status === 403) {
+                setAuthFailed(true);
+                setError('Authentication failed. Please check your Pi-hole credentials in widget settings.');
+            } else if (err.message?.includes('Network Error') || err.message?.includes('timeout')) {
+                setAuthFailed(true);
+                setError(`Connection failed: ${err.message}. Please check if Pi-hole is running.`);
             } else {
                 // Generic error
                 setError(err.message || 'Failed to enable Pi-hole blocking');
@@ -612,11 +749,29 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
             setDisableTimer(null);
         }
 
+        // Clear any existing timeouts for polling
+        if (statusCheckIntervalRef.current) {
+            clearTimeout(statusCheckIntervalRef.current);
+            statusCheckIntervalRef.current = null;
+        }
+
+        if (refreshIntervalRef.current) {
+            clearInterval(refreshIntervalRef.current);
+            refreshIntervalRef.current = null;
+        }
+
+        // Recheck configuration
+        const isValid = !!piholeConfig.host && (!!piholeConfig.apiToken || !!piholeConfig.password);
+        setIsConfigured(isValid);
+
         // Reset stats to initial state
         setStats(initialStats);
 
+        // Set loading state to show that we're retrying
+        setIsLoading(true);
+
         // Perform an immediate check with the combined function
-        checkPiholeStatus();
+        setTimeout(() => checkPiholeStatus(), 100);
     };
 
     // Handle menu open
@@ -726,11 +881,6 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
         window.open(adlistsUrl, '_blank');
     };
 
-    // Special effect just to log blocking state changes
-    useEffect(() => {
-        // No operation needed - removed console logging
-    }, [isBlocking, remainingTime, disableEndTime]);
-
     if (error) {
         return (
             <Box sx={{
@@ -839,7 +989,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                                 }}
                             />
                             <Typography variant='h6' sx={{ mb: 0, fontSize: '1rem' }}>
-                                Pi-hole
+                                {piholeConfig.displayName}
                             </Typography>
                         </Box>
                     )}
