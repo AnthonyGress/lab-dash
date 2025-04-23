@@ -974,6 +974,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                             sx={{
                                 display: 'flex',
                                 alignItems: 'center',
+                                height: '100%',
                                 cursor: editMode ? 'grab' : 'pointer',
                                 '&:hover': {
                                     opacity: editMode ? 1 : 0.8
@@ -990,7 +991,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                                     height: '30px',
                                 }}
                             />
-                            <Typography variant='h6' sx={{ mb: 0, fontSize: '1rem' }}>
+                            <Typography variant='h6' sx={{ mb: 0, fontSize: '1rem', ml: 0.5 }}>
                                 {piholeConfig.displayName}
                             </Typography>
                         </Box>
