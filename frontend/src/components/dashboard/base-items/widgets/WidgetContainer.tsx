@@ -87,9 +87,35 @@ export const WidgetContainer: React.FC<Props> = ({ children, editMode, onEdit, o
                     >
                         <MoreVertIcon sx={{ color: 'text.primary' }}/>
                     </IconButton>
-                    <Menu anchorEl={anchorEl} open={open} onClose={handleMenuClose}>
-                        <MenuItem onClick={() => { handleMenuClose(); onEdit?.(); }}>Edit</MenuItem>
-                        <MenuItem onClick={() => { handleMenuClose(); onDelete?.(); }}>Delete</MenuItem>
+                    <Menu
+                        anchorEl={anchorEl}
+                        open={open}
+                        onClose={handleMenuClose}
+                        sx={{
+                            '& .MuiPaper-root': {
+                                bgcolor: '#2A2A2A',
+                                color: 'white',
+                                borderRadius: 1,
+                                boxShadow: 4
+                            }
+                        }}
+                    >
+                        <MenuItem
+                            onClick={() => { handleMenuClose(); onEdit?.(); }}
+                            sx={{
+                                py: 1,
+                            }}
+                        >
+                            Edit
+                        </MenuItem>
+                        <MenuItem
+                            onClick={() => { handleMenuClose(); onDelete?.(); }}
+                            sx={{
+                                py: 1,
+                            }}
+                        >
+                            Delete
+                        </MenuItem>
                     </Menu>
                 </div>
             )}

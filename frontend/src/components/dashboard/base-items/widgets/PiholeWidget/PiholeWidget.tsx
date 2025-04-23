@@ -6,7 +6,7 @@ import { MdBlockFlipped, MdDns, MdPause, MdPlayArrow } from 'react-icons/md';
 
 import { DashApi } from '../../../../../api/dash-api';
 import { BACKEND_URL } from '../../../../../constants/constants';
-import { COLORS } from '../../../../../theme/styles';
+import { useAppContext } from '../../../../../context/useAppContext';
 import { formatNumber } from '../../../../../utils/utils';
 
 // Define our own Timeout type based on setTimeout's return type
@@ -43,6 +43,7 @@ const initialStats: PiholeStats = {
 
 export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
     const { config } = props;
+    const { editMode } = useAppContext();
 
     // Reference to track if this is the first render
     const isFirstRender = useRef(true);
@@ -973,12 +974,13 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                             sx={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                cursor: 'pointer',
+                                cursor: editMode ? 'grab' : 'pointer',
                                 '&:hover': {
-                                    opacity: 0.8
+                                    opacity: editMode ? 1 : 0.8
                                 }
                             }}
-                            onClick={handleOpenPiholeAdmin}
+                            onClick={editMode ? undefined : handleOpenPiholeAdmin}
+                            mb={0.5}
                         >
                             <img
                                 src={`${BACKEND_URL}/icons/pihole.svg`}
@@ -995,24 +997,26 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                     )}
                 </Box>
 
-                {/* Right side - Disable/Enable button */}
-                <Button
-                    variant='text'
-                    startIcon={isBlocking ? <MdPause /> : <MdPlayArrow />}
-                    onClick={isBlocking ? handleDisableMenuClick : handleEnableBlocking}
-                    disabled={isDisablingBlocking}
-                    sx={{
-                        height: 25,
-                        fontSize: '0.7rem',
-                        color: 'white',
-                        '&:hover': {
-                            backgroundColor: 'rgba(255, 255, 255, 0.1)'
-                        },
-                        ml: 'auto'
-                    }}
-                >
-                    {isBlocking ? 'Disable' : (remainingTime ? `Resume (${remainingTime})` : 'Resume')}
-                </Button>
+                {/* Right side - Disable/Enable button - Only show when not in edit mode */}
+                {!editMode && (
+                    <Button
+                        variant='text'
+                        startIcon={isBlocking ? <MdPause /> : <MdPlayArrow />}
+                        onClick={isBlocking ? handleDisableMenuClick : handleEnableBlocking}
+                        disabled={isDisablingBlocking}
+                        sx={{
+                            height: 25,
+                            fontSize: '0.7rem',
+                            color: 'white',
+                            '&:hover': {
+                                backgroundColor: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ml: 'auto'
+                        }}
+                    >
+                        {isBlocking ? 'Disable' : (remainingTime ? `Resume (${remainingTime})` : 'Resume')}
+                    </Button>
+                )}
 
                 {/* Disable interval menu */}
                 <Menu
@@ -1035,7 +1039,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 <Grid size={{ xs: 6 }}>
                     <Paper
                         elevation={0}
-                        onClick={handleOpenBlockedPage}
+                        onClick={editMode ? undefined : handleOpenBlockedPage}
                         sx={{
                             backgroundColor: '#74281E',
                             p: '5px 8px',
@@ -1046,10 +1050,10 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                             alignItems: 'center',
                             justifyContent: 'center',
                             color: 'white',
-                            cursor: 'pointer',
+                            cursor: editMode ? 'grab' : 'pointer',
                             '&:hover': {
-                                opacity: 0.9,
-                                boxShadow: 2
+                                opacity: editMode ? 1 : 0.9,
+                                boxShadow: editMode ? 0 : 2
                             }
                         }}
                     >
@@ -1067,7 +1071,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 <Grid size={{ xs: 6 }}>
                     <Paper
                         elevation={0}
-                        onClick={handleOpenQueriesPage}
+                        onClick={editMode ? undefined : handleOpenQueriesPage}
                         sx={{
                             backgroundColor: '#8E5B0A',
                             p: '5px 8px',
@@ -1078,10 +1082,10 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                             alignItems: 'center',
                             justifyContent: 'center',
                             color: 'white',
-                            cursor: 'pointer',
+                            cursor: editMode ? 'grab' : 'pointer',
                             '&:hover': {
-                                opacity: 0.9,
-                                boxShadow: 2
+                                opacity: editMode ? 1 : 0.9,
+                                boxShadow: editMode ? 0 : 2
                             }
                         }}
                     >
@@ -1101,7 +1105,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 <Grid size={{ xs: 6 }}>
                     <Paper
                         elevation={0}
-                        onClick={handleOpenNetworkPage}
+                        onClick={editMode ? undefined : handleOpenNetworkPage}
                         sx={{
                             backgroundColor: '#006179',
                             p: '5px 8px',
@@ -1112,10 +1116,10 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                             alignItems: 'center',
                             justifyContent: 'center',
                             color: 'white',
-                            cursor: 'pointer',
+                            cursor: editMode ? 'grab' : 'pointer',
                             '&:hover': {
-                                opacity: 0.9,
-                                boxShadow: 2
+                                opacity: editMode ? 1 : 0.9,
+                                boxShadow: editMode ? 0 : 2
                             }
                         }}
                     >
@@ -1133,7 +1137,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 <Grid size={{ xs: 6 }}>
                     <Paper
                         elevation={0}
-                        onClick={handleOpenAdlistsPage}
+                        onClick={editMode ? undefined : handleOpenAdlistsPage}
                         sx={{
                             backgroundColor: '#004A28',
                             p: '5px 8px',
@@ -1144,10 +1148,10 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                             alignItems: 'center',
                             justifyContent: 'center',
                             color: 'white',
-                            cursor: 'pointer',
+                            cursor: editMode ? 'grab' : 'pointer',
                             '&:hover': {
-                                opacity: 0.9,
-                                boxShadow: 2
+                                opacity: editMode ? 1 : 0.9,
+                                boxShadow: editMode ? 0 : 2
                             }
                         }}
                     >
@@ -1162,8 +1166,8 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 </Grid>
             </Grid>
 
-            {/* Status indicator */}
-            {!isBlocking && (
+            {/* Status indicator - only show when not in edit mode and blocking is disabled */}
+            {!editMode && !isBlocking && (
                 <Box sx={{ mt: 0.2, textAlign: 'center' }}>
                     <Typography variant='caption' color='white' sx={{ fontSize: '0.6rem' }}>
                         {remainingTime
