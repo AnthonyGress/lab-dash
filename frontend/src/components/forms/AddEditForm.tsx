@@ -69,6 +69,7 @@ type FormValues = {
     piholePort?: string;
     piholeSsl?: boolean;
     piholeApiToken?: string;
+    piholePassword?: string;
 };
 
 interface LocationOption {
@@ -167,6 +168,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                 ? existingItem?.config?.piholeSsl
                 : existingItem?.config?.ssl || false,
             piholeApiToken: existingItem?.config?.piholeApiToken || existingItem?.config?.apiToken || '',
+            piholePassword: existingItem?.config?.password || '',
             location: existingItem?.config?.location || null,
         });
     }, [existingItem, formContext]);
@@ -310,6 +312,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
         } else if (data.itemType === 'widget' && data.widgetType === ITEM_TYPE.PIHOLE_WIDGET) {
             // Encrypt the API token if needed
             let encryptedToken = data.piholeApiToken || '';
+            let encryptedPassword = data.piholePassword || '';
 
             if (encryptedToken && !isEncrypted(encryptedToken)) {
                 try {
@@ -319,12 +322,20 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                 }
             }
 
+            if (encryptedPassword && !isEncrypted(encryptedPassword)) {
+                try {
+                    encryptedPassword = await DashApi.encryptPiholePassword(encryptedPassword);
+                } catch (error) {
+                    console.error('Error encrypting Pi-hole password:', error);
+                }
+            }
+
             config = {
                 host: data.piholeHost,
                 port: data.piholePort,
                 ssl: data.piholeSsl,
                 apiToken: encryptedToken,
-                refreshInterval: 10000, // 10 seconds default
+                password: encryptedPassword,
                 showLabel: data.showLabel
             };
         } else if (data.itemType === 'widget' && data.widgetType === ITEM_TYPE.TORRENT_CLIENT) {
@@ -422,12 +433,34 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             piholePort: '',
             piholeSsl: false,
             piholeApiToken: '',
+            piholePassword: '',
             location: null,
         });
 
         // This ensures that when the form is reopened, the initial effect will run and set values from existingItem
         handleClose();
     };
+
+    // Add a useEffect to clear the opposing field when one is filled
+    useEffect(() => {
+        const piholeApiToken = formContext.watch('piholeApiToken');
+        const piholePassword = formContext.watch('piholePassword');
+
+        // If user starts typing API token, clear password
+        if (piholeApiToken && piholePassword) {
+            formContext.setValue('piholePassword', '');
+        }
+    }, [formContext.watch('piholeApiToken')]);
+
+    useEffect(() => {
+        const piholeApiToken = formContext.watch('piholeApiToken');
+        const piholePassword = formContext.watch('piholePassword');
+
+        // If user starts typing password, clear API token
+        if (piholePassword && piholeApiToken) {
+            formContext.setValue('piholeApiToken', '');
+        }
+    }, [formContext.watch('piholePassword')]);
 
     return (
         <Grid
@@ -906,15 +939,30 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                             }}
                                         />
                                     </Grid>
+                                    <Typography
+                                        variant='body2'
+                                        sx={{
+                                            my: 1,
+                                            color: 'white',
+                                            fontWeight: 'medium',
+                                            px: 1,
+                                            width: '100%',
+                                            textAlign: 'center'
+                                        }}
+                                    >
+                                        Enter either an API Token (Pi-hole v5) OR a Password (Pi-hole v6)
+                                    </Typography>
                                     <Grid>
                                         <TextFieldElement
                                             name='piholeApiToken'
-                                            label='API Token'
+                                            label='API Token (Pi-hole v5)'
                                             type='password'
                                             variant='outlined'
                                             fullWidth
                                             autoComplete='off'
-                                            required
+                                            required={!formContext.watch('piholePassword')}
+                                            disabled={!!formContext.watch('piholePassword')}
+                                            helperText={formContext.watch('piholePassword') ? 'Password already provided' : 'Enter the API token from Pi-hole Settings > API/Web interface'}
                                             sx={{
                                                 width: '100%',
                                                 '& .MuiOutlinedInput-root': {
@@ -926,7 +974,35 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                                 },
                                             }}
                                             slotProps={{
-                                                inputLabel: { style: { color: theme.palette.text.primary } }
+                                                inputLabel: { style: { color: theme.palette.text.primary } },
+                                                formHelperText: { style: { color: 'rgba(255, 255, 255, 0.7)' } }
+                                            }}
+                                        />
+                                    </Grid>
+                                    <Grid>
+                                        <TextFieldElement
+                                            name='piholePassword'
+                                            label='Password (Pi-hole v6)'
+                                            type='password'
+                                            variant='outlined'
+                                            fullWidth
+                                            autoComplete='off'
+                                            required={!formContext.watch('piholeApiToken')}
+                                            disabled={!!formContext.watch('piholeApiToken')}
+                                            helperText={formContext.watch('piholeApiToken') ? 'API Token already provided' : 'Enter your Pi-hole admin password'}
+                                            sx={{
+                                                width: '100%',
+                                                '& .MuiOutlinedInput-root': {
+                                                    '& fieldset': {
+                                                        borderColor: 'text.primary',
+                                                    },
+                                                    '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                                },
+                                            }}
+                                            slotProps={{
+                                                inputLabel: { style: { color: theme.palette.text.primary } },
+                                                formHelperText: { style: { color: 'rgba(255, 255, 255, 0.7)' } }
                                             }}
                                         />
                                     </Grid>

@@ -87,7 +87,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
             timerRef.current = null;
         }
 
-        // If location already exists in config, use that with highest priority
+        // Only use location from config, no browser geolocation fallback
         if (config?.location?.latitude && config?.location?.longitude) {
             setLocation({
                 latitude: config.location.latitude,
@@ -100,24 +100,10 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
 
             locationSet.current = true;
         } else {
-            // Reset location set flag when no config location is available
-            locationSet.current = false;
-
-            // If no config location, try browser geolocation
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const { latitude, longitude } = position.coords;
-                    setLocation({ latitude, longitude });
-                    locationSet.current = true;
-                },
-                (error) => {
-                    console.error('Error fetching location:', error);
-                    // No fallback to IP-based location anymore
-                    setLocation(null);
-                    locationSet.current = true;
-                    setIsLoading(false);
-                }
-            );
+            // If no config location provided, don't use browser geolocation
+            setLocation(null);
+            locationSet.current = true;
+            setIsLoading(false);
         }
 
         const handleClickOutside = () => {
@@ -366,21 +352,20 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
                     sx={{
                         width: '100%',
                         height: '100%',
-                        aspectRatio: '16/9',
                         display: 'flex',
+                        flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        minHeight: { xs: 120, sm: 120, md: 120 },
+                        textAlign: 'center',
+                        padding: 2
                     }}
                 >
-                    <Skeleton
-                        variant='rounded'
-                        sx={{
-                            width: '100%',
-                            height: '80%',
-                            maxWidth: '100%'
-                        }}
-                    />
+                    <Typography variant='subtitle1'>
+                        Weather unavailable
+                    </Typography>
+                    <Typography variant='caption' sx={{ mt: 1 }}>
+                        Please set a location in the widget settings
+                    </Typography>
                 </Box>
             )}
         </CardContent>

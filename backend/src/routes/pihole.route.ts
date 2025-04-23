@@ -125,6 +125,30 @@ piholeRoute.post('/encrypt-token', authenticateToken, async (req: Request, res: 
     }
 });
 
+// Encrypt password for storage in config
+piholeRoute.post('/encrypt-password', authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const { password } = req.body;
+
+        if (!password) {
+            res.status(400).json({ error: 'Password is required' });
+            return;
+        }
+
+        // Don't re-encrypt if already encrypted
+        if (isEncrypted(password)) {
+            res.status(200).json({ encryptedPassword: password });
+            return;
+        }
+
+        const encryptedPassword = encrypt(password);
+        res.status(200).json({ encryptedPassword });
+    } catch (error) {
+        console.error('Pi-hole password encryption error:', error);
+        res.status(500).json({ error: 'Failed to encrypt password' });
+    }
+});
+
 // Disable Pi-hole blocking (temporarily or indefinitely)
 piholeRoute.post('/disable', async (req: Request, res: Response) => {
     try {

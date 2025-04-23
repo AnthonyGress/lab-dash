@@ -50,8 +50,8 @@ export class DashApi {
             if (res.data && res.data.username) {
                 localStorage.setItem('username', res.data.username);
             }
+            console.log('login successful');
 
-            console.log('login successful', res.data);
 
             return res.data;
         } catch (error: any) {
@@ -73,8 +73,8 @@ export class DashApi {
 
             // Clear username from localStorage
             localStorage.removeItem('username');
-
             console.log('Logged out successfully');
+
 
             // Verify cookies are cleared
             const cookieStatus = await this.checkCookies();
@@ -119,12 +119,10 @@ export class DashApi {
                         const refreshResult = await this.refreshToken();
 
                         if (refreshResult.success) {
-                            console.log('Token refreshed, retrying original request');
-                            // If refresh was successful, retry the original request
+                            console.log('Token refreshed, retrying original request');                            // If refresh was successful, retry the original request
                             return axios(originalRequest);
                         } else {
-                            console.log('Token refresh failed, logging out user');
-                            // The refreshToken method will handle the logout
+                            console.log('Token refresh failed, logging out user');                            // The refreshToken method will handle the logout
                             return Promise.reject(error);
                         }
                     } catch (refreshError) {
@@ -143,7 +141,6 @@ export class DashApi {
     private static redirectToLogin(): void {
         // Check if we're not already on the login page
         if (!window.location.pathname.includes('/login')) {
-            console.log('Redirecting to login page...');
             window.location.href = '/login';
         }
     }
@@ -237,7 +234,6 @@ export class DashApi {
                 withCredentials: true // Ensure credentials are sent for authentication
             });
 
-            console.log('Config import response:', response.data);
             return true;
         } catch (error) {
             console.error('Failed to import configuration:', error);
@@ -388,6 +384,7 @@ export class DashApi {
                 withCredentials: true
             });
             console.log('Token refreshed successfully');
+
             return {
                 success: true,
                 isAdmin: res.data.isAdmin
@@ -405,7 +402,6 @@ export class DashApi {
             const res = await axios.get(`${BACKEND_URL}/api/auth/check-cookies`, {
                 withCredentials: true
             });
-            // console.log('Cookie debug response:', res.data);
             return res.data;
         } catch (error) {
             // console.error('Error debugging cookies:', error);
@@ -777,6 +773,7 @@ export class DashApi {
         port?: string;
         ssl?: boolean;
         apiToken?: string;
+        password?: string;
     }): Promise<any> {
         try {
             const params: any = {};
@@ -785,24 +782,95 @@ export class DashApi {
                 if (connectionInfo.host) params.host = connectionInfo.host;
                 if (connectionInfo.port) params.port = connectionInfo.port;
                 if (connectionInfo.ssl !== undefined) params.ssl = connectionInfo.ssl;
+
+                // Only include credentials that are actually provided
                 if (connectionInfo.apiToken) params.apiToken = connectionInfo.apiToken;
+                if (connectionInfo.password) params.password = connectionInfo.password;
             }
 
-            const res = await axios.get(`${BACKEND_URL}/api/pihole/stats`, {
+            // Validate that we have at least one authentication method
+            if (!params.apiToken && !params.password) {
+                throw new Error('No authentication credentials provided. Please add either an API token or password.');
+            }
+
+            // Choose the appropriate API endpoint based on the authentication method
+            let apiEndpoint = '/api/pihole/stats';
+
+            // If using password authentication, use the v6 endpoint
+            if (params.password && !params.apiToken) {
+                apiEndpoint = '/api/pihole/v6/stats';
+            }
+
+            const res = await axios.get(`${BACKEND_URL}${apiEndpoint}`, {
                 params,
                 withCredentials: true
             });
 
             if (res.data.success) {
+                // Log the stats response for debugging
                 return res.data.data;
             } else {
                 if (res.data.decryptionError) {
-                    throw new Error('Failed to decrypt Pi-hole API token');
+                    throw new Error('Failed to decrypt Pi-hole authentication credentials');
                 }
                 throw new Error(res.data.error || 'Failed to get Pi-hole statistics');
             }
-        } catch (error) {
-            console.error('Pi-hole stats error:', error);
+        } catch (error: any) {
+            // Check for custom error codes from our backend
+            if (error.response?.data?.code === 'PIHOLE_AUTH_ERROR') {
+                // Authentication error with Pi-hole - create a custom error
+                const piError = new Error(error.response.data.error || 'Pi-hole authentication failed');
+                // Attach the response to the error for the component to use
+                (piError as any).response = {
+                    status: 400,  // Use 400 instead of 401 to avoid global auth interceptor
+                    data: error.response.data
+                };
+                (piError as any).pihole = {
+                    requiresReauth: true
+                };
+                throw piError;
+            }
+
+            if (error.response?.data?.code === 'PIHOLE_API_ERROR') {
+                // API error with Pi-hole - create a custom error
+                const piError = new Error(error.response.data.error || 'Pi-hole API error');
+                (piError as any).response = {
+                    status: 400,
+                    data: error.response.data
+                };
+                (piError as any).pihole = {
+                    requiresReauth: error.response.data.requiresReauth || false
+                };
+                throw piError;
+            }
+
+            // If we get an explicit 401 from the server, throw with an authentication message
+            if (error.response?.status === 401) {
+                console.error('Pi-hole authentication failed:', error.response.data);
+                const errorMsg = error.response.data?.error || 'Authentication failed';
+                const err = new Error(errorMsg);
+                // Add response property so the component can check status code
+                (err as any).response = error.response;
+                throw err;
+            }
+
+            // Provide detailed error information for debugging
+            console.error('Pi-hole stats error:', {
+                message: error.message,
+                status: error.response?.status,
+                data: error.response?.data,
+                stack: error.stack
+            });
+
+            // Add more specific error messages for common issues
+            if (error.message?.includes('ECONNREFUSED')) {
+                throw new Error('Connection refused. Please check if Pi-hole is running at the specified host and port.');
+            } else if (error.message?.includes('timeout')) {
+                throw new Error('Connection timed out. Please check your network connection and Pi-hole configuration.');
+            } else if (error.message?.includes('Network Error')) {
+                throw new Error('Network error. Please check your network connection and Pi-hole configuration.');
+            }
+
             throw error;
         }
     }
@@ -820,59 +888,124 @@ export class DashApi {
         }
     }
 
-    // New method to disable Pi-hole blocking
+    public static async encryptPiholePassword(password: string): Promise<string> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/pihole/encrypt-password`,
+                { password },
+                { withCredentials: true }
+            );
+            return res.data.encryptedPassword;
+        } catch (error) {
+            console.error('Failed to encrypt Pi-hole password:', error);
+            throw error;
+        }
+    }
+
     public static async disablePihole(connectionInfo: {
         host: string;
         port: string;
         ssl: boolean;
-        apiToken: string;
+        apiToken?: string;
+        password?: string;
     }, seconds?: number): Promise<boolean> {
         try {
             const params: any = {
                 host: connectionInfo.host,
                 port: connectionInfo.port,
-                ssl: connectionInfo.ssl,
-                apiToken: connectionInfo.apiToken
+                ssl: connectionInfo.ssl
             };
+
+            if (connectionInfo.apiToken) params.apiToken = connectionInfo.apiToken;
+            if (connectionInfo.password) params.password = connectionInfo.password;
 
             if (seconds !== undefined && seconds !== null) {
                 params.seconds = seconds;
             }
 
-            const res = await axios.post(`${BACKEND_URL}/api/pihole/disable`, {}, {
+            // Choose the appropriate API endpoint based on the authentication method
+            let apiEndpoint = '/api/pihole/disable';
+
+            // If using password authentication, use the v6 endpoint
+            if (params.password && !params.apiToken) {
+                apiEndpoint = '/api/pihole/v6/disable';
+            }
+
+            const res = await axios.post(`${BACKEND_URL}${apiEndpoint}`, {}, {
                 params,
                 withCredentials: true
             });
 
             return res.data.success === true;
-        } catch (error) {
+        } catch (error: any) {
+            // Handle custom error codes from our backend
+            if (error.response?.data?.code) {
+                console.error(`Pi-hole disable error (${error.response.data.code}):`, error.response.data);
+
+                // Create a custom error that won't trigger global auth interceptors
+                const piError = new Error(error.response.data.error || 'Failed to disable Pi-hole');
+                (piError as any).response = {
+                    status: 400,  // Use 400 instead of 401 to avoid global auth interceptor
+                    data: error.response.data
+                };
+                (piError as any).pihole = {
+                    requiresReauth: error.response.data.requiresReauth || false
+                };
+                throw piError;
+            }
+
             console.error('Failed to disable Pi-hole:', error);
             throw error;
         }
     }
 
-    // New method to enable Pi-hole blocking
     public static async enablePihole(connectionInfo: {
         host: string;
         port: string;
         ssl: boolean;
-        apiToken: string;
+        apiToken?: string;
+        password?: string;
     }): Promise<boolean> {
         try {
             const params: any = {
                 host: connectionInfo.host,
                 port: connectionInfo.port,
-                ssl: connectionInfo.ssl,
-                apiToken: connectionInfo.apiToken
+                ssl: connectionInfo.ssl
             };
 
-            const res = await axios.post(`${BACKEND_URL}/api/pihole/enable`, {}, {
+            if (connectionInfo.apiToken) params.apiToken = connectionInfo.apiToken;
+            if (connectionInfo.password) params.password = connectionInfo.password;
+
+            // Choose the appropriate API endpoint based on the authentication method
+            let apiEndpoint = '/api/pihole/enable';
+
+            // If using password authentication, use the v6 endpoint
+            if (params.password && !params.apiToken) {
+                apiEndpoint = '/api/pihole/v6/enable';
+            }
+
+            const res = await axios.post(`${BACKEND_URL}${apiEndpoint}`, {}, {
                 params,
                 withCredentials: true
             });
 
             return res.data.success === true;
-        } catch (error) {
+        } catch (error: any) {
+            // Handle custom error codes from our backend
+            if (error.response?.data?.code) {
+                console.error(`Pi-hole enable error (${error.response.data.code}):`, error.response.data);
+
+                // Create a custom error that won't trigger global auth interceptors
+                const piError = new Error(error.response.data.error || 'Failed to enable Pi-hole');
+                (piError as any).response = {
+                    status: 400,  // Use 400 instead of 401 to avoid global auth interceptor
+                    data: error.response.data
+                };
+                (piError as any).pihole = {
+                    requiresReauth: error.response.data.requiresReauth || false
+                };
+                throw piError;
+            }
+
             console.error('Failed to enable Pi-hole:', error);
             throw error;
         }
