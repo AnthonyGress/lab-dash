@@ -21,9 +21,9 @@ type Props = {
 const ITEM_TYPE_OPTIONS = [
     { id: ITEM_TYPE.APP_SHORTCUT, label: 'Shortcut' },
     { id: 'widget', label: 'Widget' },
-    { id: ITEM_TYPE.BLANK_APP, label: 'Blank App' },
-    { id: ITEM_TYPE.BLANK_WIDGET, label: 'Blank Widget' },
-    { id: ITEM_TYPE.BLANK_ROW, label: 'Blank Row' },
+    { id: ITEM_TYPE.BLANK_APP, label: 'Placeholder Shortcut' },
+    { id: ITEM_TYPE.BLANK_WIDGET, label: 'Placeholder Widget' },
+    { id: ITEM_TYPE.BLANK_ROW, label: 'Placeholder Row' },
 ];
 
 const WIDGET_OPTIONS = [
@@ -1260,28 +1260,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                             </>
                             }
 
-                            {(selectedItemType === ITEM_TYPE.BLANK_WIDGET || selectedItemType === ITEM_TYPE.BLANK_ROW) && (
-                                <Grid>
-                                    <TextFieldElement name='shortcutName' label='Widget Name (Optional)' variant='outlined' sx={{
-                                        width: '100%',
-                                        '& .MuiOutlinedInput-root': {
-                                            '& fieldset': {
-                                                borderColor: 'text.primary',
-                                            },
-                                            '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                                            '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
-                                        },
-                                    }}
-                                    autoComplete='off'
-                                    slotProps={{
-                                        inputLabel:
-                            { style: { color: theme.palette.text.primary } }
-                                    }}
-                                    />
-                                </Grid>
-                            )}
-
-                            {(selectedItemType === ITEM_TYPE.BLANK_WIDGET || selectedItemType === ITEM_TYPE.BLANK_ROW) && (
+                            {(selectedItemType === ITEM_TYPE.BLANK_WIDGET || selectedItemType === ITEM_TYPE.BLANK_ROW || selectedItemType === ITEM_TYPE.BLANK_APP) && (
                                 <Grid>
                                     <CheckboxElement
                                         label='Admin Only'
