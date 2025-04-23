@@ -1,5 +1,6 @@
 import { Box, Button, CircularProgress, Grid2 as Grid, Menu, MenuItem, Paper, TextField, Typography } from '@mui/material';
-import { useCallback, useEffect, useState } from 'react';
+import axios from 'axios';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { FaGlobe, FaList, FaPercentage } from 'react-icons/fa';
 import { MdBlockFlipped, MdDns, MdPause, MdPlayArrow } from 'react-icons/md';
 
@@ -8,11 +9,15 @@ import { BACKEND_URL } from '../../../../../constants/constants';
 import { COLORS } from '../../../../../theme/styles';
 import { formatNumber } from '../../../../../utils/utils';
 
+// Define our own Timeout type based on setTimeout's return type
+type TimeoutId = ReturnType<typeof setTimeout>;
+
 type PiholeWidgetConfig = {
     host?: string;
     port?: string;
     ssl?: boolean;
     apiToken?: string;
+    password?: string;
     refreshInterval?: number;
     showLabel?: boolean;
 };
@@ -23,6 +28,7 @@ type PiholeStats = {
     ads_blocked_today?: number;
     ads_percentage_today?: number | string;
     status?: string;
+    timer?: number | null; // Use timer in seconds instead of until timestamp
 };
 
 const initialStats: PiholeStats = {
@@ -30,7 +36,8 @@ const initialStats: PiholeStats = {
     dns_queries_today: 0,
     ads_blocked_today: 0,
     ads_percentage_today: 0,
-    status: 'unknown'
+    status: 'unknown',
+    timer: null
 };
 
 export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
@@ -44,6 +51,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
         port: config?.port || '80',
         ssl: config?.ssl || false,
         apiToken: config?.apiToken || '',
+        password: config?.password || '',
         showLabel: config?.showLabel
     });
 
@@ -52,48 +60,267 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
     const [disableMenuAnchor, setDisableMenuAnchor] = useState<null | HTMLElement>(null);
     const [isDisablingBlocking, setIsDisablingBlocking] = useState(false);
     const [disableEndTime, setDisableEndTime] = useState<Date | null>(null);
-    const [disableTimer, setDisableTimer] = useState<NodeJS.Timeout | null>(null);
+    const [disableTimer, setDisableTimer] = useState<TimeoutId | null>(null);
     const [remainingTime, setRemainingTime] = useState<string>('');
 
-    // Update remaining time every second
+    // Add a state to track authentication failures
+    const [authFailed, setAuthFailed] = useState(false);
+
+    // Add a flag to identify if we're using Pi-hole v6
+    const [isPiholeV6, setIsPiholeV6] = useState(false);
+
+    // Add a ref to store the refresh interval
+    const refreshIntervalRef = useRef<TimeoutId | null>(null);
+
+    // Add a ref to store the status check interval for Pi-hole v6
+    const statusCheckIntervalRef = useRef<TimeoutId | null>(null);
+
+    // Add a ref to track component mounted state to prevent updates after unmount
+    const isMountedRef = useRef<boolean>(true);
+
+    // Set isMounted on mount and clear on unmount
     useEffect(() => {
-        if (!disableEndTime) {
-            setRemainingTime('');
+        isMountedRef.current = true;
+
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, []);
+
+    // Determine if we're using Pi-hole v6 based on authentication method
+    useEffect(() => {
+        // Using password-only auth indicates Pi-hole v6
+        const isV6 = !!piholeConfig.password && !piholeConfig.apiToken;
+        setIsPiholeV6(isV6);
+    }, [piholeConfig]);
+
+    // Combined function to check both blocking status and stats in one operation
+    const checkPiholeStatus = useCallback(async () => {
+        // Skip requests if the component is unmounted
+        if (!isMountedRef.current) return;
+
+        // Skip if not properly configured or authentication failed
+        if (!isConfigured || !piholeConfig.host ||
+            (!piholeConfig.apiToken && !piholeConfig.password) || authFailed) {
             return;
         }
 
-        // Update immediately
-        updateRemainingTime();
+        try {
+            // First check Pi-hole v6 blocking status if applicable
+            if (isPiholeV6 && piholeConfig.password) {
+                try {
+                    // Create the base URL for the backend API
+                    const backendUrl = `${BACKEND_URL}/api/pihole/v6/blocking-status`;
 
-        // Then update every second
-        const interval = setInterval(() => {
-            updateRemainingTime();
-        }, 1000);
+                    // Make the request to our backend API for blocking status
+                    const response = await axios.get(backendUrl, {
+                        params: {
+                            host: piholeConfig.host,
+                            port: piholeConfig.port,
+                            ssl: piholeConfig.ssl,
+                            password: piholeConfig.password
+                        },
+                        timeout: 5000
+                    });
 
-        return () => clearInterval(interval);
-    }, [disableEndTime]);
+                    if (response.data.success && response.data.data) {
+                        const blockingData = response.data.data;
 
-    // Function to update remaining time
-    const updateRemainingTime = () => {
-        if (!disableEndTime) {
-            setRemainingTime('');
-            return;
+                        // Update isBlocking state based on status
+                        const newIsBlocking = blockingData.status === 'enabled';
+
+                        // Only update when there's a change to avoid unnecessary renders
+                        if (isBlocking !== newIsBlocking) {
+                            setIsBlocking(newIsBlocking);
+                        }
+
+                        // If disabled with timer, set up the countdown
+                        if (blockingData.status === 'disabled') {
+                            // Check if we have a timer or until value
+                            if (blockingData.timer && typeof blockingData.timer === 'number') {
+                                // Calculate end time from timer (seconds)
+                                const endTime = new Date();
+                                endTime.setSeconds(endTime.getSeconds() + blockingData.timer);
+
+                                // Check if this is a significant change from the current end time
+                                const shouldUpdateEndTime = !disableEndTime ||
+                                    Math.abs(endTime.getTime() - disableEndTime.getTime()) > 2000;
+
+                                if (shouldUpdateEndTime) {
+                                    setDisableEndTime(endTime);
+
+                                    // Immediately calculate remaining time for UI responsiveness
+                                    const now = new Date();
+                                    const diffMs = endTime.getTime() - now.getTime();
+                                    const diffSec = Math.floor(diffMs / 1000);
+                                    const minutes = Math.floor(diffSec / 60);
+                                    const seconds = diffSec % 60;
+                                    const newRemainingTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                                    setRemainingTime(newRemainingTime);
+
+                                    // Update stats
+                                    setStats(prevStats => ({
+                                        ...prevStats,
+                                        status: 'disabled',
+                                        timer: blockingData.timer
+                                    }));
+                                }
+                            } else {
+                                // No timer, must be indefinite
+                                setDisableEndTime(null);
+                                setRemainingTime('');
+                                setStats(prevStats => ({
+                                    ...prevStats,
+                                    status: 'disabled',
+                                    timer: null
+                                }));
+                            }
+                        } else {
+                            // Pi-hole is enabled, clear any end time
+                            setDisableEndTime(null);
+                            setRemainingTime('');
+                            setStats(prevStats => ({
+                                ...prevStats,
+                                status: 'enabled',
+                                timer: null
+                            }));
+                        }
+                    }
+                } catch (statusError) {
+                    // Don't set error state here to avoid disrupting the UI
+                    // Just continue silently to fetch stats
+                }
+            }
+
+            // Then fetch stats for both v5 and v6
+            try {
+                // Don't set loading state here to avoid flickering during regular updates
+                // Only set error to null if we're currently showing an error
+                if (error) setError(null);
+
+                const piholeStats = await DashApi.getPiholeStats(piholeConfig);
+
+                // Reset auth failed flag on successful fetch
+                setAuthFailed(false);
+
+                // Set stats from API response (for Pi-hole v5 or if v6 status check failed)
+                // For v6, if the status check succeeded, this will have additional data like domain counts
+                setStats(prevStats => ({
+                    ...piholeStats,
+                    // Preserve the status and timer from status check if v6 and they exist
+                    status: isPiholeV6 ? (prevStats.status || piholeStats.status) : piholeStats.status,
+                    timer: isPiholeV6 ? (prevStats.timer || piholeStats.timer) : piholeStats.timer
+                }));
+
+                // Update blocking status if v5 or if v6 status check failed
+                if (piholeStats.status === 'disabled' && (!isPiholeV6 || isBlocking)) {
+                    setIsBlocking(false);
+
+                    // For Pi-hole v5, handle timer display
+                    if (!isPiholeV6 && typeof piholeStats.timer === 'number') {
+                        const endTime = new Date();
+                        endTime.setSeconds(endTime.getSeconds() + piholeStats.timer);
+                        setDisableEndTime(endTime);
+                    }
+                } else if (piholeStats.status === 'enabled' && !isBlocking) {
+                    setIsBlocking(true);
+                    setDisableEndTime(null);
+                    setRemainingTime('');
+                }
+            } catch (err: any) {
+                // Only set error state on stats fetch errors
+                if (err.pihole?.requiresReauth) {
+                    setAuthFailed(true);
+                    setError('Authentication failed. Please check your Pi-hole credentials in widget settings.');
+                } else if (err.response?.status === 401) {
+                    setAuthFailed(true);
+                    setError('Authentication failed. Please check your Pi-hole credentials in widget settings.');
+                } else if (err.message) {
+                    setError(err.message);
+                } else {
+                    setError('Failed to connect to Pi-hole. Please check your configuration.');
+                }
+            }
+        } finally {
+            // Always make sure isLoading is reset
+            setIsLoading(false);
+        }
+    }, [
+        isPiholeV6, isConfigured, piholeConfig, authFailed, isBlocking,
+        disableEndTime, isMountedRef, error
+    ]);
+
+    // Set up a single polling cycle for all Pi-hole status checks
+    useEffect(() => {
+        // Clear any existing timeouts
+        if (statusCheckIntervalRef.current) {
+            clearTimeout(statusCheckIntervalRef.current);
+            statusCheckIntervalRef.current = null;
         }
 
-        const now = new Date();
-        const diffMs = disableEndTime.getTime() - now.getTime();
-
-        if (diffMs <= 0) {
-            setRemainingTime('Enabling...');
-            return;
+        if (refreshIntervalRef.current) {
+            clearInterval(refreshIntervalRef.current);
+            refreshIntervalRef.current = null;
         }
 
-        const diffSec = Math.floor(diffMs / 1000);
-        const minutes = Math.floor(diffSec / 60);
-        const seconds = diffSec % 60;
+        // Only set up the polling if configured and not auth failed
+        if (isConfigured && !authFailed) {
+            // Set loading state on initial mount
+            if (!stats.domains_being_blocked) {
+                setIsLoading(true);
+            }
 
-        setRemainingTime(`${minutes}:${seconds.toString().padStart(2, '0')}`);
-    };
+            // Do an initial check
+            checkPiholeStatus();
+
+            // Determine the check interval based on state:
+            let checkInterval = 30000; // Default: 30 seconds when enabled (reduced frequency)
+
+            if (!isBlocking) {
+                // Check every 5 seconds when disabled with a timer
+                // Check every 10 seconds when disabled indefinitely
+                checkInterval = disableEndTime !== null ? 5000 : 10000;
+            }
+
+            // Set up sequential checking with dynamic intervals
+            const scheduleNextCheck = () => {
+                // Skip if the component is unmounted
+                if (!isMountedRef.current) return;
+
+                // Store the timeout ID for cleanup
+                statusCheckIntervalRef.current = setTimeout(async () => {
+                    await checkPiholeStatus();
+
+                    // Recalculate the interval based on the current state
+                    let nextInterval = 30000; // 30 seconds for enabled state
+
+                    if (!isBlocking) {
+                        // Use 5 seconds for disabled with timer, 10 seconds for indefinite
+                        nextInterval = disableEndTime !== null ? 5000 : 10000;
+                    }
+
+                    // Schedule the next check with the updated interval
+                    scheduleNextCheck();
+                }, checkInterval) as unknown as NodeJS.Timeout;
+            };
+
+            // Start the polling cycle
+            scheduleNextCheck();
+        }
+
+        return () => {
+            // Clean up both refs on unmount
+            if (statusCheckIntervalRef.current) {
+                clearTimeout(statusCheckIntervalRef.current);
+                statusCheckIntervalRef.current = null;
+            }
+
+            if (refreshIntervalRef.current) {
+                clearInterval(refreshIntervalRef.current);
+                refreshIntervalRef.current = null;
+            }
+        };
+    }, [isConfigured, authFailed, isBlocking, disableEndTime, checkPiholeStatus, stats.domains_being_blocked]);
 
     // Update config when props change
     useEffect(() => {
@@ -103,65 +330,264 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 port: config.port || '80',
                 ssl: config.ssl || false,
                 apiToken: config.apiToken || '',
+                password: config.password || '',
                 showLabel: config.showLabel
             });
 
-            // Consider configured if we have a host and token
-            setIsConfigured(!!config.host && !!config.apiToken);
+            // Consider configured if we have a host and either a token or password
+            const isValid = !!config.host && (!!config.apiToken || !!config.password);
+            setIsConfigured(isValid);
+
+            // Reset auth failed state when configuration changes
+            setAuthFailed(false);
         }
     }, [config]);
 
-    const fetchStats = useCallback(async () => {
-        if (!isConfigured || !piholeConfig.host || !piholeConfig.apiToken) {
+    // Define updateRemainingTime before using it in the effect
+    const updateRemainingTime = useCallback(() => {
+        // Don't update if component is unmounted
+        if (!isMountedRef.current) return;
+
+        let targetTime = disableEndTime;
+
+        // For Pi-hole v6, calculate from stats.timer if available
+        if (isPiholeV6 && typeof stats.timer === 'number' && stats.timer > 0) {
+            // If we have a timer but no end time, calculate it
+            if (!targetTime) {
+                const newEndTime = new Date();
+                newEndTime.setSeconds(newEndTime.getSeconds() + stats.timer);
+                setDisableEndTime(newEndTime);
+                targetTime = newEndTime;
+            }
+        }
+
+        if (!targetTime) {
+            setRemainingTime('');
             return;
         }
 
-        setIsLoading(true);
-        setError(null);
+        const now = new Date();
+        const diffMs = targetTime.getTime() - now.getTime();
 
-        try {
-            const piholeStats = await DashApi.getPiholeStats(piholeConfig);
+        if (diffMs <= 0) {
+            setRemainingTime('');
 
-            // Set stats from API response
-            setStats(piholeStats);
-
-            // Update blocking status based on API response
-            if (piholeStats.status === 'disabled') {
-                setIsBlocking(false);
-            } else {
-                setIsBlocking(true);
+            // Only update if component is still mounted
+            if (isMountedRef.current) {
+                // For Pi-hole v6, we should check status again as the timer might have expired
+                if (isPiholeV6) {
+                    checkPiholeStatus();
+                } else {
+                    // For v5, just trigger a refresh as we can't check status separately
+                    setTimeout(() => checkPiholeStatus(), 500);
+                }
             }
+            return;
+        }
 
-        } catch (err: any) {
-            console.error('Error fetching Pi-hole stats:', err);
-            setError(err.message || 'Failed to connect to Pi-hole');
+        const diffSec = Math.floor(diffMs / 1000);
+        const minutes = Math.floor(diffSec / 60);
+        const seconds = diffSec % 60;
 
-            // If there's a decryption error, show a more specific message
-            if (err.message?.includes('decrypt')) {
-                setError('Failed to decrypt API token. Please update your credentials in the widget settings.');
+        const newRemainingTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+        // Only update state if the time has actually changed
+        if (newRemainingTime !== remainingTime) {
+            setRemainingTime(newRemainingTime);
+        }
+    }, [disableEndTime, stats.timer, isPiholeV6, remainingTime, checkPiholeStatus]);
+
+    // Update remaining time every second when a timed disable is active
+    useEffect(() => {
+        // For Pi-hole v6, use the timer value if available
+        if (isPiholeV6 && typeof stats.timer === 'number' && stats.timer > 0) {
+            if (!disableEndTime) {
+                // Calculate end time from timer if we don't have one
+                const newEndTime = new Date();
+                newEndTime.setSeconds(newEndTime.getSeconds() + stats.timer);
+                setDisableEndTime(newEndTime);
             }
-        } finally {
-            setIsLoading(false);
         }
-    }, [isConfigured, piholeConfig]);
 
-    // Fetch stats on mount and when config changes
-    useEffect(() => {
-        if (isConfigured) {
-            fetchStats();
+        if (!disableEndTime && !stats.timer) {
+            // If no timer is active, clear remaining time
+            if (remainingTime) {
+                setRemainingTime('');
+            }
+            return;
         }
-    }, [isConfigured, fetchStats]);
 
-    // Set up refresh interval
-    useEffect(() => {
-        if (!isConfigured) return;
+        // Update immediately
+        updateRemainingTime();
 
+        // Then update every second - we still update the countdown display every second
+        // even though we're only checking the server status every 5 seconds
         const interval = setInterval(() => {
-            fetchStats();
-        }, config?.refreshInterval || 10000); // Default 10 seconds
+            updateRemainingTime();
+        }, 1000);
 
         return () => clearInterval(interval);
-    }, [isConfigured, fetchStats, config?.refreshInterval]);
+    }, [disableEndTime, stats.timer, isPiholeV6, remainingTime, updateRemainingTime]);
+
+    // Handle disable blocking with timeout
+    const handleDisableBlocking = async (seconds: number | null) => {
+        if (!isConfigured || (!piholeConfig.apiToken && !piholeConfig.password)) return;
+
+        setIsDisablingBlocking(true);
+        setDisableMenuAnchor(null);
+
+        try {
+            // Immediately update UI state for better responsiveness
+            setIsBlocking(false);
+
+            // For timed disables, immediately set up the timer view
+            if (seconds !== null) {
+                const endTime = new Date();
+                endTime.setSeconds(endTime.getSeconds() + seconds);
+                setDisableEndTime(endTime);
+
+                // Calculate and set remaining time immediately
+                const diffSec = seconds;
+                const minutes = Math.floor(diffSec / 60);
+                const secs = diffSec % 60;
+                setRemainingTime(`${minutes}:${secs.toString().padStart(2, '0')}`);
+
+                // Update stats with timer
+                setStats(prevStats => ({
+                    ...prevStats,
+                    status: 'disabled',
+                    timer: seconds
+                }));
+            } else {
+                // For indefinite disables, clear timer
+                setDisableEndTime(null);
+                setRemainingTime('');
+
+                // Update stats for indefinite disable
+                setStats(prevStats => ({
+                    ...prevStats,
+                    status: 'disabled',
+                    timer: null
+                }));
+            }
+
+            // Call the backend API to disable blocking
+            const result = await DashApi.disablePihole(
+                {
+                    host: piholeConfig.host,
+                    port: piholeConfig.port,
+                    ssl: piholeConfig.ssl,
+                    apiToken: piholeConfig.apiToken,
+                    password: piholeConfig.password
+                },
+                seconds || undefined
+            );
+
+            if (result) {
+                // For Pi-hole v6, trigger an immediate status check
+                if (isPiholeV6) {
+                    checkPiholeStatus();
+                } else {
+                    // For Pi-hole v5, handle the local timer
+                    if (seconds !== null) {
+                        // Clear any existing timer
+                        if (disableTimer) {
+                            clearTimeout(disableTimer);
+                        }
+
+                        // Set new timer
+                        const timer = setTimeout(() => {
+                            handleEnableBlocking();
+                            setDisableEndTime(null);
+                            setRemainingTime('');
+                        }, seconds * 1000);
+
+                        setDisableTimer(timer as unknown as TimeoutId);
+                    } else {
+                        // Indefinite disable for v5
+                        if (disableTimer) {
+                            clearTimeout(disableTimer);
+                            setDisableTimer(null);
+                        }
+                    }
+                }
+            } else {
+                throw new Error('Failed to disable Pi-hole blocking');
+            }
+        } catch (err: any) {
+            // On error, revert UI state
+            setIsBlocking(true);
+            setDisableEndTime(null);
+            setRemainingTime('');
+
+            // Check if this is an authentication error that requires re-auth
+            if (err.pihole?.requiresReauth) {
+                setAuthFailed(true);
+                setError('Authentication failed. Please check your Pi-hole credentials in widget settings.');
+            } else {
+                // Generic error
+                setError(err.message || 'Failed to disable Pi-hole blocking');
+            }
+        } finally {
+            setIsDisablingBlocking(false);
+        }
+    };
+
+    // Handle enable blocking
+    const handleEnableBlocking = async () => {
+        if (!isConfigured || (!piholeConfig.apiToken && !piholeConfig.password)) return;
+
+        setIsDisablingBlocking(true);
+
+        try {
+            // Call the backend API to enable blocking
+            const result = await DashApi.enablePihole({
+                host: piholeConfig.host,
+                port: piholeConfig.port,
+                ssl: piholeConfig.ssl,
+                apiToken: piholeConfig.apiToken,
+                password: piholeConfig.password
+            });
+
+            if (result) {
+                // Set local state immediately for better UI responsiveness
+                setIsBlocking(true);
+                setDisableEndTime(null);
+                setRemainingTime('');
+
+                // Clear any existing timer
+                if (disableTimer) {
+                    clearTimeout(disableTimer);
+                    setDisableTimer(null);
+                }
+
+                // Also update stats for consistent state
+                setStats(prevStats => ({
+                    ...prevStats,
+                    status: 'enabled',
+                    timer: null
+                }));
+
+                // For Pi-hole v6, trigger an immediate status check
+                if (isPiholeV6) {
+                    checkPiholeStatus();
+                }
+            } else {
+                throw new Error('Failed to enable Pi-hole blocking');
+            }
+        } catch (err: any) {
+            // Check if this is an authentication error that requires re-auth
+            if (err.pihole?.requiresReauth) {
+                setAuthFailed(true);
+                setError('Authentication failed. Please check your Pi-hole credentials in widget settings.');
+            } else {
+                // Generic error
+                setError(err.message || 'Failed to enable Pi-hole blocking');
+            }
+        } finally {
+            setIsDisablingBlocking(false);
+        }
+    };
 
     // Clean up disable timer on unmount
     useEffect(() => {
@@ -172,107 +598,25 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
         };
     }, [disableTimer]);
 
-    // Handle disable blocking with timeout
-    const handleDisableBlocking = async (seconds: number | null) => {
-        if (!isConfigured || !piholeConfig.apiToken) return;
+    // Reset authentication state and retry
+    const handleRetry = () => {
+        // Clear error and reset auth failure state
+        setAuthFailed(false);
+        setError(null);
 
-        setIsDisablingBlocking(true);
-        setDisableMenuAnchor(null);
-
-        try {
-            // Call the backend API to disable blocking
-            const result = await DashApi.disablePihole(
-                {
-                    host: piholeConfig.host,
-                    port: piholeConfig.port,
-                    ssl: piholeConfig.ssl,
-                    apiToken: piholeConfig.apiToken
-                },
-                seconds || undefined
-            );
-
-            if (result) {
-                // Set local state
-                setIsBlocking(false);
-
-                // Set timer for auto re-enable if seconds is provided
-                if (seconds) {
-                    // Calculate end time
-                    const endTime = new Date();
-                    endTime.setSeconds(endTime.getSeconds() + seconds);
-                    setDisableEndTime(endTime);
-
-                    // Clear any existing timer
-                    if (disableTimer) {
-                        clearTimeout(disableTimer);
-                    }
-
-                    // Set new timer
-                    const timer = setTimeout(() => {
-                        handleEnableBlocking();
-                        setDisableEndTime(null);
-                    }, seconds * 1000);
-
-                    setDisableTimer(timer as unknown as NodeJS.Timeout);
-                } else {
-                    // Indefinite disable
-                    setDisableEndTime(null);
-                    if (disableTimer) {
-                        clearTimeout(disableTimer);
-                        setDisableTimer(null);
-                    }
-                }
-
-                // Refresh stats
-                setTimeout(fetchStats, 1000);
-            } else {
-                throw new Error('Failed to disable Pi-hole blocking');
-            }
-        } catch (err) {
-            console.error('Error disabling Pi-hole:', err);
-            setError('Failed to disable Pi-hole blocking');
-        } finally {
-            setIsDisablingBlocking(false);
+        // Reset all timers and states
+        setDisableEndTime(null);
+        setRemainingTime('');
+        if (disableTimer) {
+            clearTimeout(disableTimer);
+            setDisableTimer(null);
         }
-    };
 
-    // Handle enable blocking
-    const handleEnableBlocking = async () => {
-        if (!isConfigured || !piholeConfig.apiToken) return;
+        // Reset stats to initial state
+        setStats(initialStats);
 
-        setIsDisablingBlocking(true);
-
-        try {
-            // Call the backend API to enable blocking
-            const result = await DashApi.enablePihole({
-                host: piholeConfig.host,
-                port: piholeConfig.port,
-                ssl: piholeConfig.ssl,
-                apiToken: piholeConfig.apiToken
-            });
-
-            if (result) {
-                // Set local state
-                setIsBlocking(true);
-                setDisableEndTime(null);
-
-                // Clear any existing timer
-                if (disableTimer) {
-                    clearTimeout(disableTimer);
-                    setDisableTimer(null);
-                }
-
-                // Refresh stats
-                setTimeout(fetchStats, 1000);
-            } else {
-                throw new Error('Failed to enable Pi-hole blocking');
-            }
-        } catch (err) {
-            console.error('Error enabling Pi-hole:', err);
-            setError('Failed to enable Pi-hole blocking');
-        } finally {
-            setIsDisablingBlocking(false);
-        }
+        // Perform an immediate check with the combined function
+        checkPiholeStatus();
     };
 
     // Handle menu open
@@ -296,38 +640,96 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
 
         const protocol = piholeConfig.ssl ? 'https' : 'http';
         const port = piholeConfig.port ? `:${piholeConfig.port}` : '';
+
+        // The base API URL is the same for both v5 and v6
         return `${protocol}://${piholeConfig.host}${port}/admin`;
     };
 
     // Handle opening the Pi-hole admin dashboard (default page)
     const handleOpenPiholeAdmin = () => {
         const baseUrl = getBaseUrl();
-        if (baseUrl) window.open(baseUrl, '_blank');
+        if (!baseUrl) return;
+
+        // Main dashboard is /admin for both v5 and v6
+        window.open(baseUrl, '_blank');
     };
 
     // Handle opening the queries page (percentage blocked)
     const handleOpenQueriesPage = () => {
         const baseUrl = getBaseUrl();
-        if (baseUrl) window.open(`${baseUrl}/queries.php`, '_blank');
+        if (!baseUrl) return;
+
+        // For v6, direct links won't work without authentication, so just open the main admin page
+        const isV6 = !!piholeConfig.password && !piholeConfig.apiToken;
+        if (isV6) {
+            // For v6, just go to main admin page since direct links require authentication
+            window.open(baseUrl, '_blank');
+            return;
+        }
+
+        // For v5, we can deep link directly
+        const queriesUrl = `${baseUrl}/queries.php`;
+        window.open(queriesUrl, '_blank');
     };
 
     // Handle opening the blocked queries page
     const handleOpenBlockedPage = () => {
         const baseUrl = getBaseUrl();
-        if (baseUrl) window.open(`${baseUrl}/queries.php?forwarddest=blocked`, '_blank');
+        if (!baseUrl) return;
+
+        // For v6, direct links won't work without authentication, so just open the main admin page
+        const isV6 = !!piholeConfig.password && !piholeConfig.apiToken;
+        if (isV6) {
+            // For v6, just go to main admin page since direct links require authentication
+            window.open(baseUrl, '_blank');
+            return;
+        }
+
+        // For v5, we can deep link directly
+        const blockedUrl = `${baseUrl}/queries.php?forwarddest=blocked`;
+        window.open(blockedUrl, '_blank');
     };
 
     // Handle opening the network page (queries today)
     const handleOpenNetworkPage = () => {
         const baseUrl = getBaseUrl();
-        if (baseUrl) window.open(`${baseUrl}/network.php`, '_blank');
+        if (!baseUrl) return;
+
+        // For v6, direct links won't work without authentication, so just open the main admin page
+        const isV6 = !!piholeConfig.password && !piholeConfig.apiToken;
+        if (isV6) {
+            // For v6, just go to main admin page since direct links require authentication
+            window.open(baseUrl, '_blank');
+            return;
+        }
+
+        // For v5, we can deep link directly
+        const networkUrl = `${baseUrl}/network.php`;
+        window.open(networkUrl, '_blank');
     };
 
     // Handle opening the adlists page
     const handleOpenAdlistsPage = () => {
         const baseUrl = getBaseUrl();
-        if (baseUrl) window.open(`${baseUrl}/groups-adlists.php`, '_blank');
+        if (!baseUrl) return;
+
+        // For v6, direct links won't work without authentication, so just open the main admin page
+        const isV6 = !!piholeConfig.password && !piholeConfig.apiToken;
+        if (isV6) {
+            // For v6, just go to main admin page since direct links require authentication
+            window.open(baseUrl, '_blank');
+            return;
+        }
+
+        // For v5, we can deep link directly
+        const adlistsUrl = `${baseUrl}/groups-adlists.php`;
+        window.open(adlistsUrl, '_blank');
     };
+
+    // Special effect just to log blocking state changes
+    useEffect(() => {
+        // No operation needed - removed console logging
+    }, [isBlocking, remainingTime, disableEndTime]);
 
     if (error) {
         return (
@@ -343,11 +745,16 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 <Typography variant='subtitle1' color='error' align='center'>
                     {error}
                 </Typography>
+                <Typography variant='caption' color='textSecondary' align='center' sx={{ mt: 1, fontSize: '0.7rem' }}>
+                    {authFailed ?
+                        `Using ${piholeConfig.apiToken ? 'API token' : 'password'} authentication` :
+                        'Check your Pi-hole configuration and network connection'}
+                </Typography>
                 <Button
                     variant='contained'
                     color='primary'
                     sx={{ mt: 2 }}
-                    onClick={() => fetchStats()}
+                    onClick={handleRetry}
                 >
                     Retry
                 </Button>
@@ -454,7 +861,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                         ml: 'auto'
                     }}
                 >
-                    {isBlocking ? 'Disable' : (disableEndTime ? `Resume (${formatRemainingTime()})` : 'Resume')}
+                    {isBlocking ? 'Disable' : (remainingTime ? `Resume (${remainingTime})` : 'Resume')}
                 </Button>
 
                 {/* Disable interval menu */}
@@ -609,8 +1016,8 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
             {!isBlocking && (
                 <Box sx={{ mt: 0.2, textAlign: 'center' }}>
                     <Typography variant='caption' color='error' sx={{ fontSize: '0.6rem' }}>
-                        {disableEndTime
-                            ? `Blocking disabled. Will resume in ${formatRemainingTime()}`
+                        {remainingTime
+                            ? `Blocking disabled. Will resume in ${remainingTime}`
                             : 'Blocking disabled indefinitely'}
                     </Typography>
                 </Box>

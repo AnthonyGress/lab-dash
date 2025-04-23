@@ -1,0 +1,721 @@
+import axios from 'axios';
+import { Request, Response, Router } from 'express';
+
+import { decrypt, encrypt, isEncrypted } from '../utils/crypto';
+
+export const piholeV6Route = Router();
+
+// Session cache to store active SIDs and avoid creating too many sessions
+interface SessionInfo {
+    sid: string;
+    csrf: string;
+    expires: number; // Unix timestamp when this session expires
+}
+
+// Store sessions by host+password hash to reuse sessions until they expire
+const sessionCache = new Map<string, SessionInfo>();
+
+// Generate a cache key from host and password (without storing the actual password)
+const getCacheKey = (baseUrl: string, password: string): string => {
+    // Simple hash function - do not use the password directly as a key
+    const hash = Array.from(password).reduce((h, c) =>
+        (h << 5) - h + c.charCodeAt(0) | 0, 0) + baseUrl.length;
+    return `${baseUrl}:${hash}`;
+};
+
+// Clean expired sessions periodically
+setInterval(async () => {
+    const now = Date.now();
+    let expiredCount = 0;
+    let logoutCount = 0;
+
+    // Collect expired sessions
+    const expiredSessions: Array<{key: string; session: SessionInfo}> = [];
+    sessionCache.forEach((session, key) => {
+        if (session.expires < now) {
+            expiredSessions.push({ key, session });
+        }
+    });
+
+    if (expiredSessions.length > 0) {
+        // Process all expired sessions with proper logout
+        const logoutPromises = expiredSessions.map(async ({ key, session }) => {
+            try {
+                // Extract baseUrl from the cache key (format: baseUrl:hash)
+                const baseUrl = key.split(':')[0];
+                if (baseUrl && baseUrl.startsWith('http')) {
+                    const logoutSuccess = await logoutPiholeSession(baseUrl, session.sid, session.csrf);
+                    if (logoutSuccess) {
+                        logoutCount++;
+                    }
+                }
+
+                // Remove from cache regardless of logout success
+                sessionCache.delete(key);
+                expiredCount++;
+            } catch (error) {
+                console.error('Error logging out expired session:', error);
+                // Still remove the expired session from cache
+                sessionCache.delete(key);
+                expiredCount++;
+            }
+        });
+
+        // Wait for all logout operations to complete
+        await Promise.all(logoutPromises);
+    }
+}, 60000); // Check every minute
+
+const getBaseUrl = (req: Request): string => {
+    const host = req.query.host as string || 'localhost';
+    const port = req.query.port as string || '80';
+    const ssl = req.query.ssl === 'true';
+    const protocol = ssl ? 'https' : 'http';
+    return `${protocol}://${host}:${port}`;
+};
+
+const getPassword = (req: Request): string => {
+    let password = req.query.password as string || '';
+
+    // Handle encrypted password
+    if (isEncrypted(password)) {
+        password = decrypt(password);
+        // Check if decryption failed (returns empty string)
+        if (!password) {
+            console.warn('Failed to decrypt Pi-hole password. Password may have been encrypted with a different key.');
+            return '';
+        }
+    }
+
+    return password;
+};
+
+// Login to Pi-hole v6 API and get a session ID (SID), or use cached session if available
+async function authenticatePihole(baseUrl: string, password: string): Promise<{ sid: string; csrf: string }> {
+    // Check for a valid cached session first
+    const cacheKey = getCacheKey(baseUrl, password);
+    const cachedSession = sessionCache.get(cacheKey);
+    const now = Date.now();
+
+    if (cachedSession && cachedSession.expires > now) {
+        // If the session is about to expire soon (within 30 seconds), don't use it
+        // This avoids potential edge cases where the session might expire during the request
+        if (cachedSession.expires - now > 30000) {
+            return {
+                sid: cachedSession.sid,
+                csrf: cachedSession.csrf
+            };
+        }
+    }
+
+    try {
+        const response = await axios.post(
+            `${baseUrl}/api/auth`,
+            { password },
+            {
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                timeout: 5000
+            }
+        );
+
+        if (response.data?.session?.valid && response.data?.session?.sid) {
+            // Calculate expiration based on validity period (in seconds) returned by the API
+            // Default to 1800 seconds (30 minutes) if not provided, which is Pi-hole v6's default
+            const validitySeconds = response.data.session.validity || 1800;
+            const expiresAt = now + (validitySeconds * 1000);
+
+            // Store the session in cache
+            const sessionInfo: SessionInfo = {
+                sid: response.data.session.sid,
+                csrf: response.data.session.csrf,
+                expires: expiresAt
+            };
+
+            sessionCache.set(cacheKey, sessionInfo);
+
+            return {
+                sid: response.data.session.sid,
+                csrf: response.data.session.csrf
+            };
+        }
+
+        console.error('Pi-hole v6 auth failed: Invalid session data structure');
+        console.error('Response data:', JSON.stringify(response.data, null, 2));
+        throw new Error('Authentication failed: Invalid or missing session information');
+    } catch (error: any) {
+        console.error('Pi-hole v6 authentication error:', error.message);
+        console.error('Auth error details:', {
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data,
+            headers: error.response?.headers,
+            stack: error.stack
+        });
+
+        // Clear any cached session as it might be invalid
+        sessionCache.delete(cacheKey);
+
+        if (error.response?.status === 401) {
+            throw { status: 401, message: 'Authentication failed: Invalid password' };
+        }
+
+        throw {
+            status: error.response?.status || 500,
+            message: error.response?.data?.error?.message || 'Authentication failed'
+        };
+    }
+}
+
+// Get Pi-hole v6 statistics
+piholeV6Route.get('/stats', async (req: Request, res: Response) => {
+    try {
+        const baseUrl = getBaseUrl(req);
+        const password = getPassword(req);
+
+        if (!password) {
+            res.status(400).json({
+                success: false,
+                code: 'PIHOLE_AUTH_ERROR',
+                error: 'Password is required or could not be decrypted',
+                requiresReauth: true
+            });
+            return;
+        }
+
+        // Authenticate with Pi-hole v6
+        let authInfo;
+        try {
+            authInfo = await authenticatePihole(baseUrl, password);
+        } catch (authError: any) {
+            res.status(authError.status || 401).json({
+                success: false,
+                code: 'PIHOLE_AUTH_ERROR',
+                error: authError.message || 'Authentication failed',
+                requiresReauth: true
+            });
+            return;
+        }
+
+        // Use the sid to fetch stats
+        const summaryResponse = await axios.get(`${baseUrl}/api/stats/summary`, {
+            params: {
+                sid: authInfo.sid
+            },
+            headers: { 'X-FTL-CSRF': authInfo.csrf },
+            timeout: 5000
+        });
+
+        if (!summaryResponse.data) {
+            throw new Error('Failed to get Pi-hole statistics');
+        }
+
+        // Extract and transform the data directly from the response
+        // The v6 API might not have the expected "summary" structure, so we need to be flexible
+        let apiData = summaryResponse.data;
+
+        // If there's a summary field, use that as the base for our data
+        if (apiData.summary) {
+            apiData = apiData.summary;
+        }
+
+        // Now also fetch the current blocking status
+        const blockingResponse = await axios.get(`${baseUrl}/api/dns/blocking`, {
+            params: {
+                sid: authInfo.sid
+            },
+            headers: { 'X-FTL-CSRF': authInfo.csrf },
+            timeout: 5000
+        });
+
+        // Get blocking status and timer details
+        let status = 'enabled'; // Default status
+        let timerValue = null;
+
+        if (blockingResponse.data) {
+            // Check if blocking is false or the string "disabled"
+            if (blockingResponse.data.blocking === false ||
+                blockingResponse.data.blocking === 'disabled' ||
+                blockingResponse.data.blocking === 'false') {
+                status = 'disabled';
+
+                // Check if there's a timer value for how long it's disabled
+                if (blockingResponse.data.timer !== undefined) {
+                    // If timer is a number or can be converted to a number, represents remaining seconds
+                    if (typeof blockingResponse.data.timer === 'number' ||
+                        !isNaN(parseFloat(blockingResponse.data.timer))) {
+                        // Ensure it's a number and round to avoid floating point issues
+                        timerValue = Math.round(parseFloat(blockingResponse.data.timer));
+                    }
+                }
+            }
+        }
+
+        // Transform Pi-hole v6 format to the format our frontend expects
+        let domainsBeingBlocked = 0;
+        let dnsQueriesToday = 0;
+        let adsBlockedToday = 0;
+        let adsPercentageToday = 0;
+
+        // Try different possible paths for these values
+        // Domains being blocked
+        if (apiData.gravity && typeof apiData.gravity === 'object' && apiData.gravity.domains_being_blocked !== undefined) {
+            domainsBeingBlocked = apiData.gravity.domains_being_blocked;
+        } else if (apiData.domains_being_blocked !== undefined) {
+            domainsBeingBlocked = apiData.domains_being_blocked;
+        } else if (typeof apiData.gravity === 'number') {
+            domainsBeingBlocked = apiData.gravity;
+        }
+
+        // DNS queries today
+        if (apiData.queries && typeof apiData.queries === 'object' && apiData.queries.total !== undefined) {
+            dnsQueriesToday = apiData.queries.total;
+        } else if (apiData.dns_queries_today !== undefined) {
+            dnsQueriesToday = apiData.dns_queries_today;
+        }
+
+        // Ads blocked today
+        if (apiData.queries && typeof apiData.queries === 'object' && apiData.queries.blocked !== undefined) {
+            adsBlockedToday = apiData.queries.blocked;
+        } else if (apiData.ads_blocked_today !== undefined) {
+            adsBlockedToday = apiData.ads_blocked_today;
+        }
+
+        // Ads percentage today
+        if (apiData.queries && typeof apiData.queries === 'object' && apiData.queries.percent_blocked !== undefined) {
+            adsPercentageToday = apiData.queries.percent_blocked;
+        } else if (apiData.ads_percentage_today !== undefined) {
+            adsPercentageToday = apiData.ads_percentage_today;
+        }
+
+        // Create the transformed data object that matches the expected format
+        const transformedData: {
+            domains_being_blocked: number;
+            dns_queries_today: number;
+            ads_blocked_today: number;
+            ads_percentage_today: number;
+            status: string;
+            timer?: number;
+        } = {
+            domains_being_blocked: domainsBeingBlocked,
+            dns_queries_today: dnsQueriesToday,
+            ads_blocked_today: adsBlockedToday,
+            ads_percentage_today: adsPercentageToday,
+            status: status
+        };
+
+        // Only include timer if it's not null
+        if (timerValue !== null) {
+            transformedData.timer = timerValue;
+        }
+
+        res.status(200).json({
+            success: true,
+            data: transformedData
+        });
+
+    } catch (error: any) {
+        console.error('Pi-hole v6 API error:', error.message);
+        console.error('Error details:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            stack: error.stack
+        });
+
+        const statusCode = error.response?.status || 500;
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to get Pi-hole statistics';
+
+        res.status(statusCode).json({
+            success: false,
+            code: 'PIHOLE_API_ERROR',
+            error: errorMessage,
+            requiresReauth: statusCode === 401 || statusCode === 403
+        });
+    }
+});
+
+// Get current Pi-hole v6 blocking status
+piholeV6Route.get('/blocking-status', async (req: Request, res: Response) => {
+    try {
+        const baseUrl = getBaseUrl(req);
+        const password = getPassword(req);
+
+        if (!password) {
+            res.status(400).json({
+                success: false,
+                code: 'PIHOLE_AUTH_ERROR',
+                error: 'Password is required or could not be decrypted',
+                requiresReauth: true
+            });
+            return;
+        }
+
+        // Authenticate with Pi-hole v6
+        let authInfo;
+        try {
+            authInfo = await authenticatePihole(baseUrl, password);
+        } catch (authError: any) {
+            res.status(authError.status || 401).json({
+                success: false,
+                code: 'PIHOLE_AUTH_ERROR',
+                error: authError.message || 'Authentication failed',
+                requiresReauth: true
+            });
+            return;
+        }
+
+        // Fetch the current blocking status
+        const blockingResponse = await axios.get(`${baseUrl}/api/dns/blocking`, {
+            params: {
+                sid: authInfo.sid
+            },
+            headers: { 'X-FTL-CSRF': authInfo.csrf },
+            timeout: 5000
+        });
+
+        // Get blocking status and timer details
+        let status = 'enabled'; // Default status
+        let timerValue = null;
+
+        if (blockingResponse.data) {
+            // Check if blocking is false or the string "disabled"
+            if (blockingResponse.data.blocking === false ||
+                blockingResponse.data.blocking === 'disabled' ||
+                blockingResponse.data.blocking === 'false') {
+                status = 'disabled';
+
+                // Check if there's a timer value for how long it's disabled
+                if (blockingResponse.data.timer !== undefined) {
+                    // If timer is a number or can be converted to a number, represents remaining seconds
+                    if (typeof blockingResponse.data.timer === 'number' ||
+                        !isNaN(parseFloat(blockingResponse.data.timer))) {
+                        // Ensure it's a number and round to avoid floating point issues
+                        timerValue = Math.round(parseFloat(blockingResponse.data.timer));
+                    }
+                }
+            }
+        }
+
+        // Return only the status and timer (if exists)
+        const responseData: { status: string; timer?: number } = {
+            status: status
+        };
+
+        // Only include timer if it's not null
+        if (timerValue !== null) {
+            responseData.timer = timerValue;
+        }
+
+        res.status(200).json({
+            success: true,
+            data: responseData
+        });
+
+    } catch (error: any) {
+        console.error('Pi-hole v6 blocking status error:', error.message);
+        console.error('Error details:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            stack: error.stack
+        });
+
+        const statusCode = error.response?.status || 500;
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to get Pi-hole blocking status';
+
+        res.status(statusCode).json({
+            success: false,
+            code: 'PIHOLE_API_ERROR',
+            error: errorMessage,
+            requiresReauth: statusCode === 401 || statusCode === 403
+        });
+    }
+});
+
+// Encrypt password for storage
+piholeV6Route.post('/encrypt-password', async (req: Request, res: Response) => {
+    try {
+        const { password } = req.body;
+
+        if (!password) {
+            res.status(400).json({ error: 'Password is required' });
+            return;
+        }
+
+        // Don't re-encrypt if already encrypted
+        if (isEncrypted(password)) {
+            res.status(200).json({ encryptedPassword: password });
+            return;
+        }
+
+        const encryptedPassword = encrypt(password);
+        res.status(200).json({ encryptedPassword });
+    } catch (error) {
+        console.error('Pi-hole password encryption error:', error);
+        res.status(500).json({ error: 'Failed to encrypt password' });
+    }
+});
+
+// Disable Pi-hole blocking using v6 API
+piholeV6Route.post('/disable', async (req: Request, res: Response) => {
+    try {
+        const baseUrl = getBaseUrl(req);
+        const password = getPassword(req);
+        const seconds = req.query.seconds !== undefined ? parseInt(req.query.seconds as string) : undefined;
+
+        if (!password) {
+            res.status(400).json({
+                success: false,
+                code: 'PIHOLE_AUTH_ERROR',
+                error: 'Password is required or could not be decrypted',
+                requiresReauth: true
+            });
+            return;
+        }
+
+        // Authenticate with Pi-hole v6
+        let authInfo;
+        try {
+            authInfo = await authenticatePihole(baseUrl, password);
+        } catch (authError: any) {
+            res.status(authError.status || 401).json({
+                success: false,
+                code: 'PIHOLE_AUTH_ERROR',
+                error: authError.message || 'Authentication failed',
+                requiresReauth: true
+            });
+            return;
+        }
+
+        // For Pi-hole v6, use the /api/dns/blocking endpoint with POST
+        const blockingUrl = `${baseUrl}/api/dns/blocking`;
+
+        // Prepare request body: blocking: false to disable, with timer if specified
+        // Use null for infinite disabling (not 0)
+        const requestBody = {
+            blocking: false,
+            timer: seconds !== undefined ? seconds : null // null means indefinite
+        };
+
+        // Call Pi-hole API to disable blocking
+        const response = await axios.post(
+            blockingUrl,
+            requestBody,
+            {
+                params: { sid: authInfo.sid },
+                headers: {
+                    'X-FTL-CSRF': authInfo.csrf,
+                    'Content-Type': 'application/json'
+                },
+                timeout: 5000
+            }
+        );
+
+        if (response.data?.status === 'disabled' || response.status === 200) {
+            res.status(200).json({
+                success: true,
+                message: seconds !== undefined
+                    ? `Pi-hole blocking disabled for ${seconds} seconds`
+                    : 'Pi-hole blocking disabled indefinitely'
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: 'Failed to disable Pi-hole blocking'
+            });
+        }
+    } catch (error: any) {
+        console.error('Pi-hole v6 disable error:', error.message);
+        console.error('Error details:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            stack: error.stack
+        });
+
+        const statusCode = error.response?.status || 500;
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to disable Pi-hole blocking';
+
+        res.status(statusCode).json({
+            success: false,
+            code: 'PIHOLE_API_ERROR',
+            error: errorMessage,
+            requiresReauth: statusCode === 401 || statusCode === 403
+        });
+    }
+});
+
+// Enable Pi-hole blocking using v6 API
+piholeV6Route.post('/enable', async (req: Request, res: Response) => {
+    try {
+        const baseUrl = getBaseUrl(req);
+        const password = getPassword(req);
+
+        if (!password) {
+            res.status(400).json({
+                success: false,
+                code: 'PIHOLE_AUTH_ERROR',
+                error: 'Password is required or could not be decrypted',
+                requiresReauth: true
+            });
+            return;
+        }
+
+        // Authenticate with Pi-hole v6
+        let authInfo;
+        try {
+            authInfo = await authenticatePihole(baseUrl, password);
+        } catch (authError: any) {
+            res.status(authError.status || 401).json({
+                success: false,
+                code: 'PIHOLE_AUTH_ERROR',
+                error: authError.message || 'Authentication failed',
+                requiresReauth: true
+            });
+            return;
+        }
+
+        // For Pi-hole v6, use the /api/dns/blocking endpoint with POST
+        const blockingUrl = `${baseUrl}/api/dns/blocking`;
+
+        // Prepare request body: blocking: true to enable, explicitly set timer to null
+        const requestBody = {
+            blocking: true,
+            timer: null // Explicitly clear any timer
+        };
+
+        // Call Pi-hole API to enable blocking
+        const response = await axios.post(
+            blockingUrl,
+            requestBody,
+            {
+                params: { sid: authInfo.sid },
+                headers: {
+                    'X-FTL-CSRF': authInfo.csrf,
+                    'Content-Type': 'application/json'
+                },
+                timeout: 5000
+            }
+        );
+
+        if (response.data?.status === 'enabled' || response.status === 200) {
+            res.status(200).json({
+                success: true,
+                message: 'Pi-hole blocking enabled'
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: 'Failed to enable Pi-hole blocking'
+            });
+        }
+    } catch (error: any) {
+        console.error('Pi-hole v6 enable error:', error.message);
+        console.error('Enable error details:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            stack: error.stack
+        });
+
+        const statusCode = error.response?.status || 500;
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to enable Pi-hole blocking';
+
+        res.status(statusCode).json({
+            success: false,
+            code: 'PIHOLE_API_ERROR',
+            error: errorMessage,
+            requiresReauth: statusCode === 401 || statusCode === 403
+        });
+    }
+});
+
+// Helper function to logout and clear a session
+async function logoutPiholeSession(baseUrl: string, sid: string, csrf: string): Promise<boolean> {
+    try {
+        await axios.delete(`${baseUrl}/api/auth`, {
+            params: { sid },
+            headers: { 'X-FTL-CSRF': csrf },
+            timeout: 5000
+        });
+
+        return true;
+    } catch (error: any) {
+        console.error('Pi-hole v6 logout error:', error.message);
+        return false;
+    }
+}
+
+// Add a route to explicitly logout a session
+piholeV6Route.post('/logout', async (req: Request, res: Response) => {
+    try {
+        const baseUrl = getBaseUrl(req);
+        const password = getPassword(req);
+
+        if (!password) {
+            res.status(400).json({
+                success: false,
+                error: 'Password is required or could not be decrypted'
+            });
+            return;
+        }
+
+        // Find the cached session
+        const cacheKey = getCacheKey(baseUrl, password);
+        const cachedSession = sessionCache.get(cacheKey);
+
+        if (cachedSession) {
+            // Attempt to logout the session
+            await logoutPiholeSession(baseUrl, cachedSession.sid, cachedSession.csrf);
+
+            // Remove from cache regardless of logout success
+            sessionCache.delete(cacheKey);
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Pi-hole session logged out'
+        });
+    } catch (error: any) {
+        console.error('Pi-hole v6 logout route error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to logout Pi-hole session'
+        });
+    }
+});
+
+// Clean up all sessions when the process terminates
+process.on('SIGINT', async () => {
+    // Count active sessions
+    const activeSessionCount = sessionCache.size;
+    if (activeSessionCount === 0) {
+        process.exit(0);
+    }
+
+    // Logout all active sessions
+    const logoutPromises: Promise<boolean>[] = [];
+    sessionCache.forEach((session, key) => {
+        try {
+            // Extract baseUrl from the cache key (format: baseUrl:hash)
+            const baseUrl = key.split(':')[0];
+            if (baseUrl && baseUrl.startsWith('http')) {
+                logoutPromises.push(logoutPiholeSession(baseUrl, session.sid, session.csrf));
+            }
+        } catch (error) {
+            console.error('Error during shutdown session cleanup:', error);
+        }
+    });
+
+    try {
+        // Wait for all logout operations with a timeout
+        await Promise.race([
+            Promise.all(logoutPromises),
+            new Promise(resolve => setTimeout(resolve, 3000)) // 3 second timeout
+        ]);
+    } catch (error) {
+        console.error('Error during Pi-hole v6 sessions cleanup:', error);
+    }
+
+    // Clear the cache
+    sessionCache.clear();
+    process.exit(0);
+});
