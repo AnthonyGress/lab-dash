@@ -215,7 +215,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
                 fontSize: '0.8rem',
                 color: 'rgba(255, 255, 255, 0.8)',
                 position: 'absolute',
-                top: 0,
+                top: 5,
                 left: 0,
                 right: 0,
                 zIndex: 1
