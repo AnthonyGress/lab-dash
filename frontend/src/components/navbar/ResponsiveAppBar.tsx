@@ -221,7 +221,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                 {/* Hamburger Menu Button */}
                                 <IconButton
                                     onClick={handleOpenDrawer}
-                                    sx={{ ml: 1 }}
+                                    sx={{ ml: 1, mr: 2, display: 'flex', justifyContent: 'center', alignItems: 'center' }}
                                 >
                                     {updateAvailable ? (
                                         <Badge
@@ -234,10 +234,10 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                 }
                                             }}
                                         >
-                                            <MenuIcon sx={{ color: 'white', fontSize: '2rem', marginRight: '1rem' }}/>
+                                            <MenuIcon sx={{ color: 'white', fontSize: '2rem' }}/>
                                         </Badge>
                                     ) : (
-                                        <MenuIcon sx={{ color: 'white', fontSize: '2rem', marginRight: '1rem' }}/>
+                                        <MenuIcon sx={{ color: 'white', fontSize: '2rem' }}/>
                                     )}
                                 </IconButton>
                             </Box>

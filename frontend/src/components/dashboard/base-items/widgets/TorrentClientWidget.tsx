@@ -1,5 +1,5 @@
 import { ArrowDownward, ArrowUpward, CheckCircle, Delete, Download, MoreVert, Pause, PlayArrow, Stop, Warning } from '@mui/icons-material';
-import { Box, CardContent, CircularProgress, Grid, IconButton, LinearProgress, Link, Menu, MenuItem, TextField, Tooltip, Typography, useMediaQuery } from '@mui/material';
+import { Box, Button, CardContent, CircularProgress, Grid, IconButton, LinearProgress, Link, Menu, MenuItem, TextField, Tooltip, Typography, useMediaQuery } from '@mui/material';
 import React, { useState } from 'react';
 
 import { PopupManager } from '../../../../components/modals/PopupManager';
@@ -424,7 +424,7 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
     onDeleteTorrent
 }) => {
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-    const { isAdmin } = useAppContext();
+    const { isAdmin, editMode } = useAppContext();
 
     // Create base URL for torrent client web UI
     const getBaseUrl = () => {
@@ -438,6 +438,9 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
 
     // Handle opening the torrent client web UI
     const handleOpenWebUI = () => {
+        // Don't navigate if in edit mode
+        if (editMode) return;
+
         const baseUrl = getBaseUrl();
 
         if (baseUrl) {
@@ -453,7 +456,7 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
         }
     };
 
-    // Just show error message if authentication failed
+    // Just show error message and retry button if authentication failed
     if (!isAuthenticated) {
         return (
             <CardContent sx={{ height: '100%', padding: 2 }}>
@@ -502,6 +505,17 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
                     )}
 
                     {isLoading && <CircularProgress size={24} />}
+
+                    {!isLoading && (
+                        <Button
+                            variant='contained'
+                            color='primary'
+                            onClick={handleLogin}
+                            sx={{ mt: 2 }}
+                        >
+                            Retry
+                        </Button>
+                    )}
                 </Box>
             </CardContent>
         );
@@ -522,9 +536,9 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
                             sx={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                cursor: 'pointer',
+                                cursor: editMode ? 'grab' : 'pointer',
                                 '&:hover': {
-                                    opacity: 0.8
+                                    opacity: editMode ? 1 : 0.8
                                 }
                             }}
                             onClick={handleOpenWebUI}
