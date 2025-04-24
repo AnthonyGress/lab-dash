@@ -90,6 +90,17 @@ const getPassword = (req: Request): string => {
     return password;
 };
 
+/**
+ * Helper function to check if an error is a DNS resolution error
+ */
+const isDnsResolutionError = (error: any): boolean => {
+    return error.code === 'ENOTFOUND' ||
+           error.code === 'EAI_AGAIN' ||
+           error.message?.includes('getaddrinfo') ||
+           error.message?.includes('ENOTFOUND') ||
+           error.message?.includes('EAI_AGAIN');
+};
+
 // Login to Pi-hole v6 API and get a session ID (SID), or use cached session if available
 async function authenticatePihole(baseUrl: string, password: string): Promise<{ sid: string; csrf: string }> {
     // Check for a valid cached session first
@@ -158,12 +169,27 @@ async function authenticatePihole(baseUrl: string, password: string): Promise<{ 
         sessionCache.delete(cacheKey);
 
         if (error.response?.status === 401) {
-            throw { status: 401, message: 'Authentication failed: Invalid password' };
+            // For 401 errors, provide a more specific error message
+            const errorMessage = error.response?.data?.error?.message || 'Unauthorized';
+            const errorHint = error.response?.data?.error?.hint || null;
+
+            // Create a more informative error message
+            let detailedMessage = 'Authentication failed: Invalid password';
+            if (errorHint) {
+                detailedMessage += ` (${errorHint})`;
+            }
+
+            throw {
+                status: 401,
+                message: detailedMessage,
+                code: 'INVALID_PASSWORD'
+            };
         }
 
         throw {
             status: error.response?.status || 500,
-            message: error.response?.data?.error?.message || 'Authentication failed'
+            message: error.response?.data?.error?.message || error.message || 'Authentication failed',
+            code: 'AUTH_ERROR'
         };
     }
 }
@@ -189,6 +215,17 @@ piholeV6Route.get('/stats', async (req: Request, res: Response) => {
         try {
             authInfo = await authenticatePihole(baseUrl, password);
         } catch (authError: any) {
+            // Check if this is a DNS resolution error
+            if (isDnsResolutionError(authError)) {
+                res.status(503).json({
+                    success: false,
+                    code: 'DNS_RESOLUTION_ERROR',
+                    error: `Cannot connect to Pi-hole: DNS resolution failed for ${baseUrl}`,
+                    requiresReauth: false
+                });
+                return;
+            }
+
             res.status(authError.status || 401).json({
                 success: false,
                 code: 'PIHOLE_AUTH_ERROR',
@@ -356,9 +393,31 @@ piholeV6Route.get('/blocking-status', async (req: Request, res: Response) => {
         try {
             authInfo = await authenticatePihole(baseUrl, password);
         } catch (authError: any) {
+            // Check if this is a DNS resolution error
+            if (isDnsResolutionError(authError)) {
+                res.status(503).json({
+                    success: false,
+                    code: 'DNS_RESOLUTION_ERROR',
+                    error: `Cannot connect to Pi-hole: DNS resolution failed for ${baseUrl}`,
+                    requiresReauth: false
+                });
+                return;
+            }
+
+            // Check for specific auth errors
+            if (authError.code === 'INVALID_PASSWORD') {
+                res.status(401).json({
+                    success: false,
+                    code: 'INVALID_PASSWORD',
+                    error: authError.message || 'Invalid password for Pi-hole',
+                    requiresReauth: true
+                });
+                return;
+            }
+
             res.status(authError.status || 401).json({
                 success: false,
-                code: 'PIHOLE_AUTH_ERROR',
+                code: authError.code || 'PIHOLE_AUTH_ERROR',
                 error: authError.message || 'Authentication failed',
                 requiresReauth: true
             });
@@ -631,15 +690,35 @@ piholeV6Route.post('/enable', async (req: Request, res: Response) => {
 // Helper function to logout and clear a session
 async function logoutPiholeSession(baseUrl: string, sid: string, csrf: string): Promise<boolean> {
     try {
-        await axios.delete(`${baseUrl}/api/auth`, {
+        // Validate URL before attempting to use it
+        if (!baseUrl || !baseUrl.startsWith('http')) {
+            console.error(`Invalid Pi-hole URL for logout: ${baseUrl}`);
+            return false;
+        }
+
+        // Ensure URL is properly formatted
+        const url = new URL('/api/auth', baseUrl);
+
+        await axios.delete(url.toString(), {
             params: { sid },
-            headers: { 'X-FTL-CSRF': csrf },
+            headers: {
+                'X-FTL-CSRF': csrf,
+                'Content-Type': 'application/json'
+            },
             timeout: 5000
         });
 
+        console.log(`Successfully logged out Pi-hole session from ${baseUrl}`);
         return true;
     } catch (error: any) {
-        console.error('Pi-hole v6 logout error:', error.message);
+        console.error(`Pi-hole v6 logout error for ${baseUrl}:`, error.message);
+        // Log more detailed error information
+        if (error.response) {
+            console.error('Logout error response:', {
+                status: error.response.status,
+                data: error.response.data
+            });
+        }
         return false;
     }
 }

@@ -57,6 +57,15 @@ export const App = () => {
         }
     }, [config, setSetupComplete]);
 
+    // Set the document title based on the custom title in config
+    useEffect(() => {
+        if (config?.title) {
+            document.title = config.title;
+        } else {
+            document.title = 'Lab Dash';
+        }
+    }, [config?.title]);
+
     const backgroundImage = config?.backgroundImage
         ? `url('${BACKEND_URL}/uploads/${config?.backgroundImage}')`
         : 'url(\'/space4k-min.webp\')';
@@ -80,7 +89,6 @@ export const App = () => {
         />
     );
 
-    // Regular app rendering for returning users or after setup is complete
     return (
         <>
             {globalStyles}

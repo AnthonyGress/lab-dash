@@ -7,8 +7,74 @@ import { decrypt, encrypt, isEncrypted } from '../utils/crypto';
 
 export const delugeRoute = Router();
 
-// Store auth cookies for Deluge sessions
-const sessions: Record<string, string> = {};
+// Store auth cookies for Deluge sessions with expiration timestamps
+interface SessionInfo {
+    cookie: string;
+    expires: number; // Timestamp when the session expires
+    host?: string;
+    port?: string;
+    ssl?: boolean;
+}
+
+// Store sessions with expiration info
+const sessions: Record<string, SessionInfo> = {};
+
+// Deluge sessions typically last about 30 minutes
+const SESSION_LIFETIME = 25 * 60 * 1000; // 25 minutes in milliseconds
+
+// Clean expired sessions periodically
+setInterval(async () => {
+    const now = Date.now();
+    let expiredCount = 0;
+    let logoutCount = 0;
+
+    // Collect expired sessions
+    const expiredSessions: Array<{sessionId: string; session: SessionInfo}> = [];
+    Object.entries(sessions).forEach(([sessionId, session]) => {
+        if (session.expires < now) {
+            expiredSessions.push({ sessionId, session });
+        }
+    });
+
+    if (expiredSessions.length > 0) {
+        // Process all expired sessions with proper logout
+        const logoutPromises = expiredSessions.map(async ({ sessionId, session }) => {
+            try {
+                const baseUrl = getBaseUrlFromSession(session);
+                if (baseUrl) {
+                    const logoutSuccess = await logoutDelugeSession(baseUrl, session.cookie);
+                    if (logoutSuccess) {
+                        logoutCount++;
+                    }
+                }
+
+                // Remove from cache regardless of logout success
+                delete sessions[sessionId];
+                expiredCount++;
+            } catch (error) {
+                console.error('Error logging out expired Deluge session:', error);
+                // Still remove the expired session from cache
+                delete sessions[sessionId];
+                expiredCount++;
+            }
+        });
+
+        // Wait for all logout operations to complete
+        await Promise.all(logoutPromises);
+
+        if (expiredCount > 0) {
+            console.log(`Cleaned up ${expiredCount} expired Deluge sessions (${logoutCount} successful logouts)`);
+        }
+    }
+}, 60000); // Check every minute
+
+// Helper function to create base URL from session info
+const getBaseUrlFromSession = (session: SessionInfo): string | null => {
+    if (!session.host) return null;
+    const port = session.port || '8112';
+    const protocol = session.ssl ? 'https' : 'http';
+    return `${protocol}://${session.host}:${port}/json`;
+};
 
 const getBaseUrl = (req: Request): string => {
     const host = req.query.host as string || 'localhost';
@@ -18,11 +84,81 @@ const getBaseUrl = (req: Request): string => {
     return `${protocol}://${host}:${port}/json`;
 };
 
+// Helper function to logout a Deluge session
+async function logoutDelugeSession(baseUrl: string, cookie: string): Promise<boolean> {
+    try {
+        await axios.post(`${baseUrl}`,
+            {
+                method: 'auth.logout',
+                params: [],
+                id: 5
+            },
+            {
+                headers: { Cookie: cookie },
+                timeout: 5000
+            });
+
+        console.log(`Successfully logged out Deluge session from ${baseUrl}`);
+        return true;
+    } catch (error: any) {
+        console.error(`Deluge logout error for ${baseUrl}:`, error.message);
+        // Log more detailed error information
+        if (error.response) {
+            console.error('Logout error response:', {
+                status: error.response.status,
+                data: error.response.data
+            });
+        }
+        return false;
+    }
+}
+
+// Clean up all sessions when the process terminates
+process.on('SIGINT', async () => {
+    // Count active sessions
+    const activeSessionCount = Object.keys(sessions).length;
+    if (activeSessionCount === 0) {
+        process.exit(0);
+    }
+
+    console.log(`Cleaning up ${activeSessionCount} Deluge sessions before shutdown...`);
+
+    // Logout all active sessions
+    const logoutPromises: Promise<boolean>[] = [];
+    Object.entries(sessions).forEach(([sessionId, session]) => {
+        try {
+            const baseUrl = getBaseUrlFromSession(session);
+            if (baseUrl) {
+                logoutPromises.push(logoutDelugeSession(baseUrl, session.cookie));
+            }
+        } catch (error) {
+            console.error('Error during shutdown session cleanup:', error);
+        }
+    });
+
+    try {
+        // Wait for all logout operations with a timeout
+        await Promise.race([
+            Promise.all(logoutPromises),
+            new Promise(resolve => setTimeout(resolve, 3000)) // 3 second timeout
+        ]);
+    } catch (error) {
+        console.error('Error during Deluge sessions cleanup:', error);
+    }
+
+    // Clear all sessions
+    Object.keys(sessions).forEach(key => delete sessions[key]);
+    process.exit(0);
+});
+
 delugeRoute.post('/login', async (req: Request, res: Response) => {
     try {
         const { username } = req.body;
         let { password } = req.body;
         const baseUrl = getBaseUrl(req);
+        const host = req.query.host as string;
+        const port = req.query.port as string;
+        const ssl = req.query.ssl === 'true';
 
         if (!password) {
             res.status(400).json({ error: 'Password is required' });
@@ -63,9 +199,15 @@ delugeRoute.post('/login', async (req: Request, res: Response) => {
 
         // Store cookie for future requests
         // Use a unique identifier or default to IP address if no user
-        const sessionId = req.ip || 'default';
+        const sessionId = req.user?.username || req.ip || 'default';
         if (response.headers['set-cookie']) {
-            sessions[sessionId] = response.headers['set-cookie'][0];
+            sessions[sessionId] = {
+                cookie: response.headers['set-cookie'][0],
+                expires: Date.now() + SESSION_LIFETIME,
+                host,
+                port,
+                ssl
+            };
         }
 
         res.status(200).json({ success: true });
@@ -83,12 +225,16 @@ delugeRoute.get('/stats', async (req: Request, res: Response) => {
         const baseUrl = getBaseUrl(req);
         // Use IP address as identifier for non-authenticated users
         const sessionId = req.user?.username || req.ip || 'default';
-        let cookie = sessions[sessionId];
+        const session = sessions[sessionId];
+        let cookie = session?.cookie;
 
         // If no cookie exists, try to use credentials from query params
         if (!cookie && req.query.password) {
             try {
                 let password = req.query.password as string;
+                const host = req.query.host as string;
+                const port = req.query.port as string;
+                const ssl = req.query.ssl === 'true';
 
                 // Handle encrypted password
                 if (isEncrypted(password)) {
@@ -131,7 +277,13 @@ delugeRoute.get('/stats', async (req: Request, res: Response) => {
                 // Store the cookie for future requests
                 if (loginResponse.data.result === true && loginResponse.headers['set-cookie']) {
                     cookie = loginResponse.headers['set-cookie'][0];
-                    sessions[sessionId] = cookie;
+                    sessions[sessionId] = {
+                        cookie,
+                        expires: Date.now() + SESSION_LIFETIME,
+                        host,
+                        port,
+                        ssl
+                    };
                 }
             } catch (loginError) {
                 console.error('Deluge login attempt failed:', loginError);
@@ -259,19 +411,22 @@ delugeRoute.get('/torrents', async (req: Request, res: Response) => {
         const baseUrl = getBaseUrl(req);
         // Use IP address as identifier for non-authenticated users
         const sessionId = req.user?.username || req.ip || 'default';
-        let cookie = sessions[sessionId];
+        const session = sessions[sessionId];
+        let cookie = session?.cookie;
 
         // If no cookie exists, try to use credentials from query params
         if (!cookie && req.query.password) {
             try {
                 let password = req.query.password as string;
+                const host = req.query.host as string;
+                const port = req.query.port as string;
+                const ssl = req.query.ssl === 'true';
 
                 // Handle encrypted password
                 if (isEncrypted(password)) {
                     password = decrypt(password);
                     // Check if decryption failed (returns empty string)
                     if (!password) {
-                        console.warn('Failed to decrypt password for auto-login. Credentials may need to be updated.');
                         // Return empty array instead of failing
                         res.status(200).json([]);
                         return;
@@ -294,7 +449,13 @@ delugeRoute.get('/torrents', async (req: Request, res: Response) => {
                 // Store the cookie for future requests
                 if (loginResponse.data.result === true && loginResponse.headers['set-cookie']) {
                     cookie = loginResponse.headers['set-cookie'][0];
-                    sessions[sessionId] = cookie;
+                    sessions[sessionId] = {
+                        cookie,
+                        expires: Date.now() + SESSION_LIFETIME,
+                        host,
+                        port,
+                        ssl
+                    };
                 }
             } catch (loginError) {
                 console.error('Deluge login attempt failed:', loginError);
@@ -368,20 +529,12 @@ delugeRoute.get('/torrents', async (req: Request, res: Response) => {
 delugeRoute.post('/logout', authenticateToken, async (req: Request, res: Response) => {
     try {
         const baseUrl = getBaseUrl(req);
-        const sessionId = req.user?.username || 'default';
-        const cookie = sessions[sessionId];
+        const sessionId = req.user?.username || req.ip || 'default';
+        const session = sessions[sessionId];
 
-        if (cookie) {
-            // Call Deluge logout endpoint
-            await axios.post(`${baseUrl}`,
-                {
-                    method: 'auth.logout',
-                    params: [],
-                    id: 5
-                },
-                {
-                    headers: { Cookie: cookie }
-                });
+        if (session) {
+            // Call Deluge logout endpoint using the helper function
+            await logoutDelugeSession(baseUrl, session.cookie);
 
             // Delete the session
             delete sessions[sessionId];
@@ -398,14 +551,18 @@ delugeRoute.post('/logout', authenticateToken, async (req: Request, res: Respons
 delugeRoute.post('/torrents/resume', authenticateToken, async (req: Request, res: Response) => {
     try {
         const baseUrl = getBaseUrl(req);
-        const sessionId = req.user?.username || 'default';
-        let cookie = sessions[sessionId];
+        const sessionId = req.user?.username || req.ip || 'default';
+        const session = sessions[sessionId];
+        let cookie = session?.cookie;
         const { hash } = req.body;
 
         // If no cookie exists or we have new credentials, try to use credentials from query params
         if ((!cookie || req.query.password) && req.query.password) {
             try {
                 let password = req.query.password as string;
+                const host = req.query.host as string;
+                const port = req.query.port as string;
+                const ssl = req.query.ssl === 'true';
 
                 // Handle encrypted password
                 if (isEncrypted(password)) {
@@ -435,7 +592,13 @@ delugeRoute.post('/torrents/resume', authenticateToken, async (req: Request, res
                 // Store the cookie for future requests
                 if (loginResponse.data.result === true && loginResponse.headers['set-cookie']) {
                     cookie = loginResponse.headers['set-cookie'][0];
-                    sessions[sessionId] = cookie;
+                    sessions[sessionId] = {
+                        cookie,
+                        expires: Date.now() + SESSION_LIFETIME,
+                        host,
+                        port,
+                        ssl
+                    };
                 }
             } catch (loginError) {
                 console.error('Deluge login attempt failed:', loginError);
@@ -482,14 +645,18 @@ delugeRoute.post('/torrents/resume', authenticateToken, async (req: Request, res
 delugeRoute.post('/torrents/pause', authenticateToken, async (req: Request, res: Response) => {
     try {
         const baseUrl = getBaseUrl(req);
-        const sessionId = req.user?.username || 'default';
-        let cookie = sessions[sessionId];
+        const sessionId = req.user?.username || req.ip || 'default';
+        const session = sessions[sessionId];
+        let cookie = session?.cookie;
         const { hash } = req.body;
 
         // If no cookie exists or we have new credentials, try to use credentials from query params
         if ((!cookie || req.query.password) && req.query.password) {
             try {
                 let password = req.query.password as string;
+                const host = req.query.host as string;
+                const port = req.query.port as string;
+                const ssl = req.query.ssl === 'true';
 
                 // Handle encrypted password
                 if (isEncrypted(password)) {
@@ -519,7 +686,13 @@ delugeRoute.post('/torrents/pause', authenticateToken, async (req: Request, res:
                 // Store the cookie for future requests
                 if (loginResponse.data.result === true && loginResponse.headers['set-cookie']) {
                     cookie = loginResponse.headers['set-cookie'][0];
-                    sessions[sessionId] = cookie;
+                    sessions[sessionId] = {
+                        cookie,
+                        expires: Date.now() + SESSION_LIFETIME,
+                        host,
+                        port,
+                        ssl
+                    };
                 }
             } catch (loginError) {
                 console.error('Deluge login attempt failed:', loginError);
@@ -566,14 +739,18 @@ delugeRoute.post('/torrents/pause', authenticateToken, async (req: Request, res:
 delugeRoute.post('/torrents/delete', authenticateToken, async (req: Request, res: Response) => {
     try {
         const baseUrl = getBaseUrl(req);
-        const sessionId = req.user?.username || 'default';
-        let cookie = sessions[sessionId];
+        const sessionId = req.user?.username || req.ip || 'default';
+        const session = sessions[sessionId];
+        let cookie = session?.cookie;
         const { hash, deleteFiles } = req.body;
 
         // If no cookie exists or we have new credentials, try to use credentials from query params
         if ((!cookie || req.query.password) && req.query.password) {
             try {
                 let password = req.query.password as string;
+                const host = req.query.host as string;
+                const port = req.query.port as string;
+                const ssl = req.query.ssl === 'true';
 
                 // Handle encrypted password
                 if (isEncrypted(password)) {
@@ -603,7 +780,13 @@ delugeRoute.post('/torrents/delete', authenticateToken, async (req: Request, res
                 // Store the cookie for future requests
                 if (loginResponse.data.result === true && loginResponse.headers['set-cookie']) {
                     cookie = loginResponse.headers['set-cookie'][0];
-                    sessions[sessionId] = cookie;
+                    sessions[sessionId] = {
+                        cookie,
+                        expires: Date.now() + SESSION_LIFETIME,
+                        host,
+                        port,
+                        ssl
+                    };
                 }
             } catch (loginError) {
                 console.error('Deluge login attempt failed:', loginError);

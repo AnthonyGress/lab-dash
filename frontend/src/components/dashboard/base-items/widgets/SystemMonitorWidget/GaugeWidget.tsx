@@ -1,26 +1,41 @@
 import { Box, Typography } from '@mui/material';
 import { Gauge, gaugeClasses } from '@mui/x-charts/Gauge';
-import React from 'react';
+import React, { ReactNode } from 'react';
 
 import { theme } from '../../../../../theme/theme';
 
-
-
-
 interface GaugeWidgetProps {
-  value: number; // The gauge value (0-100)
+  value: number; // The gauge value
   title: string;
   size?: number;
   temperature?: boolean;
   isFahrenheit?: boolean;
   total?: number;
+  suffix?: string;
+  customContent?: ReactNode;
 }
 
-export const GaugeWidget: React.FC<GaugeWidgetProps> = ({ value, title, size, temperature, isFahrenheit, total }) => {
+export const GaugeWidget: React.FC<GaugeWidgetProps> = ({
+    value,
+    title,
+    size,
+    temperature,
+    isFahrenheit,
+    total,
+    suffix,
+    customContent
+}) => {
     // Calculate the maximum value for temperature gauge based on the unit
     const maxValue = temperature
         ? (isFahrenheit ? 212 : 100) // Max temp: 212°F or 100°C
         : (total ? total : 100);     // Default max for non-temperature gauges
+
+    // Determine the suffix to display
+    const displaySuffix = (): string => {
+        if (suffix) return suffix;
+        if (temperature) return isFahrenheit ? '°F' : '°C';
+        return '%';
+    };
 
     return (
         <Box position='relative' display='inline-flex'>
@@ -41,7 +56,7 @@ export const GaugeWidget: React.FC<GaugeWidgetProps> = ({ value, title, size, te
                         },
                         width: { xs: 108, sm: 100, md: 108, xl: 135 },
                         height: { xs: 135, sm: 120, md: 130, xl: 135 },
-                        pointerEvents: 'none', // Allows scrolling through the SVG
+                        pointerEvents: 'none',
                         touchAction: 'none',
                     }
                 }
@@ -59,9 +74,13 @@ export const GaugeWidget: React.FC<GaugeWidgetProps> = ({ value, title, size, te
                     flexDirection: 'column',
                 }}
             >
-                <Typography fontSize={{ xs: 20, sm: 17, md: 22, lg: 20 }} fontWeight='bold'>
-                    {value}{temperature ? (isFahrenheit ? '°F' : '°C') : '%'}
-                </Typography>
+                {customContent ? (
+                    customContent
+                ) : (
+                    <Typography fontSize={{ xs: 20, sm: 17, md: 22, lg: 20 }} fontWeight='bold'>
+                        {value}{displaySuffix()}
+                    </Typography>
+                )}
             </Box>
             <Box
                 position='absolute'
@@ -75,7 +94,6 @@ export const GaugeWidget: React.FC<GaugeWidgetProps> = ({ value, title, size, te
                     flexDirection: 'column',
                 }}
             >
-                {/* <FaMicrochip size={24} color='white' /> */}
                 <Typography fontSize={15} fontWeight='bold'>
                     {title}
                 </Typography>

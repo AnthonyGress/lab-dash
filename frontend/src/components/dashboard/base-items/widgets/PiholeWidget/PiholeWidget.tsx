@@ -616,7 +616,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 } else {
                     // For Pi-hole v5, handle the local timer
                     if (seconds !== null) {
-                        // Clear any existing timer
+                    // Clear any existing timer
                         if (disableTimer) {
                             clearTimeout(disableTimer);
                         }
