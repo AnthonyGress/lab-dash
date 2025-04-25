@@ -67,29 +67,36 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
             return { value: 0, unit: 'KB/s', normalizedValue: 0 };
         }
 
+        // Calculate normalized value in Mbps - ensure tiny values still show up on gauge
+        const mbps = bytesPerSecond * 8 / 1000000; // Convert to Mbps
+
+        // If there's any activity at all, ensure it shows at least 1% on the gauge
+        // This makes even tiny network activity visible
+        const normalizedMbps = bytesPerSecond > 0 ? Math.max(mbps, 15) : 0;
+
         // If less than 1 MB/s, show in KB/s
         if (bytesPerSecond < 1024 * 1024) {
             return {
-                value: Math.round(bytesPerSecond / 1024), // Convert to KB/s for display
+                value: Math.round(bytesPerSecond / 1024), // Convert to KB/s for display as whole number
                 unit: 'KB/s',
-                normalizedValue: bytesPerSecond / (1024 * 1024) // Always normalize to MB/s for gauge fill
+                normalizedValue: normalizedMbps
             };
         }
 
         // Otherwise show in MB/s
         return {
-            value: Math.round(bytesPerSecond / (1024 * 1024) * 10) / 10, // Convert to MB/s with 1 decimal for display
+            value: Math.round(bytesPerSecond / (1024 * 1024)), // Convert to MB/s as whole number
             unit: 'MB/s',
-            normalizedValue: bytesPerSecond / (1024 * 1024) // Normalize to MB/s for gauge fill
+            normalizedValue: normalizedMbps
         };
     };
 
     // Format number for display (add K suffix for thousands)
     const formatNumberForDisplay = (num: number): string => {
         if (num >= 1000) {
-            return `${(num / 1000).toFixed(1)}K`;
+            return `${Math.round(num / 1000)}K`;
         }
-        return num.toString();
+        return Math.round(num).toString();
     };
 
     const getRamPercentage = (systemData: any) => {
@@ -176,12 +183,8 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
         const downloadSpeed = formatNetworkSpeed(networkInformation.downloadSpeed);
         const uploadSpeed = formatNetworkSpeed(networkInformation.uploadSpeed);
 
-        // Calculate dynamic maximum value for network gauge
-        const interfaceSpeed = networkInformation.interfaceSpeed || 1000; // Default to 1 Gbps
-        const maxSpeedMBs = interfaceSpeed / 8; // Convert to MB/s
-        const dynamicMax = maxSpeedMBs > 100
-            ? Math.max(1, downloadSpeed.normalizedValue * 10) // Scale for better visualization on fast networks
-            : maxSpeedMBs;
+        // Get interface speed in Mbps (already in correct units)
+        const interfaceSpeed = networkInformation.interfaceSpeed || 1000; // Default to 1 Gbps (in Mbps)
 
         switch (gaugeType) {
         case 'cpu':
@@ -204,7 +207,7 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                     <GaugeWidget
                         title='NET'
                         value={downloadSpeed.normalizedValue} // Use normalized value (MB/s) for the gauge fill
-                        total={dynamicMax}
+                        total={interfaceSpeed}
                         customContent={
                             <Box sx={{
                                 display: 'flex',
@@ -214,14 +217,14 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                                 width: '100%',
                                 height: '70%', // Use most of the gauge height
                                 pt: 0.5,
-                                ml: -6.5
+                                ml: -5.75
                             }}>
                                 {/* Container for both rows with fixed width icon column */}
                                 <Box sx={{
                                     display: 'grid',
                                     gridTemplateColumns: '16px 1fr',
                                     width: '80%', // Increased width for more text space
-                                    gap: 0.5,
+                                    gap: 0.25,
                                     alignItems: 'center'
                                 }}>
                                     {/* Upload row */}
@@ -231,7 +234,7 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                                         alignItems: 'center',
                                         height: '100%'
                                     }}>
-                                        <ArrowUpward sx={{ color: 'white', fontSize: '0.7rem' }} />
+                                        <ArrowUpward sx={{ color: 'text.primary', fontSize: { xs: 13, sm: 14, md: 17, lg: 20 }  }} />
                                     </Box>
                                     <Box sx={{
                                         display: 'flex',
@@ -243,10 +246,11 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                                             fontWeight='medium'
                                             sx={{
                                                 width: '100%',
-                                                fontSize: 'clamp(6px, 2.5vw, 11px)', // Dynamic font sizing
+                                                fontSize: { xs: 10, sm: 10, md: 12, lg: 14 },
                                                 lineHeight: 1.2,
                                                 whiteSpace: 'nowrap',
-                                                display: 'block'
+                                                display: 'block',
+                                                ml: { lg: 0.4 }
                                             }}
                                         >
                                             {formatNumberForDisplay(uploadSpeed.value)} {uploadSpeed.unit.replace('/s', '')}
@@ -260,7 +264,7 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                                         alignItems: 'center',
                                         height: '100%'
                                     }}>
-                                        <ArrowDownward sx={{ color: 'white', fontSize: '0.7rem' }} />
+                                        <ArrowDownward sx={{ color: 'text.primary', fontSize: { xs: 13, sm: 14, md: 17, lg: 20 } }} />
                                     </Box>
                                     <Box sx={{
                                         display: 'flex',
@@ -272,10 +276,11 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                                             fontWeight='medium'
                                             sx={{
                                                 width: '100%',
-                                                fontSize: 'clamp(6px, 2.5vw, 11px)', // Dynamic font sizing
+                                                fontSize: { xs: 10, sm: 10, md: 12, lg: 14 },
                                                 lineHeight: 1.2,
                                                 whiteSpace: 'nowrap',
-                                                display: 'block'
+                                                display: 'block',
+                                                ml: { lg: 0.4 }
                                             }}
                                         >
                                             {formatNumberForDisplay(downloadSpeed.value)} {downloadSpeed.unit.replace('/s', '')}
