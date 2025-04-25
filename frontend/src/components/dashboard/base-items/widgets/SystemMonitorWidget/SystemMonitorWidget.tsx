@@ -74,8 +74,8 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
         // This makes even tiny network activity visible
         const normalizedMbps = bytesPerSecond > 0 ? Math.max(mbps, 15) : 0;
 
-        // If less than 1 MB/s, show in KB/s
-        if (bytesPerSecond < 1024 * 1024) {
+        // If less than 1000 KB/s, show in KB/s
+        if (bytesPerSecond < 1000 * 1024) {
             return {
                 value: Math.round(bytesPerSecond / 1024), // Convert to KB/s for display as whole number
                 unit: 'KB/s',
@@ -91,11 +91,7 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
         };
     };
 
-    // Format number for display (add K suffix for thousands)
     const formatNumberForDisplay = (num: number): string => {
-        if (num >= 1000) {
-            return `${Math.round(num / 1000)}K`;
-        }
         return Math.round(num).toString();
     };
 
@@ -234,7 +230,7 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                                         alignItems: 'center',
                                         height: '100%'
                                     }}>
-                                        <ArrowUpward sx={{ color: 'text.primary', fontSize: { xs: 13, sm: 14, md: 17, lg: 20 }  }} />
+                                        <ArrowUpward sx={{ color: 'text.primary', fontSize: { xs: 13, sm: 14, md: 17, lg: 17, xl: 18 }  }} />
                                     </Box>
                                     <Box sx={{
                                         display: 'flex',
@@ -246,7 +242,7 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                                             fontWeight='medium'
                                             sx={{
                                                 width: '100%',
-                                                fontSize: { xs: 10, sm: 10, md: 12, lg: 14 },
+                                                fontSize: { xs: 10, sm: 10, md: 12, lg: 12, xl: 14 },
                                                 lineHeight: 1.2,
                                                 whiteSpace: 'nowrap',
                                                 display: 'block',
@@ -264,7 +260,7 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                                         alignItems: 'center',
                                         height: '100%'
                                     }}>
-                                        <ArrowDownward sx={{ color: 'text.primary', fontSize: { xs: 13, sm: 14, md: 17, lg: 20 } }} />
+                                        <ArrowDownward sx={{ color: 'text.primary', fontSize: { xs: 13, sm: 14, md: 17, lg: 17, xl: 18 } }} />
                                     </Box>
                                     <Box sx={{
                                         display: 'flex',
@@ -276,7 +272,7 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                                             fontWeight='medium'
                                             sx={{
                                                 width: '100%',
-                                                fontSize: { xs: 10, sm: 10, md: 12, lg: 14 },
+                                                fontSize: { xs: 10, sm: 10, md: 12, lg: 12, xl: 14 },
                                                 lineHeight: 1.2,
                                                 whiteSpace: 'nowrap',
                                                 display: 'block',
