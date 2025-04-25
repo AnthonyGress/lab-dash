@@ -52,7 +52,7 @@ export const CenteredModal = ({ open, handleClose, children, width, height, titl
             aria-labelledby='modal'
             disableEnforceFocus
             disableAutoFocus
-            keepMounted
+            // keepMounted
             disableScrollLock={false}
         >
             <Box sx={style}>

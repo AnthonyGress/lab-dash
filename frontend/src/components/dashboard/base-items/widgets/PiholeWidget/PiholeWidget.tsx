@@ -18,7 +18,6 @@ type PiholeWidgetConfig = {
     ssl?: boolean;
     apiToken?: string;
     password?: string;
-    refreshInterval?: number;
     showLabel?: boolean;
     displayName?: string;
 };
@@ -1024,6 +1023,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                     anchorEl={disableMenuAnchor}
                     open={Boolean(disableMenuAnchor)}
                     onClose={handleDisableMenuClose}
+                    closeAfterTransition={false}
                 >
                     <MenuItem onClick={() => handleDisableBlocking(10)}>10 seconds</MenuItem>
                     <MenuItem onClick={() => handleDisableBlocking(30)}>30 seconds</MenuItem>

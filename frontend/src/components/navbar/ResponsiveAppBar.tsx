@@ -221,7 +221,17 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                 {/* Hamburger Menu Button */}
                                 <IconButton
                                     onClick={handleOpenDrawer}
-                                    sx={{ ml: 1, mr: 2, display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+                                    sx={{
+                                        ml: 1,
+                                        mr: 2,
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        borderRadius: '50%',
+                                        '&:hover': {
+                                            backgroundColor: 'rgba(255, 255, 255, 0.08)'
+                                        }
+                                    }}
                                 >
                                     {updateAvailable ? (
                                         <Badge
