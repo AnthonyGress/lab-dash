@@ -46,23 +46,16 @@ healthRoute.get('/', async (req: Request, res: Response): Promise<void> => {
         }
 
         // If axios doesn't return valid status, try ping as fallback
-        try {
-            const parsedUrl = new URL(url);
-            const isReachable = await pingHost(parsedUrl.hostname);
+        // try {
+        //     const parsedUrl = new URL(url);
+        //     const isReachable = await pingHost(parsedUrl.hostname);
 
-            res.json({ status: isReachable ? 'online' : 'offline' });
-        } catch (pingError) {
-            res.json({ status: 'offline' });
-        }
+        //     res.json({ status: isReachable ? 'online' : 'offline' });
+        // } catch (pingError) {
+        //     res.json({ status: 'offline' });
+        // }
     } catch (error) {
-        // If axios completely fails, try ping as fallback
-        try {
-            const parsedUrl = new URL(url);
-            const isReachable = await pingHost(parsedUrl.hostname);
-
-            res.json({ status: isReachable ? 'online' : 'offline' });
-        } catch (pingError) {
-            res.json({ status: 'offline' });
-        }
+        console.log('service is offline', req.query.url);
+        res.json({ status: 'offline' });
     }
 });

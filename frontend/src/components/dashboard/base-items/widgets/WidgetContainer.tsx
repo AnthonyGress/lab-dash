@@ -23,7 +23,8 @@ export const WidgetContainer: React.FC<Props> = ({ children, editMode, onEdit, o
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
 
-    const isOnline = useServiceStatus(url);
+    const isUrl = url && isValidHttpUrl(url);
+    const isOnline = useServiceStatus(isUrl ? url : null);
 
     let dotColor = 'gray';
     let tooltipText = 'Unknown';

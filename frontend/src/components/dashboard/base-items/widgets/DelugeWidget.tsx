@@ -20,6 +20,7 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
     const [authError, setAuthError] = useState('');
     const [stats, setStats] = useState<any>(null);
     const [torrents, setTorrents] = useState<any[]>([]);
+    const [loginAttemptFailed, setLoginAttemptFailed] = useState(false);
     const [loginCredentials, setLoginCredentials] = useState({
         host: config?.host || 'localhost',
         port: config?.port || '8112',
@@ -38,6 +39,8 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
                 username: config.username || '',
                 password: config.password || ''
             });
+            // Reset failed flag when credentials are updated
+            setLoginAttemptFailed(false);
         }
     }, [config]);
 
@@ -49,6 +52,9 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
             setIsAuthenticated(success);
             if (!success) {
                 setAuthError('Login failed. Check your credentials and connection.');
+                setLoginAttemptFailed(true);
+            } else {
+                setLoginAttemptFailed(false);
             }
         } catch (error: any) {
             console.error('Login error:', error);
@@ -59,12 +65,15 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
                 setAuthError('Connection error. Check your Deluge WebUI settings.');
             }
             setIsAuthenticated(false);
+            setLoginAttemptFailed(true);
         } finally {
             setIsLoading(false);
         }
     }, [loginCredentials]);
 
     const fetchStats = useCallback(async () => {
+        if (loginAttemptFailed || !isAuthenticated) return;
+
         try {
             const connectionInfo = {
                 host: loginCredentials.host,
@@ -91,9 +100,11 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
                 setAuthError('Session expired. Please login again.');
             }
         }
-    }, [loginCredentials]);
+    }, [loginCredentials, isAuthenticated, loginAttemptFailed]);
 
     const fetchTorrents = useCallback(async () => {
+        if (loginAttemptFailed || !isAuthenticated) return;
+
         try {
             const connectionInfo = {
                 host: loginCredentials.host,
@@ -126,7 +137,7 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
                 setAuthError('Session expired. Please login again.');
             }
         }
-    }, [loginCredentials, config?.maxDisplayedTorrents]);
+    }, [loginCredentials, config?.maxDisplayedTorrents, isAuthenticated, loginAttemptFailed]);
 
     // Handle input changes
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -135,29 +146,33 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
             ...prev,
             [name]: type === 'checkbox' ? checked : value
         }));
+        // Reset failed flag when credentials are changed manually
+        setLoginAttemptFailed(false);
     };
 
-    // Auto-login when username and password are available
+    // Auto-login when username and password are available and no previous login attempt failed
     useEffect(() => {
-        if (config?.username && config?.password) {
+        if (config?.username && config?.password && !loginAttemptFailed && !isAuthenticated) {
             handleLogin();
         }
-    }, [config, handleLogin]);
+    }, [config, handleLogin, loginAttemptFailed, isAuthenticated]);
 
     // Refresh stats and torrents periodically
     useEffect(() => {
-        // Refresh both stats and torrents when the component mounts
-        fetchStats();
-        fetchTorrents();
-
-        // Set up periodic refresh
-        const interval = setInterval(() => {
+        // Only fetch data if authenticated
+        if (isAuthenticated) {
             fetchStats();
             fetchTorrents();
-        }, 5000); // Fixed interval of 5000ms as specified
 
-        return () => clearInterval(interval);
-    }, [fetchStats, fetchTorrents]);
+            // Set up periodic refresh
+            const interval = setInterval(() => {
+                fetchStats();
+                fetchTorrents();
+            }, 5000); // Fixed interval of 5000ms as specified
+
+            return () => clearInterval(interval);
+        }
+    }, [fetchStats, fetchTorrents, isAuthenticated]);
 
     // Torrent actions
     const handleResumeTorrent = useCallback(async (hash: string) => {

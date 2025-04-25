@@ -5,21 +5,22 @@ This is an open-source user interface designed to be your internally/externally 
 
 # Features
 Lab Dash features a customizable grid layout where you can add various widgets:
-- Links to your tools/services
+- Shortcuts to your tools/services
 - System information
 - Service health checks
 - Custom widgets and more
 
 ### Customization
 You can easily customize your dashboard by:
-- Dragging and reordering widgets
+- Dragging and reordering
 - Changing the background image
 - Adding custom search providers
-- Importing/exporting configurations
+- Custom title and tab name
 
 ### Privacy & Data Control
 You have complete control over your data and dashboard configuration.
-- All data is stored locally on your own server
+- All data is stored & used on your own device
+- Sensitive data is encrypted locally using [AES-256-CBC](https://docs.anchormydata.com/docs/what-is-aes-256-cbc)
 - Only administrator accounts can make changes
 - Configurations can be easily backed up and restored
 
@@ -47,9 +48,12 @@ services:
 ```
 
 # Usage
-Lab Dash can aslo be accessed from any web browser via `http://localhost:2022` or `192.168.x.x:2022` which should be your servers local IP address or yout hosted url `www.your-homepage.com`. 
+Lab Dash can aslo be accessed from any web browser via 
+- `http://localhost:2022` on the device running the container
+- `192.168.x.x:2022` on local network  
+- `www.your-homepage.com` using your custom domain name
 
-Lab Dash can aslo be installed as an app on your computer/phone as a PWA (Progressive Web App):
+Lab Dash can also be installed as an app on your computer/phone as a PWA (Progressive Web App):
 - Using Google Chrome on Mac/Windows/Android/Linux
 - Using Safari on iOS/iPad OS via the share menu > add to homscreen
   

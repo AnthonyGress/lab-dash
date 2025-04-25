@@ -153,7 +153,6 @@ process.on('SIGINT', async () => {
 
 delugeRoute.post('/login', async (req: Request, res: Response) => {
     try {
-        const { username } = req.body;
         let { password } = req.body;
         const baseUrl = getBaseUrl(req);
         const host = req.query.host as string;
@@ -285,8 +284,8 @@ delugeRoute.get('/stats', async (req: Request, res: Response) => {
                         ssl
                     };
                 }
-            } catch (loginError) {
-                console.error('Deluge login attempt failed:', loginError);
+            } catch (loginError: any) {
+                console.error('Deluge login attempt failed:', loginError.message);
                 // Continue without cookie - will return default stats
             }
         }
@@ -457,8 +456,8 @@ delugeRoute.get('/torrents', async (req: Request, res: Response) => {
                         ssl
                     };
                 }
-            } catch (loginError) {
-                console.error('Deluge login attempt failed:', loginError);
+            } catch (loginError: any) {
+                console.error('Deluge login attempt failed:', loginError.message);
                 // Continue without cookie - will return empty array
             }
         }
@@ -600,8 +599,8 @@ delugeRoute.post('/torrents/resume', authenticateToken, async (req: Request, res
                         ssl
                     };
                 }
-            } catch (loginError) {
-                console.error('Deluge login attempt failed:', loginError);
+            } catch (loginError: any) {
+                console.error('Deluge login attempt failed:', loginError.message);
                 // Continue with existing cookie if available, otherwise will return an error below
             }
         }
@@ -694,8 +693,8 @@ delugeRoute.post('/torrents/pause', authenticateToken, async (req: Request, res:
                         ssl
                     };
                 }
-            } catch (loginError) {
-                console.error('Deluge login attempt failed:', loginError);
+            } catch (loginError: any) {
+                console.error('Deluge login attempt failed:', loginError.message);
                 // Continue with existing cookie if available, otherwise will return an error below
             }
         }
@@ -788,8 +787,8 @@ delugeRoute.post('/torrents/delete', authenticateToken, async (req: Request, res
                         ssl
                     };
                 }
-            } catch (loginError) {
-                console.error('Deluge login attempt failed:', loginError);
+            } catch (loginError: any) {
+                console.error('Deluge login attempt failed:', loginError.message);
                 // Continue with existing cookie if available, otherwise will return an error below
             }
         }

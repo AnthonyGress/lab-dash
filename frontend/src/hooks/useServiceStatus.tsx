@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 
 import { DashApi } from '../api/dash-api';
-import { FIFTEEN_MIN_IN_MS } from '../constants/constants';
+import { TWO_MIN_IN_MS } from '../constants/constants';
 
 export function useServiceStatus(
     pingUrl: string | null | undefined,
-    intervalMs = FIFTEEN_MIN_IN_MS
+    intervalMs = TWO_MIN_IN_MS
 ) {
     const [isOnline, setIsOnline] = useState<boolean | null>(null);
 
