@@ -51,6 +51,7 @@ export type Config = {
     search?: boolean;
     searchProvider?: SearchProvider;
     isSetupComplete?: boolean;
+    lastSeenVersion?: string;
 }
 
 export type UploadImageResponse = {

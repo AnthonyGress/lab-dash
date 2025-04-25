@@ -26,10 +26,14 @@ export interface IAppContext {
     setSetupComplete: Dispatch<SetStateAction<boolean>>;
     checkIfUsersExist: () => Promise<void>;
     checkLoginStatus: () => Promise<void>;
+    // Update states
     updateAvailable: boolean;
     latestVersion: string | null;
     releaseUrl: string | null;
     checkForAppUpdates: () => Promise<void>;
+    // Recently updated state
+    recentlyUpdated: boolean;
+    handleVersionViewed: () => Promise<void>;
 }
 
 export const AppContext = createContext<IAppContext>(null!);
