@@ -312,54 +312,29 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
 
                         setNetworkInterfaces(interfaces);
 
-                        // Get current active interface being used by the system
-                        if (systemInfo.network?.iface) {
-                            const activeInterface = {
-                                id: systemInfo.network.iface,
-                                label: systemInfo.network.iface
-                            };
+                        // Only update network interface selection if not already set from config
+                        const currentInterface = formContext.getValues('networkInterface');
 
-                            // Check if the current value is valid, if not reset it
-                            const currentInterface = formContext.getValues('networkInterface');
-                            if (currentInterface && !interfaces.some((iface: { id: string }) => iface.id === currentInterface)) {
-                                // Current interface doesn't exist in the list, reset to active interface
-                                if (interfaces.some((iface: { id: string }) => iface.id === activeInterface.id)) {
-                                    formContext.setValue('networkInterface', activeInterface.id);
-                                } else if (interfaces.length > 0) {
-                                    // Active interface isn't in the valid list either, use the first valid one
-                                    formContext.setValue('networkInterface', interfaces[0].id);
-                                } else {
-                                    formContext.setValue('networkInterface', '');
-                                }
-                            } else if (!currentInterface && existingItem?.config?.networkInterface) {
-                                // If there's no current value but there is one in existingItem, set it
-                                // But only if it exists in the available interfaces
-                                if (interfaces.some((iface: { id: string }) => iface.id === existingItem.config?.networkInterface)) {
-                                    formContext.setValue('networkInterface', existingItem.config.networkInterface);
-                                } else if (interfaces.some((iface: { id: string }) => iface.id === activeInterface.id)) {
-                                    // Fallback to active interface if configured one doesn't exist
-                                    formContext.setValue('networkInterface', activeInterface.id);
-                                } else if (interfaces.length > 0) {
-                                    // Active interface isn't in the valid list either, use the first valid one
-                                    formContext.setValue('networkInterface', interfaces[0].id);
-                                } else {
-                                    formContext.setValue('networkInterface', '');
-                                }
-                            } else if (!currentInterface) {
-                                // No current value, try to set to active interface
-                                if (interfaces.some((iface: { id: string }) => iface.id === activeInterface.id)) {
-                                    formContext.setValue('networkInterface', activeInterface.id);
-                                } else if (interfaces.length > 0) {
-                                    // Active interface isn't in the valid list, use the first valid one
-                                    formContext.setValue('networkInterface', interfaces[0].id);
-                                } else {
-                                    formContext.setValue('networkInterface', '');
-                                }
+                        if (!currentInterface) {
+                            // No interface is currently selected, set one based on priority
+                            const activeInterface = systemInfo.network?.iface;
+
+                            if (activeInterface && interfaces.some((iface: { id: string }) => iface.id === activeInterface)) {
+                                // Use active interface if available
+                                formContext.setValue('networkInterface', activeInterface);
+                            } else if (interfaces.length > 0) {
+                                // Otherwise use the first available interface
+                                formContext.setValue('networkInterface', interfaces[0].id);
                             }
-                        } else {
-                            console.log('No active network interface found');
-                            if (interfaces.length > 0) {
-                                // Set to first available interface if no active one
+                        } else if (!interfaces.some((iface: { id: string }) => iface.id === currentInterface)) {
+                            // Current interface is invalid or not available, reset it
+                            const activeInterface = systemInfo.network?.iface;
+
+                            if (activeInterface && interfaces.some((iface: { id: string }) => iface.id === activeInterface)) {
+                                // Use active interface if available
+                                formContext.setValue('networkInterface', activeInterface);
+                            } else if (interfaces.length > 0) {
+                                // Otherwise use the first available interface
                                 formContext.setValue('networkInterface', interfaces[0].id);
                             } else {
                                 formContext.setValue('networkInterface', '');
@@ -369,7 +344,6 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                 } catch (error) {
                     console.error('Error fetching network interfaces:', error);
                     setNetworkInterfaces([]);
-                    formContext.setValue('networkInterface', '');
                 }
             }
         };
@@ -380,8 +354,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
         selectedWidgetType,
         formContext.watch('gauge1'),
         formContext.watch('gauge2'),
-        formContext.watch('gauge3'),
-        existingItem?.config?.networkInterface
+        formContext.watch('gauge3')
     ]);
 
     const handleCustomIconSelect = (file: File | null) => {
