@@ -1077,29 +1077,32 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                             }}
                                         />
                                     </Grid>
-                                    <Grid>
-                                        <TextFieldElement
-                                            name='tcUsername'
-                                            label='Username'
-                                            variant='outlined'
-                                            fullWidth
-                                            autoComplete='off'
-                                            required={torrentClientType === TORRENT_CLIENT_TYPE.QBITTORRENT}
-                                            sx={{
-                                                width: '100%',
-                                                '& .MuiOutlinedInput-root': {
-                                                    '& fieldset': {
-                                                        borderColor: 'text.primary',
+                                    {/* Only show username field for qBittorrent */}
+                                    {torrentClientType === TORRENT_CLIENT_TYPE.QBITTORRENT && (
+                                        <Grid>
+                                            <TextFieldElement
+                                                name='tcUsername'
+                                                label='Username'
+                                                variant='outlined'
+                                                fullWidth
+                                                autoComplete='off'
+                                                required
+                                                sx={{
+                                                    width: '100%',
+                                                    '& .MuiOutlinedInput-root': {
+                                                        '& fieldset': {
+                                                            borderColor: 'text.primary',
+                                                        },
+                                                        '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                                        '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
                                                     },
-                                                    '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                                                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
-                                                },
-                                            }}
-                                            slotProps={{
-                                                inputLabel: { style: { color: theme.palette.text.primary } }
-                                            }}
-                                        />
-                                    </Grid>
+                                                }}
+                                                slotProps={{
+                                                    inputLabel: { style: { color: theme.palette.text.primary } }
+                                                }}
+                                            />
+                                        </Grid>
+                                    )}
                                     <Grid>
                                         <TextFieldElement
                                             name='tcPassword'
