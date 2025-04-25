@@ -72,7 +72,7 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
 
         // If there's any activity at all, ensure it shows at least 1% on the gauge
         // This makes even tiny network activity visible
-        const normalizedMbps = bytesPerSecond > 0 ? Math.max(mbps, 15) : 0;
+        const normalizedMbps = bytesPerSecond > 0 ? Math.max(mbps, 30) : 0;
 
         // If less than 1000 KB/s, show in KB/s
         if (bytesPerSecond < 1000 * 1024) {
