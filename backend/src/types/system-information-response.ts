@@ -65,6 +65,10 @@ export type SysteminformationResponse = {
     iface: string;
     operstate: string;
     speed: number;
+    rx_bytes: number;
+    tx_bytes: number;
+    rx_sec: number;
+    tx_sec: number;
  }>;
 }
 

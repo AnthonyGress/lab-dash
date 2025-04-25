@@ -4,6 +4,7 @@ services:
       container_name: lab-dash
       image: ghcr.io/anthonygress/lab-dash:latest
       privileged: true
+      network_mode: host
       ports:
         - 2022:2022
       environment:

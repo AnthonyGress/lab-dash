@@ -55,7 +55,6 @@ export const getSystemInfo = async (networkInterface?: string): Promise<Systemin
             // If no specific interface or it wasn't found, use the automatic selection logic
             if (!selectedInterface) {
                 // First try to find a "real" interface with traffic (excluding loopback)
-                console.log(`Requested interface ${networkInterface} not found, falling back to automatic selection`);
                 const activeInterface = networkInfo.find(iface =>
                     iface.operstate === 'up' &&
                     (iface.rx_sec > 0 || iface.tx_sec > 0) &&
@@ -99,14 +98,32 @@ export const getSystemInfo = async (networkInterface?: string): Promise<Systemin
         }
 
         // Include all network interfaces in the response for the UI to display options
-        const allNetworkInterfaces = networkInterfaces
-            ? networkInterfaces
-                .filter(iface => iface.operstate === 'up' && !iface.iface.includes('lo') && !iface.iface.includes('loop'))
-                .map(iface => ({
-                    iface: iface.iface,
-                    operstate: iface.operstate,
-                    speed: iface.speed || 0
-                }))
+        const allNetworkInterfaces = networkInterfaces && networkInfo
+            ? networkInfo
+                .filter(iface =>
+                    // Filter interfaces that have rx_sec and tx_sec values
+                    iface.operstate === 'up' &&
+                    !iface.iface.includes('lo') &&
+                    !iface.iface.includes('loop') &&
+                    typeof iface.rx_sec === 'number' &&
+                    typeof iface.tx_sec === 'number' &&
+                    iface.rx_sec > 0 &&
+                    iface.tx_sec > 0
+                )
+                .map(iface => {
+                    // Find the corresponding interface details from networkInterfaces
+                    const matchingInterface = networkInterfaces.find(ni => ni.iface === iface.iface);
+
+                    return {
+                        iface: iface.iface,
+                        operstate: iface.operstate,
+                        speed: matchingInterface?.speed || 0,
+                        rx_bytes: iface.rx_bytes || 0,
+                        tx_bytes: iface.tx_bytes || 0,
+                        rx_sec: iface.rx_sec || 0,
+                        tx_sec: iface.tx_sec || 0
+                    };
+                })
             : [];
 
         return { cpu, system, memory, disk, network, networkInterfaces: allNetworkInterfaces };

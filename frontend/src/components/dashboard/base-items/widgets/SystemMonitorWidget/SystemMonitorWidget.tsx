@@ -105,13 +105,6 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
         if (systemData?.network) {
             const currentIface = systemData.network.iface;
 
-            // Only log if interface has changed
-            if (networkInformation.iface && networkInformation.iface !== currentIface) {
-                console.log(`Network interface changed from ${networkInformation.iface} to ${currentIface}`);
-            } else if (!networkInformation.iface) {
-                console.log(`Initial network interface set to ${currentIface}`);
-            }
-
             // Use provided interface speed or default to 1000 Mbps (1 Gbps)
             const interfaceSpeed = systemData.network.speed || 1000;
 
@@ -124,7 +117,6 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
         } else {
             // Only log once if there's no network data
             if (networkInformation.iface) {
-                console.log('No network data available in system data');
                 setNetworkInformation({
                     downloadSpeed: 0,
                     uploadSpeed: 0,
@@ -313,7 +305,6 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
             getMainDiskInfo(res);
         };
 
-
         // Immediately fetch data with the current settings
         fetchSystemInfo();
 
@@ -324,7 +315,6 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
 
         // Clean up the interval when component unmounts or dependencies change
         return () => {
-
             clearInterval(interval);
         };
     }, [config?.temperatureUnit, config?.networkInterface]);
@@ -371,7 +361,7 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                     <Typography><b>Disk Total:</b> {`${diskInformation?.totalSpace} GB`}</Typography>
                     {systemInformation?.network && (
                         <>
-                            <Typography><b>Network Interface:</b> {systemInformation.network.iface} {config?.networkInterface && config.networkInterface === systemInformation.network.iface}</Typography>
+                            <Typography><b>Network Interface:</b> {systemInformation.network.iface}</Typography>
                             <Typography>
                                 <b>Interface Speed:</b> {systemInformation.network.speed || 1000} Mbps
                             </Typography>
