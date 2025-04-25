@@ -101,6 +101,15 @@ const isDnsResolutionError = (error: any): boolean => {
            error.message?.includes('EAI_AGAIN');
 };
 
+/**
+ * Helper function to check if an error is a rate limiting error (429 Too Many Requests)
+ */
+const isRateLimitError = (error: any): boolean => {
+    return error.response?.status === 429 ||
+           error.message?.includes('429') ||
+           error.message?.toLowerCase().includes('too many requests');
+};
+
 // Login to Pi-hole v6 API and get a session ID (SID), or use cached session if available
 async function authenticatePihole(baseUrl: string, password: string): Promise<{ sid: string; csrf: string }> {
     // Check for a valid cached session first
@@ -168,6 +177,15 @@ async function authenticatePihole(baseUrl: string, password: string): Promise<{ 
         // Clear any cached session as it might be invalid
         sessionCache.delete(cacheKey);
 
+        // Check for rate limiting (429 Too Many Requests)
+        if (isRateLimitError(error)) {
+            throw {
+                status: 429,
+                message: 'Too many requests to Pi-hole API. The default session limit is 30 minutes. You can manually clear unused sessions or increase the max_sessions setting in Pi-hole.',
+                code: 'TOO_MANY_REQUESTS'
+            };
+        }
+
         if (error.response?.status === 401) {
             // For 401 errors, provide a more specific error message
             const errorMessage = error.response?.data?.error?.message || 'Unauthorized';
@@ -191,6 +209,63 @@ async function authenticatePihole(baseUrl: string, password: string): Promise<{ 
             message: error.response?.data?.error?.message || error.message || 'Authentication failed',
             code: 'AUTH_ERROR'
         };
+    }
+}
+
+/**
+ * Helper function to handle API calls with automatic retry on 401 errors
+ * This centralizes the logic for handling expired sessions
+ */
+async function handleApiWith401Retry(
+    baseUrl: string,
+    password: string,
+    endpoint: string,
+    method: 'get' | 'post' | 'delete' = 'get',
+    data: any = null,
+    retryAttempt = 0
+): Promise<any> {
+    // Maximum retry attempts to prevent infinite loops
+    const MAX_RETRIES = 1;
+
+    try {
+        // First authenticate to get a session
+        const authInfo = await authenticatePihole(baseUrl, password);
+
+        // Prepare the request config
+        const config = {
+            params: { sid: authInfo.sid },
+            headers: { 'X-FTL-CSRF': authInfo.csrf, 'Content-Type': 'application/json' },
+            timeout: 5000
+        };
+
+        // Make the API request based on the method
+        let response;
+        const url = `${baseUrl}${endpoint}`;
+
+        if (method === 'get') {
+            response = await axios.get(url, config);
+        } else if (method === 'post') {
+            response = await axios.post(url, data, config);
+        } else if (method === 'delete') {
+            response = await axios.delete(url, config);
+        }
+
+        return response;
+    } catch (error: any) {
+        // If this is a 401 error and we haven't exceeded max retries, try to re-authenticate
+        if (error.response?.status === 401 && retryAttempt < MAX_RETRIES) {
+            console.log(`Received 401 during API call to ${endpoint}, clearing session and retrying...`);
+
+            // Clear the cached session as it's likely invalid
+            const cacheKey = getCacheKey(baseUrl, password);
+            sessionCache.delete(cacheKey);
+
+            // Retry the request with a fresh authentication
+            return handleApiWith401Retry(baseUrl, password, endpoint, method, data, retryAttempt + 1);
+        }
+
+        // If it's not a 401 or we've exceeded retries, throw the error
+        throw error;
     }
 }
 
@@ -226,6 +301,17 @@ piholeV6Route.get('/stats', async (req: Request, res: Response) => {
                 return;
             }
 
+            // Check for rate limiting errors
+            if (authError.code === 'TOO_MANY_REQUESTS') {
+                res.status(429).json({
+                    success: false,
+                    code: 'TOO_MANY_REQUESTS',
+                    error: authError.message,
+                    requiresReauth: false
+                });
+                return;
+            }
+
             res.status(authError.status || 401).json({
                 success: false,
                 code: 'PIHOLE_AUTH_ERROR',
@@ -236,122 +322,134 @@ piholeV6Route.get('/stats', async (req: Request, res: Response) => {
         }
 
         // Use the sid to fetch stats
-        const summaryResponse = await axios.get(`${baseUrl}/api/stats/summary`, {
-            params: {
-                sid: authInfo.sid
-            },
-            headers: { 'X-FTL-CSRF': authInfo.csrf },
-            timeout: 5000
-        });
+        try {
+            // Use the new helper function for the summary request with 401 retry
+            const summaryResponse = await handleApiWith401Retry(
+                baseUrl,
+                password,
+                '/api/stats/summary'
+            );
 
-        if (!summaryResponse.data) {
-            throw new Error('Failed to get Pi-hole statistics');
-        }
+            if (!summaryResponse.data) {
+                throw new Error('Failed to get Pi-hole statistics');
+            }
 
-        // Extract and transform the data directly from the response
-        // The v6 API might not have the expected "summary" structure, so we need to be flexible
-        let apiData = summaryResponse.data;
+            // Extract and transform the data directly from the response
+            // The v6 API might not have the expected "summary" structure, so we need to be flexible
+            let apiData = summaryResponse.data;
 
-        // If there's a summary field, use that as the base for our data
-        if (apiData.summary) {
-            apiData = apiData.summary;
-        }
+            // If there's a summary field, use that as the base for our data
+            if (apiData.summary) {
+                apiData = apiData.summary;
+            }
 
-        // Now also fetch the current blocking status
-        const blockingResponse = await axios.get(`${baseUrl}/api/dns/blocking`, {
-            params: {
-                sid: authInfo.sid
-            },
-            headers: { 'X-FTL-CSRF': authInfo.csrf },
-            timeout: 5000
-        });
+            // Now also fetch the current blocking status with 401 retry
+            const blockingResponse = await handleApiWith401Retry(
+                baseUrl,
+                password,
+                '/api/dns/blocking'
+            );
 
-        // Get blocking status and timer details
-        let status = 'enabled'; // Default status
-        let timerValue = null;
+            // Get blocking status and timer details
+            let status = 'enabled'; // Default status
+            let timerValue = null;
 
-        if (blockingResponse.data) {
-            // Check if blocking is false or the string "disabled"
-            if (blockingResponse.data.blocking === false ||
-                blockingResponse.data.blocking === 'disabled' ||
-                blockingResponse.data.blocking === 'false') {
-                status = 'disabled';
+            if (blockingResponse.data) {
+                // Check if blocking is false or the string "disabled"
+                if (blockingResponse.data.blocking === false ||
+                    blockingResponse.data.blocking === 'disabled' ||
+                    blockingResponse.data.blocking === 'false') {
+                    status = 'disabled';
 
-                // Check if there's a timer value for how long it's disabled
-                if (blockingResponse.data.timer !== undefined) {
-                    // If timer is a number or can be converted to a number, represents remaining seconds
-                    if (typeof blockingResponse.data.timer === 'number' ||
-                        !isNaN(parseFloat(blockingResponse.data.timer))) {
-                        // Ensure it's a number and round to avoid floating point issues
-                        timerValue = Math.round(parseFloat(blockingResponse.data.timer));
+                    // Check if there's a timer value for how long it's disabled
+                    if (blockingResponse.data.timer !== undefined) {
+                        // If timer is a number or can be converted to a number, represents remaining seconds
+                        if (typeof blockingResponse.data.timer === 'number' ||
+                            !isNaN(parseFloat(blockingResponse.data.timer))) {
+                            // Ensure it's a number and round to avoid floating point issues
+                            timerValue = Math.round(parseFloat(blockingResponse.data.timer));
+                        }
                     }
                 }
             }
+
+            // Transform Pi-hole v6 format to the format our frontend expects
+            let domainsBeingBlocked = 0;
+            let dnsQueriesToday = 0;
+            let adsBlockedToday = 0;
+            let adsPercentageToday = 0;
+
+            // Try different possible paths for these values
+            // Domains being blocked
+            if (apiData.gravity && typeof apiData.gravity === 'object' && apiData.gravity.domains_being_blocked !== undefined) {
+                domainsBeingBlocked = apiData.gravity.domains_being_blocked;
+            } else if (apiData.domains_being_blocked !== undefined) {
+                domainsBeingBlocked = apiData.domains_being_blocked;
+            } else if (typeof apiData.gravity === 'number') {
+                domainsBeingBlocked = apiData.gravity;
+            }
+
+            // DNS queries today
+            if (apiData.queries && typeof apiData.queries === 'object' && apiData.queries.total !== undefined) {
+                dnsQueriesToday = apiData.queries.total;
+            } else if (apiData.dns_queries_today !== undefined) {
+                dnsQueriesToday = apiData.dns_queries_today;
+            }
+
+            // Ads blocked today
+            if (apiData.queries && typeof apiData.queries === 'object' && apiData.queries.blocked !== undefined) {
+                adsBlockedToday = apiData.queries.blocked;
+            } else if (apiData.ads_blocked_today !== undefined) {
+                adsBlockedToday = apiData.ads_blocked_today;
+            }
+
+            // Ads percentage today
+            if (apiData.queries && typeof apiData.queries === 'object' && apiData.queries.percent_blocked !== undefined) {
+                adsPercentageToday = apiData.queries.percent_blocked;
+            } else if (apiData.ads_percentage_today !== undefined) {
+                adsPercentageToday = apiData.ads_percentage_today;
+            }
+
+            // Create the transformed data object that matches the expected format
+            const transformedData: {
+                domains_being_blocked: number;
+                dns_queries_today: number;
+                ads_blocked_today: number;
+                ads_percentage_today: number;
+                status: string;
+                timer?: number;
+            } = {
+                domains_being_blocked: domainsBeingBlocked,
+                dns_queries_today: dnsQueriesToday,
+                ads_blocked_today: adsBlockedToday,
+                ads_percentage_today: adsPercentageToday,
+                status: status
+            };
+
+            // Only include timer if it's not null
+            if (timerValue !== null) {
+                transformedData.timer = timerValue;
+            }
+
+            res.status(200).json({
+                success: true,
+                data: transformedData
+            });
+        } catch (apiError: any) {
+            // Check for rate limiting in API requests
+            if (apiError.response?.status === 429) {
+                res.status(429).json({
+                    success: false,
+                    code: 'TOO_MANY_REQUESTS',
+                    error: 'Too many requests to Pi-hole API. The default session limit is 30 minutes. You can manually clear unused sessions or increase the max_sessions setting in Pi-hole.',
+                    requiresReauth: false
+                });
+                return;
+            }
+
+            // If we get here, it's some other API error
+            throw apiError;
         }
-
-        // Transform Pi-hole v6 format to the format our frontend expects
-        let domainsBeingBlocked = 0;
-        let dnsQueriesToday = 0;
-        let adsBlockedToday = 0;
-        let adsPercentageToday = 0;
-
-        // Try different possible paths for these values
-        // Domains being blocked
-        if (apiData.gravity && typeof apiData.gravity === 'object' && apiData.gravity.domains_being_blocked !== undefined) {
-            domainsBeingBlocked = apiData.gravity.domains_being_blocked;
-        } else if (apiData.domains_being_blocked !== undefined) {
-            domainsBeingBlocked = apiData.domains_being_blocked;
-        } else if (typeof apiData.gravity === 'number') {
-            domainsBeingBlocked = apiData.gravity;
-        }
-
-        // DNS queries today
-        if (apiData.queries && typeof apiData.queries === 'object' && apiData.queries.total !== undefined) {
-            dnsQueriesToday = apiData.queries.total;
-        } else if (apiData.dns_queries_today !== undefined) {
-            dnsQueriesToday = apiData.dns_queries_today;
-        }
-
-        // Ads blocked today
-        if (apiData.queries && typeof apiData.queries === 'object' && apiData.queries.blocked !== undefined) {
-            adsBlockedToday = apiData.queries.blocked;
-        } else if (apiData.ads_blocked_today !== undefined) {
-            adsBlockedToday = apiData.ads_blocked_today;
-        }
-
-        // Ads percentage today
-        if (apiData.queries && typeof apiData.queries === 'object' && apiData.queries.percent_blocked !== undefined) {
-            adsPercentageToday = apiData.queries.percent_blocked;
-        } else if (apiData.ads_percentage_today !== undefined) {
-            adsPercentageToday = apiData.ads_percentage_today;
-        }
-
-        // Create the transformed data object that matches the expected format
-        const transformedData: {
-            domains_being_blocked: number;
-            dns_queries_today: number;
-            ads_blocked_today: number;
-            ads_percentage_today: number;
-            status: string;
-            timer?: number;
-        } = {
-            domains_being_blocked: domainsBeingBlocked,
-            dns_queries_today: dnsQueriesToday,
-            ads_blocked_today: adsBlockedToday,
-            ads_percentage_today: adsPercentageToday,
-            status: status
-        };
-
-        // Only include timer if it's not null
-        if (timerValue !== null) {
-            transformedData.timer = timerValue;
-        }
-
-        res.status(200).json({
-            success: true,
-            data: transformedData
-        });
-
     } catch (error: any) {
         console.error('Pi-hole v6 API error:', error.message);
         console.error('Error details:', {
@@ -361,11 +459,18 @@ piholeV6Route.get('/stats', async (req: Request, res: Response) => {
         });
 
         const statusCode = error.response?.status || 500;
-        const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to get Pi-hole statistics';
+        let errorMessage = error.response?.data?.error?.message || error.message || 'Failed to get Pi-hole statistics';
+        let errorCode = 'PIHOLE_API_ERROR';
+
+        // Add specific handling for rate limiting
+        if (statusCode === 429) {
+            errorCode = 'TOO_MANY_REQUESTS';
+            errorMessage = 'Too many requests to Pi-hole API. The default session limit is 30 minutes. You can manually clear unused sessions or increase the max_sessions setting in Pi-hole.';
+        }
 
         res.status(statusCode).json({
             success: false,
-            code: 'PIHOLE_API_ERROR',
+            code: errorCode,
             error: errorMessage,
             requiresReauth: statusCode === 401 || statusCode === 403
         });
@@ -389,12 +494,66 @@ piholeV6Route.get('/blocking-status', async (req: Request, res: Response) => {
         }
 
         // Authenticate with Pi-hole v6
-        let authInfo;
         try {
-            authInfo = await authenticatePihole(baseUrl, password);
-        } catch (authError: any) {
+            // Use the helper function with 401 retry
+            const blockingResponse = await handleApiWith401Retry(
+                baseUrl,
+                password,
+                '/api/dns/blocking'
+            );
+
+            // Get blocking status and timer details
+            let status = 'enabled'; // Default status
+            let timerValue = null;
+
+            if (blockingResponse.data) {
+                // Check if blocking is false or the string "disabled"
+                if (blockingResponse.data.blocking === false ||
+                    blockingResponse.data.blocking === 'disabled' ||
+                    blockingResponse.data.blocking === 'false') {
+                    status = 'disabled';
+
+                    // Check if there's a timer value for how long it's disabled
+                    if (blockingResponse.data.timer !== undefined) {
+                        // If timer is a number or can be converted to a number, represents remaining seconds
+                        if (typeof blockingResponse.data.timer === 'number' ||
+                            !isNaN(parseFloat(blockingResponse.data.timer))) {
+                            // Ensure it's a number and round to avoid floating point issues
+                            timerValue = Math.round(parseFloat(blockingResponse.data.timer));
+                        }
+                    }
+                }
+            }
+
+            // Return only the status and timer (if exists)
+            const responseData: { status: string; timer?: number } = {
+                status: status
+            };
+
+            // Only include timer if it's not null
+            if (timerValue !== null) {
+                responseData.timer = timerValue;
+            }
+
+            res.status(200).json({
+                success: true,
+                data: responseData
+            });
+        } catch (error: any) {
+            // Handle authentication errors
+            if (error.code === 'INVALID_PASSWORD' || error.code === 'AUTH_ERROR' ||
+                error.code === 'PIHOLE_AUTH_ERROR') {
+                res.status(401).json({
+                    success: false,
+                    code: error.code || 'PIHOLE_AUTH_ERROR',
+                    error: error.message || 'Authentication failed',
+                    requiresReauth: true
+                });
+                return;
+            }
+
             // Check if this is a DNS resolution error
-            if (isDnsResolutionError(authError)) {
+            if (isDnsResolutionError(error)) {
                 res.status(503).json({
                     success: false,
                     code: 'DNS_RESOLUTION_ERROR',
@@ -404,73 +563,36 @@ piholeV6Route.get('/blocking-status', async (req: Request, res: Response) => {
                 return;
             }
 
-            // Check for specific auth errors
-            if (authError.code === 'INVALID_PASSWORD') {
-                res.status(401).json({
+            // Check for rate limiting errors
+            if (error.code === 'TOO_MANY_REQUESTS' || error.response?.status === 429) {
+                res.status(429).json({
                     success: false,
-                    code: 'INVALID_PASSWORD',
-                    error: authError.message || 'Invalid password for Pi-hole',
-                    requiresReauth: true
+                    code: 'TOO_MANY_REQUESTS',
+                    error: 'Too many requests to Pi-hole API. The default session limit is 30 minutes. You can manually clear unused sessions or increase the max_sessions setting in Pi-hole.',
+                    requiresReauth: false
                 });
                 return;
             }
 
-            res.status(authError.status || 401).json({
-                success: false,
-                code: authError.code || 'PIHOLE_AUTH_ERROR',
-                error: authError.message || 'Authentication failed',
-                requiresReauth: true
+            // For all other errors
+            console.error('Pi-hole v6 blocking status error:', error.message);
+            console.error('Error details:', {
+                status: error.response?.status,
+                data: error.response?.data,
+                stack: error.stack
             });
-            return;
+
+            const statusCode = error.response?.status || 500;
+            const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to get Pi-hole blocking status';
+            const errorCode = 'PIHOLE_API_ERROR';
+
+            res.status(statusCode).json({
+                success: false,
+                code: errorCode,
+                error: errorMessage,
+                requiresReauth: statusCode === 401 || statusCode === 403
+            });
         }
-
-        // Fetch the current blocking status
-        const blockingResponse = await axios.get(`${baseUrl}/api/dns/blocking`, {
-            params: {
-                sid: authInfo.sid
-            },
-            headers: { 'X-FTL-CSRF': authInfo.csrf },
-            timeout: 5000
-        });
-
-        // Get blocking status and timer details
-        let status = 'enabled'; // Default status
-        let timerValue = null;
-
-        if (blockingResponse.data) {
-            // Check if blocking is false or the string "disabled"
-            if (blockingResponse.data.blocking === false ||
-                blockingResponse.data.blocking === 'disabled' ||
-                blockingResponse.data.blocking === 'false') {
-                status = 'disabled';
-
-                // Check if there's a timer value for how long it's disabled
-                if (blockingResponse.data.timer !== undefined) {
-                    // If timer is a number or can be converted to a number, represents remaining seconds
-                    if (typeof blockingResponse.data.timer === 'number' ||
-                        !isNaN(parseFloat(blockingResponse.data.timer))) {
-                        // Ensure it's a number and round to avoid floating point issues
-                        timerValue = Math.round(parseFloat(blockingResponse.data.timer));
-                    }
-                }
-            }
-        }
-
-        // Return only the status and timer (if exists)
-        const responseData: { status: string; timer?: number } = {
-            status: status
-        };
-
-        // Only include timer if it's not null
-        if (timerValue !== null) {
-            responseData.timer = timerValue;
-        }
-
-        res.status(200).json({
-            success: true,
-            data: responseData
-        });
-
     } catch (error: any) {
         console.error('Pi-hole v6 blocking status error:', error.message);
         console.error('Error details:', {
@@ -480,11 +602,18 @@ piholeV6Route.get('/blocking-status', async (req: Request, res: Response) => {
         });
 
         const statusCode = error.response?.status || 500;
-        const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to get Pi-hole blocking status';
+        let errorMessage = error.response?.data?.error?.message || error.message || 'Failed to get Pi-hole blocking status';
+        let errorCode = 'PIHOLE_API_ERROR';
+
+        // Add specific handling for rate limiting
+        if (statusCode === 429) {
+            errorCode = 'TOO_MANY_REQUESTS';
+            errorMessage = 'Too many requests to Pi-hole API. The default session limit is 30 minutes. You can manually clear unused sessions or increase the max_sessions setting in Pi-hole.';
+        }
 
         res.status(statusCode).json({
             success: false,
-            code: 'PIHOLE_API_ERROR',
+            code: errorCode,
             error: errorMessage,
             requiresReauth: statusCode === 401 || statusCode === 403
         });
@@ -532,23 +661,6 @@ piholeV6Route.post('/disable', async (req: Request, res: Response) => {
             return;
         }
 
-        // Authenticate with Pi-hole v6
-        let authInfo;
-        try {
-            authInfo = await authenticatePihole(baseUrl, password);
-        } catch (authError: any) {
-            res.status(authError.status || 401).json({
-                success: false,
-                code: 'PIHOLE_AUTH_ERROR',
-                error: authError.message || 'Authentication failed',
-                requiresReauth: true
-            });
-            return;
-        }
-
-        // For Pi-hole v6, use the /api/dns/blocking endpoint with POST
-        const blockingUrl = `${baseUrl}/api/dns/blocking`;
-
         // Prepare request body: blocking: false to disable, with timer if specified
         // Use null for infinite disabling (not 0)
         const requestBody = {
@@ -556,49 +668,77 @@ piholeV6Route.post('/disable', async (req: Request, res: Response) => {
             timer: seconds !== undefined ? seconds : null // null means indefinite
         };
 
-        // Call Pi-hole API to disable blocking
-        const response = await axios.post(
-            blockingUrl,
-            requestBody,
-            {
-                params: { sid: authInfo.sid },
-                headers: {
-                    'X-FTL-CSRF': authInfo.csrf,
-                    'Content-Type': 'application/json'
-                },
-                timeout: 5000
-            }
-        );
+        try {
+            // Use helper function with 401 retry for disabling blocking
+            const response = await handleApiWith401Retry(
+                baseUrl,
+                password,
+                '/api/dns/blocking',
+                'post',
+                requestBody
+            );
 
-        if (response.data?.status === 'disabled' || response.status === 200) {
-            res.status(200).json({
-                success: true,
-                message: seconds !== undefined
-                    ? `Pi-hole blocking disabled for ${seconds} seconds`
-                    : 'Pi-hole blocking disabled indefinitely'
+            if (response.data?.status === 'disabled' || response.status === 200) {
+                res.status(200).json({
+                    success: true,
+                    message: seconds !== undefined
+                        ? `Pi-hole blocking disabled for ${seconds} seconds`
+                        : 'Pi-hole blocking disabled indefinitely'
+                });
+            } else {
+                res.status(500).json({
+                    success: false,
+                    error: 'Failed to disable Pi-hole blocking'
+                });
+            }
+        } catch (error: any) {
+            // Handle authentication errors
+            if (error.code === 'INVALID_PASSWORD' || error.code === 'AUTH_ERROR' ||
+                error.code === 'PIHOLE_AUTH_ERROR') {
+                res.status(401).json({
+                    success: false,
+                    code: error.code || 'PIHOLE_AUTH_ERROR',
+                    error: error.message || 'Authentication failed',
+                    requiresReauth: true
+                });
+                return;
+            }
+
+            // Check for rate limiting errors
+            if (error.code === 'TOO_MANY_REQUESTS' || error.response?.status === 429) {
+                res.status(429).json({
+                    success: false,
+                    code: 'TOO_MANY_REQUESTS',
+                    error: 'Too many requests to Pi-hole API. The default session limit is 30 minutes. You can manually clear unused sessions or increase the max_sessions setting in Pi-hole.',
+                    requiresReauth: false
+                });
+                return;
+            }
+
+            console.error('Pi-hole v6 disable error:', error.message);
+            console.error('Error details:', {
+                status: error.response?.status,
+                data: error.response?.data,
+                stack: error.stack
             });
-        } else {
-            res.status(500).json({
+
+            const statusCode = error.response?.status || 500;
+            const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to disable Pi-hole blocking';
+
+            res.status(statusCode).json({
                 success: false,
-                error: 'Failed to disable Pi-hole blocking'
+                code: 'PIHOLE_API_ERROR',
+                error: errorMessage,
+                requiresReauth: statusCode === 401 || statusCode === 403
             });
         }
     } catch (error: any) {
         console.error('Pi-hole v6 disable error:', error.message);
-        console.error('Error details:', {
-            status: error.response?.status,
-            data: error.response?.data,
-            stack: error.stack
-        });
-
-        const statusCode = error.response?.status || 500;
-        const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to disable Pi-hole blocking';
-
-        res.status(statusCode).json({
+        res.status(500).json({
             success: false,
             code: 'PIHOLE_API_ERROR',
-            error: errorMessage,
-            requiresReauth: statusCode === 401 || statusCode === 403
+            error: 'Internal server error while processing the disable request',
+            requiresReauth: false
         });
     }
 });
@@ -619,70 +759,81 @@ piholeV6Route.post('/enable', async (req: Request, res: Response) => {
             return;
         }
 
-        // Authenticate with Pi-hole v6
-        let authInfo;
-        try {
-            authInfo = await authenticatePihole(baseUrl, password);
-        } catch (authError: any) {
-            res.status(authError.status || 401).json({
-                success: false,
-                code: 'PIHOLE_AUTH_ERROR',
-                error: authError.message || 'Authentication failed',
-                requiresReauth: true
-            });
-            return;
-        }
-
-        // For Pi-hole v6, use the /api/dns/blocking endpoint with POST
-        const blockingUrl = `${baseUrl}/api/dns/blocking`;
-
         // Prepare request body: blocking: true to enable, explicitly set timer to null
         const requestBody = {
             blocking: true,
             timer: null // Explicitly clear any timer
         };
 
-        // Call Pi-hole API to enable blocking
-        const response = await axios.post(
-            blockingUrl,
-            requestBody,
-            {
-                params: { sid: authInfo.sid },
-                headers: {
-                    'X-FTL-CSRF': authInfo.csrf,
-                    'Content-Type': 'application/json'
-                },
-                timeout: 5000
-            }
-        );
+        try {
+            // Use helper function with 401 retry for enabling blocking
+            const response = await handleApiWith401Retry(
+                baseUrl,
+                password,
+                '/api/dns/blocking',
+                'post',
+                requestBody
+            );
 
-        if (response.data?.status === 'enabled' || response.status === 200) {
-            res.status(200).json({
-                success: true,
-                message: 'Pi-hole blocking enabled'
+            if (response.data?.status === 'enabled' || response.status === 200) {
+                res.status(200).json({
+                    success: true,
+                    message: 'Pi-hole blocking enabled'
+                });
+            } else {
+                res.status(500).json({
+                    success: false,
+                    error: 'Failed to enable Pi-hole blocking'
+                });
+            }
+        } catch (error: any) {
+            // Handle authentication errors
+            if (error.code === 'INVALID_PASSWORD' || error.code === 'AUTH_ERROR' ||
+                error.code === 'PIHOLE_AUTH_ERROR') {
+                res.status(401).json({
+                    success: false,
+                    code: error.code || 'PIHOLE_AUTH_ERROR',
+                    error: error.message || 'Authentication failed',
+                    requiresReauth: true
+                });
+                return;
+            }
+
+            // Check for rate limiting errors
+            if (error.code === 'TOO_MANY_REQUESTS' || error.response?.status === 429) {
+                res.status(429).json({
+                    success: false,
+                    code: 'TOO_MANY_REQUESTS',
+                    error: 'Too many requests to Pi-hole API. The default session limit is 30 minutes. You can manually clear unused sessions or increase the max_sessions setting in Pi-hole.',
+                    requiresReauth: false
+                });
+                return;
+            }
+
+            console.error('Pi-hole v6 enable error:', error.message);
+            console.error('Enable error details:', {
+                status: error.response?.status,
+                data: error.response?.data,
+                stack: error.stack
             });
-        } else {
-            res.status(500).json({
+
+            const statusCode = error.response?.status || 500;
+            const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to enable Pi-hole blocking';
+
+            res.status(statusCode).json({
                 success: false,
-                error: 'Failed to enable Pi-hole blocking'
+                code: 'PIHOLE_API_ERROR',
+                error: errorMessage,
+                requiresReauth: statusCode === 401 || statusCode === 403
             });
         }
     } catch (error: any) {
         console.error('Pi-hole v6 enable error:', error.message);
-        console.error('Enable error details:', {
-            status: error.response?.status,
-            data: error.response?.data,
-            stack: error.stack
-        });
-
-        const statusCode = error.response?.status || 500;
-        const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to enable Pi-hole blocking';
-
-        res.status(statusCode).json({
+        res.status(500).json({
             success: false,
             code: 'PIHOLE_API_ERROR',
-            error: errorMessage,
-            requiresReauth: statusCode === 401 || statusCode === 403
+            error: 'Internal server error while processing the enable request',
+            requiresReauth: false
         });
     }
 });

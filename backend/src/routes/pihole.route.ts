@@ -227,3 +227,74 @@ piholeRoute.post('/enable', async (req: Request, res: Response) => {
         });
     }
 });
+
+piholeRoute.get('/blocking-status', async (req: Request, res: Response) => {
+    try {
+        const baseUrl = getBaseUrl(req);
+        const apiToken = getApiToken(req);
+
+        // Validate API token
+        if (!apiToken) {
+            res.status(400).json({
+                success: false,
+                error: 'API token is required'
+            });
+            return;
+        }
+
+        // Make the request to get the blocking status
+        try {
+            const result = await axios.get(`${baseUrl}/api.php`, {
+                params: {
+                    auth: apiToken,
+                    status: ''
+                },
+                timeout: 5000
+            });
+
+            // Check if the result is valid
+            if (result.data && typeof result.data === 'object') {
+                res.status(200).json({
+                    success: true,
+                    data: {
+                        status: result.data.status === 'enabled' ? 'enabled' : 'disabled'
+                    }
+                });
+            } else {
+                throw new Error('Invalid response from Pi-hole API');
+            }
+        } catch (apiError: any) {
+            // Check for rate limiting in API requests
+            if (apiError.response?.status === 429) {
+                res.status(429).json({
+                    success: false,
+                    code: 'TOO_MANY_REQUESTS',
+                    error: 'Too many requests to Pi-hole API',
+                    requiresReauth: false
+                });
+                return;
+            }
+
+            // If we get here, it's some other API error
+            throw apiError;
+        }
+    } catch (error: any) {
+        console.error('Pi-hole blocking status error:', error.message);
+
+        const statusCode = error.response?.status || 500;
+        let errorMessage = error.response?.data || error.message || 'Failed to get Pi-hole blocking status';
+        let errorCode = 'PIHOLE_API_ERROR';
+
+        // Add specific handling for rate limiting
+        if (statusCode === 429) {
+            errorCode = 'TOO_MANY_REQUESTS';
+            errorMessage = 'Too many requests to Pi-hole API';
+        }
+
+        res.status(statusCode).json({
+            success: false,
+            code: errorCode,
+            error: errorMessage
+        });
+    }
+});

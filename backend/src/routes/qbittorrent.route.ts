@@ -217,6 +217,7 @@ qbittorrentRoute.get('/stats', async (req: Request, res: Response) => {
 
         if (!cookie) {
             // If not authenticated and couldn't auto-login, provide basic response with empty/zero values
+            console.log(`No valid qBittorrent session for ${baseUrl}, returning empty stats`);
             const stats = {
                 dl_info_speed: 0,
                 up_info_speed: 0,
@@ -236,11 +237,13 @@ qbittorrentRoute.get('/stats', async (req: Request, res: Response) => {
 
         try {
             const transferInfo = await axios.get(`${baseUrl}/transfer/info`, {
-                headers: { Cookie: cookie }
+                headers: { Cookie: cookie },
+                timeout: 5000 // 5 second timeout
             });
 
             const torrentsMaindata = await axios.get(`${baseUrl}/torrents/info`, {
-                headers: { Cookie: cookie }
+                headers: { Cookie: cookie },
+                timeout: 5000 // 5 second timeout
             });
 
             // Count torrents by state
@@ -260,9 +263,10 @@ qbittorrentRoute.get('/stats', async (req: Request, res: Response) => {
             };
 
             res.status(200).json(stats);
-        } catch (error: any) {
+        } catch (apiErr: any) {
             // If we get a 403 (Forbidden), the session has likely expired
-            if (error.response?.status === 403) {
+            if (apiErr.response?.status === 403) {
+                console.log('qBittorrent session expired, attempting to renew');
                 // Clear the invalid session
                 const sessionId = req.user?.username || req.ip || 'default';
                 if (sessions[sessionId]) {
@@ -270,51 +274,64 @@ qbittorrentRoute.get('/stats', async (req: Request, res: Response) => {
 
                     // Try to renew the session
                     if (sessionInfo.username && sessionInfo.password) {
-                        const newCookie = await authenticateQBittorrent(
-                            baseUrl,
-                            sessionInfo.username,
-                            sessionInfo.password
-                        );
+                        try {
+                            const newCookie = await authenticateQBittorrent(
+                                baseUrl,
+                                sessionInfo.username,
+                                sessionInfo.password
+                            );
 
-                        if (newCookie) {
-                            // Update session with new cookie
-                            sessions[sessionId] = {
-                                ...sessionInfo,
-                                cookie: newCookie,
-                                expires: Date.now() + SESSION_LIFETIME
-                            };
+                            if (newCookie) {
+                                console.log('Successfully renewed qBittorrent session');
+                                // Update session with new cookie
+                                sessions[sessionId] = {
+                                    ...sessionInfo,
+                                    cookie: newCookie,
+                                    expires: Date.now() + SESSION_LIFETIME
+                                };
 
-                            // Retry the request with the new cookie
-                            const transferInfo = await axios.get(`${baseUrl}/transfer/info`, {
-                                headers: { Cookie: newCookie }
-                            });
+                                // Retry the request with the new cookie
+                                try {
+                                    const transferInfo = await axios.get(`${baseUrl}/transfer/info`, {
+                                        headers: { Cookie: newCookie },
+                                        timeout: 5000 // 5 second timeout
+                                    });
 
-                            const torrentsMaindata = await axios.get(`${baseUrl}/torrents/info`, {
-                                headers: { Cookie: newCookie }
-                            });
+                                    const torrentsMaindata = await axios.get(`${baseUrl}/torrents/info`, {
+                                        headers: { Cookie: newCookie },
+                                        timeout: 5000 // 5 second timeout
+                                    });
 
-                            // Count torrents by state
-                            const torrents = torrentsMaindata.data || [];
-                            const stats = {
-                                dl_info_speed: transferInfo.data.dl_info_speed || 0,
-                                up_info_speed: transferInfo.data.up_info_speed || 0,
-                                dl_info_data: transferInfo.data.dl_info_data || 0,
-                                up_info_data: transferInfo.data.up_info_data || 0,
-                                torrents: {
-                                    total: torrents.length,
-                                    downloading: torrents.filter((t: any) => t.state === 'downloading').length,
-                                    seeding: torrents.filter((t: any) => t.state === 'seeding' || t.state === 'uploading').length,
-                                    completed: torrents.filter((t: any) => t.progress === 1).length,
-                                    paused: torrents.filter((t: any) => t.state === 'pausedDL' || t.state === 'pausedUP').length
+                                    // Count torrents by state
+                                    const torrents = torrentsMaindata.data || [];
+                                    const stats = {
+                                        dl_info_speed: transferInfo.data.dl_info_speed || 0,
+                                        up_info_speed: transferInfo.data.up_info_speed || 0,
+                                        dl_info_data: transferInfo.data.dl_info_data || 0,
+                                        up_info_data: transferInfo.data.up_info_data || 0,
+                                        torrents: {
+                                            total: torrents.length,
+                                            downloading: torrents.filter((t: any) => t.state === 'downloading').length,
+                                            seeding: torrents.filter((t: any) => t.state === 'seeding' || t.state === 'uploading').length,
+                                            completed: torrents.filter((t: any) => t.progress === 1).length,
+                                            paused: torrents.filter((t: any) => t.state === 'pausedDL' || t.state === 'pausedUP').length
+                                        }
+                                    };
+
+                                    res.status(200).json(stats);
+                                    return;
+                                } catch (retryErr: any) {
+                                    console.error('Error after session renewal:', retryErr.message);
+                                    // Fall through to the error handling below
                                 }
-                            };
-
-                            res.status(200).json(stats);
-                            return;
+                            }
+                        } catch (renewErr: any) {
+                            console.error('Failed to renew qBittorrent session:', renewErr.message);
                         }
                     }
 
                     // If renewal failed or no credentials, delete the session
+                    console.log('Session renewal failed, deleting session');
                     delete sessions[sessionId];
                 }
 
@@ -336,12 +353,17 @@ qbittorrentRoute.get('/stats', async (req: Request, res: Response) => {
                 return;
             }
 
-            throw error; // Re-throw for the outer catch
+            // Check for connection errors
+            if (apiErr.code === 'ECONNREFUSED' || apiErr.code === 'ETIMEDOUT' || apiErr.code === 'ECONNABORTED') {
+                console.log(`service is offline ${baseUrl}`);
+            }
+
+            throw apiErr; // Re-throw for the outer catch
         }
-    } catch (error: any) {
-        console.error('qBittorrent stats error:', error.message);
-        res.status(error.response?.status || 500).json({
-            error: error.response?.data || 'Failed to get qBittorrent stats'
+    } catch (mainErr: any) {
+        console.error('qBittorrent stats error:', mainErr.message);
+        res.status(mainErr.response?.status || 500).json({
+            error: mainErr.response?.data || 'Failed to get qBittorrent stats'
         });
     }
 });

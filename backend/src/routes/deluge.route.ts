@@ -222,6 +222,8 @@ delugeRoute.post('/login', async (req: Request, res: Response) => {
 delugeRoute.get('/stats', async (req: Request, res: Response) => {
     try {
         const baseUrl = getBaseUrl(req);
+        console.log(`Deluge stats request for ${baseUrl}`);
+
         // Use IP address as identifier for non-authenticated users
         const sessionId = req.user?.username || req.ip || 'default';
         const session = sessions[sessionId];
@@ -234,15 +236,16 @@ delugeRoute.get('/stats', async (req: Request, res: Response) => {
                 const host = req.query.host as string;
                 const port = req.query.port as string;
                 const ssl = req.query.ssl === 'true';
+                console.log(`Attempting to login to Deluge at ${host}:${port} (SSL: ${ssl})`);
 
                 // Handle encrypted password
                 if (isEncrypted(password)) {
                     password = decrypt(password);
                     // Check if decryption failed (returns empty string)
                     if (!password) {
-                        console.warn('Failed to decrypt password for auto-login. Credentials may need to be updated.');
-                        // Return empty stats instead of failing
-                        res.status(200).json({
+                        console.log('Failed to decrypt Deluge password');
+                        // Return basic stats instead of failing
+                        const stats = {
                             dl_info_speed: 0,
                             up_info_speed: 0,
                             dl_info_data: 0,
@@ -255,43 +258,58 @@ delugeRoute.get('/stats', async (req: Request, res: Response) => {
                                 paused: 0
                             },
                             decryptionError: true
-                        });
+                        };
+                        res.status(200).json(stats);
                         return;
                     }
                 }
 
                 // Attempt to login with provided credentials
-                const loginResponse = await axios.post(`${baseUrl}`,
-                    {
-                        method: 'auth.login',
-                        params: [password],
-                        id: 1
-                    },
-                    {
-                        headers: {
-                            'Content-Type': 'application/json'
-                        }
-                    });
+                try {
+                    const loginResponse = await axios.post(`${baseUrl}`,
+                        {
+                            method: 'auth.login',
+                            params: [password],
+                            id: 1
+                        },
+                        {
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            timeout: 5000 // 5 second timeout for connection
+                        });
 
-                // Store the cookie for future requests
-                if (loginResponse.data.result === true && loginResponse.headers['set-cookie']) {
-                    cookie = loginResponse.headers['set-cookie'][0];
-                    sessions[sessionId] = {
-                        cookie,
-                        expires: Date.now() + SESSION_LIFETIME,
-                        host,
-                        port,
-                        ssl
-                    };
+                    // Store the cookie for future requests
+                    if (loginResponse.data.result === true && loginResponse.headers['set-cookie']) {
+                        cookie = loginResponse.headers['set-cookie'][0];
+                        sessions[sessionId] = {
+                            cookie,
+                            expires: Date.now() + SESSION_LIFETIME,
+                            host,
+                            port,
+                            ssl
+                        };
+                        console.log('Deluge login successful, cookie stored');
+                    } else {
+                        console.log('Deluge login failed: Invalid credentials or response format');
+                    }
+                } catch (connErr: any) {
+                    if (connErr.code === 'ECONNREFUSED' || connErr.code === 'ETIMEDOUT' || connErr.code === 'ECONNABORTED') {
+                        console.log(`Deluge is offline ${baseUrl} - Connection error: ${connErr.code}`);
+                    } else {
+                        console.error('Deluge login error:', connErr.message);
+                    }
+                    // Continue without cookie - will return default stats
                 }
-            } catch (loginError: any) {
-                console.error('Deluge login attempt failed:', loginError.message);
+            } catch (loginErr: any) {
+                console.error('Deluge login attempt failed:', loginErr.message);
                 // Continue without cookie - will return default stats
             }
         }
 
         if (!cookie) {
             // If not authenticated and couldn't auto-login, provide basic response with empty/zero values
+            console.log(`No valid Deluge session for ${baseUrl}, returning empty stats`);
             const stats = {
                 dl_info_speed: 0,
                 up_info_speed: 0,
@@ -309,97 +327,108 @@ delugeRoute.get('/stats', async (req: Request, res: Response) => {
             return;
         }
 
-        // Get session status (download/upload speeds)
-        const sessionResponse = await axios.post(`${baseUrl}`,
-            {
-                method: 'web.update_ui',
-                params: [
-                    ['download_rate', 'upload_rate'],
-                    {}
-                ],
-                id: 2
-            },
-            {
-                headers: { Cookie: cookie }
-            });
-
-        // Get session totals data (total upload/download)
-        let totalDownload = 0;
-        let totalUpload = 0;
         try {
-            const sessionStatus = await axios.post(`${baseUrl}`,
+            // Get session status (download/upload speeds)
+            const sessionResponse = await axios.post(`${baseUrl}`,
                 {
-                    method: 'core.get_session_status',
+                    method: 'web.update_ui',
                     params: [
-                        ['total_upload', 'total_download', 'total_payload_upload', 'total_payload_download']
+                        ['download_rate', 'upload_rate'],
+                        {}
                     ],
-                    id: 4
+                    id: 2
+                },
+                {
+                    headers: { Cookie: cookie },
+                    timeout: 5000 // 5 second timeout
+                });
+
+            // Get session totals data (total upload/download)
+            let totalDownload = 0;
+            let totalUpload = 0;
+            try {
+                const sessionStatus = await axios.post(`${baseUrl}`,
+                    {
+                        method: 'core.get_session_status',
+                        params: [
+                            ['total_upload', 'total_download', 'total_payload_upload', 'total_payload_download']
+                        ],
+                        id: 4
+                    },
+                    {
+                        headers: { Cookie: cookie }
+                    });
+
+                // Extract values with fallbacks to 0
+                totalDownload = sessionStatus.data.result?.total_download || 0;
+                totalUpload = sessionStatus.data.result?.total_upload || 0;
+            } catch (sessionErr: any) {
+                console.error('Failed to get Deluge session totals:', sessionErr.message);
+                // Continue with zero values if this fails
+            }
+
+            // Format response to match qBittorrent structure
+            const stats = {
+                dl_info_speed: sessionResponse.data.result.stats.download_rate || 0,
+                up_info_speed: sessionResponse.data.result.stats.upload_rate || 0,
+                dl_info_data: totalDownload,
+                up_info_data: totalUpload,
+                torrents: {
+                    total: 0,
+                    downloading: 0,
+                    seeding: 0,
+                    completed: 0,
+                    paused: 0
+                }
+            };
+
+            // Get torrent list to count by status
+            const torrentsResponse = await axios.post(`${baseUrl}`,
+                {
+                    method: 'web.update_ui',
+                    params: [
+                        ['state', 'progress'],
+                        {}
+                    ],
+                    id: 3
                 },
                 {
                     headers: { Cookie: cookie }
                 });
 
-            // Extract values with fallbacks to 0
-            totalDownload = sessionStatus.data.result?.total_download || 0;
-            totalUpload = sessionStatus.data.result?.total_upload || 0;
-        } catch (error: any) {
-            console.error('Failed to get Deluge session totals:', error.message);
-            // Continue with zero values if this fails
-        }
+            // Count torrents by state
+            const torrents = torrentsResponse.data.result.torrents || {};
+            stats.torrents.total = Object.keys(torrents).length;
 
-        // Format response to match qBittorrent structure
-        const stats = {
-            dl_info_speed: sessionResponse.data.result.stats.download_rate || 0,
-            up_info_speed: sessionResponse.data.result.stats.upload_rate || 0,
-            dl_info_data: totalDownload,
-            up_info_data: totalUpload,
-            torrents: {
-                total: 0,
-                downloading: 0,
-                seeding: 0,
-                completed: 0,
-                paused: 0
-            }
-        };
+            Object.values(torrents).forEach((torrent: any) => {
+                const state = torrent.state.toLowerCase();
+                if (state === 'downloading') {
+                    stats.torrents.downloading++;
+                } else if (state === 'seeding') {
+                    stats.torrents.seeding++;
+                } else if (state === 'paused') {
+                    stats.torrents.paused++;
+                }
 
-        // Get torrent list to count by status
-        const torrentsResponse = await axios.post(`${baseUrl}`,
-            {
-                method: 'web.update_ui',
-                params: [
-                    ['state', 'progress'],
-                    {}
-                ],
-                id: 3
-            },
-            {
-                headers: { Cookie: cookie }
+                if (torrent.progress === 100) {
+                    stats.torrents.completed++;
+                }
             });
 
-        // Count torrents by state
-        const torrents = torrentsResponse.data.result.torrents || {};
-        stats.torrents.total = Object.keys(torrents).length;
-
-        Object.values(torrents).forEach((torrent: any) => {
-            const state = torrent.state.toLowerCase();
-            if (state === 'downloading') {
-                stats.torrents.downloading++;
-            } else if (state === 'seeding') {
-                stats.torrents.seeding++;
-            } else if (state === 'paused') {
-                stats.torrents.paused++;
+            res.status(200).json(stats);
+        } catch (apiErr: any) {
+            console.error('Deluge stats API error:', apiErr.message);
+            if (apiErr.code === 'ECONNREFUSED' || apiErr.code === 'ETIMEDOUT' || apiErr.code === 'ECONNABORTED') {
+                console.log(`Deluge is offline ${baseUrl}`);
             }
-
-            if (torrent.progress === 100) {
-                stats.torrents.completed++;
-            }
-        });
-
-        res.status(200).json(stats);
-    } catch (error: any) {
-        console.error('Deluge stats error:', error.message);
-        res.status(error.response?.status || 500).json({
-            error: error.response?.data || 'Failed to get Deluge stats'
+            res.status(apiErr.response?.status || 500).json({
+                error: apiErr.response?.data || 'Failed to get Deluge stats'
+            });
+        }
+    } catch (mainErr: any) {
+        console.error('Deluge stats general error:', mainErr.message);
+        res.status(mainErr.response?.status || 500).json({
+            error: mainErr.response?.data || 'Failed to get Deluge stats'
         });
     }
 });

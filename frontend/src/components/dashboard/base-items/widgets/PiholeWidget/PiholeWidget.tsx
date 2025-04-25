@@ -281,6 +281,9 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 } else if (err.response?.status === 400) {
                     setAuthFailed(true);
                     setError('Bad Request: Invalid configuration or authentication data');
+                } else if (err.response?.status === 429 || err.pihole?.code === 'TOO_MANY_REQUESTS') {
+                    setAuthFailed(true);
+                    setError('Too many requests to Pi-hole API. The default session expiration is 30 minutes. You can manually clear unused sessions or increase the max_sessions setting in Pi-hole.');
                 } else if (err.message?.includes('Network Error') || err.message?.includes('timeout')) {
                     // Network errors like timeouts or connection refused
                     setAuthFailed(true); // Use authFailed to prevent further requests
@@ -652,6 +655,9 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
             } else if (err.response?.status === 401 || err.response?.status === 403) {
                 setAuthFailed(true);
                 setError('Authentication failed. Please check your Pi-hole credentials in widget settings.');
+            } else if (err.response?.status === 429 || err.pihole?.code === 'TOO_MANY_REQUESTS') {
+                setAuthFailed(true);
+                setError('Too many requests to Pi-hole API. The default session expiration is 30 minutes. You can manually clear unused sessions or increase the max_sessions setting in Pi-hole.');
             } else if (err.message?.includes('Network Error') || err.message?.includes('timeout')) {
                 setAuthFailed(true);
                 setError(`Connection failed: ${err.message}. Please check if Pi-hole is running.`);
@@ -665,14 +671,13 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
     };
 
     // Handle enable blocking
-    const handleEnableBlocking = async () => {
-        if (!isConfigured || (!piholeConfig.apiToken && !piholeConfig.password)) return;
-
-        setIsDisablingBlocking(true);
-
+    const handleEnableBlocking = useCallback(async () => {
         try {
-            // Call the backend API to enable blocking
-            const result = await DashApi.enablePihole({
+            setIsLoading(true);
+            // Optimistically update UI
+            setIsBlocking(true);
+
+            await DashApi.enablePihole({
                 host: piholeConfig.host,
                 port: piholeConfig.port,
                 ssl: piholeConfig.ssl,
@@ -680,33 +685,14 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 password: piholeConfig.password
             });
 
-            if (result) {
-                // Set local state immediately for better UI responsiveness
-                setIsBlocking(true);
-                setDisableEndTime(null);
-                setRemainingTime('');
-
-                // Clear any existing timer
-                if (disableTimer) {
-                    clearTimeout(disableTimer);
-                    setDisableTimer(null);
-                }
-
-                // Also update stats for consistent state
-                setStats(prevStats => ({
-                    ...prevStats,
-                    status: 'enabled',
-                    timer: null
-                }));
-
-                // For Pi-hole v6, trigger an immediate status check
-                if (isPiholeV6) {
-                    checkPiholeStatus();
-                }
-            } else {
-                throw new Error('Failed to enable Pi-hole blocking');
-            }
+            setIsLoading(false);
+            // Fetch updated stats after enabling
+            await checkPiholeStatus();
         } catch (err: any) {
+            // On error, revert UI state
+            setIsBlocking(false);
+            setIsLoading(false);
+
             // Check if this is an authentication error that requires re-auth
             if (err.pihole?.requiresReauth) {
                 setAuthFailed(true);
@@ -714,6 +700,9 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
             } else if (err.response?.status === 401 || err.response?.status === 403) {
                 setAuthFailed(true);
                 setError('Authentication failed. Please check your Pi-hole credentials in widget settings.');
+            } else if (err.response?.status === 429 || err.pihole?.code === 'TOO_MANY_REQUESTS') {
+                setAuthFailed(true);
+                setError('Too many requests to Pi-hole API. The default session expiration is 30 minutes. You can manually clear unused sessions or increase the max_sessions setting in Pi-hole.');
             } else if (err.message?.includes('Network Error') || err.message?.includes('timeout')) {
                 setAuthFailed(true);
                 setError(`Connection failed: ${err.message}. Please check if Pi-hole is running.`);
@@ -721,10 +710,8 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 // Generic error
                 setError(err.message || 'Failed to enable Pi-hole blocking');
             }
-        } finally {
-            setIsDisablingBlocking(false);
         }
-    };
+    }, [piholeConfig, checkPiholeStatus]);
 
     // Clean up disable timer on unmount
     useEffect(() => {
