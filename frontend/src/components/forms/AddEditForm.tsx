@@ -82,6 +82,7 @@ type FormValues = {
     gauge1?: string;
     gauge2?: string;
     gauge3?: string;
+    networkInterface?: string;
 };
 
 interface LocationOption {
@@ -101,6 +102,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
     const [locationOptions, setLocationOptions] = useState<LocationOption[]>([]);
     const [selectedLocation, setSelectedLocation] = useState<LocationOption | null>(null);
     const [isSearching, setIsSearching] = useState(false);
+    const [networkInterfaces, setNetworkInterfaces] = useState<Array<{id: string, label: string}>>([]);
 
     // Initialize client type from existing item or default to qBittorrent
     const [torrentClientType, setTorrentClientType] = useState<string>(
@@ -186,6 +188,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             gauge1: existingItem?.config?.gauges?.[0] || 'cpu',
             gauge2: existingItem?.config?.gauges?.[1] || 'temp',
             gauge3: existingItem?.config?.gauges?.[2] || 'ram',
+            networkInterface: existingItem?.config?.networkInterface || '',
         });
     }, [existingItem, formContext]);
 
@@ -294,6 +297,46 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
         }
     }, [selectedLocation]);
 
+    // Fetch network interfaces for system monitor widget
+    useEffect(() => {
+        const fetchNetworkInterfaces = async () => {
+            if (selectedItemType === 'widget' && selectedWidgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET) {
+                try {
+                    const systemInfo = await DashApi.getSystemInformation();
+                    if (systemInfo && systemInfo.networkInterfaces && Array.isArray(systemInfo.networkInterfaces)) {
+                        // Get only the primary network interface that backend is using
+                        if (systemInfo.network?.iface) {
+                            // Just show the active interface being used by the system
+                            const activeInterface = {
+                                id: systemInfo.network.iface,
+                                label: systemInfo.network.iface
+                            };
+
+                            console.log('Active network interface:', activeInterface);
+                            setNetworkInterfaces([activeInterface]);
+
+                            // Set the form value to the active interface
+                            formContext.setValue('networkInterface', activeInterface.id);
+                        } else {
+                            console.log('No active network interface found');
+                            setNetworkInterfaces([]);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error fetching network interfaces:', error);
+                }
+            }
+        };
+
+        fetchNetworkInterfaces();
+    }, [
+        selectedItemType,
+        selectedWidgetType,
+        formContext.watch('gauge1'),
+        formContext.watch('gauge2'),
+        formContext.watch('gauge3')
+    ]);
+
     const handleCustomIconSelect = (file: File | null) => {
         setCustomIconFile(file);
     };
@@ -326,6 +369,11 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                 temperatureUnit: data.temperatureUnit || 'fahrenheit',
                 gauges: [data.gauge1, data.gauge2, data.gauge3]
             };
+
+            // Add network interface to config if a network gauge is included
+            if ([data.gauge1, data.gauge2, data.gauge3].includes('network') && data.networkInterface) {
+                (config as any).networkInterface = data.networkInterface;
+            }
         } else if (data.itemType === 'widget' && data.widgetType === ITEM_TYPE.PIHOLE_WIDGET) {
             // Encrypt the API token if needed
             let encryptedToken = data.piholeApiToken || '';
@@ -457,6 +505,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             gauge1: 'cpu',
             gauge2: 'temp',
             gauge3: 'ram',
+            networkInterface: '',
         });
 
         // This ensures that when the form is reopened, the initial effect will run and set values from existingItem
@@ -885,6 +934,54 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                                 inputLabel: { style: { color: theme.palette.text.primary } }
                                             }}
                                         />
+                                    </Grid>
+                                    <Grid>
+                                        {/* Network interface selection for System Monitor widget when network gauge is selected */}
+                                        {selectedItemType === 'widget' &&
+                                         selectedWidgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET &&
+                                         (formContext.watch('gauge1') === 'network' ||
+                                          formContext.watch('gauge2') === 'network' ||
+                                          formContext.watch('gauge3') === 'network') && (
+                                            <Grid>
+                                                <SelectElement
+                                                    label='Network Interface'
+                                                    name='networkInterface'
+                                                    options={networkInterfaces.length > 0 ? networkInterfaces : [{ id: '', label: 'No network interfaces available' }]}
+                                                    required
+                                                    fullWidth
+                                                    disabled={networkInterfaces.length === 0}
+                                                    sx={{
+                                                        '& .MuiOutlinedInput-root': {
+                                                            '& fieldset': {
+                                                                borderColor: 'text.primary',
+                                                            },
+                                                            '.MuiSvgIcon-root ': {
+                                                                fill: theme.palette.text.primary,
+                                                            },
+                                                            '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                                            '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                                        },
+                                                        width: '100%',
+                                                        minWidth: isMobile ? '50vw' :'20vw',
+                                                        mt: 2,
+                                                        '& .MuiMenuItem-root:hover': {
+                                                            backgroundColor: `${COLORS.LIGHT_GRAY_HOVER} !important`,
+                                                        },
+                                                        '& .MuiMenuItem-root.Mui-selected': {
+                                                            backgroundColor: `${theme.palette.primary.main} !important`,
+                                                            color: 'white',
+                                                        },
+                                                        '& .MuiMenuItem-root.Mui-selected:hover': {
+                                                            backgroundColor: `${theme.palette.primary.main} !important`,
+                                                            color: 'white',
+                                                        }
+                                                    }}
+                                                    slotProps={{
+                                                        inputLabel: { style: { color: theme.palette.text.primary } }
+                                                    }}
+                                                />
+                                            </Grid>
+                                        )}
                                     </Grid>
                                 </>
                             )}

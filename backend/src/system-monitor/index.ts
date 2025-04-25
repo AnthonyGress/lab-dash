@@ -2,7 +2,7 @@ import si, { Systeminformation } from 'systeminformation';
 
 import { SysteminformationResponse } from '../types/system-information-response';
 
-export const getSystemInfo = async (): Promise<SysteminformationResponse | null> => {
+export const getSystemInfo = async (networkInterface?: string): Promise<SysteminformationResponse | null> => {
     try {
         const results = await Promise.allSettled([
             si.cpu(),
@@ -42,29 +42,43 @@ export const getSystemInfo = async (): Promise<SysteminformationResponse | null>
         // Get the primary network interface - look for active interfaces first
         let network = null;
         if (networkInfo && networkInfo.length > 0) {
-            // First try to find a "real" interface with traffic (excluding loopback)
-            const activeInterface = networkInfo.find(iface =>
-                iface.operstate === 'up' &&
-                (iface.rx_sec > 0 || iface.tx_sec > 0) &&
-                !iface.iface.includes('lo') &&
-                !iface.iface.includes('loop'));
+            let selectedInterface;
 
-            // If no active interface found, get the first non-loopback up interface
-            const upInterface = !activeInterface
-                ? networkInfo.find(iface =>
+            // If a specific interface was requested, use it
+            if (networkInterface && networkInterfaces) {
+                // Find the specified interface in network stats
+                selectedInterface = networkInfo.find(iface =>
+                    iface.iface === networkInterface
+                );
+            }
+
+            // If no specific interface or it wasn't found, use the automatic selection logic
+            if (!selectedInterface) {
+                // First try to find a "real" interface with traffic (excluding loopback)
+                console.log(`Requested interface ${networkInterface} not found, falling back to automatic selection`);
+                const activeInterface = networkInfo.find(iface =>
                     iface.operstate === 'up' &&
+                    (iface.rx_sec > 0 || iface.tx_sec > 0) &&
                     !iface.iface.includes('lo') &&
-                    !iface.iface.includes('loop'))
-                : null;
+                    !iface.iface.includes('loop'));
 
-            // Use the best interface we found, or fall back to the first one as a last resort
-            const bestInterface = activeInterface || upInterface || networkInfo[0];
+                // If no active interface found, get the first non-loopback up interface
+                const upInterface = !activeInterface
+                    ? networkInfo.find(iface =>
+                        iface.operstate === 'up' &&
+                        !iface.iface.includes('lo') &&
+                        !iface.iface.includes('loop'))
+                    : null;
+
+                // Use the best interface we found, or fall back to the first one as a last resort
+                selectedInterface = activeInterface || upInterface || networkInfo[0];
+            }
 
             // Find the corresponding interface in networkInterfaces to get speed
             let speed = 0;
-            if (networkInterfaces && bestInterface) {
+            if (networkInterfaces && selectedInterface) {
                 const matchingInterface = networkInterfaces.find(
-                    ni => ni.iface === bestInterface.iface
+                    ni => ni.iface === selectedInterface.iface
                 );
 
                 if (matchingInterface && typeof matchingInterface.speed === 'number' && matchingInterface.speed > 0) {
@@ -73,10 +87,10 @@ export const getSystemInfo = async (): Promise<SysteminformationResponse | null>
             }
 
             network = {
-                rx_sec: bestInterface.rx_sec || 0,
-                tx_sec: bestInterface.tx_sec || 0,
-                iface: bestInterface.iface || '',
-                operstate: bestInterface.operstate || '',
+                rx_sec: selectedInterface.rx_sec || 0,
+                tx_sec: selectedInterface.tx_sec || 0,
+                iface: selectedInterface.iface || '',
+                operstate: selectedInterface.operstate || '',
                 speed
             };
 
@@ -84,7 +98,18 @@ export const getSystemInfo = async (): Promise<SysteminformationResponse | null>
             console.log('No network interfaces found');
         }
 
-        return { cpu, system, memory, disk, network };
+        // Include all network interfaces in the response for the UI to display options
+        const allNetworkInterfaces = networkInterfaces
+            ? networkInterfaces
+                .filter(iface => iface.operstate === 'up' && !iface.iface.includes('lo') && !iface.iface.includes('loop'))
+                .map(iface => ({
+                    iface: iface.iface,
+                    operstate: iface.operstate,
+                    speed: iface.speed || 0
+                }))
+            : [];
+
+        return { cpu, system, memory, disk, network, networkInterfaces: allNetworkInterfaces };
     } catch (e) {
         console.error('Error fetching system info:', e);
         return null;

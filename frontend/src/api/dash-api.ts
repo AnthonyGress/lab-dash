@@ -248,8 +248,10 @@ export class DashApi {
         }
     }
 
-    public static async getSystemInformation(): Promise<any> {
-        const res = await axios.get(`${BACKEND_URL}/api/system`);
+    public static async getSystemInformation(networkInterface?: string): Promise<any> {
+        const res = await axios.get(`${BACKEND_URL}/api/system`, {
+            params: networkInterface ? { networkInterface } : undefined
+        });
         if (res.status === StatusCodes.OK) {
             return res.data;
         }

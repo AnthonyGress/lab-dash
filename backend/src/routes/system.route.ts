@@ -46,9 +46,10 @@ const upload: multer.Multer = multer({
 
 const execAsync = promisify(exec);
 
-systemRoute.get('/', async (_req: Request, res: Response) => {
+systemRoute.get('/', async (req: Request, res: Response) => {
     try {
-        const response = await getSystemInfo();
+        const networkInterface = req.query.networkInterface as string | undefined;
+        const response = await getSystemInfo(networkInterface);
         if (response) {
             res.json(response);
         } else {

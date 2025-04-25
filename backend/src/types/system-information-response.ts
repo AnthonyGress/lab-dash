@@ -61,5 +61,10 @@ export type SysteminformationResponse = {
     operstate: string;
     speed?: number;
  } | null;
+ networkInterfaces?: Array<{
+    iface: string;
+    operstate: string;
+    speed: number;
+ }>;
 }
 
