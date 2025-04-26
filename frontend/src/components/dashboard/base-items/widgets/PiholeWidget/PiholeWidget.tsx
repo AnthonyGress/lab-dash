@@ -156,7 +156,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                             ssl: piholeConfig.ssl,
                             password: piholeConfig.password
                         },
-                        timeout: 5000
+                        timeout: 1000
                     });
 
                     if (response.data.success && response.data.data) {
