@@ -238,12 +238,12 @@ qbittorrentRoute.get('/stats', async (req: Request, res: Response) => {
         try {
             const transferInfo = await axios.get(`${baseUrl}/transfer/info`, {
                 headers: { Cookie: cookie },
-                timeout: 5000 // 5 second timeout
+                timeout: 1000
             });
 
             const torrentsMaindata = await axios.get(`${baseUrl}/torrents/info`, {
                 headers: { Cookie: cookie },
-                timeout: 5000 // 5 second timeout
+                timeout: 1000
             });
 
             // Count torrents by state
@@ -294,12 +294,12 @@ qbittorrentRoute.get('/stats', async (req: Request, res: Response) => {
                                 try {
                                     const transferInfo = await axios.get(`${baseUrl}/transfer/info`, {
                                         headers: { Cookie: newCookie },
-                                        timeout: 5000 // 5 second timeout
+                                        timeout: 1000
                                     });
 
                                     const torrentsMaindata = await axios.get(`${baseUrl}/torrents/info`, {
                                         headers: { Cookie: newCookie },
-                                        timeout: 5000 // 5 second timeout
+                                        timeout: 1000
                                     });
 
                                     // Count torrents by state

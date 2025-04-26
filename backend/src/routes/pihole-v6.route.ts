@@ -136,7 +136,7 @@ async function authenticatePihole(baseUrl: string, password: string): Promise<{ 
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                timeout: 5000
+                timeout: 1000
             }
         );
 
@@ -235,7 +235,7 @@ async function handleApiWith401Retry(
         const config = {
             params: { sid: authInfo.sid },
             headers: { 'X-FTL-CSRF': authInfo.csrf, 'Content-Type': 'application/json' },
-            timeout: 5000
+            timeout: 1000
         };
 
         // Make the API request based on the method
@@ -856,7 +856,7 @@ async function logoutPiholeSession(baseUrl: string, sid: string, csrf: string): 
                 'X-FTL-CSRF': csrf,
                 'Content-Type': 'application/json'
             },
-            timeout: 5000
+            timeout: 1000
         });
 
         console.log(`Successfully logged out Pi-hole session from ${baseUrl}`);

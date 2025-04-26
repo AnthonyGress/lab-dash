@@ -276,7 +276,7 @@ delugeRoute.get('/stats', async (req: Request, res: Response) => {
                             headers: {
                                 'Content-Type': 'application/json'
                             },
-                            timeout: 5000 // 5 second timeout for connection
+                            timeout: 1000
                         });
 
                     // Store the cookie for future requests
@@ -340,7 +340,7 @@ delugeRoute.get('/stats', async (req: Request, res: Response) => {
                 },
                 {
                     headers: { Cookie: cookie },
-                    timeout: 5000 // 5 second timeout
+                    timeout: 1000
                 });
 
             // Get session totals data (total upload/download)
