@@ -175,8 +175,8 @@ authRoute.post('/login', async (req: Request, res: Response) => {
         res.cookie('refresh_token', refreshToken, {
             httpOnly: true,
             secure: false,
-            sameSite: 'strict',
-            path: '/api/auth/refresh', // Restrict refresh token to auth refresh route
+            sameSite: 'lax',
+            path: '/',
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
         });
 
@@ -240,13 +240,6 @@ authRoute.post('/refresh', async (req: Request, res: Response) => {
                 res.clearCookie('refresh_token', {
                     httpOnly: true,
                     secure: false,
-                    sameSite: 'strict',
-                    path: '/api/auth/refresh'
-                });
-
-                res.clearCookie('refresh_token', {
-                    httpOnly: true,
-                    secure: false,
                     sameSite: 'lax',
                     path: '/'
                 });
@@ -299,13 +292,6 @@ authRoute.post('/refresh', async (req: Request, res: Response) => {
                 secure: false,
                 sameSite: 'lax',
                 path: '/'
-            });
-
-            res.clearCookie('refresh_token', {
-                httpOnly: true,
-                secure: false,
-                sameSite: 'strict',
-                path: '/api/auth/refresh'
             });
 
             res.clearCookie('refresh_token', {
@@ -409,14 +395,6 @@ authRoute.post('/logout', (req: Request, res: Response) => {
             path: '/'
         });
 
-        res.clearCookie('refresh_token', {
-            httpOnly: true,
-            secure: false,
-            sameSite: 'strict',
-            path: '/api/auth/refresh'
-        });
-
-        // Also clear the refresh_token cookie with the updated path from the refresh route
         res.clearCookie('refresh_token', {
             httpOnly: true,
             secure: false,

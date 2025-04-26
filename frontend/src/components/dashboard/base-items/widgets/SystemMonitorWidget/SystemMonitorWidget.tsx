@@ -363,9 +363,9 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                     {systemInformation?.network && (
                         <>
                             <Typography><b>Network Interface:</b> {systemInformation.network.iface}</Typography>
-                            <Typography>
+                            {/* <Typography>
                                 <b>Interface Speed:</b> {systemInformation.network.speed || 1000} Mbps
-                            </Typography>
+                            </Typography> */}
                             <Typography>
                                 <b>Upload Speed:</b> {formatNetworkSpeed(systemInformation.network.tx_sec).value} {formatNetworkSpeed(systemInformation.network.tx_sec).unit}
                             </Typography>
