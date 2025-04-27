@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 
 import { CenteredModal } from './CenteredModal';
+import { useAppContext } from '../../context/useAppContext';
+import { compareVersions } from '../../utils/updateChecker';
 import { getAppVersion } from '../../utils/version';
 
 interface GitHubRelease {
@@ -21,6 +23,7 @@ interface ReleaseInfo {
   version: string;
   notes: string;
   date: string;
+  isExactMatch?: boolean;
 }
 
 interface VersionModalProps {
@@ -31,12 +34,13 @@ interface VersionModalProps {
 export const VersionModal = ({ open, handleClose }: VersionModalProps) => {
     const [releaseInfo, setReleaseInfo] = useState<ReleaseInfo | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const { config, recentlyUpdated } = useAppContext();
 
     useEffect(() => {
         if (open) {
-            fetchCurrentVersionInfo();
+            fetchVersionInfo();
         }
-    }, [open]);
+    }, [open, config]);
 
     const cleanReleaseNotes = (body: string): string | null => {
         if (!body) return null;
@@ -81,11 +85,18 @@ export const VersionModal = ({ open, handleClose }: VersionModalProps) => {
         });
     };
 
-    const fetchCurrentVersionInfo = async () => {
+    // Normalize version strings by removing 'v' prefix
+    const normalizeVersion = (v: string): string => v.replace(/^v/, '');
+
+    const fetchVersionInfo = async () => {
         setIsLoading(true);
         try {
             // Get current app version
             const currentVersion = getAppVersion();
+
+            // Check if this is a "recently updated" situation where we need to show changes
+            const lastSeenVersion = config?.lastSeenVersion;
+            const showChanges = recentlyUpdated && lastSeenVersion && lastSeenVersion !== currentVersion;
 
             // Fetch all releases using fetch API
             const response = await fetch(
@@ -107,70 +118,158 @@ export const VersionModal = ({ open, handleClose }: VersionModalProps) => {
                 new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
             );
 
-            // Find the release that matches the current version (handle v prefix inconsistency)
-            const normalizedCurrentVersion = currentVersion.startsWith('v') ? currentVersion : `v${currentVersion}`;
-            const currentRelease = sortedReleases.find(release =>
-                release.tag_name === currentVersion ||
-                release.tag_name === normalizedCurrentVersion ||
-                release.tag_name.replace(/^v/, '') === currentVersion.replace(/^v/, '')
-            );
+            if (showChanges) {
+                // Handle showing changes between lastSeenVersion and currentVersion
+                const normalizedCurrentVersion = normalizeVersion(currentVersion);
+                const normalizedLastSeenVersion = normalizeVersion(lastSeenVersion);
 
-            if (currentRelease) {
-                const notes = cleanReleaseNotes(currentRelease.body || '');
-                if (notes) {
-                    setReleaseInfo({
-                        version: currentRelease.tag_name,
-                        notes,
-                        date: formatDate(currentRelease.published_at)
-                    });
-                } else {
-                    setReleaseInfo({
-                        version: currentRelease.tag_name,
-                        notes: 'No detailed release notes available for this version.',
-                        date: formatDate(currentRelease.published_at)
-                    });
-                }
-            } else {
-                // If exact match not found, try to find the closest release
-                const versionWithoutPrefix = currentVersion.replace(/^v/, '');
-
-                // Look for a release that contains the version number
-                const closestRelease = sortedReleases.find(release =>
-                    release.tag_name.includes(versionWithoutPrefix) ||
-                    release.tag_name.replace(/^v/, '').includes(versionWithoutPrefix)
+                // Find direct match for current version
+                const currentVersionRelease = sortedReleases.find(release =>
+                    normalizeVersion(release.tag_name) === normalizedCurrentVersion
                 );
 
-                if (closestRelease) {
-                    const notes = cleanReleaseNotes(closestRelease.body || '');
-                    if (notes) {
+                // Find the closest intermediate release if no exact match for current version
+                if (!currentVersionRelease) {
+                    // Find the most recent release that's newer than lastSeenVersion
+                    // This handles the case when the exact current version isn't in GitHub releases
+                    const closestRelease = sortedReleases.find(release =>
+                        compareVersions(normalizeVersion(release.tag_name), normalizedLastSeenVersion) > 0
+                    );
+
+                    if (closestRelease) {
+                        const notes = cleanReleaseNotes(closestRelease.body || '');
                         setReleaseInfo({
                             version: closestRelease.tag_name,
+                            notes: notes || `Changes between ${lastSeenVersion} and ${currentVersion} could not be found. Showing the latest available changelog.`,
+                            date: formatDate(closestRelease.published_at),
+                            isExactMatch: false
+                        });
+                    } else {
+                        // No releases found after lastSeenVersion, show latest available changelog
+                        const latestRelease = sortedReleases[0]; // Already sorted newest first
+                        if (latestRelease) {
+                            const notes = cleanReleaseNotes(latestRelease.body || '');
+                            setReleaseInfo({
+                                version: latestRelease.tag_name,
+                                notes: notes || 'No detailed release notes available.',
+                                date: formatDate(latestRelease.published_at),
+                                isExactMatch: false
+                            });
+                        } else {
+                            // No releases found at all
+                            setReleaseInfo({
+                                version: currentVersion,
+                                notes: 'No changelog information available.',
+                                date: new Date().toLocaleDateString(),
+                                isExactMatch: false
+                            });
+                        }
+                    }
+                } else {
+                    // We found an exact match for the current version
+                    const notes = cleanReleaseNotes(currentVersionRelease.body || '');
+                    if (notes) {
+                        setReleaseInfo({
+                            version: currentVersionRelease.tag_name,
                             notes,
-                            date: formatDate(closestRelease.published_at)
+                            date: formatDate(currentVersionRelease.published_at),
+                            isExactMatch: true
+                        });
+                    } else {
+                        // Found current version but no detailed notes, show latest available changelog
+                        const latestRelease = sortedReleases[0]; // Already sorted newest first
+                        if (latestRelease && latestRelease.tag_name !== currentVersionRelease.tag_name) {
+                            const latestNotes = cleanReleaseNotes(latestRelease.body || '');
+                            setReleaseInfo({
+                                version: latestRelease.tag_name,
+                                notes: latestNotes || 'No detailed release notes available.',
+                                date: formatDate(latestRelease.published_at),
+                                isExactMatch: false
+                            });
+                        } else {
+                            // No other releases to show
+                            setReleaseInfo({
+                                version: currentVersionRelease.tag_name,
+                                notes: 'No changelog information available for this version.',
+                                date: formatDate(currentVersionRelease.published_at),
+                                isExactMatch: false
+                            });
+                        }
+                    }
+                }
+            } else {
+                // Default behavior - just show current version notes
+                // Find the release that matches the current version (handle v prefix inconsistency)
+                const normalizedCurrentVersion = currentVersion.startsWith('v') ? currentVersion : `v${currentVersion}`;
+                const currentRelease = sortedReleases.find(release =>
+                    release.tag_name === currentVersion ||
+                    release.tag_name === normalizedCurrentVersion ||
+                    release.tag_name.replace(/^v/, '') === currentVersion.replace(/^v/, '')
+                );
+
+                if (currentRelease) {
+                    const notes = cleanReleaseNotes(currentRelease.body || '');
+                    if (notes) {
+                        setReleaseInfo({
+                            version: currentRelease.tag_name,
+                            notes,
+                            date: formatDate(currentRelease.published_at),
+                            isExactMatch: true
                         });
                     } else {
                         setReleaseInfo({
-                            version: closestRelease.tag_name,
+                            version: currentRelease.tag_name,
                             notes: 'No detailed release notes available for this version.',
-                            date: formatDate(closestRelease.published_at)
+                            date: formatDate(currentRelease.published_at),
+                            isExactMatch: false
                         });
                     }
-                } else if (sortedReleases.length > 0) {
-                    // Fallback to the most recent release if no match is found
-                    const latestRelease = sortedReleases[0];
-                    const notes = cleanReleaseNotes(latestRelease.body || '');
-
-                    setReleaseInfo({
-                        version: latestRelease.tag_name,
-                        notes: notes || 'No detailed release notes available.',
-                        date: formatDate(latestRelease.published_at)
-                    });
                 } else {
-                    setReleaseInfo({
-                        version: currentVersion,
-                        notes: 'Release notes not found for this version.',
-                        date: 'N/A'
-                    });
+                    // If exact match not found, try to find the closest release
+                    const versionWithoutPrefix = currentVersion.replace(/^v/, '');
+
+                    // Look for a release that contains the version number
+                    const closestRelease = sortedReleases.find(release =>
+                        release.tag_name.includes(versionWithoutPrefix) ||
+                        release.tag_name.replace(/^v/, '').includes(versionWithoutPrefix)
+                    );
+
+                    if (closestRelease) {
+                        const notes = cleanReleaseNotes(closestRelease.body || '');
+                        if (notes) {
+                            setReleaseInfo({
+                                version: closestRelease.tag_name,
+                                notes,
+                                date: formatDate(closestRelease.published_at),
+                                isExactMatch: false
+                            });
+                        } else {
+                            setReleaseInfo({
+                                version: closestRelease.tag_name,
+                                notes: 'No detailed release notes available for this version.',
+                                date: formatDate(closestRelease.published_at),
+                                isExactMatch: false
+                            });
+                        }
+                    } else if (sortedReleases.length > 0) {
+                        // Fallback to the most recent release if no match is found
+                        const latestRelease = sortedReleases[0];
+                        const notes = cleanReleaseNotes(latestRelease.body || '');
+
+                        setReleaseInfo({
+                            version: latestRelease.tag_name,
+                            notes: notes || 'No detailed release notes available.',
+                            date: formatDate(latestRelease.published_at),
+                            isExactMatch: false
+                        });
+                    } else {
+                        setReleaseInfo({
+                            version: currentVersion,
+                            notes: 'Release notes not found for this version.',
+                            date: 'N/A',
+                            isExactMatch: false
+                        });
+                    }
                 }
             }
         } catch (error) {
@@ -178,15 +277,24 @@ export const VersionModal = ({ open, handleClose }: VersionModalProps) => {
             setReleaseInfo({
                 version: getAppVersion(),
                 notes: 'Unable to fetch release notes. Check your connection or try again later.',
-                date: 'N/A'
+                date: 'N/A',
+                isExactMatch: false
             });
         } finally {
             setIsLoading(false);
         }
     };
 
+    // Dynamic title based on whether we're showing update changelog
+    const getTitle = () => {
+        if (recentlyUpdated && config?.lastSeenVersion) {
+            return 'Update Information';
+        }
+        return 'Current Version';
+    };
+
     return (
-        <CenteredModal open={open} handleClose={handleClose} title='Current Version'>
+        <CenteredModal open={open} handleClose={handleClose} title={getTitle()}>
             <Box sx={{ p: 2 }}>
                 <Typography variant='h6' gutterBottom>
                     Version {getAppVersion()}
@@ -202,11 +310,15 @@ export const VersionModal = ({ open, handleClose }: VersionModalProps) => {
                             Release Notes:
                         </Typography>
                         <Box sx={{ mb: 2 }}>
-                            {releaseInfo.version !== getAppVersion() &&
-                             releaseInfo.version !== `v${getAppVersion()}` &&
-                             `v${releaseInfo.version}` !== getAppVersion() && (
+                            {(!releaseInfo.isExactMatch ||
+                              releaseInfo.version !== getAppVersion() &&
+                              releaseInfo.version !== `v${getAppVersion()}` &&
+                              `v${releaseInfo.version}` !== getAppVersion()) && (
                                 <Typography variant='body2' color='warning.main' sx={{ mb: 1 }}>
-                                    Showing notes from version {releaseInfo.version}
+                                    {recentlyUpdated && config?.lastSeenVersion
+                                        ? `Showing notes from version ${releaseInfo.version} (updated from v${config.lastSeenVersion})`
+                                        : `Showing notes from version ${releaseInfo.version}`
+                                    }
                                 </Typography>
                             )}
                             <Typography variant='subtitle2' fontWeight='bold'>

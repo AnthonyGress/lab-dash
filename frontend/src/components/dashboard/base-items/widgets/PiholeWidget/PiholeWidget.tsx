@@ -565,39 +565,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
         setDisableMenuAnchor(null);
 
         try {
-            // Immediately update UI state for better responsiveness
-            setIsBlocking(false);
-
-            // For timed disables, immediately set up the timer view
-            if (seconds !== null) {
-                const endTime = new Date();
-                endTime.setSeconds(endTime.getSeconds() + seconds);
-                setDisableEndTime(endTime);
-
-                // Calculate and set remaining time immediately
-                const diffSec = seconds;
-                const minutes = Math.floor(diffSec / 60);
-                const secs = diffSec % 60;
-                setRemainingTime(`${minutes}:${secs.toString().padStart(2, '0')}`);
-
-                // Update stats with timer
-                setStats(prevStats => ({
-                    ...prevStats,
-                    status: 'disabled',
-                    timer: seconds
-                }));
-            } else {
-                // For indefinite disables, clear timer
-                setDisableEndTime(null);
-                setRemainingTime('');
-
-                // Update stats for indefinite disable
-                setStats(prevStats => ({
-                    ...prevStats,
-                    status: 'disabled',
-                    timer: null
-                }));
-            }
+            // Don't update UI state here - wait for API call to complete
 
             // Call the backend API to disable blocking
             const result = await DashApi.disablePihole(
@@ -612,13 +580,47 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
             );
 
             if (result) {
+                // Only update UI after successful API call
+                setIsBlocking(false);
+
+                // For timed disables, set up the timer view
+                if (seconds !== null) {
+                    const endTime = new Date();
+                    endTime.setSeconds(endTime.getSeconds() + seconds);
+                    setDisableEndTime(endTime);
+
+                    // Calculate and set remaining time immediately
+                    const diffSec = seconds;
+                    const minutes = Math.floor(diffSec / 60);
+                    const secs = diffSec % 60;
+                    setRemainingTime(`${minutes}:${secs.toString().padStart(2, '0')}`);
+
+                    // Update stats with timer
+                    setStats(prevStats => ({
+                        ...prevStats,
+                        status: 'disabled',
+                        timer: seconds
+                    }));
+                } else {
+                    // For indefinite disables, clear timer
+                    setDisableEndTime(null);
+                    setRemainingTime('');
+
+                    // Update stats for indefinite disable
+                    setStats(prevStats => ({
+                        ...prevStats,
+                        status: 'disabled',
+                        timer: null
+                    }));
+                }
+
                 // For Pi-hole v6, trigger an immediate status check
                 if (isPiholeV6) {
                     checkPiholeStatus();
                 } else {
                     // For Pi-hole v5, handle the local timer
                     if (seconds !== null) {
-                    // Clear any existing timer
+                        // Clear any existing timer
                         if (disableTimer) {
                             clearTimeout(disableTimer);
                         }
@@ -643,7 +645,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 throw new Error('Failed to disable Pi-hole blocking');
             }
         } catch (err: any) {
-            // On error, revert UI state
+            // Error handling remains the same
             setIsBlocking(true);
             setDisableEndTime(null);
             setRemainingTime('');
@@ -672,11 +674,14 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
 
     // Handle enable blocking
     const handleEnableBlocking = useCallback(async () => {
+        if (isDisablingBlocking) return; // Prevent action if we're already handling a state change
+
+        setIsDisablingBlocking(true); // Use the same lock for enable operations
+
         try {
             setIsLoading(true);
-            // Optimistically update UI
-            setIsBlocking(true);
 
+            // Call API first, don't update UI state optimistically
             await DashApi.enablePihole({
                 host: piholeConfig.host,
                 port: piholeConfig.port,
@@ -684,6 +689,17 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 apiToken: piholeConfig.apiToken,
                 password: piholeConfig.password
             });
+
+            // Only update UI after successful API call
+            setIsBlocking(true);
+            setDisableEndTime(null);
+            setRemainingTime('');
+
+            // Clear any disable timer
+            if (disableTimer) {
+                clearTimeout(disableTimer);
+                setDisableTimer(null);
+            }
 
             setIsLoading(false);
             // Fetch updated stats after enabling
@@ -710,8 +726,10 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 // Generic error
                 setError(err.message || 'Failed to enable Pi-hole blocking');
             }
+        } finally {
+            setIsDisablingBlocking(false);
         }
-    }, [piholeConfig, checkPiholeStatus]);
+    }, [piholeConfig, checkPiholeStatus, disableTimer, isDisablingBlocking]);
 
     // Clean up disable timer on unmount
     useEffect(() => {
@@ -995,6 +1013,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                             height: 25,
                             fontSize: '0.7rem',
                             color: 'white',
+                            minWidth: '80px', // Add fixed minimum width to prevent size changes
                             '&:hover': {
                                 backgroundColor: 'rgba(255, 255, 255, 0.1)'
                             },

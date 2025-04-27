@@ -213,14 +213,14 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                                 width: '100%',
                                 height: '70%', // Use most of the gauge height
                                 pt: 0.5,
-                                ml: -5.75
+                                ml: -4.75
                             }}>
                                 {/* Container for both rows with fixed width icon column */}
                                 <Box sx={{
                                     display: 'grid',
-                                    gridTemplateColumns: '16px 1fr',
+                                    gridTemplateColumns: '24px minmax(40px, 1fr)', // Fixed width for icon column and minimum width for text
                                     width: '80%', // Increased width for more text space
-                                    gap: 0.25,
+                                    gap: 0.2,
                                     alignItems: 'center'
                                 }}>
                                     {/* Upload row */}
@@ -228,7 +228,8 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                                         display: 'flex',
                                         justifyContent: 'center',
                                         alignItems: 'center',
-                                        height: '100%'
+                                        height: '100%',
+                                        width: '24px', // Fixed width
                                     }}>
                                         <ArrowUpward sx={{ color: 'text.primary', fontSize: { xs: 13, sm: 14, md: 17, lg: 17, xl: 18 }  }} />
                                     </Box>
@@ -236,7 +237,8 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                                         display: 'flex',
                                         justifyContent: 'flex-start',
                                         alignItems: 'center',
-                                        width: '100%'
+                                        width: '100%',
+                                        minWidth: '40px' // Minimum width to prevent resizing
                                     }}>
                                         <Typography
                                             fontWeight='medium'
@@ -246,7 +248,7 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                                                 lineHeight: 1.2,
                                                 whiteSpace: 'nowrap',
                                                 display: 'block',
-                                                ml: { lg: 0.4 }
+
                                             }}
                                         >
                                             {formatNumberForDisplay(uploadSpeed.value)} {uploadSpeed.unit.replace('/s', '')}
@@ -258,7 +260,8 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                                         display: 'flex',
                                         justifyContent: 'center',
                                         alignItems: 'center',
-                                        height: '100%'
+                                        height: '100%',
+                                        width: '24px', // Fixed width
                                     }}>
                                         <ArrowDownward sx={{ color: 'text.primary', fontSize: { xs: 13, sm: 14, md: 17, lg: 17, xl: 18 } }} />
                                     </Box>
@@ -266,7 +269,8 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                                         display: 'flex',
                                         justifyContent: 'flex-start',
                                         alignItems: 'center',
-                                        width: '100%'
+                                        width: '100%',
+                                        minWidth: '40px' // Minimum width to prevent resizing
                                     }}>
                                         <Typography
                                             fontWeight='medium'
@@ -276,7 +280,6 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                                                 lineHeight: 1.2,
                                                 whiteSpace: 'nowrap',
                                                 display: 'block',
-                                                ml: { lg: 0.4 }
                                             }}
                                         >
                                             {formatNumberForDisplay(downloadSpeed.value)} {downloadSpeed.unit.replace('/s', '')}
