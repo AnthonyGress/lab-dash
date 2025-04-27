@@ -133,6 +133,21 @@ export const theme = createTheme({
                 }
             }
         },
+        MuiIconButton: {
+            styleOverrides: {
+                root: {
+                    '&:hover': {
+                        '@media (hover: hover)': {
+                            backgroundColor: 'rgba(255, 255, 255, 0.08)'
+                        }
+                    },
+                    '&:active': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                        transition: 'background-color 0.1s ease-out'
+                    }
+                }
+            }
+        },
         // Style check icons in StepLabel component
         MuiStepIcon: {
             styleOverrides: {
