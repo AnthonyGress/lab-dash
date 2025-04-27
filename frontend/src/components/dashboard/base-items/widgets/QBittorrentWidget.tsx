@@ -66,6 +66,8 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
     }, [loginCredentials]);
 
     const fetchStats = useCallback(async () => {
+        if (!isAuthenticated) return;
+
         try {
             const connectionInfo = {
                 host: loginCredentials.host,
@@ -92,9 +94,11 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
                 setAuthError('Session expired. Please login again.');
             }
         }
-    }, [loginCredentials]);
+    }, [loginCredentials, isAuthenticated]);
 
     const fetchTorrents = useCallback(async () => {
+        if (!isAuthenticated) return;
+
         try {
             const connectionInfo = {
                 host: loginCredentials.host,
@@ -136,7 +140,7 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
                 setAuthError('Session expired. Please login again.');
             }
         }
-    }, [loginCredentials, config?.maxDisplayedTorrents]);
+    }, [loginCredentials, config?.maxDisplayedTorrents, isAuthenticated]);
 
     // Handle input changes
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -147,27 +151,29 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
         }));
     };
 
-    // Auto-login when username and password are available
+    // Auto-login when username and password are available and not authenticated
     useEffect(() => {
-        if (config?.username && config?.password) {
+        if (config?.username && config?.password && !isAuthenticated) {
             handleLogin();
         }
-    }, [config, handleLogin]);
+    }, [config, handleLogin, isAuthenticated]);
 
     // Refresh stats and torrents periodically
     useEffect(() => {
-        // Refresh both stats and torrents when the component mounts
-        fetchStats();
-        fetchTorrents();
-
-        // Set up periodic refresh
-        const interval = setInterval(() => {
+        // Only fetch data if authenticated
+        if (isAuthenticated) {
             fetchStats();
             fetchTorrents();
-        }, 5000); // Fixed interval of 5000ms as specified
 
-        return () => clearInterval(interval);
-    }, [fetchStats, fetchTorrents]);
+            // Set up periodic refresh
+            const interval = setInterval(() => {
+                fetchStats();
+                fetchTorrents();
+            }, 5000); // Fixed interval of 5000ms as specified
+
+            return () => clearInterval(interval);
+        }
+    }, [fetchStats, fetchTorrents, isAuthenticated]);
 
     // Torrent actions
     const handleStartTorrent = useCallback(async (hash: string) => {

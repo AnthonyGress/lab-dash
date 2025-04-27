@@ -8,6 +8,7 @@ import { initialItems } from '../constants/constants';
 import { theme } from '../theme/theme';
 import { Config, DashboardItem, DashboardLayout, NewItem } from '../types';
 import { checkForUpdates } from '../utils/updateChecker';
+import { getAppVersion } from '../utils/version';
 
 type Props = {
     children: ReactNode
@@ -30,6 +31,9 @@ export const AppContextProvider = ({ children }: Props) => {
     const [updateAvailable, setUpdateAvailable] = useState<boolean>(false);
     const [latestVersion, setLatestVersion] = useState<string | null>(null);
     const [releaseUrl, setReleaseUrl] = useState<string | null>(null);
+
+    // Recently updated states
+    const [recentlyUpdated, setRecentlyUpdated] = useState<boolean>(false);
 
     // Initialize authentication state and check if first time setup
     useEffect(() => {
@@ -68,7 +72,7 @@ export const AppContextProvider = ({ children }: Props) => {
             await checkForAppUpdates();
 
             // Set interval to check every 6 hours (6 * 60 * 60 * 1000 ms)
-            const intervalId = setInterval(checkForAppUpdates, 60 * 60 * 1000);
+            const intervalId = setInterval(checkForAppUpdates, 6 * 60 * 60 * 1000);
 
             // Clear interval on component unmount
             return () => clearInterval(intervalId);
@@ -76,6 +80,29 @@ export const AppContextProvider = ({ children }: Props) => {
 
         checkUpdatesPeriodically();
     }, []);
+
+    // Check if the app was recently updated
+    useEffect(() => {
+        const checkForRecentUpdate = async () => {
+            // Only proceed if we have the config
+            if (!config) return;
+
+            const currentVersion = getAppVersion();
+
+            // Get the last seen version from config, may be undefined
+            const lastSeenVersion = config.lastSeenVersion;
+
+            // If no stored version, or versions differ, the app was updated
+            if (!lastSeenVersion || lastSeenVersion !== currentVersion) {
+                console.log('App was updated from', lastSeenVersion, 'to', currentVersion);
+                setRecentlyUpdated(true);
+            } else {
+                setRecentlyUpdated(false);
+            }
+        };
+
+        checkForRecentUpdate();
+    }, [config]);
 
     // Function to check for updates
     const checkForAppUpdates = async () => {
@@ -88,6 +115,23 @@ export const AppContextProvider = ({ children }: Props) => {
 
         } catch (error) {
             console.error('Error checking for updates:', error);
+        }
+    };
+
+    // Function to mark the current version as viewed
+    const handleVersionViewed = async (): Promise<void> => {
+        if (!isAdmin) return; // Only admins can update config
+
+        try {
+            const currentVersion = getAppVersion();
+
+            // Update config with the current version as last seen
+            await updateConfig({ lastSeenVersion: currentVersion });
+
+            // Update local state
+            setRecentlyUpdated(false);
+        } catch (error) {
+            console.error('Error updating last seen version:', error);
         }
     };
 
@@ -362,31 +406,36 @@ export const AppContextProvider = ({ children }: Props) => {
     return (
         <Provider value={{
             dashboardLayout,
+            setDashboardLayout,
             refreshDashboard,
             saveLayout,
             addItem,
-            setDashboardLayout,
             updateItem,
             editMode,
             setEditMode,
             config,
             updateConfig,
+            // Authentication states
             isLoggedIn,
             setIsLoggedIn,
             username,
             setUsername,
+            isAdmin,
+            setIsAdmin,
             isFirstTimeSetup,
             setIsFirstTimeSetup,
             setupComplete,
             setSetupComplete,
             checkIfUsersExist,
-            isAdmin,
-            setIsAdmin,
             checkLoginStatus,
+            // Update states
             updateAvailable,
             latestVersion,
             releaseUrl,
-            checkForAppUpdates
+            checkForAppUpdates,
+            // Recently updated states
+            recentlyUpdated,
+            handleVersionViewed
         }}>
             {children}
         </Provider>

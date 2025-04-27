@@ -2,7 +2,13 @@ export type Config = {
     layout: {
         desktop: DashboardItem[];
         mobile: DashboardItem[];
-    }
+    },
+    title?: string;
+    backgroundImage?: string;
+    search?: boolean;
+    searchProvider?: string;
+    isSetupComplete?: boolean;
+    lastSeenVersion?: string;
 }
 
 export type DashboardLayout = {

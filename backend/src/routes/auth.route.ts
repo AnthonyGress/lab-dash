@@ -67,6 +67,20 @@ const generateRefreshToken = (username: string): string => {
     return jwt.sign({ username }, REFRESH_TOKEN_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRY });
 };
 
+// Helper to get refresh token expiration date
+const getTokenExpiration = (token: string): Date | null => {
+    try {
+        const decoded = jwt.decode(token) as { exp: number } | null;
+        if (decoded && decoded.exp) {
+            return new Date(decoded.exp * 1000);
+        }
+        return null;
+    } catch (err) {
+        console.error('Failed to decode token for expiration check:', err);
+        return null;
+    }
+};
+
 // Signup route
 authRoute.post('/signup', async (req: Request, res: Response) => {
     try {
@@ -161,8 +175,8 @@ authRoute.post('/login', async (req: Request, res: Response) => {
         res.cookie('refresh_token', refreshToken, {
             httpOnly: true,
             secure: false,
-            sameSite: 'strict',
-            path: '/api/auth/refresh', // Restrict refresh token to auth refresh route
+            sameSite: 'lax',
+            path: '/',
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
         });
 
@@ -182,22 +196,59 @@ authRoute.post('/login', async (req: Request, res: Response) => {
 // Refresh token route
 authRoute.post('/refresh', async (req: Request, res: Response) => {
     try {
-        // console.log('Refresh token request received, cookies:', req.cookies);
+        console.log('Refresh token request received');
 
         // Get refresh token from cookie
         const refreshToken = req.cookies?.refresh_token;
 
         if (!refreshToken) {
+            console.log('No refresh token in cookies');
             res.status(400).json({ message: 'Refresh token is required' });
             return;
         }
 
+        // Check token expiration date
+        const expirationDate = getTokenExpiration(refreshToken);
+        if (expirationDate) {
+            const now = new Date();
+            const timeLeft = expirationDate.getTime() - now.getTime();
+            const minutesLeft = Math.floor(timeLeft / (1000 * 60));
+            console.log(`Token expiration date: ${expirationDate.toISOString()}, ${minutesLeft} minutes left`);
+        }
+
         // Verify refresh token
         let decoded: any;
+        let tokenExpired = false;
+
         try {
             decoded = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET) as { username: string };
-        } catch (err) {
-            res.status(401).json({ message: 'Invalid refresh token' });
+            console.log('Refresh token verified for username');
+        } catch (err: any) {
+            tokenExpired = err.name === 'TokenExpiredError';
+            console.log('Token verification failed:', err.name, err.message);
+
+            if (tokenExpired) {
+                console.log('Refresh token expired, clearing cookies');
+                // Clear the cookies with all necessary options
+                res.clearCookie('access_token', {
+                    httpOnly: true,
+                    secure: false,
+                    sameSite: 'lax',
+                    path: '/'
+                });
+
+                res.clearCookie('refresh_token', {
+                    httpOnly: true,
+                    secure: false,
+                    sameSite: 'lax',
+                    path: '/'
+                });
+
+                console.log('Cookies cleared on server due to expired token');
+                res.status(401).json({ message: 'Refresh token expired' });
+            } else {
+                res.status(401).json({ message: 'Invalid refresh token' });
+            }
             return;
         }
 
@@ -209,6 +260,16 @@ authRoute.post('/refresh', async (req: Request, res: Response) => {
         );
 
         if (userIndex === -1) {
+            console.log('Refresh token not found in user record');
+
+            // Check if the user exists at all
+            const userExists = users.some(user => user.username === decoded.username);
+            if (userExists) {
+                console.log('User exists but token is not in their refresh token list. Possible token reuse or database modification.');
+            } else {
+                console.log('User does not exist in database. User may have been deleted or database reset.');
+            }
+
             // If token is not found, clean up any potentially invalid tokens
             if (refreshToken) {
                 // Find and remove the refresh token
@@ -236,23 +297,18 @@ authRoute.post('/refresh', async (req: Request, res: Response) => {
             res.clearCookie('refresh_token', {
                 httpOnly: true,
                 secure: false,
-                sameSite: 'strict',
-                path: '/api/auth/refresh'
-            });
-
-            res.clearCookie('refresh_token', {
-                httpOnly: true,
-                secure: false,
                 sameSite: 'lax',
                 path: '/'
             });
 
-            console.log('Cookies cleared on server');
+            console.log('Cookies cleared on server due to token not found in user record');
 
             // Send response AFTER clearing cookies, not before
             res.status(401).json({ message: 'Refresh token not found' });
             return;
         }
+
+        console.log('Found valid refresh token for user');
 
         // Generate new access token
         const newAccessToken = generateAccessToken(decoded.username, users[userIndex].role);
@@ -291,7 +347,7 @@ authRoute.post('/refresh', async (req: Request, res: Response) => {
         });
         writeUsers(updatedUsers);
 
-        console.log('New access token set successfully');
+        console.log('New access token set successfully for user');
 
         // Return success message with user role information
         res.json({
@@ -311,11 +367,13 @@ authRoute.post('/logout', (req: Request, res: Response) => {
         const refreshToken = req.cookies?.refresh_token;
 
         if (refreshToken) {
+            console.log('Logout request with valid refresh token');
             // Find and remove the refresh token
             const users = readUsers();
 
             const updatedUsers = users.map(user => {
                 if (user.refreshTokens?.includes(refreshToken)) {
+                    console.log('Removing refresh token from user:', user.username);
                     return {
                         ...user,
                         refreshTokens: user.refreshTokens.filter(token => token !== refreshToken)
@@ -325,6 +383,8 @@ authRoute.post('/logout', (req: Request, res: Response) => {
             });
 
             writeUsers(updatedUsers);
+        } else {
+            console.log('Logout request without refresh token');
         }
 
         // Clear the cookies with all necessary options
@@ -338,19 +398,11 @@ authRoute.post('/logout', (req: Request, res: Response) => {
         res.clearCookie('refresh_token', {
             httpOnly: true,
             secure: false,
-            sameSite: 'strict',
-            path: '/api/auth/refresh'
-        });
-
-        // Also clear the refresh_token cookie with the updated path from the refresh route
-        res.clearCookie('refresh_token', {
-            httpOnly: true,
-            secure: false,
             sameSite: 'lax',
             path: '/'
         });
 
-        console.log('Cookies cleared on server');
+        console.log('Auth cookies cleared by server');
         res.json({ message: 'Logged out successfully' });
     } catch (error) {
         console.error('Logout error:', error);

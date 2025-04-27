@@ -7,8 +7,19 @@ import { decrypt, encrypt, isEncrypted } from '../utils/crypto';
 
 export const qbittorrentRoute = Router();
 
-// Store auth cookies for qBittorrent sessions
-const sessions: Record<string, string> = {};
+// Store auth cookies for qBittorrent sessions with expiration timestamps
+interface SessionInfo {
+    cookie: string;
+    expires: number; // Timestamp when the session expires
+    username?: string;
+    password?: string; // Store encrypted password for auto-renewal
+}
+
+// Store sessions with expiration info
+const sessions: Record<string, SessionInfo> = {};
+
+// qBittorrent sessions typically last about 30 minutes
+const SESSION_LIFETIME = 25 * 60 * 1000; // 25 minutes in milliseconds
 
 const getBaseUrl = (req: Request): string => {
     const host = req.query.host as string || 'localhost';
@@ -18,10 +29,112 @@ const getBaseUrl = (req: Request): string => {
     return `${protocol}://${host}:${port}/api/v2`;
 };
 
+// Function to authenticate with qBittorrent API
+async function authenticateQBittorrent(baseUrl: string, username: string, password: string): Promise<string | null> {
+    try {
+        // Handle encrypted password
+        let decryptedPassword = password;
+        if (isEncrypted(password)) {
+            decryptedPassword = decrypt(password);
+            // Check if decryption failed
+            if (!decryptedPassword) {
+                console.warn('Failed to decrypt qBittorrent password for authentication');
+                return null;
+            }
+        }
+
+        const response = await axios.post(`${baseUrl}/auth/login`,
+            qs.stringify({ username, password: decryptedPassword }),
+            {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            });
+
+        // Return cookie if login successful
+        if (response.headers['set-cookie'] && response.headers['set-cookie'].length > 0) {
+            return response.headers['set-cookie'][0];
+        }
+        return null;
+    } catch (error) {
+        console.error('qBittorrent authentication error:', error);
+        return null;
+    }
+}
+
+// Function to check and renew session if needed
+async function ensureValidSession(req: Request): Promise<string | null> {
+    const baseUrl = getBaseUrl(req);
+    const sessionId = req.user?.username || req.ip || 'default';
+    const session = sessions[sessionId];
+
+    // If no session exists, try to create one
+    if (!session) {
+        // If credentials provided, try to authenticate
+        if (req.query.username && req.query.password) {
+            const username = req.query.username as string;
+            const password = req.query.password as string;
+
+            const cookie = await authenticateQBittorrent(baseUrl, username, password);
+            if (cookie) {
+                // Store session with expiration
+                sessions[sessionId] = {
+                    cookie,
+                    expires: Date.now() + SESSION_LIFETIME,
+                    username,
+                    password // Store encrypted password for renewal
+                };
+                return cookie;
+            }
+        }
+        return null;
+    }
+
+    // If session exists but may be expired
+    if (session.expires < Date.now() + 60000) { // Renew if less than 1 minute left
+        console.log('qBittorrent session close to expiration, renewing...');
+
+        // Try to use stored credentials for renewal
+        if (session.username && session.password) {
+            const cookie = await authenticateQBittorrent(baseUrl, session.username, session.password);
+            if (cookie) {
+                // Update session with new cookie and expiration
+                sessions[sessionId] = {
+                    ...session,
+                    cookie,
+                    expires: Date.now() + SESSION_LIFETIME
+                };
+                return cookie;
+            }
+        }
+
+        // If no stored credentials or renewal failed, try with query params
+        if (req.query.username && req.query.password) {
+            const username = req.query.username as string;
+            const password = req.query.password as string;
+
+            const cookie = await authenticateQBittorrent(baseUrl, username, password);
+            if (cookie) {
+                // Store session with expiration
+                sessions[sessionId] = {
+                    cookie,
+                    expires: Date.now() + SESSION_LIFETIME,
+                    username,
+                    password
+                };
+                return cookie;
+            }
+        }
+    }
+
+    // If session is still valid, return the cookie
+    return session.cookie;
+}
+
 qbittorrentRoute.post('/login', async (req: Request, res: Response) => {
     try {
         const { username } = req.body;
-        let { password } = req.body;
+        const { password } = req.body;
         const baseUrl = getBaseUrl(req);
 
         if (!username || !password) {
@@ -30,10 +143,11 @@ qbittorrentRoute.post('/login', async (req: Request, res: Response) => {
         }
 
         // Handle encrypted password
+        let decryptedPassword = password;
         if (isEncrypted(password)) {
-            password = decrypt(password);
+            decryptedPassword = decrypt(password);
             // Check if decryption failed (returns empty string)
-            if (!password) {
+            if (!decryptedPassword) {
                 res.status(400).json({
                     error: 'Failed to decrypt password. It may have been encrypted with a different key. Please update your credentials.'
                 });
@@ -42,7 +156,7 @@ qbittorrentRoute.post('/login', async (req: Request, res: Response) => {
         }
 
         const response = await axios.post(`${baseUrl}/auth/login`,
-            qs.stringify({ username, password }),
+            qs.stringify({ username, password: decryptedPassword }),
             {
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded'
@@ -50,10 +164,14 @@ qbittorrentRoute.post('/login', async (req: Request, res: Response) => {
             });
 
         // Store cookie for future requests
-        // Use a unique identifier or default to IP address if no user
-        const sessionId = req.ip || 'default';
+        const sessionId = req.user?.username || req.ip || 'default';
         if (response.headers['set-cookie']) {
-            sessions[sessionId] = response.headers['set-cookie'][0];
+            sessions[sessionId] = {
+                cookie: response.headers['set-cookie'][0],
+                expires: Date.now() + SESSION_LIFETIME,
+                username,
+                password // Store encrypted password for renewal
+            };
         }
 
         res.status(200).json({ success: true });
@@ -93,65 +211,13 @@ qbittorrentRoute.post('/encrypt-password', authenticateToken, async (req: Reques
 qbittorrentRoute.get('/stats', async (req: Request, res: Response) => {
     try {
         const baseUrl = getBaseUrl(req);
-        // Use IP address as identifier for non-authenticated users
-        const sessionId = req.user?.username || req.ip || 'default';
-        let cookie = sessions[sessionId];
 
-        // If no cookie exists, try to use credentials from config if available
-        if (!cookie && req.query.username && req.query.password) {
-            try {
-                let password = req.query.password as string;
-                const username = req.query.username as string;
-
-                // Handle encrypted password
-                if (isEncrypted(password)) {
-                    password = decrypt(password);
-                    // Check if decryption failed (returns empty string)
-                    if (!password) {
-                        console.warn('Failed to decrypt password for auto-login. Credentials may need to be updated.');
-                        // Return empty stats instead of failing
-                        res.status(200).json({
-                            dl_info_speed: 0,
-                            up_info_speed: 0,
-                            dl_info_data: 0,
-                            up_info_data: 0,
-                            torrents: {
-                                total: 0,
-                                downloading: 0,
-                                seeding: 0,
-                                completed: 0,
-                                paused: 0
-                            },
-                            decryptionError: true
-                        });
-                        return;
-                    }
-                }
-
-                // Attempt to login with provided credentials
-                const loginResponse = await axios.post(
-                    `${baseUrl}/auth/login`,
-                    qs.stringify({ username, password }),
-                    {
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        }
-                    }
-                );
-
-                // Store the cookie for future requests
-                if (loginResponse.headers['set-cookie']) {
-                    cookie = loginResponse.headers['set-cookie'][0];
-                    sessions[sessionId] = cookie;
-                }
-            } catch (loginError) {
-                console.error('qBittorrent login attempt failed:', loginError);
-                // Continue without cookie - will return default stats
-            }
-        }
+        // Get or create a valid session
+        const cookie = await ensureValidSession(req);
 
         if (!cookie) {
             // If not authenticated and couldn't auto-login, provide basic response with empty/zero values
+            console.log(`No valid qBittorrent session for ${baseUrl}, returning empty stats`);
             const stats = {
                 dl_info_speed: 0,
                 up_info_speed: 0,
@@ -169,35 +235,135 @@ qbittorrentRoute.get('/stats', async (req: Request, res: Response) => {
             return;
         }
 
-        const transferInfo = await axios.get(`${baseUrl}/transfer/info`, {
-            headers: { Cookie: cookie }
-        });
+        try {
+            const transferInfo = await axios.get(`${baseUrl}/transfer/info`, {
+                headers: { Cookie: cookie },
+                timeout: 1000
+            });
 
-        const torrentsMaindata = await axios.get(`${baseUrl}/torrents/info`, {
-            headers: { Cookie: cookie }
-        });
+            const torrentsMaindata = await axios.get(`${baseUrl}/torrents/info`, {
+                headers: { Cookie: cookie },
+                timeout: 1000
+            });
 
-        // Count torrents by state
-        const torrents = torrentsMaindata.data || [];
-        const stats = {
-            dl_info_speed: transferInfo.data.dl_info_speed || 0,
-            up_info_speed: transferInfo.data.up_info_speed || 0,
-            dl_info_data: transferInfo.data.dl_info_data || 0,
-            up_info_data: transferInfo.data.up_info_data || 0,
-            torrents: {
-                total: torrents.length,
-                downloading: torrents.filter((t: any) => t.state === 'downloading').length,
-                seeding: torrents.filter((t: any) => t.state === 'seeding' || t.state === 'uploading').length,
-                completed: torrents.filter((t: any) => t.progress === 1).length,
-                paused: torrents.filter((t: any) => t.state === 'pausedDL' || t.state === 'pausedUP').length
+            // Count torrents by state
+            const torrents = torrentsMaindata.data || [];
+            const stats = {
+                dl_info_speed: transferInfo.data.dl_info_speed || 0,
+                up_info_speed: transferInfo.data.up_info_speed || 0,
+                dl_info_data: transferInfo.data.dl_info_data || 0,
+                up_info_data: transferInfo.data.up_info_data || 0,
+                torrents: {
+                    total: torrents.length,
+                    downloading: torrents.filter((t: any) => t.state === 'downloading').length,
+                    seeding: torrents.filter((t: any) => t.state === 'seeding' || t.state === 'uploading').length,
+                    completed: torrents.filter((t: any) => t.progress === 1).length,
+                    paused: torrents.filter((t: any) => t.state === 'pausedDL' || t.state === 'pausedUP').length
+                }
+            };
+
+            res.status(200).json(stats);
+        } catch (apiErr: any) {
+            // If we get a 403 (Forbidden), the session has likely expired
+            if (apiErr.response?.status === 403) {
+                console.log('qBittorrent session expired, attempting to renew');
+                // Clear the invalid session
+                const sessionId = req.user?.username || req.ip || 'default';
+                if (sessions[sessionId]) {
+                    const sessionInfo = sessions[sessionId];
+
+                    // Try to renew the session
+                    if (sessionInfo.username && sessionInfo.password) {
+                        try {
+                            const newCookie = await authenticateQBittorrent(
+                                baseUrl,
+                                sessionInfo.username,
+                                sessionInfo.password
+                            );
+
+                            if (newCookie) {
+                                console.log('Successfully renewed qBittorrent session');
+                                // Update session with new cookie
+                                sessions[sessionId] = {
+                                    ...sessionInfo,
+                                    cookie: newCookie,
+                                    expires: Date.now() + SESSION_LIFETIME
+                                };
+
+                                // Retry the request with the new cookie
+                                try {
+                                    const transferInfo = await axios.get(`${baseUrl}/transfer/info`, {
+                                        headers: { Cookie: newCookie },
+                                        timeout: 1000
+                                    });
+
+                                    const torrentsMaindata = await axios.get(`${baseUrl}/torrents/info`, {
+                                        headers: { Cookie: newCookie },
+                                        timeout: 1000
+                                    });
+
+                                    // Count torrents by state
+                                    const torrents = torrentsMaindata.data || [];
+                                    const stats = {
+                                        dl_info_speed: transferInfo.data.dl_info_speed || 0,
+                                        up_info_speed: transferInfo.data.up_info_speed || 0,
+                                        dl_info_data: transferInfo.data.dl_info_data || 0,
+                                        up_info_data: transferInfo.data.up_info_data || 0,
+                                        torrents: {
+                                            total: torrents.length,
+                                            downloading: torrents.filter((t: any) => t.state === 'downloading').length,
+                                            seeding: torrents.filter((t: any) => t.state === 'seeding' || t.state === 'uploading').length,
+                                            completed: torrents.filter((t: any) => t.progress === 1).length,
+                                            paused: torrents.filter((t: any) => t.state === 'pausedDL' || t.state === 'pausedUP').length
+                                        }
+                                    };
+
+                                    res.status(200).json(stats);
+                                    return;
+                                } catch (retryErr: any) {
+                                    console.error('Error after session renewal:', retryErr.message);
+                                    // Fall through to the error handling below
+                                }
+                            }
+                        } catch (renewErr: any) {
+                            console.error('Failed to renew qBittorrent session:', renewErr.message);
+                        }
+                    }
+
+                    // If renewal failed or no credentials, delete the session
+                    console.log('Session renewal failed, deleting session');
+                    delete sessions[sessionId];
+                }
+
+                // Return empty stats
+                res.status(200).json({
+                    dl_info_speed: 0,
+                    up_info_speed: 0,
+                    dl_info_data: 0,
+                    up_info_data: 0,
+                    torrents: {
+                        total: 0,
+                        downloading: 0,
+                        seeding: 0,
+                        completed: 0,
+                        paused: 0
+                    },
+                    sessionExpired: true
+                });
+                return;
             }
-        };
 
-        res.status(200).json(stats);
-    } catch (error: any) {
-        console.error('qBittorrent stats error:', error.message);
-        res.status(error.response?.status || 500).json({
-            error: error.response?.data || 'Failed to get qBittorrent stats'
+            // Check for connection errors
+            if (apiErr.code === 'ECONNREFUSED' || apiErr.code === 'ETIMEDOUT' || apiErr.code === 'ECONNABORTED') {
+                console.log(`service is offline ${baseUrl}`);
+            }
+
+            throw apiErr; // Re-throw for the outer catch
+        }
+    } catch (mainErr: any) {
+        console.error('qBittorrent stats error:', mainErr.message);
+        res.status(mainErr.response?.status || 500).json({
+            error: mainErr.response?.data || 'Failed to get qBittorrent stats'
         });
     }
 });
@@ -206,49 +372,8 @@ qbittorrentRoute.get('/stats', async (req: Request, res: Response) => {
 qbittorrentRoute.get('/torrents', async (req: Request, res: Response) => {
     try {
         const baseUrl = getBaseUrl(req);
-        // Use IP address as identifier for non-authenticated users
-        const sessionId = req.user?.username || req.ip || 'default';
-        let cookie = sessions[sessionId];
-
-        // If no cookie exists, try to use credentials from config if available
-        if (!cookie && req.query.username && req.query.password) {
-            try {
-                let password = req.query.password as string;
-                const username = req.query.username as string;
-
-                // Handle encrypted password
-                if (isEncrypted(password)) {
-                    password = decrypt(password);
-                    // Check if decryption failed (returns empty string)
-                    if (!password) {
-                        console.warn('Failed to decrypt password for auto-login. Credentials may need to be updated.');
-                        // Return empty array instead of failing
-                        res.status(200).json([]);
-                        return;
-                    }
-                }
-
-                // Attempt to login with provided credentials
-                const loginResponse = await axios.post(
-                    `${baseUrl}/auth/login`,
-                    qs.stringify({ username, password }),
-                    {
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        }
-                    }
-                );
-
-                // Store the cookie for future requests
-                if (loginResponse.headers['set-cookie']) {
-                    cookie = loginResponse.headers['set-cookie'][0];
-                    sessions[sessionId] = cookie;
-                }
-            } catch (loginError) {
-                console.error('qBittorrent login attempt failed:', loginError);
-                // Continue without cookie - will return empty array
-            }
-        }
+        // Get or create a valid session
+        const cookie = await ensureValidSession(req);
 
         if (!cookie) {
             // If not authenticated and couldn't auto-login, return empty array
@@ -256,11 +381,22 @@ qbittorrentRoute.get('/torrents', async (req: Request, res: Response) => {
             return;
         }
 
-        const response = await axios.get(`${baseUrl}/torrents/info`, {
-            headers: { Cookie: cookie }
-        });
+        try {
+            const response = await axios.get(`${baseUrl}/torrents/info`, {
+                headers: { Cookie: cookie }
+            });
 
-        res.status(200).json(response.data);
+            res.status(200).json(response.data);
+        } catch (error: any) {
+            // If we get a 403 (Forbidden), the session has likely expired
+            if (error.response?.status === 403) {
+                // Session expired, return empty array with flag
+                res.status(200).json([]);
+                return;
+            }
+
+            throw error; // Re-throw for the outer catch
+        }
     } catch (error: any) {
         console.error('qBittorrent torrents error:', error.message);
         res.status(error.response?.status || 500).json({
@@ -273,14 +409,12 @@ qbittorrentRoute.get('/torrents', async (req: Request, res: Response) => {
 qbittorrentRoute.post('/logout', authenticateToken, async (req: Request, res: Response) => {
     try {
         const baseUrl = getBaseUrl(req);
-        const sessionId = req.user?.username || 'default';
-        const cookie = sessions[sessionId];
+        const sessionId = req.user?.username || req.ip || 'default';
+        const session = sessions[sessionId];
 
-        if (cookie) {
+        if (session) {
             // Call qBittorrent logout endpoint
-            await axios.post(`${baseUrl}/auth/logout`, {}, {
-                headers: { Cookie: cookie }
-            });
+            await logoutQBittorrentSession(baseUrl, session.cookie);
 
             // Delete the session
             delete sessions[sessionId];
@@ -297,51 +431,11 @@ qbittorrentRoute.post('/logout', authenticateToken, async (req: Request, res: Re
 qbittorrentRoute.post('/torrents/start', authenticateToken, async (req: Request, res: Response) => {
     try {
         const baseUrl = getBaseUrl(req);
-        const sessionId = req.user?.username || 'default';
-        let cookie = sessions[sessionId];
+        // Get or create a valid session
+        const cookie = await ensureValidSession(req);
 
         // Extract hashes from either JSON body or form-urlencoded body
         const hashes = req.body.hashes;
-
-        // If no cookie exists or we have new credentials, try to use credentials from query params
-        if ((!cookie || req.query.password) && req.query.username && req.query.password) {
-            try {
-                let password = req.query.password as string;
-                const username = req.query.username as string;
-
-                // Handle encrypted password
-                if (isEncrypted(password)) {
-                    password = decrypt(password);
-                    // Check if decryption failed (returns empty string)
-                    if (!password) {
-                        res.status(400).json({
-                            error: 'Failed to decrypt password. It may have been encrypted with a different key. Please update your credentials.'
-                        });
-                        return;
-                    }
-                }
-
-                // Attempt to login with provided credentials
-                const loginResponse = await axios.post(
-                    `${baseUrl}/auth/login`,
-                    qs.stringify({ username, password }),
-                    {
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        }
-                    }
-                );
-
-                // Store the cookie for future requests
-                if (loginResponse.headers['set-cookie']) {
-                    cookie = loginResponse.headers['set-cookie'][0];
-                    sessions[sessionId] = cookie;
-                }
-            } catch (loginError) {
-                console.error('qBittorrent login attempt failed:', loginError);
-                // Continue with existing cookie if available, otherwise will return an error below
-            }
-        }
 
         if (!cookie) {
             res.status(401).json({ error: 'Not authenticated with qBittorrent' });
@@ -377,51 +471,11 @@ qbittorrentRoute.post('/torrents/start', authenticateToken, async (req: Request,
 qbittorrentRoute.post('/torrents/stop', authenticateToken, async (req: Request, res: Response) => {
     try {
         const baseUrl = getBaseUrl(req);
-        const sessionId = req.user?.username || 'default';
-        let cookie = sessions[sessionId];
+        // Get or create a valid session
+        const cookie = await ensureValidSession(req);
 
         // Extract hashes from either JSON body or form-urlencoded body
         const hashes = req.body.hashes;
-
-        // If no cookie exists or we have new credentials, try to use credentials from query params
-        if ((!cookie || req.query.password) && req.query.username && req.query.password) {
-            try {
-                let password = req.query.password as string;
-                const username = req.query.username as string;
-
-                // Handle encrypted password
-                if (isEncrypted(password)) {
-                    password = decrypt(password);
-                    // Check if decryption failed (returns empty string)
-                    if (!password) {
-                        res.status(400).json({
-                            error: 'Failed to decrypt password. It may have been encrypted with a different key. Please update your credentials.'
-                        });
-                        return;
-                    }
-                }
-
-                // Attempt to login with provided credentials
-                const loginResponse = await axios.post(
-                    `${baseUrl}/auth/login`,
-                    qs.stringify({ username, password }),
-                    {
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        }
-                    }
-                );
-
-                // Store the cookie for future requests
-                if (loginResponse.headers['set-cookie']) {
-                    cookie = loginResponse.headers['set-cookie'][0];
-                    sessions[sessionId] = cookie;
-                }
-            } catch (loginError) {
-                console.error('qBittorrent login attempt failed:', loginError);
-                // Continue with existing cookie if available, otherwise will return an error below
-            }
-        }
 
         if (!cookie) {
             res.status(401).json({ error: 'Not authenticated with qBittorrent' });
@@ -474,52 +528,12 @@ qbittorrentRoute.post('/torrents/stop', authenticateToken, async (req: Request, 
 qbittorrentRoute.post('/torrents/delete', authenticateToken, async (req: Request, res: Response) => {
     try {
         const baseUrl = getBaseUrl(req);
-        const sessionId = req.user?.username || 'default';
-        let cookie = sessions[sessionId];
+        // Get or create a valid session
+        const cookie = await ensureValidSession(req);
 
         // Extract parameters
         const hashes = req.body.hashes;
         const deleteFiles = req.body.deleteFiles === true;
-
-        // If no cookie exists or we have new credentials, try to use credentials from query params
-        if ((!cookie || req.query.password) && req.query.username && req.query.password) {
-            try {
-                let password = req.query.password as string;
-                const username = req.query.username as string;
-
-                // Handle encrypted password
-                if (isEncrypted(password)) {
-                    password = decrypt(password);
-                    // Check if decryption failed (returns empty string)
-                    if (!password) {
-                        res.status(400).json({
-                            error: 'Failed to decrypt password. It may have been encrypted with a different key. Please update your credentials.'
-                        });
-                        return;
-                    }
-                }
-
-                // Attempt to login with provided credentials
-                const loginResponse = await axios.post(
-                    `${baseUrl}/auth/login`,
-                    qs.stringify({ username, password }),
-                    {
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        }
-                    }
-                );
-
-                // Store the cookie for future requests
-                if (loginResponse.headers['set-cookie']) {
-                    cookie = loginResponse.headers['set-cookie'][0];
-                    sessions[sessionId] = cookie;
-                }
-            } catch (loginError) {
-                console.error('qBittorrent login attempt failed:', loginError);
-                // Continue with existing cookie if available, otherwise will return an error below
-            }
-        }
 
         if (!cookie) {
             res.status(401).json({ error: 'Not authenticated with qBittorrent' });
@@ -560,3 +574,18 @@ qbittorrentRoute.post('/torrents/delete', authenticateToken, async (req: Request
         });
     }
 });
+
+// Function to logout from qBittorrent session
+async function logoutQBittorrentSession(baseUrl: string, sessionId: string): Promise<boolean> {
+    try {
+        await axios.post(`${baseUrl}/auth/logout`, null, {
+            headers: {
+                'Cookie': sessionId
+            }
+        });
+        return true;
+    } catch (error) {
+        console.error('Error logging out qBittorrent session:', error);
+        return false;
+    }
+}

@@ -39,6 +39,14 @@ const TEMPERATURE_UNIT_OPTIONS = [
     { id: 'celsius', label: 'Celsius (°C)' }
 ];
 
+const SYSTEM_MONITOR_GAUGE_OPTIONS = [
+    { id: 'cpu', label: 'CPU Usage' },
+    { id: 'temp', label: 'CPU Temperature' },
+    { id: 'ram', label: 'RAM Usage' },
+    { id: 'network', label: 'Network' },
+    { id: 'none', label: 'None' }
+];
+
 const TORRENT_CLIENT_OPTIONS = [
     { id: TORRENT_CLIENT_TYPE.QBITTORRENT, label: 'qBittorrent' },
     { id: TORRENT_CLIENT_TYPE.DELUGE, label: 'Deluge' }
@@ -71,6 +79,10 @@ type FormValues = {
     piholeApiToken?: string;
     piholePassword?: string;
     piholeName?: string;
+    gauge1?: string;
+    gauge2?: string;
+    gauge3?: string;
+    networkInterface?: string;
 };
 
 interface LocationOption {
@@ -90,6 +102,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
     const [locationOptions, setLocationOptions] = useState<LocationOption[]>([]);
     const [selectedLocation, setSelectedLocation] = useState<LocationOption | null>(null);
     const [isSearching, setIsSearching] = useState(false);
+    const [networkInterfaces, setNetworkInterfaces] = useState<Array<{id: string, label: string}>>([]);
 
     // Initialize client type from existing item or default to qBittorrent
     const [torrentClientType, setTorrentClientType] = useState<string>(
@@ -172,6 +185,10 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             piholePassword: existingItem?.config?.password || '',
             piholeName: existingItem?.config?.displayName || '',
             location: existingItem?.config?.location || null,
+            gauge1: existingItem?.config?.gauges?.[0] || 'cpu',
+            gauge2: existingItem?.config?.gauges?.[1] || 'temp',
+            gauge3: existingItem?.config?.gauges?.[2] || 'ram',
+            networkInterface: existingItem?.config?.networkInterface || '',
         });
     }, [existingItem, formContext]);
 
@@ -280,6 +297,66 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
         }
     }, [selectedLocation]);
 
+    // Fetch network interfaces for system monitor widget
+    useEffect(() => {
+        const fetchNetworkInterfaces = async () => {
+            if (selectedItemType === 'widget' && selectedWidgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET) {
+                try {
+                    const systemInfo = await DashApi.getSystemInformation();
+                    if (systemInfo && systemInfo.networkInterfaces && Array.isArray(systemInfo.networkInterfaces)) {
+                        // Use all network interfaces from the backend without filtering
+                        const interfaces = systemInfo.networkInterfaces.map((iface: { iface: string }) => ({
+                            id: iface.iface,
+                            label: iface.iface
+                        }));
+
+                        setNetworkInterfaces(interfaces);
+
+                        // Only update network interface selection if not already set from config
+                        const currentInterface = formContext.getValues('networkInterface');
+
+                        if (!currentInterface) {
+                            // No interface is currently selected, set one based on priority
+                            const activeInterface = systemInfo.network?.iface;
+
+                            if (activeInterface && interfaces.some((iface: { id: string }) => iface.id === activeInterface)) {
+                                // Use active interface if available
+                                formContext.setValue('networkInterface', activeInterface);
+                            } else if (interfaces.length > 0) {
+                                // Otherwise use the first available interface
+                                formContext.setValue('networkInterface', interfaces[0].id);
+                            }
+                        } else if (!interfaces.some((iface: { id: string }) => iface.id === currentInterface)) {
+                            // Current interface is invalid or not available, reset it
+                            const activeInterface = systemInfo.network?.iface;
+
+                            if (activeInterface && interfaces.some((iface: { id: string }) => iface.id === activeInterface)) {
+                                // Use active interface if available
+                                formContext.setValue('networkInterface', activeInterface);
+                            } else if (interfaces.length > 0) {
+                                // Otherwise use the first available interface
+                                formContext.setValue('networkInterface', interfaces[0].id);
+                            } else {
+                                formContext.setValue('networkInterface', '');
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error fetching network interfaces:', error);
+                    setNetworkInterfaces([]);
+                }
+            }
+        };
+
+        fetchNetworkInterfaces();
+    }, [
+        selectedItemType,
+        selectedWidgetType,
+        formContext.watch('gauge1'),
+        formContext.watch('gauge2'),
+        formContext.watch('gauge3')
+    ]);
+
     const handleCustomIconSelect = (file: File | null) => {
         setCustomIconFile(file);
     };
@@ -309,8 +386,14 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             };
         } else if (data.itemType === 'widget' && data.widgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET) {
             config = {
-                temperatureUnit: data.temperatureUnit || 'fahrenheit'
+                temperatureUnit: data.temperatureUnit || 'fahrenheit',
+                gauges: [data.gauge1, data.gauge2, data.gauge3]
             };
+
+            // Add network interface to config if a network gauge is included
+            if ([data.gauge1, data.gauge2, data.gauge3].includes('network') && data.networkInterface) {
+                (config as any).networkInterface = data.networkInterface;
+            }
         } else if (data.itemType === 'widget' && data.widgetType === ITEM_TYPE.PIHOLE_WIDGET) {
             // Encrypt the API token if needed
             let encryptedToken = data.piholeApiToken || '';
@@ -439,6 +522,10 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             piholePassword: '',
             piholeName: '',
             location: null,
+            gauge1: 'cpu',
+            gauge2: 'temp',
+            gauge3: 'ram',
+            networkInterface: '',
         });
 
         // This ensures that when the form is reopened, the initial effect will run and set values from existingItem
@@ -714,43 +801,209 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
 
                             {/* System Monitor widget configuration */}
                             {selectedItemType === 'widget' && selectedWidgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET && (
-                                <Grid>
-                                    <SelectElement
-                                        label='Temperature Unit'
-                                        name='temperatureUnit'
-                                        options={TEMPERATURE_UNIT_OPTIONS}
-                                        required
-                                        fullWidth
-                                        sx={{
-                                            '& .MuiOutlinedInput-root': {
-                                                '& fieldset': {
-                                                    borderColor: 'text.primary',
+                                <>
+                                    <Grid>
+                                        <SelectElement
+                                            label='Temperature Unit'
+                                            name='temperatureUnit'
+                                            options={TEMPERATURE_UNIT_OPTIONS}
+                                            required
+                                            fullWidth
+                                            sx={{
+                                                '& .MuiOutlinedInput-root': {
+                                                    '& fieldset': {
+                                                        borderColor: 'text.primary',
+                                                    },
+                                                    '.MuiSvgIcon-root ': {
+                                                        fill: theme.palette.text.primary,
+                                                    },
+                                                    '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
                                                 },
-                                                '.MuiSvgIcon-root ': {
-                                                    fill: theme.palette.text.primary,
+                                                width: '100%',
+                                                minWidth: isMobile ? '50vw' :'20vw',
+                                                '& .MuiMenuItem-root:hover': {
+                                                    backgroundColor: `${COLORS.LIGHT_GRAY_HOVER} !important`,
                                                 },
-                                                '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                                                '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
-                                            },
-                                            width: '100%',
-                                            minWidth: isMobile ? '50vw' :'20vw',
-                                            '& .MuiMenuItem-root:hover': {
-                                                backgroundColor: `${COLORS.LIGHT_GRAY_HOVER} !important`,
-                                            },
-                                            '& .MuiMenuItem-root.Mui-selected': {
-                                                backgroundColor: `${theme.palette.primary.main} !important`,
-                                                color: 'white',
-                                            },
-                                            '& .MuiMenuItem-root.Mui-selected:hover': {
-                                                backgroundColor: `${theme.palette.primary.main} !important`,
-                                                color: 'white',
-                                            }
-                                        }}
-                                        slotProps={{
-                                            inputLabel: { style: { color: theme.palette.text.primary } }
-                                        }}
-                                    />
-                                </Grid>
+                                                '& .MuiMenuItem-root.Mui-selected': {
+                                                    backgroundColor: `${theme.palette.primary.main} !important`,
+                                                    color: 'white',
+                                                },
+                                                '& .MuiMenuItem-root.Mui-selected:hover': {
+                                                    backgroundColor: `${theme.palette.primary.main} !important`,
+                                                    color: 'white',
+                                                }
+                                            }}
+                                            slotProps={{
+                                                inputLabel: { style: { color: theme.palette.text.primary } }
+                                            }}
+                                        />
+                                    </Grid>
+                                    <Grid sx={{ width: '100%', mt: 2, mb: 1 }}>
+                                        <Typography variant='body2' sx={{ color: 'white', mb: 1, ml: 1 }}>
+                                            Select gauges to display:
+                                        </Typography>
+                                    </Grid>
+                                    <Grid>
+                                        <SelectElement
+                                            label='Left Gauge'
+                                            name='gauge1'
+                                            options={SYSTEM_MONITOR_GAUGE_OPTIONS}
+                                            required
+                                            fullWidth
+                                            sx={{
+                                                '& .MuiOutlinedInput-root': {
+                                                    '& fieldset': {
+                                                        borderColor: 'text.primary',
+                                                    },
+                                                    '.MuiSvgIcon-root ': {
+                                                        fill: theme.palette.text.primary,
+                                                    },
+                                                    '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                                },
+                                                width: '100%',
+                                                minWidth: isMobile ? '50vw' :'20vw',
+                                                '& .MuiMenuItem-root:hover': {
+                                                    backgroundColor: `${COLORS.LIGHT_GRAY_HOVER} !important`,
+                                                },
+                                                '& .MuiMenuItem-root.Mui-selected': {
+                                                    backgroundColor: `${theme.palette.primary.main} !important`,
+                                                    color: 'white',
+                                                },
+                                                '& .MuiMenuItem-root.Mui-selected:hover': {
+                                                    backgroundColor: `${theme.palette.primary.main} !important`,
+                                                    color: 'white',
+                                                }
+                                            }}
+                                            slotProps={{
+                                                inputLabel: { style: { color: theme.palette.text.primary } }
+                                            }}
+                                        />
+                                    </Grid>
+                                    <Grid>
+                                        <SelectElement
+                                            label='Middle Gauge'
+                                            name='gauge2'
+                                            options={SYSTEM_MONITOR_GAUGE_OPTIONS}
+                                            required
+                                            fullWidth
+                                            sx={{
+                                                '& .MuiOutlinedInput-root': {
+                                                    '& fieldset': {
+                                                        borderColor: 'text.primary',
+                                                    },
+                                                    '.MuiSvgIcon-root ': {
+                                                        fill: theme.palette.text.primary,
+                                                    },
+                                                    '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                                },
+                                                width: '100%',
+                                                minWidth: isMobile ? '50vw' :'20vw',
+                                                '& .MuiMenuItem-root:hover': {
+                                                    backgroundColor: `${COLORS.LIGHT_GRAY_HOVER} !important`,
+                                                },
+                                                '& .MuiMenuItem-root.Mui-selected': {
+                                                    backgroundColor: `${theme.palette.primary.main} !important`,
+                                                    color: 'white',
+                                                },
+                                                '& .MuiMenuItem-root.Mui-selected:hover': {
+                                                    backgroundColor: `${theme.palette.primary.main} !important`,
+                                                    color: 'white',
+                                                }
+                                            }}
+                                            slotProps={{
+                                                inputLabel: { style: { color: theme.palette.text.primary } }
+                                            }}
+                                        />
+                                    </Grid>
+                                    <Grid>
+                                        <SelectElement
+                                            label='Right Gauge'
+                                            name='gauge3'
+                                            options={SYSTEM_MONITOR_GAUGE_OPTIONS}
+                                            required
+                                            fullWidth
+                                            sx={{
+                                                '& .MuiOutlinedInput-root': {
+                                                    '& fieldset': {
+                                                        borderColor: 'text.primary',
+                                                    },
+                                                    '.MuiSvgIcon-root ': {
+                                                        fill: theme.palette.text.primary,
+                                                    },
+                                                    '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                                },
+                                                width: '100%',
+                                                minWidth: isMobile ? '50vw' :'20vw',
+                                                '& .MuiMenuItem-root:hover': {
+                                                    backgroundColor: `${COLORS.LIGHT_GRAY_HOVER} !important`,
+                                                },
+                                                '& .MuiMenuItem-root.Mui-selected': {
+                                                    backgroundColor: `${theme.palette.primary.main} !important`,
+                                                    color: 'white',
+                                                },
+                                                '& .MuiMenuItem-root.Mui-selected:hover': {
+                                                    backgroundColor: `${theme.palette.primary.main} !important`,
+                                                    color: 'white',
+                                                }
+                                            }}
+                                            slotProps={{
+                                                inputLabel: { style: { color: theme.palette.text.primary } }
+                                            }}
+                                        />
+                                    </Grid>
+                                    <Grid>
+                                        {/* Network interface selection for System Monitor widget when network gauge is selected */}
+                                        {selectedItemType === 'widget' &&
+                                         selectedWidgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET &&
+                                         (formContext.watch('gauge1') === 'network' ||
+                                          formContext.watch('gauge2') === 'network' ||
+                                          formContext.watch('gauge3') === 'network') && (
+                                            <Grid>
+                                                <SelectElement
+                                                    label='Network Interface'
+                                                    name='networkInterface'
+                                                    options={networkInterfaces.length > 0 ? networkInterfaces : [{ id: '', label: 'No network interfaces available' }]}
+                                                    required
+                                                    fullWidth
+                                                    disabled={networkInterfaces.length === 0}
+                                                    sx={{
+                                                        '& .MuiOutlinedInput-root': {
+                                                            '& fieldset': {
+                                                                borderColor: 'text.primary',
+                                                            },
+                                                            '.MuiSvgIcon-root ': {
+                                                                fill: theme.palette.text.primary,
+                                                            },
+                                                            '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                                            '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                                        },
+                                                        width: '100%',
+                                                        minWidth: isMobile ? '50vw' :'20vw',
+                                                        mt: 2,
+                                                        '& .MuiMenuItem-root:hover': {
+                                                            backgroundColor: `${COLORS.LIGHT_GRAY_HOVER} !important`,
+                                                        },
+                                                        '& .MuiMenuItem-root.Mui-selected': {
+                                                            backgroundColor: `${theme.palette.primary.main} !important`,
+                                                            color: 'white',
+                                                        },
+                                                        '& .MuiMenuItem-root.Mui-selected:hover': {
+                                                            backgroundColor: `${theme.palette.primary.main} !important`,
+                                                            color: 'white',
+                                                        }
+                                                    }}
+                                                    slotProps={{
+                                                        inputLabel: { style: { color: theme.palette.text.primary } }
+                                                    }}
+                                                />
+                                            </Grid>
+                                        )}
+                                    </Grid>
+                                </>
                             )}
 
                             {/* Admin Only checkbox for widget types */}
@@ -824,29 +1077,32 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                             }}
                                         />
                                     </Grid>
-                                    <Grid>
-                                        <TextFieldElement
-                                            name='tcUsername'
-                                            label='Username'
-                                            variant='outlined'
-                                            fullWidth
-                                            autoComplete='off'
-                                            required={torrentClientType === TORRENT_CLIENT_TYPE.QBITTORRENT}
-                                            sx={{
-                                                width: '100%',
-                                                '& .MuiOutlinedInput-root': {
-                                                    '& fieldset': {
-                                                        borderColor: 'text.primary',
+                                    {/* Only show username field for qBittorrent */}
+                                    {torrentClientType === TORRENT_CLIENT_TYPE.QBITTORRENT && (
+                                        <Grid>
+                                            <TextFieldElement
+                                                name='tcUsername'
+                                                label='Username'
+                                                variant='outlined'
+                                                fullWidth
+                                                autoComplete='off'
+                                                required
+                                                sx={{
+                                                    width: '100%',
+                                                    '& .MuiOutlinedInput-root': {
+                                                        '& fieldset': {
+                                                            borderColor: 'text.primary',
+                                                        },
+                                                        '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                                        '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
                                                     },
-                                                    '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                                                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
-                                                },
-                                            }}
-                                            slotProps={{
-                                                inputLabel: { style: { color: theme.palette.text.primary } }
-                                            }}
-                                        />
-                                    </Grid>
+                                                }}
+                                                slotProps={{
+                                                    inputLabel: { style: { color: theme.palette.text.primary } }
+                                                }}
+                                            />
+                                        </Grid>
+                                    )}
                                     <Grid>
                                         <TextFieldElement
                                             name='tcPassword'

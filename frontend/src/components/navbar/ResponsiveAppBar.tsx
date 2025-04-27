@@ -59,7 +59,9 @@ export const ResponsiveAppBar = ({ children }: Props) => {
         isAdmin,
         setIsAdmin,
         updateAvailable,
-        latestVersion
+        latestVersion,
+        recentlyUpdated,
+        handleVersionViewed
     } = useAppContext();
 
     const location = useLocation();
@@ -68,6 +70,12 @@ export const ResponsiveAppBar = ({ children }: Props) => {
 
     const handleClose = () => setOpenAddModal(false);
     const handleCloseUpdateModal = () => setOpenUpdateModal(false);
+    const handleCloseVersionModal = async () => {
+        setOpenVersionModal(false);
+        if (isAdmin && recentlyUpdated) {
+            await handleVersionViewed();
+        }
+    };
 
     const handleEditCancel = () => {
         handleCloseDrawer();
@@ -221,9 +229,17 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                 {/* Hamburger Menu Button */}
                                 <IconButton
                                     onClick={handleOpenDrawer}
-                                    sx={{ ml: 1, mr: 2, display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+                                    sx={{
+                                        ml: 1,
+                                        mr: 2,
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        borderRadius: '50%'
+                                    }}
                                 >
                                     {updateAvailable ? (
+                                        // Only update available badge (red) - given priority
                                         <Badge
                                             color='error'
                                             variant='dot'
@@ -236,7 +252,22 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                         >
                                             <MenuIcon sx={{ color: 'white', fontSize: '2rem' }}/>
                                         </Badge>
+                                    ) : recentlyUpdated ? (
+                                        // Only recently updated badge (blue)
+                                        <Badge
+                                            sx={{
+                                                '& .MuiBadge-badge': {
+                                                    backgroundColor: '#2196f3', // Blue color
+                                                    top: 0,
+                                                    right: -5
+                                                }
+                                            }}
+                                            variant='dot'
+                                        >
+                                            <MenuIcon sx={{ color: 'white', fontSize: '2rem' }}/>
+                                        </Badge>
                                     ) : (
+                                        // No badges
                                         <MenuIcon sx={{ color: 'white', fontSize: '2rem' }}/>
                                     )}
                                 </IconButton>
@@ -333,14 +364,36 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                         <ListItem disablePadding>
                                             <ListItemButton onClick={handleOpenVersionModal}>
                                                 <ListItemIcon>
-                                                    <FaInfoCircle style={{ color: theme.palette.text.primary, fontSize: 22, marginLeft: '-4px' }} />
+                                                    {recentlyUpdated ? (
+                                                        <Badge
+                                                            sx={{
+                                                                '& .MuiBadge-badge': {
+                                                                    backgroundColor: '#2196f3', // Blue color
+                                                                    top: -2,
+                                                                    right: -3
+                                                                }
+                                                            }}
+                                                            variant='dot'
+                                                            overlap='circular'
+                                                        >
+                                                            <FaInfoCircle style={{ color: theme.palette.text.primary, fontSize: 22, marginLeft: '-4px' }} />
+                                                        </Badge>
+                                                    ) : (
+                                                        <FaInfoCircle style={{ color: theme.palette.text.primary, fontSize: 22, marginLeft: '-4px' }} />
+                                                    )}
                                                 </ListItemIcon>
                                                 <ListItemText
                                                     primary={
                                                         <Typography>
-                                                            v{getAppVersion()}
+                                                            {recentlyUpdated ? 'Recently Updated' : 'Version'}
                                                         </Typography>
                                                     }
+                                                    secondary={`v${getAppVersion()}`}
+                                                    slotProps={{
+                                                        secondary: {
+                                                            color: 'text.primary'
+                                                        }
+                                                    }}
                                                 />
                                             </ListItemButton>
                                         </ListItem>
@@ -422,7 +475,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                 {/* Version Modal */}
                 <VersionModal
                     open={openVersionModal}
-                    handleClose={() => setOpenVersionModal(false)}
+                    handleClose={handleCloseVersionModal}
                 />
             </AppBar>
             <Box sx={{

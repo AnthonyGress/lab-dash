@@ -59,8 +59,6 @@ export function decrypt(encryptedText: string): string {
     } catch (error) {
         console.error('Decryption error:', error);
         console.warn('Decryption failed - possibly encrypted with a different key');
-
-        // Return empty string instead of encrypted text to avoid sending invalid credentials
         return '';
     }
 }

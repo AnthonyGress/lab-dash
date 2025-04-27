@@ -630,7 +630,7 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
                                             bottom: 0,
                                             zIndex: 1
                                         }}>
-                                            No active torrents
+                                            No active items
                                         </Box>
                                         {/* Hidden sample torrent item to maintain width - but not visible */}
                                         <Box sx={{
@@ -660,7 +660,7 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
                                                             fontSize: isMobile ? '0.7rem' : '.8rem'
                                                         }}
                                                     >
-                                                        Sample Torrent Name.mkv
+                                                        Sample File Name.mkv
                                                     </Typography>
                                                     <Typography
                                                         variant='caption'

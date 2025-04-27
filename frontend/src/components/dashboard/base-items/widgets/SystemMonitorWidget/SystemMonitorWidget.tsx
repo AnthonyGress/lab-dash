@@ -1,7 +1,7 @@
+import { ArrowDownward, ArrowUpward } from '@mui/icons-material';
 import { Box, Grid2 as Grid, IconButton, Paper, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { IoInformationCircleOutline } from 'react-icons/io5';
-
 
 import { DiskUsageBar } from './DiskUsageWidget';
 import { GaugeWidget } from './GaugeWidget';
@@ -9,12 +9,17 @@ import { DashApi } from '../../../../../api/dash-api';
 import { useIsMobile } from '../../../../../hooks/useIsMobile';
 import { COLORS } from '../../../../../theme/styles';
 import { theme } from '../../../../../theme/theme';
-import { convertSecondsToUptime } from '../../../../../utils/utils';
+import { convertSecondsToUptime, formatBytes } from '../../../../../utils/utils';
 import { CenteredModal } from '../../../../modals/CenteredModal';
+
+// Gauge types for configuration
+export type GaugeType = 'cpu' | 'temp' | 'ram' | 'network' | 'none';
 
 interface SystemMonitorWidgetProps {
     config?: {
         temperatureUnit?: string;
+        gauges?: GaugeType[];
+        networkInterface?: string;
     };
 }
 
@@ -22,8 +27,23 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
     const [systemInformation, setSystemInformation] = useState<any>();
     const [memoryInformation, setMemoryInformation] = useState<any>(0);
     const [diskInformation, setDiskInformation] = useState<any>();
+    const [networkInformation, setNetworkInformation] = useState<{
+        downloadSpeed: number;
+        uploadSpeed: number;
+        interfaceSpeed?: number; // Network interface speed in Mbps
+        iface?: string; // Track the current interface
+    }>({
+        downloadSpeed: 0,
+        uploadSpeed: 0
+    });
     const [openSystemModal, setOpenSystemModal] = useState(false);
     const [isFahrenheit, setIsFahrenheit] = useState(config?.temperatureUnit !== 'celsius');
+
+    // Default gauges if not specified in config
+    const selectedGauges = config?.gauges || ['cpu', 'temp', 'ram'];
+
+    // Filter out 'none' option from selected gauges
+    const visibleGauges = selectedGauges.filter(gauge => gauge !== 'none');
 
     const isMobile = useIsMobile();
 
@@ -40,6 +60,41 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
         return Math.round(tempCelsius);
     };
 
+    // Helper function to format network speed with appropriate units (KB/s or MB/s)
+    const formatNetworkSpeed = (bytesPerSecond: number): { value: number; unit: string; normalizedValue: number } => {
+        // Handle undefined or null values
+        if (bytesPerSecond === undefined || bytesPerSecond === null) {
+            return { value: 0, unit: 'KB/s', normalizedValue: 0 };
+        }
+
+        // Calculate normalized value in Mbps - ensure tiny values still show up on gauge
+        const mbps = bytesPerSecond * 8 / 1000000; // Convert to Mbps
+
+        // If there's any activity at all, ensure it shows at least 1% on the gauge
+        // This makes even tiny network activity visible
+        const normalizedMbps = bytesPerSecond > 0 ? Math.max(mbps, 30) : 0;
+
+        // If less than 1000 KB/s, show in KB/s
+        if (bytesPerSecond < 1000 * 1024) {
+            return {
+                value: Math.round(bytesPerSecond / 1024), // Convert to KB/s for display as whole number
+                unit: 'KB/s',
+                normalizedValue: normalizedMbps
+            };
+        }
+
+        // Otherwise show in MB/s
+        return {
+            value: Math.round(bytesPerSecond / (1024 * 1024)), // Convert to MB/s as whole number
+            unit: 'MB/s',
+            normalizedValue: normalizedMbps
+        };
+    };
+
+    const formatNumberForDisplay = (num: number): string => {
+        return Math.round(num).toString();
+    };
+
     const getRamPercentage = (systemData: any) => {
         let totalPercentage = 0;
 
@@ -49,12 +104,29 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
         setMemoryInformation(totalPercentage);
     };
 
-    const getSystemInfo = async () => {
-        const res = await DashApi.getSystemInformation();
+    const getNetworkInformation = (systemData: any) => {
+        if (systemData?.network) {
+            const currentIface = systemData.network.iface;
 
-        setSystemInformation(res);
-        getRamPercentage(res);
-        getMainDiskInfo(res);
+            // Use provided interface speed or default to 1000 Mbps (1 Gbps)
+            const interfaceSpeed = systemData.network.speed || 1000;
+
+            setNetworkInformation({
+                downloadSpeed: systemData.network.rx_sec,
+                uploadSpeed: systemData.network.tx_sec,
+                interfaceSpeed: interfaceSpeed,
+                iface: currentIface
+            });
+        } else {
+            // Only log once if there's no network data
+            if (networkInformation.iface) {
+                setNetworkInformation({
+                    downloadSpeed: 0,
+                    uploadSpeed: 0,
+                    iface: undefined
+                });
+            }
+        }
     };
 
     const getMainDiskInfo = async (systemData: any) => {
@@ -101,19 +173,155 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
         }
     };
 
+    // Render a specific gauge based on type
+    const renderGauge = (gaugeType: GaugeType) => {
+        // Pre-calculate network values outside the switch statement
+        const downloadSpeed = formatNetworkSpeed(networkInformation.downloadSpeed);
+        const uploadSpeed = formatNetworkSpeed(networkInformation.uploadSpeed);
+
+        // Get interface speed in Mbps (already in correct units)
+        const interfaceSpeed = networkInformation.interfaceSpeed || 1000; // Default to 1 Gbps (in Mbps)
+
+        switch (gaugeType) {
+        case 'cpu':
+            return <GaugeWidget
+                title='CPU'
+                value={systemInformation?.cpu?.currentLoad ? Math.round(systemInformation?.cpu?.currentLoad) : 0}
+            />;
+        case 'temp':
+            return <GaugeWidget
+                title='TEMP'
+                value={systemInformation?.cpu?.main ? formatTemperature(systemInformation?.cpu?.main) : 0}
+                temperature
+                isFahrenheit={isFahrenheit}
+            />;
+        case 'ram':
+            return <GaugeWidget title='RAM' value={memoryInformation} />;
+        case 'network':
+            return (
+                <Box position='relative'>
+                    <GaugeWidget
+                        title='NET'
+                        value={downloadSpeed.normalizedValue} // Use normalized value (MB/s) for the gauge fill
+                        total={interfaceSpeed}
+                        customContent={
+                            <Box sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: '100%',
+                                height: '70%', // Use most of the gauge height
+                                pt: 0.5,
+                                ml: -4.75
+                            }}>
+                                {/* Container for both rows with fixed width icon column */}
+                                <Box sx={{
+                                    display: 'grid',
+                                    gridTemplateColumns: '24px minmax(40px, 1fr)', // Fixed width for icon column and minimum width for text
+                                    width: '80%', // Increased width for more text space
+                                    gap: 0.2,
+                                    alignItems: 'center'
+                                }}>
+                                    {/* Upload row */}
+                                    <Box sx={{
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        height: '100%',
+                                        width: '24px', // Fixed width
+                                    }}>
+                                        <ArrowUpward sx={{ color: 'text.primary', fontSize: { xs: 13, sm: 14, md: 17, lg: 17, xl: 18 }  }} />
+                                    </Box>
+                                    <Box sx={{
+                                        display: 'flex',
+                                        justifyContent: 'flex-start',
+                                        alignItems: 'center',
+                                        width: '100%',
+                                        minWidth: '40px' // Minimum width to prevent resizing
+                                    }}>
+                                        <Typography
+                                            fontWeight='medium'
+                                            sx={{
+                                                width: '100%',
+                                                fontSize: { xs: 10, sm: 10, md: 12, lg: 12, xl: 14 },
+                                                lineHeight: 1.2,
+                                                whiteSpace: 'nowrap',
+                                                display: 'block',
+
+                                            }}
+                                        >
+                                            {formatNumberForDisplay(uploadSpeed.value)} {uploadSpeed.unit.replace('/s', '')}
+                                        </Typography>
+                                    </Box>
+
+                                    {/* Download row */}
+                                    <Box sx={{
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        height: '100%',
+                                        width: '24px', // Fixed width
+                                    }}>
+                                        <ArrowDownward sx={{ color: 'text.primary', fontSize: { xs: 13, sm: 14, md: 17, lg: 17, xl: 18 } }} />
+                                    </Box>
+                                    <Box sx={{
+                                        display: 'flex',
+                                        justifyContent: 'flex-start',
+                                        alignItems: 'center',
+                                        width: '100%',
+                                        minWidth: '40px' // Minimum width to prevent resizing
+                                    }}>
+                                        <Typography
+                                            fontWeight='medium'
+                                            sx={{
+                                                width: '100%',
+                                                fontSize: { xs: 10, sm: 10, md: 12, lg: 12, xl: 14 },
+                                                lineHeight: 1.2,
+                                                whiteSpace: 'nowrap',
+                                                display: 'block',
+                                            }}
+                                        >
+                                            {formatNumberForDisplay(downloadSpeed.value)} {downloadSpeed.unit.replace('/s', '')}
+                                        </Typography>
+                                    </Box>
+                                </Box>
+                            </Box>
+                        }
+                    />
+                </Box>
+            );
+        default:
+            return null;
+        }
+    };
+
     useEffect(() => {
         // Update temperature unit preference from config
         setIsFahrenheit(config?.temperatureUnit !== 'celsius');
 
-        getSystemInfo();
+        // Define the data fetching function inside the effect to avoid recreating it on every render
+        const fetchSystemInfo = async () => {
+            const res = await DashApi.getSystemInformation(config?.networkInterface);
+            setSystemInformation(res);
+            getRamPercentage(res);
+            getNetworkInformation(res);
+            getMainDiskInfo(res);
+        };
 
-        // fetch system info every 15 seconds
+        // Immediately fetch data with the current settings
+        fetchSystemInfo();
+
+        // Fetch system info every 5 seconds
         const interval = setInterval(() => {
-            getSystemInfo();
-        }, 10000); // 10000 ms = 10 seconds
+            fetchSystemInfo();
+        }, 5000); // 5000 ms = 5 seconds
 
-        return () => clearInterval(interval);
-    }, [config?.temperatureUnit]);
+        // Clean up the interval when component unmounts or dependencies change
+        return () => {
+            clearInterval(interval);
+        };
+    }, [config?.temperatureUnit, config?.networkInterface]);
 
     return (
         <Grid container gap={0} sx={{ display: 'flex', width: '100%', justifyContent: 'center' }}>
@@ -134,20 +342,11 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                 </IconButton>
             </div>
             <Grid container gap={2} mt={-1}>
-                <Grid>
-                    <GaugeWidget title='CPU' value={systemInformation?.cpu?.currentLoad ? Math.round(systemInformation?.cpu?.currentLoad) : 0} />
-                </Grid>
-                <Grid>
-                    <GaugeWidget
-                        title='TEMP'
-                        value={systemInformation?.cpu?.main ? formatTemperature(systemInformation?.cpu?.main) : 0}
-                        temperature
-                        isFahrenheit={isFahrenheit}
-                    />
-                </Grid>
-                <Grid>
-                    <GaugeWidget title='RAM' value={memoryInformation} />
-                </Grid>
+                {visibleGauges.map((gaugeType, index) => (
+                    <Grid key={index}>
+                        {renderGauge(gaugeType)}
+                    </Grid>
+                ))}
             </Grid>
             <Box p={1} width={'92%'} mt={-1}>
                 <DiskUsageBar totalSpace={diskInformation?.totalSpace ? diskInformation?.totalSpace : 0} usedSpace={diskInformation?.usedSpace ? diskInformation?.usedSpace : 0} usedPercentage={diskInformation?.usedPercentage ? diskInformation?.usedPercentage : 0}/>
@@ -164,9 +363,22 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                     <Typography><b>Disk Mount:</b> {diskInformation?.mount}</Typography>
                     <Typography><b>Disk Usage:</b> {`${diskInformation?.usedPercentage?.toFixed(0)}%`}</Typography>
                     <Typography><b>Disk Total:</b> {`${diskInformation?.totalSpace} GB`}</Typography>
+                    {systemInformation?.network && (
+                        <>
+                            <Typography><b>Network Interface:</b> {systemInformation.network.iface}</Typography>
+                            {/* <Typography>
+                                <b>Interface Speed:</b> {systemInformation.network.speed || 1000} Mbps
+                            </Typography> */}
+                            <Typography>
+                                <b>Upload Speed:</b> {formatNetworkSpeed(systemInformation.network.tx_sec).value} {formatNetworkSpeed(systemInformation.network.tx_sec).unit}
+                            </Typography>
+                            <Typography>
+                                <b>Download Speed:</b> {formatNetworkSpeed(systemInformation.network.rx_sec).value} {formatNetworkSpeed(systemInformation.network.rx_sec).unit}
+                            </Typography>
+                        </>
+                    )}
                 </Box>
             </CenteredModal>
-            {/* <DiskUsageBar totalSpace={1200} usedSpace={50} usedPercentage={50}/> */}
         </Grid>
     );
 };

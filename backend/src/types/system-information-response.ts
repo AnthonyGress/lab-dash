@@ -54,5 +54,21 @@ export type SysteminformationResponse = {
 
  memory: Systeminformation.MemData | null;
  disk: Systeminformation.FsSizeData[] | null;
+ network: {
+    rx_sec: number;
+    tx_sec: number;
+    iface: string;
+    operstate: string;
+    speed?: number;
+ } | null;
+ networkInterfaces?: Array<{
+    iface: string;
+    operstate: string;
+    speed: number;
+    rx_bytes: number;
+    tx_bytes: number;
+    rx_sec: number;
+    tx_sec: number;
+ }>;
 }
 

@@ -110,7 +110,14 @@ export class DashApi {
                 if (error.response?.status === 401 &&
                     !originalRequest._retry &&
                     !originalRequest.url?.includes('api/auth/login') &&
-                    !originalRequest.url?.includes('api/auth/refresh')) {
+                    !originalRequest.url?.includes('api/auth/refresh') &&
+                    // Exclude external service routes from triggering token refresh/logout
+                    !originalRequest.url?.includes('api/pihole') &&
+                    !originalRequest.url?.includes('api/pihole/v6') &&
+                    !originalRequest.url?.includes('api/qbittorrent') &&
+                    !originalRequest.url?.includes('api/deluge') &&
+                    // Ensure we're only handling 401s from our own API
+                    originalRequest.url?.includes(BACKEND_URL)) {
 
                     originalRequest._retry = true;
 
@@ -241,8 +248,10 @@ export class DashApi {
         }
     }
 
-    public static async getSystemInformation(): Promise<any> {
-        const res = await axios.get(`${BACKEND_URL}/api/system`);
+    public static async getSystemInformation(networkInterface?: string): Promise<any> {
+        const res = await axios.get(`${BACKEND_URL}/api/system`, {
+            params: networkInterface ? { networkInterface } : undefined
+        });
         if (res.status === StatusCodes.OK) {
             return res.data;
         }
