@@ -33,10 +33,12 @@ services:
       container_name: lab-dash
       image: ghcr.io/anthonygress/lab-dash:latest
       privileged: true
+      network_mode: host # for monitoring network usage stats
       ports:
         - 2022:2022
       environment:
-        - SECRET=YOUR_SECRET_KEY # any random string for jwt encryption
+        - SECRET=YOUR_SECRET_KEY # any random string for used for encryption.
+        # You can run `openssl rand -base64 32` to generate a key
       volumes:
         - /sys:/sys:ro
         - /docker/lab-dash/config:/config
@@ -45,6 +47,7 @@ services:
       restart: unless-stopped
       labels:
         - "com.centurylinklabs.watchtower.enable=true"
+
 ```
 
 # Usage
