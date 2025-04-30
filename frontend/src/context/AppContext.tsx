@@ -13,6 +13,8 @@ export interface IAppContext {
     setEditMode: Dispatch<SetStateAction<boolean>>;
     config: Config | undefined;
     updateConfig: (partialConfig: Partial<Config>) => Promise<void>;
+    // Refresh counter to force re-renders
+    refreshCounter: number;
     // Authentication & setup states
     isLoggedIn: boolean;
     setIsLoggedIn: Dispatch<SetStateAction<boolean>>;
@@ -34,6 +36,9 @@ export interface IAppContext {
     // Recently updated state
     recentlyUpdated: boolean;
     handleVersionViewed: () => Promise<void>;
+    // Connection health states
+    connectionHealthy: boolean;
+    reconnectToBackend: () => Promise<boolean>;
 }
 
 export const AppContext = createContext<IAppContext>(null!);

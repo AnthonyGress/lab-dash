@@ -12,6 +12,7 @@ import { BsGeoAltFill } from 'react-icons/bs';
 
 import { DashApi } from '../../../../api/dash-api';
 import { FIFTEEN_MIN_IN_MS } from '../../../../constants/constants';
+import { useAppContext } from '../../../../context/useAppContext';
 import { styles } from '../../../../theme/styles';
 
 interface WeatherData {
@@ -67,6 +68,7 @@ const weatherDescriptions: Record<number, { description: string; icon: JSX.Eleme
 };
 
 export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
+    const { refreshCounter } = useAppContext();
     const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -74,18 +76,16 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
     const [isFahrenheit, setIsFahrenheit] = useState(config?.temperatureUnit !== 'celsius');
     const [openTooltipIndex, setOpenTooltipIndex] = useState<number | null>(null);
     const [locationName, setLocationName] = useState<string | null>(null);
-    const timerRef = useRef<number | null>(null);
     const locationSet = useRef(false);
+    const fetchTimeoutRef = useRef<number | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
     // Handle config changes and location setup
     useEffect(() => {
         setIsFahrenheit(config?.temperatureUnit !== 'celsius');
 
-        // Clear any existing weather fetch timer
-        if (timerRef.current !== null) {
-            clearInterval(timerRef.current);
-            timerRef.current = null;
-        }
+        // Reset error state when config changes
+        setError(null);
 
         // Only use location from config, no browser geolocation fallback
         if (config?.location?.latitude && config?.location?.longitude) {
@@ -114,36 +114,73 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
 
         return () => {
             document.removeEventListener('click', handleClickOutside);
-            if (timerRef.current !== null) {
-                clearInterval(timerRef.current);
-                timerRef.current = null;
+            // Clear any pending fetch timeout
+            if (fetchTimeoutRef.current) {
+                clearTimeout(fetchTimeoutRef.current);
+                fetchTimeoutRef.current = null;
             }
         };
-    }, [config]);
+    }, [config, refreshCounter]);
 
     // Handle weather data fetching
     useEffect(() => {
-        // Only fetch if location has been determined
+        // Only fetch if location has been determined and there's no error
         if (!locationSet.current || !location) {
             return;
         }
 
+        let intervalId: number;
+
         const fetchWeather = async () => {
             try {
                 setIsLoading(true);
+                // Clear any previous error
+                setError(null);
+
+                // Set a timeout to prevent infinite loading
+                const timeoutPromise = new Promise<null>((_, reject) => {
+                    fetchTimeoutRef.current = window.setTimeout(() => {
+                        reject(new Error('Weather fetch timed out'));
+                    }, 5000); // 5 second timeout
+                });
+
                 // Only fetch when we have explicit coordinates
                 if (location.latitude && location.longitude) {
-                    const data = await DashApi.getWeather(location.latitude, location.longitude);
+                    // Race between the fetch and the timeout
+                    const data = await Promise.race([
+                        DashApi.getWeather(location.latitude, location.longitude),
+                        timeoutPromise
+                    ]);
+
+                    // Clear timeout since we got a response
+                    if (fetchTimeoutRef.current) {
+                        clearTimeout(fetchTimeoutRef.current);
+                        fetchTimeoutRef.current = null;
+                    }
+
                     setWeatherData(data);
                 } else {
                     // If no coordinates are available, don't fetch
-                    console.error('No coordinates available for weather fetch');
-                    setWeatherData(null);
+                    throw new Error('No coordinates available for weather fetch');
                 }
-            } catch (error) {
-                console.error('Error fetching weather:', error);
+            } catch (err) {
+                console.error('Error fetching weather:', err);
                 setWeatherData(null);
+                if (err instanceof Error) {
+                    if (err.message.includes('timed out')) {
+                        setError('Weather data request timed out. Please check your connection and try again.');
+                    } else {
+                        setError(`Failed to load weather data: ${err.message}`);
+                    }
+                } else {
+                    setError('Failed to load weather data. Please try again.');
+                }
             } finally {
+                // Clear any pending timeout
+                if (fetchTimeoutRef.current) {
+                    clearTimeout(fetchTimeoutRef.current);
+                    fetchTimeoutRef.current = null;
+                }
                 setIsLoading(false);
             }
         };
@@ -151,18 +188,31 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
         // Fetch weather immediately
         fetchWeather();
 
-        // Set up interval for periodic refresh
-        timerRef.current = window.setInterval(() => {
-            fetchWeather();
-        }, FIFTEEN_MIN_IN_MS);
+        // Only set up interval if there's no error
+        if (!error) {
+            // Set up interval for periodic refresh
+            intervalId = window.setInterval(fetchWeather, FIFTEEN_MIN_IN_MS);
+        }
 
+        // Clear interval on unmount
         return () => {
-            if (timerRef.current !== null) {
-                clearInterval(timerRef.current);
-                timerRef.current = null;
+            clearInterval(intervalId);
+            if (fetchTimeoutRef.current) {
+                clearTimeout(fetchTimeoutRef.current);
+                fetchTimeoutRef.current = null;
             }
         };
-    }, [location, locationSet.current]);
+    }, [location, error, refreshCounter]);
+
+    // Handle retry button click
+    const handleRetry = () => {
+        // Clear error state
+        setError(null);
+        // Force a re-run of the data fetch useEffect
+        const currentLocation = location;
+        setLocation(null);
+        setTimeout(() => setLocation(currentLocation), 10);
+    };
 
     const convertTemperature = (temp: number) => (isFahrenheit ? Math.round((temp * 9) / 5 + 32) : Math.round(temp));
 
@@ -335,6 +385,34 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
                     }}
                 >
                     <CircularProgress />
+                </Box>
+            ) : error ? (
+                <Box
+                    sx={{
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        textAlign: 'center',
+                        padding: 2
+                    }}
+                >
+                    <Typography variant='subtitle1'>
+                        {error}
+                    </Typography>
+                    <Typography variant='caption' sx={{ mt: 1 }}>
+                        {locationName && `Location: ${locationName}`}
+                    </Typography>
+                    <Button
+                        variant='contained'
+                        color='primary'
+                        sx={{ mt: 2 }}
+                        onClick={handleRetry}
+                    >
+                        Retry
+                    </Button>
                 </Box>
             ) : weatherData ? (
                 <Grid sx={{ width: '100%' }}>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { TorrentClientWidget } from './TorrentClientWidget';
 import { DashApi } from '../../../../api/dash-api';
+import { useAppContext } from '../../../../context/useAppContext';
 
 type QBittorrentWidgetConfig = {
     host?: string;
@@ -16,6 +17,7 @@ type QBittorrentWidgetConfig = {
 
 export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) => {
     const { config } = props;
+    const { refreshCounter } = useAppContext();
     const [isLoading, setIsLoading] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [authError, setAuthError] = useState('');
@@ -169,11 +171,20 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
             const interval = setInterval(() => {
                 fetchStats();
                 fetchTorrents();
-            }, 5000); // Fixed interval of 5000ms as specified
+            }, 30000);
 
             return () => clearInterval(interval);
         }
     }, [fetchStats, fetchTorrents, isAuthenticated]);
+
+    // Force refresh when dashboard is refreshed
+    useEffect(() => {
+        if (isAuthenticated) {
+            console.log('Dashboard refreshed, re-fetching qBittorrent data');
+            fetchStats();
+            fetchTorrents();
+        }
+    }, [refreshCounter, fetchStats, fetchTorrents, isAuthenticated]);
 
     // Torrent actions
     const handleStartTorrent = useCallback(async (hash: string) => {

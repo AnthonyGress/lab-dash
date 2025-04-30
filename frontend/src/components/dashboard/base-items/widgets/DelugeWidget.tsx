@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { TorrentClientWidget } from './TorrentClientWidget';
 import { DashApi } from '../../../../api/dash-api';
+import { useAppContext } from '../../../../context/useAppContext';
 
 type DelugeWidgetConfig = {
     host?: string;
@@ -15,6 +16,7 @@ type DelugeWidgetConfig = {
 
 export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
     const { config } = props;
+    const { refreshCounter } = useAppContext();
     const [isLoading, setIsLoading] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [authError, setAuthError] = useState('');
@@ -168,11 +170,20 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
             const interval = setInterval(() => {
                 fetchStats();
                 fetchTorrents();
-            }, 5000); // Fixed interval of 5000ms as specified
+            }, 30000);
 
             return () => clearInterval(interval);
         }
     }, [fetchStats, fetchTorrents, isAuthenticated]);
+
+    // Force refresh when dashboard is refreshed
+    useEffect(() => {
+        if (isAuthenticated && !loginAttemptFailed) {
+            console.log('Dashboard refreshed, re-fetching Deluge data');
+            fetchStats();
+            fetchTorrents();
+        }
+    }, [refreshCounter, fetchStats, fetchTorrents, isAuthenticated, loginAttemptFailed]);
 
     // Torrent actions
     const handleResumeTorrent = useCallback(async (hash: string) => {

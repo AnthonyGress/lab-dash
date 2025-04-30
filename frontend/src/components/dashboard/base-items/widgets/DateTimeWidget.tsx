@@ -1,14 +1,32 @@
 import { Box, CardContent, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 
-export const DateTimeWidget = () => {
-    const [dateTime, setDateTime] = useState<any>(new Date());
+import { useAppContext } from '../../../../context/useAppContext';
 
-    useEffect(()=>{
-        setInterval(()=>{
+export const DateTimeWidget = () => {
+    const [dateTime, setDateTime] = useState<Date>(new Date());
+    const { refreshCounter } = useAppContext();
+
+    useEffect(() => {
+        // Set initial time
+        setDateTime(new Date());
+
+        // Create interval to update time every minute
+        const intervalId = setInterval(() => {
             setDateTime(new Date());
         }, 60000);
-    },[]);
+
+        // Clean up interval on component unmount
+        return () => {
+            clearInterval(intervalId);
+        };
+    }, []);
+
+    // Force an immediate refresh when dashboard is refreshed
+    useEffect(() => {
+        // Update time immediately when dashboard refreshes
+        setDateTime(new Date());
+    }, [refreshCounter]);
 
     return (
         <CardContent>

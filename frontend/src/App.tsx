@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 
 import { DashApi } from './api/dash-api';
+import { ConnectionStatus } from './components/ConnectionStatus';
 import { SetupForm } from './components/forms/SetupForm';
 import { WithNav } from './components/navbar/WithNav';
 import { ScrollToTop } from './components/ScrollToTop';
@@ -102,6 +103,7 @@ export const App = () => {
                         <Route path='/signup' element={<LoginPage />}/>
                     </Route>
                 </Routes>
+                <ConnectionStatus />
             </Router>
         </>
     );

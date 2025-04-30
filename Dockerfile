@@ -20,7 +20,7 @@ FROM node:lts-slim AS backend-deploy
 WORKDIR /app
 ENV NODE_ENV=production
 EXPOSE 2022
-RUN apt-get update && apt-get install -y iputils-ping lm-sensors
+RUN apt-get update && apt-get install -y lm-sensors ca-certificates
 COPY --from=backend-build /usr/src/app/dist/config ../config
 COPY --from=backend-build /usr/src/app/dist/index.js ./
 COPY --from=backend-build /usr/src/app/dist/package.json ./

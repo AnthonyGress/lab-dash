@@ -42,7 +42,7 @@ const initialStats: PiholeStats = {
 
 export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
     const { config } = props;
-    const { editMode } = useAppContext();
+    const { editMode, refreshCounter } = useAppContext();
 
     // Reference to track if this is the first render
     const isFirstRender = useRef(true);
@@ -122,6 +122,14 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    // Force refresh when dashboard is refreshed
+    useEffect(() => {
+        if (!isFirstRender.current && isConfigured && !error && !authFailed) {
+            console.log('Dashboard refreshed, re-fetching Pi-hole data');
+            checkPiholeStatus();
+        }
+    }, [refreshCounter]);
 
     // Determine if we're using Pi-hole v6 based on authentication method
     useEffect(() => {
