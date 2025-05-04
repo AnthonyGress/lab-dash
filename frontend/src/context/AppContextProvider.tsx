@@ -1,5 +1,5 @@
 import { useMediaQuery } from '@mui/material';
-import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import shortid from 'shortid';
 
 import { AppContext } from './AppContext';
@@ -19,7 +19,6 @@ export const AppContextProvider = ({ children }: Props) => {
     const [dashboardLayout, setDashboardLayout] = useState<DashboardItem[]>(initialItems);
     const [editMode, setEditMode] = useState(false);
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-    const [refreshCounter, setRefreshCounter] = useState(0);
 
     // Authentication & setup states
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
@@ -28,11 +27,6 @@ export const AppContextProvider = ({ children }: Props) => {
     const [isFirstTimeSetup, setIsFirstTimeSetup] = useState<boolean | null>(null);
     const [setupComplete, setSetupComplete] = useState<boolean>(false);
 
-    // Connection state tracking
-    const [connectionHealthy, setConnectionHealthy] = useState<boolean>(true);
-    const wasHiddenRef = useRef<boolean>(false);
-    const lastVisibleTimeRef = useRef<number>(Date.now());
-
     // Update checker states
     const [updateAvailable, setUpdateAvailable] = useState<boolean>(false);
     const [latestVersion, setLatestVersion] = useState<string | null>(null);
@@ -40,68 +34,6 @@ export const AppContextProvider = ({ children }: Props) => {
 
     // Recently updated states
     const [recentlyUpdated, setRecentlyUpdated] = useState<boolean>(false);
-
-    // Manual reconnect function that can be called from UI
-    const reconnectToBackend = async () => {
-        try {
-            console.log('Reconnection attempt initiated');
-            await refreshTokenAndValidate();
-            await refreshDashboard();
-            setConnectionHealthy(true);
-            return true;
-        } catch (error) {
-            console.error('Reconnection failed:', error);
-            return false;
-        }
-    };
-
-    // Handle visibility change
-    const handleVisibilityChange = useCallback(async () => {
-        const isHidden = document.hidden;
-        const now = Date.now();
-
-        // If page was hidden and is now visible
-        if (wasHiddenRef.current && !isHidden) {
-            console.log('App returning from background state');
-
-            // Calculate time spent in background/locked state
-            const timeInBackground = now - lastVisibleTimeRef.current;
-            const RECONNECT_THRESHOLD = 10000; // 10 seconds
-
-            // If we were in background/locked for a significant time, check connection
-            if (timeInBackground > RECONNECT_THRESHOLD) {
-                console.log(`App was in background for ${timeInBackground}ms, checking connection health`);
-
-                try {
-                    // Simple ping to backend to check connection
-                    const healthCheck = await DashApi.checkCookies();
-
-                    if (!healthCheck || !healthCheck.hasAccessToken) {
-                        console.log('Connection needs refresh after device wake');
-                        // Use the same reconnection logic as the manual reconnect
-                        await reconnectToBackend();
-                    }
-                } catch (error) {
-                    console.error('Health check failed after device wake:', error);
-                    setConnectionHealthy(false);
-
-                    // Try to recover connection using the same reconnection logic
-                    try {
-                        await reconnectToBackend();
-                    } catch (refreshError) {
-                        console.error('Failed to recover connection:', refreshError);
-                        // Connection is still unhealthy, UI will show reconnect button
-                    }
-                }
-            }
-        }
-
-        // Update refs for next visibility change
-        wasHiddenRef.current = isHidden;
-        if (!isHidden) {
-            lastVisibleTimeRef.current = now;
-        }
-    }, []);
 
     // Initialize authentication state and check if first time setup
     useEffect(() => {
@@ -113,19 +45,7 @@ export const AppContextProvider = ({ children }: Props) => {
         initializeAuth();
         // Setup API interceptors
         DashApi.setupAxiosInterceptors();
-
-        // Set up visibility change listener
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-
-        // Set initial values
-        wasHiddenRef.current = document.hidden;
-        lastVisibleTimeRef.current = Date.now();
-
-        // Clean up event listener on unmount
-        return () => {
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
-        };
-    }, [handleVisibilityChange]);
+    }, []);
 
     // Reset dashboard state when logged out to prevent stale data
     useEffect(() => {
@@ -247,7 +167,6 @@ export const AppContextProvider = ({ children }: Props) => {
                     setUsername(storedUsername);
                     setIsAdmin(isAdminRes);
                     setIsLoggedIn(true);
-                    setConnectionHealthy(true);
                 } catch (error) {
                     console.error('Access token validation failed:', error);
                     // Try to refresh the token
@@ -263,7 +182,6 @@ export const AppContextProvider = ({ children }: Props) => {
             setIsLoggedIn(false);
             setUsername(null);
             setIsAdmin(false);
-            setConnectionHealthy(false);
         }
     };
 
@@ -281,13 +199,11 @@ export const AppContextProvider = ({ children }: Props) => {
                 setUsername(storedUsername);
                 setIsAdmin(refreshResult.isAdmin || false);
                 setIsLoggedIn(true);
-                setConnectionHealthy(true);
             } else {
                 // If refresh failed, user is not logged in
                 setIsLoggedIn(false);
                 setUsername(null);
                 setIsAdmin(false);
-                setConnectionHealthy(false);
                 // Turn off edit mode if it was active
                 if (editMode) {
                     setEditMode(false);
@@ -298,7 +214,6 @@ export const AppContextProvider = ({ children }: Props) => {
             setIsLoggedIn(false);
             setUsername(null);
             setIsAdmin(false);
-            setConnectionHealthy(false);
             // Turn off edit mode if it was active
             if (editMode) {
                 setEditMode(false);
@@ -345,10 +260,6 @@ export const AppContextProvider = ({ children }: Props) => {
         try {
             const savedLayout = await getLayout();
             setConfig(await DashApi.getConfig());
-
-            // Increment refresh counter to force all widgets to re-render
-            setRefreshCounter(prev => prev + 1);
-            console.log('Dashboard refreshed, widgets will re-render');
         } catch (error) {
             console.error('Failed to refresh dashboard:', error);
         }
@@ -504,7 +415,6 @@ export const AppContextProvider = ({ children }: Props) => {
             setEditMode,
             config,
             updateConfig,
-            refreshCounter,
             // Authentication states
             isLoggedIn,
             setIsLoggedIn,
@@ -525,10 +435,7 @@ export const AppContextProvider = ({ children }: Props) => {
             checkForAppUpdates,
             // Recently updated states
             recentlyUpdated,
-            handleVersionViewed,
-            // Connection states
-            connectionHealthy,
-            reconnectToBackend
+            handleVersionViewed
         }}>
             {children}
         </Provider>

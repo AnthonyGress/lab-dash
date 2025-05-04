@@ -90,56 +90,11 @@ export class DashApi {
         // Set withCredentials globally for all API requests
         axios.defaults.withCredentials = true;
 
-        // Variable to track last connection attempt time
-        let lastConnectionAttempt = Date.now();
-
-        // Track if we're processing a connection retry
-        let isRetrying = false;
-
-        // Listen for online/offline events
-        window.addEventListener('online', () => {
-            console.log('Browser reports online status');
-            // Force a connection check when we're back online
-            this.checkCookies().catch(e => console.error('Cookie check after online event failed', e));
-        });
-
         // Request interceptor
         axios.interceptors.request.use(
             async (config) => {
                 // Ensure credentials are sent for all API requests
                 config.withCredentials = true;
-
-                // Check if we need to update the last connection time
-                // This is used to detect when the device has been sleeping
-                const now = Date.now();
-                const timeSinceLastConnection = now - lastConnectionAttempt;
-                lastConnectionAttempt = now;
-
-                // If there's been an unusually long gap between requests (device sleep)
-                // and this isn't a login/refresh/health check request, do a connection check
-                const isAuthRequest = config.url?.includes('api/auth') || config.url?.includes('api/config') ||
-                                     config.url?.includes('api/health');
-
-                if (timeSinceLastConnection > 60000 && !isRetrying && !isAuthRequest) {
-                    console.log(`Long time since last request (${timeSinceLastConnection}ms), checking connection`);
-                    isRetrying = true;
-
-                    // Check connection before proceeding
-                    try {
-                        await this.checkCookies();
-                        isRetrying = false;
-                    } catch (e) {
-                        console.error('Connection check failed, attempting token refresh');
-                        try {
-                            await this.refreshToken();
-                        } catch (refreshError) {
-                            console.error('Token refresh failed after connection check', refreshError);
-                        } finally {
-                            isRetrying = false;
-                        }
-                    }
-                }
-
                 return config;
             },
             (error) => Promise.reject(error)
@@ -149,47 +104,6 @@ export class DashApi {
         axios.interceptors.response.use(
             response => response,
             async (error) => {
-                // Set a default retry delay to add some buffer before retrying
-                const retryDelay = 1000;
-
-                // Handle device wake network issues
-                // Common errors after device wake: ERR_NETWORK, ETIMEDOUT, ECONNABORTED
-                if (
-                    error.code === 'ERR_NETWORK' ||
-                    error.code === 'ECONNABORTED' ||
-                    error.code === 'ETIMEDOUT' ||
-                    error.message?.includes('Network Error')
-                ) {
-                    const originalRequest = error.config;
-
-                    // Avoid infinite retry loops
-                    if (!originalRequest._retry && !isRetrying) {
-                        originalRequest._retry = true;
-                        isRetrying = true;
-
-                        console.log('Network error detected, attempting reconnection...');
-
-                        // Add a delay to give network time to stabilize
-                        await new Promise(resolve => setTimeout(resolve, retryDelay));
-
-                        try {
-                            // Try to refresh connection
-                            const refreshResult = await this.refreshToken();
-                            isRetrying = false;
-
-                            if (refreshResult.success) {
-                                console.log('Connection restored after network error');
-                                // If refresh was successful, retry the original request
-                                return axios(originalRequest);
-                            }
-                        } catch (refreshError) {
-                            console.error('Failed to restore connection', refreshError);
-                        } finally {
-                            isRetrying = false;
-                        }
-                    }
-                }
-
                 const originalRequest = error.config;
 
                 // Only handle 401 errors for authenticated routes

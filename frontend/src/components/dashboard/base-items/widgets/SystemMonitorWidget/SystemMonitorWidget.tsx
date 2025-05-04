@@ -6,7 +6,6 @@ import { IoInformationCircleOutline } from 'react-icons/io5';
 import { DiskUsageBar } from './DiskUsageWidget';
 import { GaugeWidget } from './GaugeWidget';
 import { DashApi } from '../../../../../api/dash-api';
-import { useAppContext } from '../../../../../context/useAppContext';
 import { useIsMobile } from '../../../../../hooks/useIsMobile';
 import { COLORS } from '../../../../../theme/styles';
 import { theme } from '../../../../../theme/theme';
@@ -25,7 +24,6 @@ interface SystemMonitorWidgetProps {
 }
 
 export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
-    const { refreshCounter } = useAppContext();
     const [systemInformation, setSystemInformation] = useState<any>();
     const [memoryInformation, setMemoryInformation] = useState<any>(0);
     const [diskInformation, setDiskInformation] = useState<any>();
@@ -311,7 +309,7 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
             getMainDiskInfo(res);
         };
 
-        // Fetch data initially
+        // Immediately fetch data with the current settings
         fetchSystemInfo();
 
         // Fetch system info every 5 seconds
@@ -323,7 +321,7 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
         return () => {
             clearInterval(interval);
         };
-    }, [config?.networkInterface, config?.temperatureUnit, refreshCounter]); // Add refreshCounter as dependency
+    }, [config?.temperatureUnit, config?.networkInterface]);
 
     return (
         <Grid container gap={0} sx={{ display: 'flex', width: '100%', justifyContent: 'center' }}>

@@ -222,6 +222,7 @@ delugeRoute.post('/login', async (req: Request, res: Response) => {
 delugeRoute.get('/stats', async (req: Request, res: Response) => {
     try {
         const baseUrl = getBaseUrl(req);
+        console.log(`Deluge stats request for ${baseUrl}`);
 
         // Use IP address as identifier for non-authenticated users
         const sessionId = req.user?.username || req.ip || 'default';
