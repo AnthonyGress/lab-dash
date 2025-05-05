@@ -33,7 +33,7 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
     useEffect(() => {
         if (config) {
             setLoginCredentials({
-                host: config.host || 'localhost',
+                host: config.host || '',
                 port: config.port || '8112',
                 ssl: config.ssl || false,
                 username: config.username || '',

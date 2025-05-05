@@ -166,7 +166,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                     <Toolbar disableGutters sx={{ justifyContent: 'space-between', width: '100%' }}>
                         <Link to='/'>
                             {/* Desktop */}
-                            <Box sx={{ width: { xs: '100%', md: '200px' }, ...styles.center }}>
+                            <Box sx={{ width: { xs: '100%', md: '300px', lg: '350px' }, ...styles.center, overflow: 'hidden' }}>
                                 <Logo sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }}/>
                                 <Typography
                                     variant='h5'
@@ -180,13 +180,15 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                         color: 'inherit',
                                         textDecoration: 'none',
                                         minWidth: '120px',
+                                        maxWidth: { md: '250px', lg: '300px' },
                                         textAlign: 'left',
                                         whiteSpace: 'nowrap',
-                                        overflow: 'visible'
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis'
                                     }}
                                     key={`app-title-${config?.title}-${nanoid()}`}
                                 >
-                                    <div style={{ display: 'block' }}>{config?.title || 'Lab Dash'}</div>
+                                    {config?.title || 'Lab Dash'}
                                 </Typography>
                                 {/* Mobile */}
                                 <Logo sx={{ display: { xs: 'flex', md: 'none' }, ml: 2, mr: 2 }} />
@@ -195,14 +197,16 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                     noWrap
                                     sx={{
                                         mr: 2,
-                                        flexGrow: 1,
+                                        flexGrow: 0,
                                         display: { xs: 'flex', md: 'none' },
                                         fontFamily: 'Earth Orbiter',
                                         letterSpacing: '.1rem',
                                         color: 'inherit',
                                         textDecoration: 'none',
                                         whiteSpace: 'nowrap',
-                                        overflow: 'visible'
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        maxWidth: '150px'
                                     }}
                                     key={`app-title-mobile-${config?.title}-${nanoid()}`}
                                 >
@@ -211,13 +215,13 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                             </Box>
                         </Link>
                         { currentPath === '/' && config?.search &&
-                            <Box sx={{ width: '100%', display: { xs: 'none', md: 'block' } }}>
+                            <Box sx={{ width: '100%', display: { xs: 'none', md: 'flex' }, justifyContent: 'center', flexGrow: 1 }}>
                                 <GlobalSearch />
                             </Box>
                         }
 
                         <Box sx={{ display: 'flex' }}>
-                            <Box sx={{ display: 'flex', width: { md: '200px' }, flexGrow: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
+                            <Box sx={{ display: 'flex', width: { md: '300px', lg: '350px' }, flexGrow: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
                                 {editMode &&
                                 <Tooltip title='Add Item' placement='left'>
                                     <IconButton onClick={() => setOpenAddModal(true)}>

@@ -4,11 +4,14 @@ import { useEffect, useState } from 'react';
 export const DateTimeWidget = () => {
     const [dateTime, setDateTime] = useState<any>(new Date());
 
-    useEffect(()=>{
-        setInterval(()=>{
+    useEffect(() => {
+        const interval = setInterval(() => {
             setDateTime(new Date());
         }, 60000);
-    },[]);
+
+        // Clean up interval on component unmount
+        return () => clearInterval(interval);
+    }, []);
 
     return (
         <CardContent>

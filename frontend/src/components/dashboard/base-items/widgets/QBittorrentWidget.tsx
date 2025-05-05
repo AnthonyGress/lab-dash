@@ -33,7 +33,7 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
     useEffect(() => {
         if (config) {
             setLoginCredentials({
-                host: config.host || 'localhost',
+                host: config.host || '',
                 port: config.port || '8080',
                 ssl: config.ssl || false,
                 username: config.username || '',

@@ -61,10 +61,10 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
     };
 
     // Helper function to format network speed with appropriate units (KB/s or MB/s)
-    const formatNetworkSpeed = (bytesPerSecond: number): { value: number; unit: string; normalizedValue: number } => {
+    const formatNetworkSpeed = (bytesPerSecond: number): { value: number; unit: string; normalizedValue: number; display: string } => {
         // Handle undefined or null values
         if (bytesPerSecond === undefined || bytesPerSecond === null) {
-            return { value: 0, unit: 'KB/s', normalizedValue: 0 };
+            return { value: 0, unit: 'KB/s', normalizedValue: 0, display: '  0 KB' };
         }
 
         // Calculate normalized value in Mbps - ensure tiny values still show up on gauge
@@ -74,25 +74,30 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
         // This makes even tiny network activity visible
         const normalizedMbps = bytesPerSecond > 0 ? Math.max(mbps, 30) : 0;
 
+        let value = 0;
+        let unit = '';
+        let display = '';
+
         // If less than 1000 KB/s, show in KB/s
         if (bytesPerSecond < 1000 * 1024) {
-            return {
-                value: Math.round(bytesPerSecond / 1024), // Convert to KB/s for display as whole number
-                unit: 'KB/s',
-                normalizedValue: normalizedMbps
-            };
+            value = Math.round(bytesPerSecond / 1024); // Convert to KB/s
+            unit = 'KB/s';
+            // Pad the number to 3 characters and add the unit without /s
+            display = value.toString().padStart(3, ' ') + ' KB';
+        } else {
+            // Otherwise show in MB/s
+            value = Math.round(bytesPerSecond / (1024 * 1024));
+            unit = 'MB/s';
+            // Pad the number to 3 characters and add the unit without /s
+            display = value.toString().padStart(3, ' ') + ' MB';
         }
 
-        // Otherwise show in MB/s
-        return {
-            value: Math.round(bytesPerSecond / (1024 * 1024)), // Convert to MB/s as whole number
-            unit: 'MB/s',
-            normalizedValue: normalizedMbps
-        };
+        return { value, unit, normalizedValue: normalizedMbps, display };
     };
 
     const formatNumberForDisplay = (num: number): string => {
-        return Math.round(num).toString();
+        // Pad numbers to a minimum width of 3 characters to prevent layout shifts
+        return Math.round(num).toString().padStart(3, ' ');
     };
 
     const getRamPercentage = (systemData: any) => {
@@ -213,13 +218,13 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                                 width: '100%',
                                 height: '70%', // Use most of the gauge height
                                 pt: 0.5,
-                                ml: -4.75
+                                ml: { xs: 8.75, md: 6.75 }
                             }}>
                                 {/* Container for both rows with fixed width icon column */}
                                 <Box sx={{
                                     display: 'grid',
-                                    gridTemplateColumns: '24px minmax(40px, 1fr)', // Fixed width for icon column and minimum width for text
-                                    width: '80%', // Increased width for more text space
+                                    gridTemplateColumns: '24px 60px', // Fixed widths for both columns
+                                    width: '85%',
                                     gap: 0.2,
                                     alignItems: 'center'
                                 }}>
@@ -248,10 +253,10 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                                                 lineHeight: 1.2,
                                                 whiteSpace: 'nowrap',
                                                 display: 'block',
-
+                                                textAlign: 'left'
                                             }}
                                         >
-                                            {formatNumberForDisplay(uploadSpeed.value)} {uploadSpeed.unit.replace('/s', '')}
+                                            {uploadSpeed.display}
                                         </Typography>
                                     </Box>
 
@@ -280,9 +285,10 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                                                 lineHeight: 1.2,
                                                 whiteSpace: 'nowrap',
                                                 display: 'block',
+                                                textAlign: 'left'
                                             }}
                                         >
-                                            {formatNumberForDisplay(downloadSpeed.value)} {downloadSpeed.unit.replace('/s', '')}
+                                            {downloadSpeed.display}
                                         </Typography>
                                     </Box>
                                 </Box>

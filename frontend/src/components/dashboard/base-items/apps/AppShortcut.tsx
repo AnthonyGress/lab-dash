@@ -64,7 +64,8 @@ export const AppShortcut = ({ url, name, iconName, showLabel, editMode, config }
             height: '100%',
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            position: 'relative'
         }}>
             <Box sx={{
                 display: 'flex',

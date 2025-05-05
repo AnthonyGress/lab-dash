@@ -4,6 +4,7 @@ export enum ITEM_TYPE {
     SYSTEM_MONITOR_WIDGET = 'system-monitor-widget',
     TORRENT_CLIENT = 'torrent-client',
     PIHOLE_WIDGET = 'pihole-widget',
+    DUAL_WIDGET = 'dual-widget',
     APP_SHORTCUT = 'app-shortcut',
     BLANK_APP = 'blank-app',
     BLANK_WIDGET = 'blank-widget',
@@ -25,6 +26,8 @@ export type NewItem = {
     adminOnly?: boolean;
     config?: {
         temperatureUnit?: string;
+        healthUrl?: string;
+        healthCheckType?: string;
         [key: string]: any;
     };
 }
@@ -76,6 +79,8 @@ export type DashboardItem = {
     adminOnly?: boolean;
     config?: {
         temperatureUnit?: string;
+        healthUrl?: string;
+        healthCheckType?: string;
         [key: string]: any;
     };
 };

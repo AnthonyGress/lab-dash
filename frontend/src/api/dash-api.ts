@@ -273,10 +273,10 @@ export class DashApi {
         throw new Error(`Weather API request failed: ${res.statusText}`);
     }
 
-    public static async checkServiceHealth(url: string): Promise<'online' | 'offline'> {
+    public static async checkServiceHealth(url: string, healthCheckType: 'http' | 'ping' = 'http'): Promise<'online' | 'offline'> {
         try {
             const res = await axios.get(`${BACKEND_URL}/api/health`, {
-                params: { url }
+                params: { url, type: healthCheckType }
             });
             return res.data.status;
         } catch (error) {

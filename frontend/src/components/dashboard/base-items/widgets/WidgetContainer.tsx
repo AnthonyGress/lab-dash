@@ -1,12 +1,9 @@
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import { Box, Card, IconButton, Menu, MenuItem, Tooltip } from '@mui/material';
-import React, { useState } from 'react';
+import { Card } from '@mui/material';
+import React from 'react';
 
-import { useServiceStatus } from '../../../../hooks/useServiceStatus';
+import { EditMenu } from './EditMenu';
+import { StatusIndicator } from './StatusIndicator';
 import { COLORS } from '../../../../theme/styles';
-import { isValidHttpUrl } from '../../../../utils/utils';
 
 type Props = {
     children: React.ReactNode;
@@ -15,39 +12,23 @@ type Props = {
     onDelete?: () => void;
     appShortcut?: boolean;
     placeholder?: boolean;
-    url?: string
+    url?: string;
+    healthCheckType?: 'http' | 'ping';
     rowPlaceholder?: boolean;
 };
 
-export const WidgetContainer: React.FC<Props> = ({ children, editMode, onEdit, onDelete, appShortcut=false, placeholder=false, url, rowPlaceholder }) => {
-    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-    const open = Boolean(anchorEl);
-
-    const isUrl = url && isValidHttpUrl(url);
-    const isOnline = useServiceStatus(isUrl ? url : null);
-
-    let dotColor = 'gray';
-    let tooltipText = 'Unknown';
-
-    if (isOnline === true) {
-        dotColor = 'green';
-        tooltipText = 'Online';
-    } else if (isOnline === false) {
-        dotColor = 'red';
-        tooltipText = 'Offline';
-    }
-
-    const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-        event.stopPropagation(); // Stop drag from triggering
-        setAnchorEl(event.currentTarget);
-    };
-
-    const handleMenuClose = () => {
-        setAnchorEl(null);
-    };
-
+export const WidgetContainer: React.FC<Props> = ({
+    children,
+    editMode,
+    onEdit,
+    onDelete,
+    appShortcut=false,
+    placeholder=false,
+    url,
+    healthCheckType='http',
+    rowPlaceholder
+}) => {
     return (
-        // <WiggleWrapper editMode={editMode}>
         <Card
             sx={{
                 width: '100%',
@@ -71,103 +52,9 @@ export const WidgetContainer: React.FC<Props> = ({ children, editMode, onEdit, o
                 backdropFilter: placeholder ? 'none' : '6px'
             }}
         >
-            {/* Show menu only in edit mode */}
-            {editMode && (
-                <div
-                    onPointerDownCapture={(e) => e.stopPropagation()} // Stop drag from interfering
-                    onClick={(e) => e.stopPropagation()} // Prevent drag from triggering on click
-                >
-                    <IconButton
-                        sx={{
-                            position: 'absolute',
-                            top: 0,
-                            right: 0,
-                            zIndex: 99
-                        }}
-                        onClick={handleMenuOpen}
-                    >
-                        <MoreVertIcon sx={{ color: 'text.primary' }}/>
-                    </IconButton>
-                    <Menu
-                        anchorEl={anchorEl}
-                        open={open}
-                        onClose={handleMenuClose}
-                        sx={{
-                            '& .MuiPaper-root': {
-                                bgcolor: '#2A2A2A',
-                                color: 'white',
-                                borderRadius: 1,
-                                boxShadow: 4
-                            }
-                        }}
-                    >
-                        <MenuItem
-                            onClick={() => { handleMenuClose(); onEdit?.(); }}
-                            sx={{
-                                py: 1,
-                            }}
-                        >
-                            Edit
-                        </MenuItem>
-                        <MenuItem
-                            onClick={() => { handleMenuClose(); onDelete?.(); }}
-                            sx={{
-                                py: 1,
-                            }}
-                        >
-                            Delete
-                        </MenuItem>
-                    </Menu>
-                </div>
-            )}
+            <EditMenu editMode={editMode} onEdit={onEdit} onDelete={onDelete} />
             {children}
-            {url && isValidHttpUrl(url) && (
-                <Tooltip title={tooltipText} arrow placement='top' slotProps={{
-                    tooltip: {
-                        sx: {
-                            fontSize: 14,
-                        },
-                    },
-                }}>
-                    <Box
-                        sx={{
-                            position: 'absolute',
-                            bottom: 5,
-                            right: 5,
-                            width: 14,
-                            height: 14,
-                            borderRadius: '50%',
-                            backgroundColor: dotColor,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                        }}
-                    >
-                        {dotColor === 'green' && (
-                            <KeyboardArrowUpIcon sx={{
-                                color: 'white',
-                                fontSize: 18,
-                                position: 'absolute',
-                                top: '50%',
-                                left: '50%',
-                                transform: 'translate(-50%, -50%)'
-                            }} />
-                        )}
-                        {dotColor === 'red' && (
-                            <KeyboardArrowDownIcon sx={{
-                                color: 'white',
-                                fontSize: 18,
-                                position: 'absolute',
-                                top: '50%',
-                                left: '50%',
-                                transform: 'translate(-50%, -50%)'
-                            }} />
-                        )}
-                    </Box>
-                </Tooltip>
-            )}
+            <StatusIndicator url={url} healthCheckType={healthCheckType} />
         </Card>
-        // </WiggleWrapper>
     );
 };
