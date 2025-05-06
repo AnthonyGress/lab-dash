@@ -1,0 +1,40 @@
+replicaCount: 1
+
+namespaceOverride: "default"
+
+image:
+  repository: ghcr.io/anthonygress/lab-dash
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 2022
+
+secret: "changeme"
+
+volumes:
+  config:
+    enabled: true
+    size: 1Gi
+  uploads:
+    enabled: true
+    size: 1Gi
+
+resources: {}
+
+ingress:
+  enabled: true
+  className: ""
+  annotations: {}
+  hosts:
+    - host: my.domain.net
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  # To enable tls
+  # tls:
+  #   - hosts:
+  #       - labdash.local
+  #     secretName: labdash-tls
