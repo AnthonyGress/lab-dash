@@ -68,20 +68,24 @@ export class DashApi {
             console.log('Logging out user...');
 
             // Call the logout endpoint to clear cookies on the server
-            // This is the only reliable way to clear HTTP-only cookies
             await axios.post(`${BACKEND_URL}/api/auth/logout`, {}, { withCredentials: true });
 
             // Clear username from localStorage
             localStorage.removeItem('username');
             console.log('Logged out successfully');
 
-
             // Verify cookies are cleared
             const cookieStatus = await this.checkCookies();
+            console.log('Cookie status after logout:', cookieStatus);
+
+            // Force page reload to ensure state is reset
+            window.location.reload();
         } catch (error) {
             console.error('Logout error:', error);
-            // Even if the API call fails, clear local storage
+            // Even if the API call fails, clear local storage and cookies
             localStorage.removeItem('username');
+            // Force page reload to ensure state is reset
+            window.location.reload();
         }
     }
 
@@ -259,24 +263,45 @@ export class DashApi {
     }
 
     public static async getWeather(latitude: number, longitude: number): Promise<any> {
-        const res = await axios.get(`${BACKEND_URL}/api/weather`, {
-            params: {
-                latitude,
-                longitude
-            }
-        });
-
-        if (res.status === StatusCodes.OK) {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/weather`, {
+                params: {
+                    latitude,
+                    longitude
+                },
+                timeout: 8000 // 8 second timeout
+            });
             return res.data;
-        }
+        } catch (error: any) {
+            // Log detailed error information
+            if (error.response) {
+                // The request was made and the server responded with a status code
+                // that falls out of the range of 2xx
+                console.error('Weather API error response:', {
+                    status: error.response.status,
+                    data: error.response.data,
+                    headers: error.response.headers
+                });
+            } else if (error.request) {
+                // The request was made but no response was received
+                console.error('Weather API no response:', error.request);
+            } else {
+                // Something happened in setting up the request that triggered an Error
+                console.error('Weather API request error:', error.message);
+            }
 
-        throw new Error(`Weather API request failed: ${res.statusText}`);
+            throw error;
+        }
     }
 
     public static async checkServiceHealth(url: string, healthCheckType: 'http' | 'ping' = 'http'): Promise<'online' | 'offline'> {
         try {
             const res = await axios.get(`${BACKEND_URL}/api/health`, {
-                params: { url, type: healthCheckType }
+                params: { url, type: healthCheckType },
+                // Don't send credentials for health checks to avoid auth issues
+                withCredentials: false,
+                // Add timeout to prevent long-running requests
+                timeout: 5000
             });
             return res.data.status;
         } catch (error) {
@@ -390,10 +415,19 @@ export class DashApi {
     public static async refreshToken(): Promise<{ success: boolean; isAdmin?: boolean }> {
         try {
             const res = await axios.post(`${BACKEND_URL}/api/auth/refresh`, {}, {
-                withCredentials: true
+                withCredentials: true,
+                // Add a timeout to prevent hanging requests
+                timeout: 5000
             });
-            console.log('Token refreshed successfully');
 
+            // Only return success if we got a valid response
+            if (res.status === 204) {
+                // No content - no refresh token
+                console.log('No refresh token to refresh');
+                return { success: false };
+            }
+
+            console.log('Token refreshed successfully');
             return {
                 success: true,
                 isAdmin: res.data.isAdmin
@@ -401,7 +435,15 @@ export class DashApi {
         } catch (error) {
             console.error('Error refreshing token:', error);
             // If refresh token fails, log out the user
-            await this.logout();
+            try {
+                // Don't call logout here as it would cause an infinite loop
+                // Just clear cookies and localStorage directly
+                localStorage.removeItem('username');
+                document.cookie = 'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+                document.cookie = 'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+            } catch (e) {
+                console.error('Error during logout cleanup:', e);
+            }
             return { success: false };
         }
     }

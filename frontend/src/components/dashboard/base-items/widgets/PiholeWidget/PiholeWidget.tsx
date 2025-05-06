@@ -337,11 +337,11 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
             // Determine the check interval based on state:
             let checkInterval = 30000; // Default: 30 seconds when enabled (reduced frequency)
 
-            if (!isBlocking) {
-                // Check every 5 seconds when disabled with a timer
-                // Check every 10 seconds when disabled indefinitely
-                checkInterval = disableEndTime !== null ? 5000 : 10000;
+            if (!isBlocking && disableEndTime !== null) {
+                // Check every 5 seconds only when disabled with an active timer
+                checkInterval = 5000;
             }
+            // When disabled indefinitely, use the same 30 second interval as when enabled
 
             // Set up sequential checking with dynamic intervals
             const scheduleNextCheck = () => {
@@ -351,27 +351,24 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 // Skip if an error occurred or auth failed
                 if (error || authFailed) return;
 
+                // Calculate the interval based on the current state
+                let interval = 30000; // 30 seconds for enabled state
+                if (!isBlocking && disableEndTime !== null) {
+                    // Use 5 seconds for disabled with timer
+                    interval = 5000;
+                }
+
                 // Store the timeout ID for cleanup
                 statusCheckIntervalRef.current = setTimeout(async () => {
                     // Double-check error and auth state before making the call
                     if (!error && !authFailed) {
                         await checkPiholeStatus();
-                    }
-
-                    // Only schedule next check if no errors occurred
-                    if (!error && !authFailed) {
-                        // Recalculate the interval based on the current state
-                        let nextInterval = 30000; // 30 seconds for enabled state
-
-                        if (!isBlocking) {
-                            // Use 5 seconds for disabled with timer, 10 seconds for indefinite
-                            nextInterval = disableEndTime !== null ? 5000 : 10000;
+                        // Schedule next check only if no errors occurred
+                        if (!error && !authFailed) {
+                            scheduleNextCheck();
                         }
-
-                        // Schedule the next check with the updated interval
-                        scheduleNextCheck();
                     }
-                }, checkInterval) as unknown as NodeJS.Timeout;
+                }, interval) as unknown as NodeJS.Timeout;
             };
 
             // Start the polling cycle

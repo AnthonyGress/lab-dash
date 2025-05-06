@@ -129,7 +129,6 @@ export const AppShortcutConfig = ({ formContext, onCustomIconSelect }: AppShortc
                             options={HEALTH_CHECK_TYPES}
                             sx={{
                                 width: '100%',
-                                mb: 2,
                                 '& .MuiOutlinedInput-root': {
                                     '& fieldset': {
                                         borderColor: 'text.primary',
@@ -161,6 +160,7 @@ export const AppShortcutConfig = ({ formContext, onCustomIconSelect }: AppShortc
                         <TextFieldElement
                             name='healthUrl'
                             label={healthCheckType === 'http' ? 'Health Check URL' : 'Hostname or IP Address'}
+                            helperText={'Optional'}
                             variant='outlined'
                             sx={{
                                 width: '100%',

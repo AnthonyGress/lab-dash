@@ -129,11 +129,6 @@ export const SystemMonitorWidgetConfig = ({ formContext }: SystemMonitorWidgetCo
                     }}
                 />
             </Grid>
-            <Grid sx={{ width: '100%', mt: 2, mb: 1 }}>
-                <Typography variant='body2' sx={{ color: 'white', mb: 1, ml: 1 }}>
-                    Select gauges to display:
-                </Typography>
-            </Grid>
             <Grid>
                 <SelectElement
                     label='Left Gauge'

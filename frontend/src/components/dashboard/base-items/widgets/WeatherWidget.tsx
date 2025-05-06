@@ -128,35 +128,58 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
             return;
         }
 
+        let isComponentMounted = true;
+        let retryCount = 0;
+        const MAX_RETRIES = 2;
+        const RETRY_DELAY = 5000; // 5 seconds
+
         const fetchWeather = async () => {
             try {
+                if (!isComponentMounted) return;
+
                 setIsLoading(true);
                 // Only fetch when we have explicit coordinates
                 if (location.latitude && location.longitude) {
                     const data = await DashApi.getWeather(location.latitude, location.longitude);
-                    setWeatherData(data);
+                    if (isComponentMounted) {
+                        setWeatherData(data);
+                        retryCount = 0; // Reset retry count on success
+                    }
                 } else {
                     // If no coordinates are available, don't fetch
                     console.error('No coordinates available for weather fetch');
-                    setWeatherData(null);
+                    if (isComponentMounted) {
+                        setWeatherData(null);
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching weather:', error);
-                setWeatherData(null);
+                if (isComponentMounted) {
+                    setWeatherData(null);
+
+                    // Implement retry with backoff
+                    if (retryCount < MAX_RETRIES) {
+                        retryCount++;
+                        console.log(`Retrying weather fetch (${retryCount}/${MAX_RETRIES}) in ${RETRY_DELAY/1000}s`);
+                        setTimeout(fetchWeather, RETRY_DELAY);
+                    }
+                }
             } finally {
-                setIsLoading(false);
+                if (isComponentMounted) {
+                    setIsLoading(false);
+                }
             }
         };
 
         // Fetch weather immediately
         fetchWeather();
 
-        // Set up interval for periodic refresh
-        timerRef.current = window.setInterval(() => {
-            fetchWeather();
-        }, FIFTEEN_MIN_IN_MS);
+        // Set up interval for periodic refresh - use a longer interval if there were previous errors
+        const refreshInterval = retryCount > 0 ? FIFTEEN_MIN_IN_MS * 2 : FIFTEEN_MIN_IN_MS;
+        timerRef.current = window.setInterval(fetchWeather, refreshInterval);
 
         return () => {
+            isComponentMounted = false;
             if (timerRef.current !== null) {
                 clearInterval(timerRef.current);
                 timerRef.current = null;

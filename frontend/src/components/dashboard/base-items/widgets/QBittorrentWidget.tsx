@@ -169,7 +169,7 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
             const interval = setInterval(() => {
                 fetchStats();
                 fetchTorrents();
-            }, 5000); // Fixed interval of 5000ms as specified
+            }, 30000); // 30 seconds
 
             return () => clearInterval(interval);
         }

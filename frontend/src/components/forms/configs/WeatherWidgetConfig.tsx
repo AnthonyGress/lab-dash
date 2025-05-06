@@ -168,8 +168,16 @@ export const WeatherWidgetConfig = ({ formContext }: WeatherWidgetConfigProps) =
                         }
                     }}
                     loading={isSearching}
-                    loadingText='Searching...'
-                    noOptionsText={locationSearch.length < 2 ? 'Type to search...' : 'No locations found'}
+                    loadingText={
+                        <Typography style={{ color: theme.palette.text.primary }}>
+                            Searching...
+                        </Typography>
+                    }
+                    noOptionsText={
+                        <Typography style={{ color: theme.palette.text.primary }}>
+                            {locationSearch.length < 2 ? 'Type to search...' : 'No locations found'}
+                        </Typography>
+                    }
                     fullWidth
                     isOptionEqualToValue={(option, value) => option.id === value.id}
                     clearOnBlur={false}
@@ -182,10 +190,12 @@ export const WeatherWidgetConfig = ({ formContext }: WeatherWidgetConfigProps) =
                             {...params}
                             label='Search location'
                             variant='outlined'
+                            helperText='Enter a city/state or city/country'
+                            FormHelperTextProps={{
+                                style: { color: theme.palette.text.primary }
+                            }}
                             sx={{
                                 width: '100%',
-                                mt: 2,
-                                mb: 2,
                                 '& .MuiOutlinedInput-root': {
                                     '& fieldset': {
                                         borderColor: 'text.primary',

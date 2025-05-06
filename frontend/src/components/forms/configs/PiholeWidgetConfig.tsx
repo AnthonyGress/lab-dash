@@ -42,7 +42,7 @@ export const PiholeWidgetConfig = ({ formContext }: PiholeWidgetConfigProps) => 
 
     return (
         <>
-            <Grid sx={{ mb: 2, width: '100%' }}>
+            <Grid sx={{ width: '100%' }}>
                 <TextFieldElement
                     name='piholeHost'
                     label='Pi-hole Host'
@@ -56,7 +56,7 @@ export const PiholeWidgetConfig = ({ formContext }: PiholeWidgetConfigProps) => 
                     }}
                 />
             </Grid>
-            <Grid sx={{ mb: 2, width: '100%' }}>
+            <Grid sx={{ width: '100%' }}>
                 <TextFieldElement
                     name='piholePort'
                     label='Port'
@@ -70,7 +70,7 @@ export const PiholeWidgetConfig = ({ formContext }: PiholeWidgetConfigProps) => 
                     }}
                 />
             </Grid>
-            <Grid sx={{ mb: 2, width: '100%' }}>
+            <Grid sx={{ width: '100%' }}>
                 <TextFieldElement
                     name='piholeName'
                     label='Display Name'
@@ -83,7 +83,7 @@ export const PiholeWidgetConfig = ({ formContext }: PiholeWidgetConfigProps) => 
                     }}
                 />
             </Grid>
-            <Grid sx={{ mb: 2, width: '100%' }}>
+            <Grid sx={{ width: '100%' }}>
                 <TextFieldElement
                     name='piholeApiToken'
                     label='API Token (Pi-hole v5)'
@@ -101,7 +101,7 @@ export const PiholeWidgetConfig = ({ formContext }: PiholeWidgetConfigProps) => 
                     }}
                 />
             </Grid>
-            <Grid sx={{ mb: 2, width: '100%' }}>
+            <Grid sx={{ width: '100%' }}>
                 <TextFieldElement
                     name='piholePassword'
                     label='Password (Pi-hole v6)'
@@ -119,7 +119,7 @@ export const PiholeWidgetConfig = ({ formContext }: PiholeWidgetConfigProps) => 
                     }}
                 />
             </Grid>
-            <Grid sx={{ mb: 1, width: '100%' }}>
+            <Grid sx={{ width: '100%' }}>
                 <CheckboxElement
                     label='Use SSL'
                     name='piholeSsl'

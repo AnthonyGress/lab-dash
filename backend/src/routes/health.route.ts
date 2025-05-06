@@ -60,8 +60,6 @@ healthRoute.get('/', async (req: Request, res: Response): Promise<void> => {
             res.json({ status: 'online' });
             return;
         }
-
-
     } catch (error) {
         console.log('service is offline', req.query.url);
         res.json({ status: 'offline' });

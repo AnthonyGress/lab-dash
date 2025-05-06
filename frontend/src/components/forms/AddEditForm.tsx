@@ -706,7 +706,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                             label='Admin Only'
                                             name='adminOnly'
                                             checked={formContext.watch('adminOnly')}
-                                            helperText='When checked, this item will only be visible to admin users'
+
                                             sx={{
                                                 ml: 1,
                                                 color: 'white',
@@ -732,7 +732,6 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                         label='Admin Only'
                                         name='adminOnly'
                                         checked={formContext.watch('adminOnly')}
-                                        helperText='When checked, this item will only be visible to admin users'
                                         sx={{
                                             ml: 1,
                                             color: 'white',

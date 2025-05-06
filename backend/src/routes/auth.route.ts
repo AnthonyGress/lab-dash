@@ -203,7 +203,8 @@ authRoute.post('/refresh', async (req: Request, res: Response) => {
 
         if (!refreshToken) {
             console.log('No refresh token in cookies');
-            res.status(400).json({ message: 'Refresh token is required' });
+            // Don't send a 400 error, just indicate no refresh needed
+            res.status(204).end(); // 204 No Content - request processed but no content to return
             return;
         }
 
@@ -384,10 +385,14 @@ authRoute.post('/logout', (req: Request, res: Response) => {
 
             writeUsers(updatedUsers);
         } else {
-            console.log('Logout request without refresh token');
+            // If no refresh token is provided, it might be a request from a service
+            // Don't clear cookies in this case to avoid disrupting service auth
+            console.log('Logout request without refresh token - not clearing cookies');
+            res.json({ message: 'No session to logout' });
+            return;
         }
 
-        // Clear the cookies with all necessary options
+        // Clear cookies with identical settings to how they were set
         res.clearCookie('access_token', {
             httpOnly: true,
             secure: false,
@@ -399,6 +404,17 @@ authRoute.post('/logout', (req: Request, res: Response) => {
             httpOnly: true,
             secure: false,
             sameSite: 'lax',
+            path: '/'
+        });
+
+        // Additionally clear without httpOnly for client-side cookies
+        res.clearCookie('access_token', {
+            secure: false,
+            path: '/'
+        });
+
+        res.clearCookie('refresh_token', {
+            secure: false,
             path: '/'
         });
 
