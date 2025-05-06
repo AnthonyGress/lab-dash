@@ -6,6 +6,7 @@ import path from 'path';
 
 import { UPLOAD_DIRECTORY } from './src/constants/constants';
 import { errorHandler } from './src/middleware/error-handler';
+import { authLimiter, generalLimiter } from './src/middleware/rate-limiter';
 import routes from './src/routes';
 
 dotenv.config();
@@ -26,6 +27,9 @@ app.use(cors({
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Apply general rate limiter to all requests
+app.use(generalLimiter);
 
 // Routes
 app.use('/icon-list', express.static(iconListPath));
