@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { TorrentClientWidget } from './TorrentClientWidget';
 import { DashApi } from '../../../../api/dash-api';
@@ -21,6 +21,7 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
     const [authError, setAuthError] = useState('');
     const [stats, setStats] = useState<any>(null);
     const [torrents, setTorrents] = useState<any[]>([]);
+    const [loginAttemptFailed, setLoginAttemptFailed] = useState(false);
     const [loginCredentials, setLoginCredentials] = useState({
         host: config?.host || 'localhost',
         port: config?.port || '8080',
@@ -28,6 +29,10 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
         username: config?.username || '',
         password: config?.password || ''
     });
+
+    // Add a counter for login attempts and a maximum number of attempts
+    const loginAttemptsRef = useRef(0);
+    const MAX_LOGIN_ATTEMPTS = 3;
 
     // Update credentials when config changes
     useEffect(() => {
@@ -39,6 +44,9 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
                 username: config.username || '',
                 password: config.password || ''
             });
+            // Reset attempt counter and failed flag when credentials change
+            loginAttemptsRef.current = 0;
+            setLoginAttemptFailed(false);
         }
     }, [config]);
 
@@ -48,22 +56,65 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
         try {
             const success = await DashApi.qbittorrentLogin(loginCredentials);
             setIsAuthenticated(success);
+
             if (!success) {
-                setAuthError('Login failed. Check your credentials and connection.');
+                // Increment attempt counter
+                loginAttemptsRef.current += 1;
+
+                // Only set login as failed if we've reached the maximum attempts
+                if (loginAttemptsRef.current >= MAX_LOGIN_ATTEMPTS) {
+                    setAuthError('Login failed after multiple attempts. Check your credentials and connection.');
+                    setLoginAttemptFailed(true);
+                } else {
+                    // If we haven't reached max attempts, show a message but don't set loginAttemptFailed
+                    setAuthError(`Login attempt ${loginAttemptsRef.current}/${MAX_LOGIN_ATTEMPTS} failed. Retrying...`);
+
+                    // Schedule another attempt after a short delay
+                    setTimeout(() => {
+                        if (!isAuthenticated) {
+                            handleLogin();
+                        }
+                    }, 2000);
+                }
+            } else {
+                // Reset counter on success
+                loginAttemptsRef.current = 0;
+                setLoginAttemptFailed(false);
             }
         } catch (error: any) {
             console.error('Login error:', error);
-            // Check for decryption error
-            if (error.response?.data?.error?.includes('Failed to decrypt password')) {
-                setAuthError('Failed to decrypt password. Please update your credentials in the widget settings.');
+
+            // Increment attempt counter
+            loginAttemptsRef.current += 1;
+
+            // Check if we've reached the maximum attempts
+            if (loginAttemptsRef.current >= MAX_LOGIN_ATTEMPTS) {
+                // Check for decryption error
+                if (error.response?.data?.error?.includes('Failed to decrypt password')) {
+                    setAuthError('Failed to decrypt password. Please update your credentials in the widget settings.');
+                } else {
+                    setAuthError('Connection error after multiple attempts. Check your qBittorrent WebUI settings.');
+                }
+                setIsAuthenticated(false);
+                setLoginAttemptFailed(true);
             } else {
-                setAuthError('Connection error. Check your qBittorrent WebUI settings.');
+                // If we haven't reached max attempts, show a retry message
+                setAuthError(`Login attempt ${loginAttemptsRef.current}/${MAX_LOGIN_ATTEMPTS} failed. Retrying...`);
+
+                // Schedule another attempt
+                setTimeout(() => {
+                    if (!isAuthenticated) {
+                        handleLogin();
+                    }
+                }, 2000);
             }
-            setIsAuthenticated(false);
         } finally {
-            setIsLoading(false);
+            // Only set isLoading to false if we've finished all attempts or succeeded
+            if (loginAttemptsRef.current >= MAX_LOGIN_ATTEMPTS || isAuthenticated) {
+                setIsLoading(false);
+            }
         }
-    }, [loginCredentials]);
+    }, [loginCredentials, isAuthenticated]);
 
     const fetchStats = useCallback(async () => {
         if (!isAuthenticated) return;
@@ -153,10 +204,10 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
 
     // Auto-login when username and password are available and not authenticated
     useEffect(() => {
-        if (config?.username && config?.password && !isAuthenticated) {
+        if (config?.username && config?.password && !isAuthenticated && !loginAttemptFailed) {
             handleLogin();
         }
-    }, [config, handleLogin, isAuthenticated]);
+    }, [config, handleLogin, isAuthenticated, loginAttemptFailed]);
 
     // Refresh stats and torrents periodically
     useEffect(() => {
