@@ -62,8 +62,6 @@ export const DualWidgetContainer: React.FC<DualWidgetContainerProps> = ({
             >
                 {children}
             </CardContent>
-
-            <StatusIndicator url={url} />
         </Card>
     );
 };
