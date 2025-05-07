@@ -94,6 +94,34 @@ export type FormValues = {
     // Dual Widget
     topWidgetType?: string;
     bottomWidgetType?: string;
+    // Dual Widget - position-specific fields for top widget
+    top_temperatureUnit?: string;
+    top_location?: { name: string; latitude: number; longitude: number } | null;
+    top_gauge1?: string;
+    top_gauge2?: string;
+    top_gauge3?: string;
+    top_networkInterface?: string;
+    top_piholeHost?: string;
+    top_piholePort?: string;
+    top_piholeSsl?: boolean;
+    top_piholeApiToken?: string;
+    top_piholePassword?: string;
+    top_piholeName?: string;
+    top_showLabel?: boolean;
+    // Dual Widget - position-specific fields for bottom widget
+    bottom_temperatureUnit?: string;
+    bottom_location?: { name: string; latitude: number; longitude: number } | null;
+    bottom_gauge1?: string;
+    bottom_gauge2?: string;
+    bottom_gauge3?: string;
+    bottom_networkInterface?: string;
+    bottom_piholeHost?: string;
+    bottom_piholePort?: string;
+    bottom_piholeSsl?: boolean;
+    bottom_piholeApiToken?: string;
+    bottom_piholePassword?: string;
+    bottom_piholeName?: string;
+    bottom_showLabel?: boolean;
     // Other fields
     adminOnly?: boolean;
     isWol?: boolean;
@@ -126,18 +154,28 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
     // Reset and initialize form when existingItem changes or when component mounts
     useEffect(() => {
         // Determine initial values based on existingItem
-        const initialItemType = isWidgetType(existingItem?.type)
+        const initialItemType = existingItem?.type === ITEM_TYPE.WEATHER_WIDGET ||
+                               existingItem?.type === ITEM_TYPE.DATE_TIME_WIDGET ||
+                               existingItem?.type === ITEM_TYPE.SYSTEM_MONITOR_WIDGET ||
+                               existingItem?.type === ITEM_TYPE.PIHOLE_WIDGET ||
+                               existingItem?.type === ITEM_TYPE.TORRENT_CLIENT ||
+                               existingItem?.type === ITEM_TYPE.DUAL_WIDGET
             ? 'widget'
             : (existingItem?.type === ITEM_TYPE.BLANK_WIDGET || existingItem?.type === ITEM_TYPE.BLANK_ROW)
                 ? existingItem?.type
                 : existingItem?.type || '';
 
-        const initialWidgetType = isWidgetType(existingItem?.type)
+        const initialWidgetType = existingItem?.type === ITEM_TYPE.WEATHER_WIDGET ||
+                                  existingItem?.type === ITEM_TYPE.DATE_TIME_WIDGET ||
+                                  existingItem?.type === ITEM_TYPE.SYSTEM_MONITOR_WIDGET ||
+                                  existingItem?.type === ITEM_TYPE.PIHOLE_WIDGET ||
+                                  existingItem?.type === ITEM_TYPE.TORRENT_CLIENT ||
+                                  existingItem?.type === ITEM_TYPE.DUAL_WIDGET
             ? existingItem?.type
             : '';
 
         const initialShowLabel = existingItem?.type === ITEM_TYPE.PIHOLE_WIDGET
-            ? (existingItem.showLabel !== undefined ? existingItem.showLabel : true)
+            ? (existingItem?.showLabel !== undefined ? existingItem.showLabel : true)
             : (existingItem?.showLabel !== undefined ? existingItem.showLabel : false);
 
         // Initialize other component state
@@ -146,71 +184,28 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
         // Initialize dual widget values if editing a dual widget
         let topWidgetType = '';
         let bottomWidgetType = '';
-        let temperatureUnit = existingItem?.config?.temperatureUnit || 'fahrenheit';
-        let location = existingItem?.config?.location || null;
-        let gauges = existingItem?.config?.gauges || ['cpu', 'temp', 'ram'];
-        let networkInterface = existingItem?.config?.networkInterface || '';
-        let piholeHost = existingItem?.config?.piholeHost || existingItem?.config?.host || '';
-        let piholePort = existingItem?.config?.piholePort || existingItem?.config?.port || '';
-        let piholeSsl = existingItem?.config?.piholeSsl !== undefined
+        const temperatureUnit = existingItem?.config?.temperatureUnit || 'fahrenheit';
+        const location = existingItem?.config?.location || null;
+        const systemMonitorGauges = existingItem?.config?.gauges || ['cpu', 'temp', 'ram'];
+        const networkInterface = existingItem?.config?.networkInterface || '';
+        const piholeHost = existingItem?.config?.piholeHost || existingItem?.config?.host || '';
+        const piholePort = existingItem?.config?.piholePort || existingItem?.config?.port || '';
+        const piholeSsl = existingItem?.config?.piholeSsl !== undefined
             ? existingItem?.config?.piholeSsl
             : existingItem?.config?.ssl || false;
-        let piholeApiToken = existingItem?.config?.piholeApiToken || existingItem?.config?.apiToken || '';
-        let piholePassword = existingItem?.config?.password || '';
-        let piholeName = existingItem?.config?.displayName || '';
+        const piholeApiToken = existingItem?.config?.piholeApiToken || existingItem?.config?.apiToken || '';
+        const piholePassword = existingItem?.config?.password || '';
+        const piholeName = existingItem?.config?.displayName || '';
         const healthUrl = existingItem?.config?.healthUrl || '';
 
-        if (existingItem?.type === ITEM_TYPE.DUAL_WIDGET) {
-            topWidgetType = existingItem?.config?.topWidget?.type || '';
-            bottomWidgetType = existingItem?.config?.bottomWidget?.type || '';
-
-            // If the top widget is a weather widget, use its config
-            if (topWidgetType === ITEM_TYPE.WEATHER_WIDGET && existingItem?.config?.topWidget?.config) {
-                temperatureUnit = existingItem.config.topWidget.config.temperatureUnit || temperatureUnit;
-                location = existingItem.config.topWidget.config.location || location;
-            }
-            // If the top widget is a system monitor widget, use its config
-            else if (topWidgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET && existingItem?.config?.topWidget?.config) {
-                temperatureUnit = existingItem.config.topWidget.config.temperatureUnit || temperatureUnit;
-                gauges = existingItem.config.topWidget.config.gauges || gauges;
-                networkInterface = existingItem.config.topWidget.config.networkInterface || networkInterface;
-            }
-            // If the top widget is a Pi-hole widget, use its config
-            else if (topWidgetType === ITEM_TYPE.PIHOLE_WIDGET && existingItem?.config?.topWidget?.config) {
-                piholeHost = existingItem.config.topWidget.config.host || piholeHost;
-                piholePort = existingItem.config.topWidget.config.port || piholePort;
-                piholeSsl = existingItem.config.topWidget.config.ssl !== undefined ? existingItem.config.topWidget.config.ssl : piholeSsl;
-                piholeApiToken = existingItem.config.topWidget.config.apiToken || piholeApiToken;
-                piholePassword = existingItem.config.topWidget.config.password || piholePassword;
-                piholeName = existingItem.config.topWidget.config.displayName || piholeName;
+        // Special handling for dual widget - extract top and bottom widget types
+        if (existingItem?.type === ITEM_TYPE.DUAL_WIDGET && existingItem?.config) {
+            if (existingItem.config.topWidget?.type) {
+                topWidgetType = existingItem.config.topWidget.type;
             }
 
-            // Do the same for bottom widget - weather
-            if (bottomWidgetType === ITEM_TYPE.WEATHER_WIDGET && existingItem?.config?.bottomWidget?.config) {
-                // Only override if top widget is not the same type to avoid conflicts
-                if (topWidgetType !== ITEM_TYPE.WEATHER_WIDGET) {
-                    temperatureUnit = existingItem.config.bottomWidget.config.temperatureUnit || temperatureUnit;
-                    location = existingItem.config.bottomWidget.config.location || location;
-                }
-            }
-            // System monitor
-            else if (bottomWidgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET && existingItem?.config?.bottomWidget?.config) {
-                if (topWidgetType !== ITEM_TYPE.SYSTEM_MONITOR_WIDGET) {
-                    temperatureUnit = existingItem.config.bottomWidget.config.temperatureUnit || temperatureUnit;
-                    gauges = existingItem.config.bottomWidget.config.gauges || gauges;
-                    networkInterface = existingItem.config.bottomWidget.config.networkInterface || networkInterface;
-                }
-            }
-            // Pi-hole
-            else if (bottomWidgetType === ITEM_TYPE.PIHOLE_WIDGET && existingItem?.config?.bottomWidget?.config) {
-                if (topWidgetType !== ITEM_TYPE.PIHOLE_WIDGET) {
-                    piholeHost = existingItem.config.bottomWidget.config.host || piholeHost;
-                    piholePort = existingItem.config.bottomWidget.config.port || piholePort;
-                    piholeSsl = existingItem.config.bottomWidget.config.ssl !== undefined ? existingItem.config.bottomWidget.config.ssl : piholeSsl;
-                    piholeApiToken = existingItem.config.bottomWidget.config.apiToken || piholeApiToken;
-                    piholePassword = existingItem.config.bottomWidget.config.password || piholePassword;
-                    piholeName = existingItem.config.bottomWidget.config.displayName || piholeName;
-                }
+            if (existingItem.config.bottomWidget?.type) {
+                bottomWidgetType = existingItem.config.bottomWidget.type;
             }
         }
 
@@ -251,14 +246,128 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             piholePassword: piholePassword,
             piholeName: piholeName,
             location: location,
-            gauge1: gauges[0] || 'cpu',
-            gauge2: gauges[1] || 'temp',
-            gauge3: gauges[2] || 'ram',
+            gauge1: systemMonitorGauges[0] || 'cpu',
+            gauge2: systemMonitorGauges[1] || 'temp',
+            gauge3: systemMonitorGauges[2] || 'ram',
             networkInterface: networkInterface,
-            // Dual widget configuration
-            topWidgetType,
-            bottomWidgetType
+            // Dual widget configuration (initialized with extracted types)
+            topWidgetType: topWidgetType,
+            bottomWidgetType: bottomWidgetType,
+            // Dual Widget - position-specific fields will be set below
+            top_temperatureUnit: 'fahrenheit',
+            top_location: null,
+            top_gauge1: 'cpu',
+            top_gauge2: 'temp',
+            top_gauge3: 'ram',
+            top_networkInterface: '',
+            top_piholeHost: '',
+            top_piholePort: '',
+            top_piholeSsl: false,
+            top_piholeApiToken: '',
+            top_piholePassword: '',
+            top_piholeName: '',
+            top_showLabel: true,
+            bottom_temperatureUnit: 'fahrenheit',
+            bottom_location: null,
+            bottom_gauge1: 'cpu',
+            bottom_gauge2: 'temp',
+            bottom_gauge3: 'ram',
+            bottom_networkInterface: '',
+            bottom_piholeHost: '',
+            bottom_piholePort: '',
+            bottom_piholeSsl: false,
+            bottom_piholeApiToken: '',
+            bottom_piholePassword: '',
+            bottom_piholeName: '',
+            bottom_showLabel: true,
         });
+
+        // Explicitly handle position-specific field loading for dual widgets
+        if (existingItem?.type === ITEM_TYPE.DUAL_WIDGET) {
+            // Process top widget configuration
+            if (existingItem.config?.topWidget) {
+                const topWidget = existingItem.config.topWidget;
+                const topConfig = topWidget.config || {};
+
+                // Load top widget type
+                setTimeout(() => {
+                    // Delayed setting to ensure reset is complete
+                    formContext.setValue('topWidgetType', topWidget.type || '');
+
+                    // Handle top weather widget
+                    if (topWidget.type === ITEM_TYPE.WEATHER_WIDGET) {
+                        formContext.setValue('top_temperatureUnit', topConfig.temperatureUnit || 'fahrenheit');
+                        // Ensure location is properly structured
+                        if (topConfig.location) {
+                            formContext.setValue('top_location', topConfig.location);
+                        }
+                    }
+
+                    // Handle top system monitor widget
+                    else if (topWidget.type === ITEM_TYPE.SYSTEM_MONITOR_WIDGET) {
+                        const topGauges = topConfig.gauges || ['cpu', 'temp', 'ram'];
+                        formContext.setValue('top_temperatureUnit', topConfig.temperatureUnit || 'fahrenheit');
+                        formContext.setValue('top_gauge1', topGauges[0] || 'cpu');
+                        formContext.setValue('top_gauge2', topGauges[1] || 'temp');
+                        formContext.setValue('top_gauge3', topGauges[2] || 'ram');
+                        formContext.setValue('top_networkInterface', topConfig.networkInterface || '');
+                    }
+
+                    // Handle top pihole widget
+                    else if (topWidget.type === ITEM_TYPE.PIHOLE_WIDGET) {
+                        formContext.setValue('top_piholeHost', topConfig.host || '');
+                        formContext.setValue('top_piholePort', topConfig.port || '');
+                        formContext.setValue('top_piholeSsl', topConfig.ssl !== undefined ? topConfig.ssl : false);
+                        formContext.setValue('top_piholeApiToken', topConfig.apiToken || '');
+                        formContext.setValue('top_piholePassword', topConfig.password || '');
+                        formContext.setValue('top_piholeName', topConfig.displayName || '');
+                        formContext.setValue('top_showLabel', topConfig.showLabel !== undefined ? topConfig.showLabel : true);
+                    }
+                }, 0);
+            }
+
+            // Process bottom widget configuration
+            if (existingItem.config?.bottomWidget) {
+                const bottomWidget = existingItem.config.bottomWidget;
+                const bottomConfig = bottomWidget.config || {};
+
+                // Load bottom widget type
+                setTimeout(() => {
+                    // Delayed setting to ensure reset is complete
+                    formContext.setValue('bottomWidgetType', bottomWidget.type || '');
+
+                    // Handle bottom weather widget
+                    if (bottomWidget.type === ITEM_TYPE.WEATHER_WIDGET) {
+                        formContext.setValue('bottom_temperatureUnit', bottomConfig.temperatureUnit || 'fahrenheit');
+                        // Ensure location is properly structured
+                        if (bottomConfig.location) {
+                            formContext.setValue('bottom_location', bottomConfig.location);
+                        }
+                    }
+
+                    // Handle bottom system monitor widget
+                    else if (bottomWidget.type === ITEM_TYPE.SYSTEM_MONITOR_WIDGET) {
+                        const bottomGauges = bottomConfig.gauges || ['cpu', 'temp', 'ram'];
+                        formContext.setValue('bottom_temperatureUnit', bottomConfig.temperatureUnit || 'fahrenheit');
+                        formContext.setValue('bottom_gauge1', bottomGauges[0] || 'cpu');
+                        formContext.setValue('bottom_gauge2', bottomGauges[1] || 'temp');
+                        formContext.setValue('bottom_gauge3', bottomGauges[2] || 'ram');
+                        formContext.setValue('bottom_networkInterface', bottomConfig.networkInterface || '');
+                    }
+
+                    // Handle bottom pihole widget
+                    else if (bottomWidget.type === ITEM_TYPE.PIHOLE_WIDGET) {
+                        formContext.setValue('bottom_piholeHost', bottomConfig.host || '');
+                        formContext.setValue('bottom_piholePort', bottomConfig.port || '');
+                        formContext.setValue('bottom_piholeSsl', bottomConfig.ssl !== undefined ? bottomConfig.ssl : false);
+                        formContext.setValue('bottom_piholeApiToken', bottomConfig.apiToken || '');
+                        formContext.setValue('bottom_piholePassword', bottomConfig.password || '');
+                        formContext.setValue('bottom_piholeName', bottomConfig.displayName || '');
+                        formContext.setValue('bottom_showLabel', bottomConfig.showLabel !== undefined ? bottomConfig.showLabel : true);
+                    }
+                }, 0);
+            }
+        }
     }, [existingItem, formContext]);
 
     // Helper function to check if a type is a widget type
@@ -403,8 +512,45 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                     }
                 }
 
-                const topConfig = await createWidgetConfig(data.topWidgetType || '', data);
-                const bottomConfig = await createWidgetConfig(data.bottomWidgetType || '', data);
+                // Create custom data objects for top and bottom widgets with proper field mapping
+                const topWidgetData = {
+                    ...data,
+                    // Map position-specific fields to standard fields for the createWidgetConfig function
+                    temperatureUnit: data.top_temperatureUnit,
+                    location: data.top_location,
+                    gauge1: data.top_gauge1,
+                    gauge2: data.top_gauge2,
+                    gauge3: data.top_gauge3,
+                    networkInterface: data.top_networkInterface,
+                    piholeHost: data.top_piholeHost,
+                    piholePort: data.top_piholePort,
+                    piholeSsl: data.top_piholeSsl,
+                    piholeApiToken: data.top_piholeApiToken,
+                    piholePassword: data.top_piholePassword,
+                    piholeName: data.top_piholeName,
+                    showLabel: data.top_showLabel
+                };
+
+                const bottomWidgetData = {
+                    ...data,
+                    // Map position-specific fields to standard fields for the createWidgetConfig function
+                    temperatureUnit: data.bottom_temperatureUnit,
+                    location: data.bottom_location,
+                    gauge1: data.bottom_gauge1,
+                    gauge2: data.bottom_gauge2,
+                    gauge3: data.bottom_gauge3,
+                    networkInterface: data.bottom_networkInterface,
+                    piholeHost: data.bottom_piholeHost,
+                    piholePort: data.bottom_piholePort,
+                    piholeSsl: data.bottom_piholeSsl,
+                    piholeApiToken: data.bottom_piholeApiToken,
+                    piholePassword: data.bottom_piholePassword,
+                    piholeName: data.bottom_piholeName,
+                    showLabel: data.bottom_showLabel
+                };
+
+                const topConfig = await createWidgetConfig(data.topWidgetType || '', topWidgetData);
+                const bottomConfig = await createWidgetConfig(data.bottomWidgetType || '', bottomWidgetData);
 
                 config = {
                     topWidget: {
@@ -481,9 +627,22 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
     // Helper function to create widget configuration based on widget type
     const createWidgetConfig = async (widgetType: string, data: FormValues) => {
         if (widgetType === ITEM_TYPE.WEATHER_WIDGET) {
+            // Get the location data and ensure it's properly structured
+            const location = data.location || null;
+
+            // Ensure location has the correct structure with all properties
+            let processedLocation = null;
+            if (location) {
+                processedLocation = {
+                    name: location.name || '',
+                    latitude: typeof location.latitude === 'number' ? location.latitude : parseFloat(location.latitude as any) || 0,
+                    longitude: typeof location.longitude === 'number' ? location.longitude : parseFloat(location.longitude as any) || 0
+                };
+            }
+
             return {
                 temperatureUnit: data.temperatureUnit || 'fahrenheit',
-                location: data.location || undefined
+                location: processedLocation
             };
         } else if (widgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET) {
             const config = {
@@ -594,6 +753,34 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             // Reset dual widget fields
             topWidgetType: '',
             bottomWidgetType: '',
+            // Dual Widget - position-specific fields for top widget
+            top_temperatureUnit: '',
+            top_location: null,
+            top_gauge1: '',
+            top_gauge2: '',
+            top_gauge3: '',
+            top_networkInterface: '',
+            top_piholeHost: '',
+            top_piholePort: '',
+            top_piholeSsl: false,
+            top_piholeApiToken: '',
+            top_piholePassword: '',
+            top_piholeName: '',
+            top_showLabel: false,
+            // Dual Widget - position-specific fields for bottom widget
+            bottom_temperatureUnit: '',
+            bottom_location: null,
+            bottom_gauge1: '',
+            bottom_gauge2: '',
+            bottom_gauge3: '',
+            bottom_networkInterface: '',
+            bottom_piholeHost: '',
+            bottom_piholePort: '',
+            bottom_piholeSsl: false,
+            bottom_piholeApiToken: '',
+            bottom_piholePassword: '',
+            bottom_piholeName: '',
+            bottom_showLabel: false,
         });
 
         // This ensures that when the form is reopened, the initial effect will run and set values from existingItem

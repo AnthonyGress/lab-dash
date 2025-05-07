@@ -229,7 +229,9 @@ export class DashApi {
     public static async saveConfig(config: Partial<Config>): Promise<void> {
         try {
             // Explicitly set withCredentials for this request
-            await axios.post(`${BACKEND_URL}/api/config`, config, {
+            // Clone and stringify-parse the config to ensure proper serialization of complex objects
+            const preparedConfig = JSON.parse(JSON.stringify(config));
+            await axios.post(`${BACKEND_URL}/api/config`, preparedConfig, {
                 withCredentials: true
             });
         } catch (error) {

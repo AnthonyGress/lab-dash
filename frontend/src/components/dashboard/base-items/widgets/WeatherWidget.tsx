@@ -130,7 +130,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
 
         let isComponentMounted = true;
         let retryCount = 0;
-        const MAX_RETRIES = 2;
+        const MAX_RETRIES = 3;
         const RETRY_DELAY = 5000; // 5 seconds
 
         const fetchWeather = async () => {

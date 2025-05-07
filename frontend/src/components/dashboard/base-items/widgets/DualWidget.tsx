@@ -33,7 +33,7 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
     onDelete,
     url
 }) => {
-    const renderWidget = (widgetConfig: { type: string; config?: any } | undefined) => {
+    const renderWidget = (widgetConfig: { type: string; config?: any } | undefined, position: 'top' | 'bottom') => {
         if (!widgetConfig || !widgetConfig.type) {
             return (
                 <Box
@@ -59,7 +59,10 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
             case ITEM_TYPE.DATE_TIME_WIDGET:
                 return <DateTimeWidget />;
             case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
-                return <SystemMonitorWidget config={widgetConfig.config} />;
+                return <SystemMonitorWidget config={{
+                    ...widgetConfig.config,
+                    dualWidgetPosition: position
+                }} />;
             case ITEM_TYPE.PIHOLE_WIDGET:
                 return <PiholeWidget config={widgetConfig.config} />;
             default:
@@ -112,10 +115,11 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
                     display: 'flex',
                     flexDirection: 'column',
                     mb: 0.5,
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    position: 'relative'
                 }}
             >
-                {renderWidget(config?.topWidget)}
+                {renderWidget(config?.topWidget, 'top')}
             </Box>
 
             <Divider
@@ -132,10 +136,11 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
                     display: 'flex',
                     flexDirection: 'column',
                     mt: 0.5,
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    position: 'relative'
                 }}
             >
-                {renderWidget(config?.bottomWidget)}
+                {renderWidget(config?.bottomWidget, 'bottom')}
             </Box>
         </DualWidgetContainer>
     );

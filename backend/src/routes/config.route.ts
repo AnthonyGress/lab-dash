@@ -54,7 +54,7 @@ configRoute.get('/export', [authenticateToken, requireAdmin], async (_req: Reque
 // POST - Save the incoming JSON layout to disk (admin only)
 configRoute.post('/', [authenticateToken, requireAdmin], async (req: Request, res: Response): Promise<void> => {
     try {
-        console.log('Saving config body:', req.body);
+        console.log('Saving config body:', JSON.stringify(req.body, null, 2));
 
         const updates = req.body; // Get all key-value pairs from the request
         const config: Config = loadConfig(); // Load current config
@@ -65,8 +65,6 @@ configRoute.post('/', [authenticateToken, requireAdmin], async (req: Request, re
                 (config as any)[key] = updates[key]; // Update the key dynamically
             }
         });
-        
-        // console.log('Updated Config:', JSON.stringify(config));
 
         // Save the updated config to file
         await fs.writeFile(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8');

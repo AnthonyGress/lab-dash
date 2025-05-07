@@ -20,6 +20,7 @@ interface SystemMonitorWidgetProps {
         temperatureUnit?: string;
         gauges?: GaugeType[];
         networkInterface?: string;
+        dualWidgetPosition?: 'top' | 'bottom';
     };
 }
 
@@ -46,6 +47,27 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
     const visibleGauges = selectedGauges.filter(gauge => gauge !== 'none');
 
     const isMobile = useIsMobile();
+
+    // Determine if we're inside a dual widget and adjust positioning
+    const isDualWidget = config?.dualWidgetPosition !== undefined;
+    const isBottomWidget = config?.dualWidgetPosition === 'bottom';
+
+    // Default styles for the info button
+    const infoButtonStyles = {
+        position: 'absolute',
+        top: -5,
+        left: -5,
+        zIndex: 99
+    };
+
+    // Adjust styles when in a dual widget
+    if (isDualWidget) {
+        // For top widget in dual, default style is fine
+        // For bottom widget in dual, adjust the top position
+        if (isBottomWidget) {
+            infoButtonStyles.top = 0;
+        }
+    }
 
     // Helper function to format space dynamically (GB or TB)
     const formatSpace = (space: number): string => {
@@ -336,12 +358,7 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                 onClick={(e) => e.stopPropagation()}
             >
                 <IconButton
-                    sx={{
-                        position: 'absolute',
-                        top: -5,
-                        left: -5,
-                        zIndex: 99
-                    }}
+                    sx={infoButtonStyles}
                     onClick={() => setOpenSystemModal(true)}
                 >
                     <IoInformationCircleOutline style={{ color: theme.palette.text.primary, fontSize: '1.5rem' }}/>
