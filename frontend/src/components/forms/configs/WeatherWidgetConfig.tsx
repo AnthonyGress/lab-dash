@@ -126,7 +126,7 @@ export const WeatherWidgetConfig = ({ formContext }: WeatherWidgetConfigProps) =
                             '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
                         },
                         width: '100%',
-                        minWidth: isMobile ? '50vw' : '20vw',
+                        minWidth: isMobile ? '65vw' : '20vw',
                         '& .MuiMenuItem-root:hover': {
                             backgroundColor: `${COLORS.LIGHT_GRAY_HOVER} !important`,
                         },
@@ -196,6 +196,7 @@ export const WeatherWidgetConfig = ({ formContext }: WeatherWidgetConfigProps) =
                             }}
                             sx={{
                                 width: '100%',
+                                minWidth: isMobile ? '65vw' : '20vw',
                                 '& .MuiOutlinedInput-root': {
                                     '& fieldset': {
                                         borderColor: 'text.primary',

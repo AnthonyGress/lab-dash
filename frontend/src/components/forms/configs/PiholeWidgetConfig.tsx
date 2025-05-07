@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { CheckboxElement, TextFieldElement } from 'react-hook-form-mui';
 
+import { useIsMobile } from '../../../hooks/useIsMobile';
 import { theme } from '../../../theme/theme';
 import { FormValues } from '../AddEditForm';
 
@@ -11,8 +12,11 @@ interface PiholeWidgetConfigProps {
 }
 
 export const PiholeWidgetConfig = ({ formContext }: PiholeWidgetConfigProps) => {
+    const isMobile = useIsMobile();
+
     const textFieldSx = {
         width: '100%',
+        minWidth: isMobile ? '65vw' : '20vw',
         '& .MuiOutlinedInput-root': {
             '& fieldset': {
                 borderColor: 'text.primary',
@@ -42,7 +46,7 @@ export const PiholeWidgetConfig = ({ formContext }: PiholeWidgetConfigProps) => 
 
     return (
         <>
-            <Grid sx={{ width: '100%' }}>
+            <Grid sx={{ width: '100%', mb: 2 }}>
                 <TextFieldElement
                     name='piholeHost'
                     label='Pi-hole Host'
@@ -56,7 +60,7 @@ export const PiholeWidgetConfig = ({ formContext }: PiholeWidgetConfigProps) => 
                     }}
                 />
             </Grid>
-            <Grid sx={{ width: '100%' }}>
+            <Grid sx={{ width: '100%', mb: 2 }}>
                 <TextFieldElement
                     name='piholePort'
                     label='Port'
@@ -70,7 +74,7 @@ export const PiholeWidgetConfig = ({ formContext }: PiholeWidgetConfigProps) => 
                     }}
                 />
             </Grid>
-            <Grid sx={{ width: '100%' }}>
+            <Grid sx={{ width: '100%', mb: 2 }}>
                 <TextFieldElement
                     name='piholeName'
                     label='Display Name'
@@ -83,7 +87,7 @@ export const PiholeWidgetConfig = ({ formContext }: PiholeWidgetConfigProps) => 
                     }}
                 />
             </Grid>
-            <Grid sx={{ width: '100%' }}>
+            <Grid sx={{ width: '100%', mb: 2 }}>
                 <TextFieldElement
                     name='piholeApiToken'
                     label='API Token (Pi-hole v5)'
@@ -101,7 +105,7 @@ export const PiholeWidgetConfig = ({ formContext }: PiholeWidgetConfigProps) => 
                     }}
                 />
             </Grid>
-            <Grid sx={{ width: '100%' }}>
+            <Grid sx={{ width: '100%', mb: 2 }}>
                 <TextFieldElement
                     name='piholePassword'
                     label='Password (Pi-hole v6)'
@@ -119,7 +123,7 @@ export const PiholeWidgetConfig = ({ formContext }: PiholeWidgetConfigProps) => 
                     }}
                 />
             </Grid>
-            <Grid sx={{ width: '100%' }}>
+            <Grid sx={{ width: '100%', mb: 2 }}>
                 <CheckboxElement
                     label='Use SSL'
                     name='piholeSsl'
@@ -131,7 +135,7 @@ export const PiholeWidgetConfig = ({ formContext }: PiholeWidgetConfigProps) => 
                     }}
                 />
             </Grid>
-            <Grid sx={{ width: '100%' }}>
+            <Grid sx={{ width: '100%', mb: 2 }}>
                 <CheckboxElement
                     label='Show Name'
                     name='showLabel'
