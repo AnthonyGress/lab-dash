@@ -4,8 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { CheckboxElement, SelectElement, TextFieldElement } from 'react-hook-form-mui';
 
-import { PiholeWidgetConfig } from './PiholeWidgetConfig';
-import { SystemMonitorWidgetConfig } from './SystemMonitorWidgetConfig';
+import { DashApi } from '../../../api/dash-api';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { COLORS } from '../../../theme/styles';
 import { theme } from '../../../theme/theme';
@@ -23,30 +22,6 @@ const WIDGET_OPTIONS = [
 interface DualWidgetConfigProps {
     formContext: UseFormReturn<FormValues>;
 }
-
-// Define widget config interfaces
-interface WeatherConfig {
-    temperatureUnit: string;
-    location: any;
-}
-
-interface SystemMonitorConfig {
-    temperatureUnit: string;
-    gauges: string[];
-    networkInterface?: string;
-}
-
-interface PiholeConfig {
-    host: string;
-    port: string;
-    ssl: boolean;
-    apiToken: string;
-    password: string;
-    displayName: string;
-    showLabel: boolean;
-}
-
-type DateTimeConfig = Record<string, never>;
 
 // State wrapper for top and bottom widget configs
 interface WidgetState {
@@ -747,20 +722,43 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
         const gauge1FieldName = getFieldName(position, 'gauge1');
         const gauge2FieldName = getFieldName(position, 'gauge2');
         const gauge3FieldName = getFieldName(position, 'gauge3');
+        const networkInterfaceFieldName = getFieldName(position, 'networkInterface');
+
+        // State for network interfaces
+        const [networkInterfaces, setNetworkInterfaces] = useState<Array<{id: string, label: string}>>([]);
+
+        // Immediately check form values for pre-existing network gauge selections
+        const initialGauge1 = formContext.getValues(gauge1FieldName);
+        const initialGauge2 = formContext.getValues(gauge2FieldName);
+        const initialGauge3 = formContext.getValues(gauge3FieldName);
 
         // Use state to store the gauge values locally
-        const [gaugeValues, setGaugeValues] = useState(() => {
-            // Initialize with values from config first, then form, then defaults
-            const initialGauge1 = fields?.gauge1 || formContext.getValues(gauge1FieldName) || 'cpu';
-            const initialGauge2 = fields?.gauge2 || formContext.getValues(gauge2FieldName) || 'temp';
-            const initialGauge3 = fields?.gauge3 || formContext.getValues(gauge3FieldName) || 'ram';
-
-            return {
-                gauge1: initialGauge1,
-                gauge2: initialGauge2,
-                gauge3: initialGauge3
-            };
+        const [gaugeValues, setGaugeValues] = useState({
+            gauge1: initialGauge1 || 'cpu',
+            gauge2: initialGauge2 || 'temp',
+            gauge3: initialGauge3 || 'ram'
         });
+
+        // Force immediate network interface field display if any gauge is already set to network
+        const [shouldShowNetworkField, setShouldShowNetworkField] = useState(() => {
+            const hasNetworkGauge =
+                initialGauge1 === 'network' ||
+                initialGauge2 === 'network' ||
+                initialGauge3 === 'network';
+
+            return hasNetworkGauge;
+        });
+
+        // Check if any gauge is currently set to network
+        const isNetworkSelected =
+            gaugeValues.gauge1 === 'network' ||
+            gaugeValues.gauge2 === 'network' ||
+            gaugeValues.gauge3 === 'network';
+
+        // Update the network field display state whenever gauge values change
+        useEffect(() => {
+            setShouldShowNetworkField(isNetworkSelected);
+        }, [gaugeValues.gauge1, gaugeValues.gauge2, gaugeValues.gauge3]);
 
         // Handler for gauge changes
         const handleGaugeChange = (gauge: string) => (event: any) => {
@@ -778,6 +776,43 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
                 [gauge]: value
             }));
         };
+
+        // Fetch network interfaces immediately when component mounts or network is selected
+        useEffect(() => {
+            if (shouldShowNetworkField) {
+                const fetchNetworkInterfaces = async () => {
+                    try {
+                        const systemInfo = await DashApi.getSystemInformation();
+                        if (systemInfo && systemInfo.networkInterfaces && Array.isArray(systemInfo.networkInterfaces)) {
+                            const interfaces = systemInfo.networkInterfaces.map((iface: { iface: string }) => ({
+                                id: iface.iface,
+                                label: iface.iface
+                            }));
+
+                            setNetworkInterfaces(interfaces);
+
+                            // Get the current network interface value from form
+                            const currentInterface = formContext.getValues(networkInterfaceFieldName);
+
+                            // If there's no current interface selected but we need one, set it
+                            if (!currentInterface && interfaces.length > 0) {
+                                const activeInterface = systemInfo.network?.iface;
+
+                                if (activeInterface && interfaces.some((iface: { id: string }) => iface.id === activeInterface)) {
+                                    formContext.setValue(networkInterfaceFieldName, activeInterface);
+                                } else {
+                                    formContext.setValue(networkInterfaceFieldName, interfaces[0].id);
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        setNetworkInterfaces([]);
+                    }
+                };
+
+                fetchNetworkInterfaces();
+            }
+        }, [shouldShowNetworkField]);
 
         return (
             <>
@@ -845,13 +880,22 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
                     />
                 </Box>
 
-                {/* Check if network gauge is selected */}
-                {(gaugeValues.gauge1 === 'network' ||
-                    gaugeValues.gauge2 === 'network' ||
-                    gaugeValues.gauge3 === 'network') && (
-                    <SystemMonitorWidgetConfig
-                        formContext={createPositionedFormContext(position) as any}
-                    />
+                {/* Network Interface Selection - use shouldShowNetworkField for initial render */}
+                {shouldShowNetworkField && (
+                    <Box sx={{ mt: 2 }}>
+                        <SelectElement
+                            label='Network Interface'
+                            name={networkInterfaceFieldName}
+                            options={networkInterfaces.length > 0 ? networkInterfaces : [{ id: '', label: 'No network interfaces available' }]}
+                            required
+                            fullWidth
+                            disabled={networkInterfaces.length === 0}
+                            sx={selectStyling}
+                            slotProps={{
+                                inputLabel: { style: { color: theme.palette.text.primary } }
+                            }}
+                        />
+                    </Box>
                 )}
             </>
         );

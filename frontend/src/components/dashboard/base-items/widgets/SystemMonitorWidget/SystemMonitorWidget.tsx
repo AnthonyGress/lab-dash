@@ -201,7 +201,7 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
     };
 
     // Render a specific gauge based on type
-    const renderGauge = (gaugeType: GaugeType) => {
+    const renderGauge = (gaugeType: GaugeType, scale: number = 1) => {
         // Pre-calculate network values outside the switch statement
         const downloadSpeed = formatNetworkSpeed(networkInformation.downloadSpeed);
         const uploadSpeed = formatNetworkSpeed(networkInformation.uploadSpeed);
@@ -214,6 +214,7 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
             return <GaugeWidget
                 title='CPU'
                 value={systemInformation?.cpu?.currentLoad ? Math.round(systemInformation?.cpu?.currentLoad) : 0}
+                isDualWidget={isDualWidget}
             />;
         case 'temp':
             return <GaugeWidget
@@ -221,9 +222,14 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                 value={systemInformation?.cpu?.main ? formatTemperature(systemInformation?.cpu?.main) : 0}
                 temperature
                 isFahrenheit={isFahrenheit}
+                isDualWidget={isDualWidget}
             />;
         case 'ram':
-            return <GaugeWidget title='RAM' value={memoryInformation} />;
+            return <GaugeWidget
+                title='RAM'
+                value={memoryInformation}
+                isDualWidget={isDualWidget}
+            />;
         case 'network':
             return (
                 <Box position='relative'>
@@ -231,6 +237,7 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                         title='NET'
                         value={downloadSpeed.normalizedValue} // Use normalized value (MB/s) for the gauge fill
                         total={interfaceSpeed}
+                        isDualWidget={isDualWidget}
                         customContent={
                             <Box sx={{
                                 display: 'flex',
@@ -240,7 +247,7 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                                 width: '100%',
                                 height: '70%', // Use most of the gauge height
                                 pt: 0.5,
-                                ml: { xs: 8.75, md: 6.75 }
+                                ml: { xs: 10.75, md: 6.75 }
                             }}>
                                 {/* Container for both rows with fixed width icon column */}
                                 <Box sx={{
@@ -258,7 +265,16 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                                         height: '100%',
                                         width: '24px', // Fixed width
                                     }}>
-                                        <ArrowUpward sx={{ color: 'text.primary', fontSize: { xs: 13, sm: 14, md: 17, lg: 17, xl: 18 }  }} />
+                                        <ArrowUpward sx={{
+                                            color: 'text.primary',
+                                            fontSize: {
+                                                xs: isDualWidget ? 11 : 13,
+                                                sm: 14,
+                                                md: 17,
+                                                lg: 17,
+                                                xl: 18
+                                            }
+                                        }} />
                                     </Box>
                                     <Box sx={{
                                         display: 'flex',
@@ -271,7 +287,13 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                                             fontWeight='medium'
                                             sx={{
                                                 width: '100%',
-                                                fontSize: { xs: 10, sm: 10, md: 12, lg: 12, xl: 14 },
+                                                fontSize: {
+                                                    xs: isDualWidget ? 8 : 10,
+                                                    sm: 10,
+                                                    md: 12,
+                                                    lg: 12,
+                                                    xl: 14
+                                                },
                                                 lineHeight: 1.2,
                                                 whiteSpace: 'nowrap',
                                                 display: 'block',
@@ -290,7 +312,16 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                                         height: '100%',
                                         width: '24px', // Fixed width
                                     }}>
-                                        <ArrowDownward sx={{ color: 'text.primary', fontSize: { xs: 13, sm: 14, md: 17, lg: 17, xl: 18 } }} />
+                                        <ArrowDownward sx={{
+                                            color: 'text.primary',
+                                            fontSize: {
+                                                xs: isDualWidget ? 11 : 13,
+                                                sm: 14,
+                                                md: 17,
+                                                lg: 17,
+                                                xl: 18
+                                            }
+                                        }} />
                                     </Box>
                                     <Box sx={{
                                         display: 'flex',
@@ -303,7 +334,13 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                                             fontWeight='medium'
                                             sx={{
                                                 width: '100%',
-                                                fontSize: { xs: 10, sm: 10, md: 12, lg: 12, xl: 14 },
+                                                fontSize: {
+                                                    xs: isDualWidget ? 8 : 10,
+                                                    sm: 10,
+                                                    md: 12,
+                                                    lg: 12,
+                                                    xl: 14
+                                                },
                                                 lineHeight: 1.2,
                                                 whiteSpace: 'nowrap',
                                                 display: 'block',
@@ -351,6 +388,18 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
         };
     }, [config?.temperatureUnit, config?.networkInterface]);
 
+    // Determine layout styles based on dual widget position
+    const containerStyles = {
+        width: '100%',
+        justifyContent: 'center',
+        mt: isDualWidget ? -2 : -1 // Less top margin in dual widget
+    };
+
+    // Set gap between gauges based on dual widget status and screen size
+    const gapSize = isDualWidget
+        ? (isMobile ? 0.5 : 1)  // Smaller gap in dual widget, especially on mobile
+        : 2;                    // Normal gap otherwise
+
     return (
         <Grid container gap={0} sx={{ display: 'flex', width: '100%', justifyContent: 'center' }}>
             <div
@@ -364,14 +413,28 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                     <IoInformationCircleOutline style={{ color: theme.palette.text.primary, fontSize: '1.5rem' }}/>
                 </IconButton>
             </div>
-            <Grid container gap={2} mt={-1}>
+            <Grid container
+                gap={gapSize}
+                sx={containerStyles}
+                flexWrap='nowrap' // Key change: force gauges to stay on one line
+                justifyContent='center'
+                alignItems='center'
+            >
                 {visibleGauges.map((gaugeType, index) => (
-                    <Grid key={index}>
+                    <Grid key={index} sx={{
+                        // Reduce size when in dual widget to fit better
+                        transform: isDualWidget ? 'scale(0.9)' : 'none',
+                        // Center each gauge properly
+                        display: 'flex',
+                        justifyContent: 'center',
+                        // Add negative margin when in dual widget to bring gauges closer
+                        ...(isDualWidget && isMobile ? { mx: -0.5 } : {})
+                    }}>
                         {renderGauge(gaugeType)}
                     </Grid>
                 ))}
             </Grid>
-            <Box p={1} width={'92%'} mt={-1}>
+            <Box p={1} width={'92%'} mt={isDualWidget ? -2 : -1}>
                 <DiskUsageBar totalSpace={diskInformation?.totalSpace ? diskInformation?.totalSpace : 0} usedSpace={diskInformation?.usedSpace ? diskInformation?.usedSpace : 0} usedPercentage={diskInformation?.usedPercentage ? diskInformation?.usedPercentage : 0}/>
             </Box>
             <CenteredModal open={openSystemModal} handleClose={() => setOpenSystemModal(false)} title='System Information' width={isMobile ? '90vw' :'30vw'} height='60vh'>
@@ -389,9 +452,6 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                     {systemInformation?.network && (
                         <>
                             <Typography><b>Network Interface:</b> {systemInformation.network.iface}</Typography>
-                            {/* <Typography>
-                                <b>Interface Speed:</b> {systemInformation.network.speed || 1000} Mbps
-                            </Typography> */}
                             <Typography>
                                 <b>Upload Speed:</b> {formatNetworkSpeed(systemInformation.network.tx_sec).value} {formatNetworkSpeed(systemInformation.network.tx_sec).unit}
                             </Typography>
