@@ -8,7 +8,7 @@ const logRateLimitHit = (req: Request, limiterName: string) => {
     const method = req.method;
     const path = req.originalUrl || req.url;
 
-    console.error(`🚫 Rate limit hit [${limiterName}] at ${timestamp} - IP: ${ip}, Method: ${method}, Path: ${path}`);
+    console.error(`Rate limit hit [${limiterName}] at ${timestamp}, Method: ${method}, Path: ${path}`);
 };
 
 // General API rate limiter - used as the default
@@ -21,7 +21,8 @@ export const generalLimiter = rateLimit({
         logRateLimitHit(req, 'GENERAL');
         res.status(429).json({
             success: false,
-            message: 'Too many requests from this IP, please try again after 5 minutes'
+            message: 'Too many requests from this general IP, please try again after 5 minutes',
+            error_source: 'labdash_api'
         });
     }
 });
@@ -29,14 +30,15 @@ export const generalLimiter = rateLimit({
 // Auth endpoints rate limiter - more restrictive for security
 export const authLimiter = rateLimit({
     windowMs: 5 * 60 * 1000, // 5 minutes
-    max: 150, // Limit each IP to 50 auth requests per window
+    max: 150,
     standardHeaders: true,
     legacyHeaders: false,
     handler: (req: Request, res: Response) => {
         logRateLimitHit(req, 'AUTH');
         res.status(429).json({
             success: false,
-            message: 'Too many authentication attempts, please try again after 5 minutes'
+            message: 'Too many authentication attempts, please try again after 5 minutes',
+            error_source: 'labdash_api'
         });
     }
 });
@@ -51,7 +53,8 @@ export const apiLimiter = rateLimit({
         logRateLimitHit(req, 'API');
         res.status(429).json({
             success: false,
-            message: 'Too many API requests, please try again after 5 minutes'
+            message: 'Too many API requests, please try again after 5 minutes',
+            error_source: 'labdash_api'
         });
     }
 });
@@ -66,7 +69,8 @@ export const healthLimiter = rateLimit({
         logRateLimitHit(req, 'HEALTH');
         res.status(429).json({
             success: false,
-            message: 'Health check rate limit exceeded, please try again later'
+            message: 'Health check rate limit exceeded, please try again later',
+            error_source: 'labdash_api'
         });
     }
 });
@@ -81,7 +85,8 @@ export const weatherApiLimiter = rateLimit({
         logRateLimitHit(req, 'WEATHER');
         res.status(429).json({
             success: false,
-            message: 'Weather API rate limit exceeded, please try again later'
+            message: 'Weather API rate limit exceeded, please try again later',
+            error_source: 'labdash_api'
         });
     }
 });
@@ -96,7 +101,8 @@ export const torrentApiLimiter = rateLimit({
         logRateLimitHit(req, 'TORRENT');
         res.status(429).json({
             success: false,
-            message: 'Torrent client API rate limit exceeded, please try again later'
+            message: 'Torrent client API rate limit exceeded, please try again later',
+            error_source: 'labdash_api'
         });
     }
 });
@@ -111,7 +117,8 @@ export const systemMonitorLimiter = rateLimit({
         logRateLimitHit(req, 'SYSTEM');
         res.status(429).json({
             success: false,
-            message: 'System monitor API rate limit exceeded, please try again later'
+            message: 'System monitor API rate limit exceeded, please try again later',
+            error_source: 'labdash_api'
         });
     }
 });

@@ -1,3 +1,4 @@
+import { ErrorOutline } from '@mui/icons-material';
 import { Box, Button, Card, CardContent, CircularProgress, Grid2 as Grid, Skeleton, Tooltip, Typography, useMediaQuery } from '@mui/material';
 import React, { useEffect, useRef, useState } from 'react';
 import { BsCloudLightningRainFill } from 'react-icons/bs';
@@ -75,6 +76,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
     const [isFahrenheit, setIsFahrenheit] = useState(config?.temperatureUnit !== 'celsius');
     const [openTooltipIndex, setOpenTooltipIndex] = useState<number | null>(null);
     const [locationName, setLocationName] = useState<string | null>(null);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const timerRef = useRef<number | null>(null);
     const locationSet = useRef(false);
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -123,6 +125,43 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
         };
     }, [config]);
 
+    // Function to fetch weather data
+    const fetchWeather = async () => {
+        try {
+            setIsLoading(true);
+
+            if (!location?.latitude || !location?.longitude) {
+                console.error('No coordinates available for weather fetch');
+                setWeatherData(null);
+                setIsLoading(false);
+                return;
+            }
+
+            const data = await DashApi.getWeather(location.latitude, location.longitude);
+            setWeatherData(data);
+            setErrorMessage(null); // Clear any previous errors
+            setIsLoading(false);
+
+        } catch (err: any) {
+            console.error('Error fetching weather:', err);
+            setWeatherData(null);
+            setIsLoading(false);
+
+            // Display rate limit errors from the backend to the user
+            if (err?.response?.status === 429 && err?.response?.data?.error_source === 'labdash_api') {
+                setErrorMessage(`API Rate limit: ${err.response?.data?.message}`);
+            } else if (err?.response?.status >= 400) {
+                // Handle other API errors
+                const message = err?.response?.data?.message || 'Error fetching weather data';
+                setErrorMessage(`API error: ${message}`);
+            } else if (err?.message) {
+                setErrorMessage(`Error: ${err.message}`);
+            } else {
+                setErrorMessage('An unknown error occurred');
+            }
+        }
+    };
+
     // Handle weather data fetching
     useEffect(() => {
         // Only fetch if location has been determined
@@ -131,54 +170,16 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
         }
 
         let isComponentMounted = true;
-        let retryCount = 0;
-        const MAX_RETRIES = 3;
-        const RETRY_DELAY = 5000; // 5 seconds
 
-        const fetchWeather = async () => {
-            try {
-                if (!isComponentMounted) return;
-
-                setIsLoading(true);
-                // Only fetch when we have explicit coordinates
-                if (location.latitude && location.longitude) {
-                    const data = await DashApi.getWeather(location.latitude, location.longitude);
-                    if (isComponentMounted) {
-                        setWeatherData(data);
-                        retryCount = 0; // Reset retry count on success
-                    }
-                } else {
-                    // If no coordinates are available, don't fetch
-                    console.error('No coordinates available for weather fetch');
-                    if (isComponentMounted) {
-                        setWeatherData(null);
-                    }
-                }
-            } catch (error) {
-                console.error('Error fetching weather:', error);
-                if (isComponentMounted) {
-                    setWeatherData(null);
-
-                    // Implement retry with backoff
-                    if (retryCount < MAX_RETRIES) {
-                        retryCount++;
-                        console.log(`Retrying weather fetch (${retryCount}/${MAX_RETRIES}) in ${RETRY_DELAY/1000}s`);
-                        setTimeout(fetchWeather, RETRY_DELAY);
-                    }
-                }
-            } finally {
-                if (isComponentMounted) {
-                    setIsLoading(false);
-                }
-            }
-        };
-
-        // Fetch weather immediately
+        // Initial fetch
         fetchWeather();
 
-        // Set up interval for periodic refresh - use a longer interval if there were previous errors
-        const refreshInterval = retryCount > 0 ? FIFTEEN_MIN_IN_MS * 2 : FIFTEEN_MIN_IN_MS;
-        timerRef.current = window.setInterval(fetchWeather, refreshInterval);
+        // Set up interval for periodic refresh
+        timerRef.current = window.setInterval(() => {
+            if (isComponentMounted && !errorMessage) {
+                fetchWeather();
+            }
+        }, FIFTEEN_MIN_IN_MS);
 
         return () => {
             isComponentMounted = false;
@@ -281,59 +282,54 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
                     py: 0
                 }} key={index}>
                     <Box sx={{ textAlign: 'center', mb: 0.5, fontSize: '1rem', lineHeight: 1 }}>{getDay(weatherData.daily?.time[index])}</Box>
-                    <Tooltip
-                        title={
-                            <Box sx={{ p: 2 }}>
-                                <Typography variant='body2' align={'center'} sx={{ fontWeight: 'bold' }}>{date}</Typography>
-                                <Typography variant='body2' align={'center'} mb={2}>{weatherInfo.description}</Typography>
-                                <Typography variant='body2'>
-                                    <strong>High:</strong> {convertTemperature(weatherData.daily.temperature_2m_max[index])}°{isFahrenheit ? 'F' : 'C'}
-                                </Typography>
-                                <Typography variant='body2'>
-                                    <strong>Low:</strong> {convertTemperature(weatherData.daily.temperature_2m_min[index])}°{isFahrenheit ? 'F' : 'C'}
-                                </Typography>
-                                <Typography variant='body2'>
-                                    <strong>Wind Speed:</strong> {weatherData.current.windspeed_10m} mph
-                                </Typography>
-                                <Typography variant='body2'>
-                                    <strong>Sunrise:</strong> {new Date(sunrise).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                                </Typography>
-                                <Typography variant='body2'>
-                                    <strong>Sunset:</strong> {new Date(sunset).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                                </Typography>
-                            </Box>
+                    <Box
+                        onClick={(e) =>{
+                            e.stopPropagation(); // Prevents tooltip from closing when clicking inside
+                            setOpenTooltipIndex(openTooltipIndex === index ? null : index);}
                         }
-                        open={openTooltipIndex === index}
-                        onClose={() => setOpenTooltipIndex(null)}
-                        placement='bottom'
-                        arrow
-                        disableFocusListener
-                        disableHoverListener
-                        disableTouchListener
+                        sx={{
+                            cursor: 'pointer',
+                            mt: -0.25,
+                        }}
                     >
-                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                            <Box
-                                onClick={(e) =>{
-                                    e.stopPropagation(); // Prevents tooltip from closing when clicking inside
-                                    setOpenTooltipIndex(openTooltipIndex === index ? null : index);}
-                                }
-                                sx={{
-                                    cursor: 'pointer',
-                                    mt: -0.25,
-                                }}
-                            >
-                                {weatherInfo.icon}
-                            </Box>
-                            <Box sx={{ fontSize: { xs: '1rem', sm: '1rem', xl: '1.25rem' }, textAlign: 'center', mt: -0.5, lineHeight: 1.1 }}>
-                                {convertTemperature(weatherData.daily?.temperature_2m_max[index])}°
-                                {isFahrenheit ? 'F' : 'C'}
-                            </Box>
-                        </Box>
-                    </Tooltip>
+                        {weatherInfo.icon}
+                    </Box>
+                    <Box sx={{ fontSize: { xs: '1rem', sm: '1rem', xl: '1.25rem' }, textAlign: 'center', mt: -0.5, lineHeight: 1.1 }}>
+                        {convertTemperature(weatherData.daily?.temperature_2m_max[index])}°
+                        {isFahrenheit ? 'F' : 'C'}
+                    </Box>
                 </Grid>
             );
         });
     };
+
+    // If there's an error, show full-screen error message
+    if (errorMessage) {
+        return (
+            <Box sx={{
+                height: '100%',
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                p: 2
+            }}>
+                <Typography variant='subtitle1' align='center' sx={{ mb: 1 }}>
+                    {errorMessage}
+                </Typography>
+                <Button
+                    variant='contained'
+                    color='primary'
+                    onClick={fetchWeather}
+                    disabled={isLoading}
+                    sx={{ mt: 2 }}
+                >
+                    {isLoading ? 'Retrying...' : 'Retry'}
+                </Button>
+            </Box>
+        );
+    }
 
     return (
         <CardContent sx={{
