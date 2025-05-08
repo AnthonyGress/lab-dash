@@ -85,14 +85,19 @@ jobs:
             PR_NUM=$(echo "$COMMIT_MSG" | grep -o "#[0-9]\+" | head -1 | tr -d "#")
 
             if [ -n "$PR_NUM" ]; then
-              # PR number found, get commits from this PR
+              # PR number found, try to get commits from this PR
               echo "### $COMMIT_MSG" >> release_notes.md
 
-              PR_COMMITS=$(gh pr view $PR_NUM --json commits --jq '.commits[].messageHeadline')
+              # Check if PR exists before trying to view it
+              if gh pr view $PR_NUM --json number &>/dev/null; then
+                PR_COMMITS=$(gh pr view $PR_NUM --json commits --jq '.commits[].messageHeadline')
 
-              if [ -n "$PR_COMMITS" ]; then
-                # Add indented PR commits to notes, but filter out the main PR commit
-                echo "$PR_COMMITS" | grep -v "Merge" | grep -v "$COMMIT_MSG" | sed 's/^/  - /' >> release_notes.md
+                if [ -n "$PR_COMMITS" ]; then
+                  # Add indented PR commits to notes, but filter out the main PR commit
+                  echo "$PR_COMMITS" | grep -v "Merge" | grep -v "$COMMIT_MSG" | sed 's/^/  - /' >> release_notes.md
+                fi
+              else
+                echo "  - PR #$PR_NUM not found or not accessible" >> release_notes.md
               fi
             else
               # Regular commit, not from a squashed PR
