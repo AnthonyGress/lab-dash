@@ -197,7 +197,13 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
 
         // Parse location parts from the full name
         const locationParts = locationName.split(',').map(part => part.trim());
-        const city = locationParts[0];
+
+        // Check if the first part is a US zip code (5 digits)
+        const isZipCodeFirst = /^\d{5}$/.test(locationParts[0]);
+
+        // If first part is a zip code, use the second part as the city
+        const cityIndex = isZipCodeFirst ? 1 : 0;
+        const city = locationParts[cityIndex] || locationParts[0]; // Fallback to first part if second doesn't exist
 
         let displayLocation = '';
 

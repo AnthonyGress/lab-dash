@@ -190,7 +190,7 @@ export const WeatherWidgetConfig = ({ formContext }: WeatherWidgetConfigProps) =
                             {...params}
                             label='Search location'
                             variant='outlined'
-                            helperText='Enter a city/state or city/country'
+                            helperText='Enter a zip code or city'
                             FormHelperTextProps={{
                                 style: { color: theme.palette.text.primary }
                             }}
