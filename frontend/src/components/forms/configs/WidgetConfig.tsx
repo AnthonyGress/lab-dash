@@ -1,6 +1,7 @@
 import { UseFormReturn } from 'react-hook-form';
 
 import { FormValues } from '../AddEditForm';
+import { DateTimeWidgetConfig } from './DateTimeWidgetConfig';
 import { DualWidgetConfig } from './DualWidgetConfig';
 import { PiholeWidgetConfig } from './PiholeWidgetConfig';
 import { SystemMonitorWidgetConfig } from './SystemMonitorWidgetConfig';
@@ -17,6 +18,8 @@ export const WidgetConfig = ({ formContext, widgetType }: WidgetConfigProps) => 
     switch (widgetType) {
     case ITEM_TYPE.WEATHER_WIDGET:
         return <WeatherWidgetConfig formContext={formContext} />;
+    case ITEM_TYPE.DATE_TIME_WIDGET:
+        return <DateTimeWidgetConfig formContext={formContext} />;
     case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
         return <SystemMonitorWidgetConfig formContext={formContext} />;
     case ITEM_TYPE.PIHOLE_WIDGET:

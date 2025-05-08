@@ -91,6 +91,22 @@ export const weatherApiLimiter = rateLimit({
     }
 });
 
+// Timezone API specific limiter
+export const timezoneApiLimiter = rateLimit({
+    windowMs: 5 * 60 * 1000, // 5 minutes
+    max: 200,
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req: Request, res: Response) => {
+        logRateLimitHit(req, 'TIMEZONE');
+        res.status(429).json({
+            success: false,
+            message: 'Timezone API rate limit exceeded, please try again later',
+            error_source: 'labdash_api'
+        });
+    }
+});
+
 // Torrent client API limiter - prevent DDoS of torrent clients
 export const torrentApiLimiter = rateLimit({
     windowMs: 60 * 1000, // 1 minute

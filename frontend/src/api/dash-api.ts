@@ -296,6 +296,44 @@ export class DashApi {
         }
     }
 
+    public static async getTimezone(latitude: number, longitude: number): Promise<any> {
+        try {
+            console.log(`DashApi.getTimezone: Requesting timezone for lat=${latitude}, lon=${longitude}`);
+
+            const res = await axios.get(`${BACKEND_URL}/api/timezone`, {
+                params: {
+                    latitude,
+                    longitude
+                },
+                timeout: 5000 // 5 second timeout
+            });
+
+            console.log('DashApi.getTimezone: Raw response:', res);
+
+            // Ensure we return the expected format - axios already includes 'data'
+            // Return the whole response object to allow error checking
+            return {
+                data: res.data,
+                status: res.status
+            };
+        } catch (error: any) {
+            // Log detailed error information
+            if (error.response) {
+                console.error('Timezone API error response:', {
+                    status: error.response.status,
+                    data: error.response.data,
+                    headers: error.response.headers
+                });
+            } else if (error.request) {
+                console.error('Timezone API no response:', error.request);
+            } else {
+                console.error('Timezone API request error:', error.message);
+            }
+
+            throw error;
+        }
+    }
+
     public static async checkServiceHealth(url: string, healthCheckType: 'http' | 'ping' = 'http'): Promise<'online' | 'offline'> {
         try {
             const res = await axios.get(`${BACKEND_URL}/api/health`, {

@@ -150,7 +150,7 @@ export const DashboardGrid: React.FC = () => {
                                 case ITEM_TYPE.WEATHER_WIDGET:
                                     return <SortableWeatherWidget key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
                                 case ITEM_TYPE.DATE_TIME_WIDGET:
-                                    return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
+                                    return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
                                 case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
                                     return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
                                 case ITEM_TYPE.PIHOLE_WIDGET:
@@ -209,7 +209,7 @@ export const DashboardGrid: React.FC = () => {
                                 case ITEM_TYPE.WEATHER_WIDGET:
                                     return <SortableWeatherWidget key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
                                 case ITEM_TYPE.DATE_TIME_WIDGET:
-                                    return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} isOverlay/>;
+                                    return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
                                 case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
                                     return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
                                 case ITEM_TYPE.PIHOLE_WIDGET:

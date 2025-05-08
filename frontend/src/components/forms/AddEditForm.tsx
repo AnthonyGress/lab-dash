@@ -71,6 +71,8 @@ export type FormValues = {
     gauge2?: string;
     gauge3?: string;
     networkInterface?: string;
+    // DateTime widget
+    timezone?: string;
     // Pihole widget
     piholeUrl?: string;
     piholeApiKey?: string;
@@ -97,6 +99,7 @@ export type FormValues = {
     // Dual Widget - position-specific fields for top widget
     top_temperatureUnit?: string;
     top_location?: { name: string; latitude: number; longitude: number } | null;
+    top_timezone?: string;
     top_gauge1?: string;
     top_gauge2?: string;
     top_gauge3?: string;
@@ -111,6 +114,7 @@ export type FormValues = {
     // Dual Widget - position-specific fields for bottom widget
     bottom_temperatureUnit?: string;
     bottom_location?: { name: string; latitude: number; longitude: number } | null;
+    bottom_timezone?: string;
     bottom_gauge1?: string;
     bottom_gauge2?: string;
     bottom_gauge3?: string;
@@ -225,6 +229,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             widgetType: initialWidgetType,
             torrentClientType: existingItem?.config?.clientType || TORRENT_CLIENT_TYPE.QBITTORRENT,
             temperatureUnit: temperatureUnit,
+            timezone: existingItem?.config?.timezone || '',
             adminOnly: existingItem?.adminOnly || false,
             isWol: existingItem?.config?.isWol || false,
             macAddress: existingItem?.config?.macAddress || '',
@@ -256,6 +261,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             // Dual Widget - position-specific fields will be set below
             top_temperatureUnit: 'fahrenheit',
             top_location: null,
+            top_timezone: '',
             top_gauge1: 'cpu',
             top_gauge2: 'temp',
             top_gauge3: 'ram',
@@ -269,6 +275,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             top_showLabel: true,
             bottom_temperatureUnit: 'fahrenheit',
             bottom_location: null,
+            bottom_timezone: '',
             bottom_gauge1: 'cpu',
             bottom_gauge2: 'temp',
             bottom_gauge3: 'ram',
@@ -323,6 +330,12 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                         formContext.setValue('top_piholeName', topConfig.displayName || '');
                         formContext.setValue('top_showLabel', topConfig.showLabel !== undefined ? topConfig.showLabel : true);
                     }
+
+                    // Handle top datetime widget
+                    else if (topWidget.type === ITEM_TYPE.DATE_TIME_WIDGET) {
+                        formContext.setValue('top_location', topConfig.location || null);
+                        formContext.setValue('top_timezone', topConfig.timezone || '');
+                    }
                 }, 0);
             }
 
@@ -364,6 +377,12 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                         formContext.setValue('bottom_piholePassword', bottomConfig.password || '');
                         formContext.setValue('bottom_piholeName', bottomConfig.displayName || '');
                         formContext.setValue('bottom_showLabel', bottomConfig.showLabel !== undefined ? bottomConfig.showLabel : true);
+                    }
+
+                    // Handle bottom datetime widget
+                    else if (bottomWidget.type === ITEM_TYPE.DATE_TIME_WIDGET) {
+                        formContext.setValue('bottom_location', bottomConfig.location || null);
+                        formContext.setValue('bottom_timezone', bottomConfig.timezone || '');
                     }
                 }, 0);
             }
@@ -435,6 +454,11 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                 config = {
                     temperatureUnit: data.temperatureUnit || 'fahrenheit',
                     location: data.location || undefined
+                };
+            } else if (data.widgetType === ITEM_TYPE.DATE_TIME_WIDGET) {
+                config = {
+                    location: data.location || undefined,
+                    timezone: data.timezone || null
                 };
             } else if (data.widgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET) {
                 config = {
@@ -518,6 +542,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                     // Map position-specific fields to standard fields for the createWidgetConfig function
                     temperatureUnit: data.top_temperatureUnit,
                     location: data.top_location,
+                    timezone: data.top_timezone,
                     gauge1: data.top_gauge1,
                     gauge2: data.top_gauge2,
                     gauge3: data.top_gauge3,
@@ -531,11 +556,17 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                     showLabel: data.top_showLabel
                 };
 
+                console.log('Top widget data for dual widget:', {
+                    timezone: data.top_timezone,
+                    location: data.top_location
+                });
+
                 const bottomWidgetData = {
                     ...data,
                     // Map position-specific fields to standard fields for the createWidgetConfig function
                     temperatureUnit: data.bottom_temperatureUnit,
                     location: data.bottom_location,
+                    timezone: data.bottom_timezone,
                     gauge1: data.bottom_gauge1,
                     gauge2: data.bottom_gauge2,
                     gauge3: data.bottom_gauge3,
@@ -549,8 +580,16 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                     showLabel: data.bottom_showLabel
                 };
 
+                console.log('Bottom widget data for dual widget:', {
+                    timezone: data.bottom_timezone,
+                    location: data.bottom_location
+                });
+
                 const topConfig = await createWidgetConfig(data.topWidgetType || '', topWidgetData);
                 const bottomConfig = await createWidgetConfig(data.bottomWidgetType || '', bottomWidgetData);
+
+                console.log('Final top widget config:', topConfig);
+                console.log('Final bottom widget config:', bottomConfig);
 
                 config = {
                     topWidget: {
@@ -562,6 +601,8 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                         config: bottomConfig
                     }
                 };
+
+                console.log('Final dual widget config:', config);
             }
         } else if (data.itemType === ITEM_TYPE.APP_SHORTCUT) {
             config = {};
@@ -643,6 +684,28 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             return {
                 temperatureUnit: data.temperatureUnit || 'fahrenheit',
                 location: processedLocation
+            };
+        } else if (widgetType === ITEM_TYPE.DATE_TIME_WIDGET) {
+            // Get the location data and ensure it's properly structured
+            const location = data.location || null;
+
+            // Ensure location has the correct structure with all properties
+            let processedLocation = null;
+            if (location) {
+                processedLocation = {
+                    name: location.name || '',
+                    latitude: typeof location.latitude === 'number' ? location.latitude : parseFloat(location.latitude as any) || 0,
+                    longitude: typeof location.longitude === 'number' ? location.longitude : parseFloat(location.longitude as any) || 0
+                };
+            }
+
+            // Ensure timezone is always a string, never null
+            const timezone = data.timezone || '';
+            console.log('AddEditForm: Setting DATE_TIME_WIDGET timezone to:', timezone);
+
+            return {
+                location: processedLocation,
+                timezone: timezone // This is guaranteed to be a string
             };
         } else if (widgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET) {
             const config = {
@@ -727,6 +790,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             widgetType: '',
             torrentClientType: TORRENT_CLIENT_TYPE.QBITTORRENT,
             temperatureUnit: 'fahrenheit',
+            timezone: '',
             adminOnly: false,
             isWol: false,
             macAddress: '',
@@ -756,6 +820,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             // Dual Widget - position-specific fields for top widget
             top_temperatureUnit: '',
             top_location: null,
+            top_timezone: '',
             top_gauge1: '',
             top_gauge2: '',
             top_gauge3: '',
@@ -770,6 +835,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
             // Dual Widget - position-specific fields for bottom widget
             bottom_temperatureUnit: '',
             bottom_location: null,
+            bottom_timezone: '',
             bottom_gauge1: '',
             bottom_gauge2: '',
             bottom_gauge3: '',

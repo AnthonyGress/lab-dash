@@ -8,6 +8,7 @@ import { useIsMobile } from '../../../hooks/useIsMobile';
 import { COLORS } from '../../../theme/styles';
 import { theme } from '../../../theme/theme';
 import { FormValues } from '../AddEditForm';
+import { DateTimeWidgetConfig } from './DateTimeWidgetConfig';
 import { WeatherWidgetConfig } from './WeatherWidgetConfig';
 import { ITEM_TYPE } from '../../../types';
 
@@ -113,6 +114,14 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
                     formContext.setValue('top_temperatureUnit', topConfig.temperatureUnit || 'fahrenheit');
                     formContext.setValue('top_location', topConfig.location || null);
                 }
+                else if (topWidgetType === ITEM_TYPE.DATE_TIME_WIDGET) {
+                    topWidgetFields = {
+                        location: topConfig.location || null,
+                        timezone: topConfig.timezone || ''
+                    };
+                    formContext.setValue('top_location', topConfig.location || null);
+                    formContext.setValue('top_timezone', topConfig.timezone || '');
+                }
                 else if (topWidgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET) {
                     const gauges = topConfig.gauges || ['cpu', 'temp', 'ram'];
                     topWidgetFields = {
@@ -176,6 +185,24 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
                     } else {
                         formContext.setValue('bottom_location', null);
                     }
+                }
+                else if (bottomWidgetType === ITEM_TYPE.DATE_TIME_WIDGET) {
+                    const location = bottomConfig.location || null;
+                    const timezone = bottomConfig.timezone || '';
+
+                    bottomWidgetFields = {
+                        location,
+                        timezone
+                    };
+
+                    // Special handling for location to ensure it's properly preserved
+                    if (location) {
+                        formContext.setValue('bottom_location', location);
+                    } else {
+                        formContext.setValue('bottom_location', null);
+                    }
+
+                    formContext.setValue('bottom_timezone', timezone);
                 }
                 else if (bottomWidgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET) {
                     const gauges = bottomConfig.gauges || ['cpu', 'temp', 'ram'];
@@ -248,6 +275,20 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
                 console.error(`Error setting ${position} location`);
             }
         }
+        else if (widgetType && widgetType === ITEM_TYPE.DATE_TIME_WIDGET) {
+            try {
+                if (fields.location !== undefined) {
+                    formContext.setValue(getFieldName(position, 'location'), fields.location);
+                }
+            } catch (error) {
+                console.error(`Error setting ${position} location`);
+            }
+
+            // Handle timezone
+            if (fields.timezone !== undefined) {
+                formContext.setValue(getFieldName(position, 'timezone'), fields.timezone);
+            }
+        }
         else if (widgetType && widgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET) {
             if (fields.temperatureUnit) {
                 formContext.setValue(getFieldName(position, 'temperatureUnit'), fields.temperatureUnit);
@@ -318,6 +359,14 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
             };
             formContext.setValue(getFieldName(position, 'temperatureUnit'), 'fahrenheit');
             formContext.setValue(getFieldName(position, 'location'), null);
+        }
+        else if (widgetType === ITEM_TYPE.DATE_TIME_WIDGET) {
+            defaultFields = {
+                location: null,
+                timezone: ''
+            };
+            formContext.setValue(getFieldName(position, 'location'), null);
+            formContext.setValue(getFieldName(position, 'timezone'), '');
         }
         else if (widgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET) {
             defaultFields = {
@@ -398,6 +447,41 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
                 fields.location = null;
             }
         }
+        else if (widgetType === ITEM_TYPE.DATE_TIME_WIDGET) {
+            // Get timezone value
+            const timezone = formContext.getValues(getFieldName(position, 'timezone'));
+            console.log(`Capturing ${position} timezone:`, timezone);
+
+            // Ensure timezone is properly stored as a string, never null
+            fields.timezone = timezone || '';
+
+            // Debugging: Double-check the value right after setting
+            console.log(`${position} timezone field set to:`, fields.timezone);
+
+            // Get location data and ensure it has proper structure
+            const locationValue = formContext.getValues(getFieldName(position, 'location'));
+
+            // Ensure location object is properly structured
+            if (locationValue && typeof locationValue === 'object' && 'name' in locationValue) {
+                const locationObj = locationValue as {
+                    name: string;
+                    latitude: number | string;
+                    longitude: number | string;
+                };
+
+                fields.location = {
+                    name: locationObj.name || '',
+                    latitude: typeof locationObj.latitude === 'number' ?
+                        locationObj.latitude :
+                        parseFloat(String(locationObj.latitude)) || 0,
+                    longitude: typeof locationObj.longitude === 'number' ?
+                        locationObj.longitude :
+                        parseFloat(String(locationObj.longitude)) || 0
+                };
+            } else {
+                fields.location = null;
+            }
+        }
         else if (widgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET) {
             fields.temperatureUnit = formContext.getValues(getFieldName(position, 'temperatureUnit'));
             fields.gauge1 = formContext.getValues(getFieldName(position, 'gauge1'));
@@ -415,11 +499,16 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
             fields.showLabel = formContext.getValues(getFieldName(position, 'showLabel'));
         }
 
-        // Update the state with captured values
-        setWidgetState(prevState => ({
-            ...prevState,
-            [`${position}WidgetFields`]: { ...fields }
-        }));
+        // Update the state with captured values and log the result
+        console.log(`Setting ${position} widget fields:`, fields);
+        setWidgetState(prevState => {
+            const newState = {
+                ...prevState,
+                [`${position}WidgetFields`]: { ...fields }
+            };
+            console.log(`New widget state for ${position}:`, newState[`${position}WidgetFields`]);
+            return newState;
+        });
     };
 
     // Handle tab change (replacing handlePageChange)
@@ -428,6 +517,29 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
         if (newValue !== currentPage) {
             // Capture current form values to state
             const currentPosition = currentPage === 0 ? 'top' : 'bottom';
+
+            // Explicitly check for timezone values before switching tabs
+            if (formContext.watch(`${currentPosition}WidgetType`) === ITEM_TYPE.DATE_TIME_WIDGET) {
+                const timezoneFieldName = getFieldName(currentPosition, 'timezone');
+                const timezone = formContext.getValues(timezoneFieldName);
+                console.log(`Tab change: Saving ${currentPosition} timezone value:`, timezone);
+
+                // Explicitly set the timezone in the widget state
+                setWidgetState(prevState => {
+                    const positionKey = `${currentPosition}WidgetFields` as 'topWidgetFields' | 'bottomWidgetFields';
+                    const updatedFields = {
+                        ...prevState[positionKey],
+                        timezone: timezone || ''
+                    };
+                    console.log(`Tab change: Updated ${currentPosition} widget fields:`, updatedFields);
+
+                    return {
+                        ...prevState,
+                        [positionKey]: updatedFields
+                    };
+                });
+            }
+
             captureFormValuesToState(currentPosition);
 
             // Change the page
@@ -448,6 +560,12 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
 
                 // Apply the fields
                 applyWidgetFieldsToForm(newPosition, fields);
+
+                // Check timezone value after switching tabs
+                if (formContext.watch(`${newPosition}WidgetType`) === ITEM_TYPE.DATE_TIME_WIDGET) {
+                    const timezoneFieldName = getFieldName(newPosition, 'timezone');
+                    console.log(`Tab change: ${newPosition} timezone after tab switch:`, formContext.getValues(timezoneFieldName));
+                }
 
                 // Trigger form validation
                 formContext.trigger();
@@ -508,9 +626,19 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
                 captureFormValuesToState('top');
                 captureFormValuesToState('bottom');
 
+                // Double-check timezone values directly from the form
+                const topTimezone = formContext.getValues('top_timezone');
+                const bottomTimezone = formContext.getValues('bottom_timezone');
+                console.log('Form Submit - Top timezone:', topTimezone);
+                console.log('Form Submit - Bottom timezone:', bottomTimezone);
+
                 // Build individual widget configs
                 const topWidget = buildWidgetConfig('top');
                 const bottomWidget = buildWidgetConfig('bottom');
+
+                // Log final widget configs for debugging
+                console.log('Final topWidget config:', topWidget);
+                console.log('Final bottomWidget config:', bottomWidget);
 
                 // Create the final dual widget config
                 const dualWidgetConfig = {
@@ -520,6 +648,9 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
 
                 // Set the config value for submission
                 (formContext as any).setValue('config', dualWidgetConfig);
+
+                // Log final config for debugging
+                console.log('Final dual widget config:', dualWidgetConfig);
             }, 0);
         };
 
@@ -579,6 +710,45 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
                 temperatureUnit: finalTempUnit,
                 location: processedLocation
             };
+        }
+        else if (widgetType === ITEM_TYPE.DATE_TIME_WIDGET) {
+            // Get location directly from form
+            const location = formContext.getValues(getFieldName(position, 'location'));
+
+            // Explicitly retrieve timezone with a fallback empty string
+            const timezone = formContext.getValues(getFieldName(position, 'timezone')) || '';
+
+            console.log(`Building ${position} DATE_TIME_WIDGET config with timezone:`, timezone);
+
+            // Ensure location has the correct structure
+            let processedLocation = null;
+            if (location && typeof location === 'object' && 'name' in location) {
+                const locationObj = location as {
+                    name: string;
+                    latitude: number | string;
+                    longitude: number | string;
+                };
+
+                processedLocation = {
+                    name: locationObj.name || '',
+                    latitude: typeof locationObj.latitude === 'number' ?
+                        locationObj.latitude :
+                        parseFloat(String(locationObj.latitude)) || 0,
+                    longitude: typeof locationObj.longitude === 'number' ?
+                        locationObj.longitude :
+                        parseFloat(String(locationObj.longitude)) || 0
+                };
+            }
+
+            // Always include the timezone field, even if it's an empty string (never undefined or null)
+            config = {
+                location: processedLocation,
+                timezone: timezone // This is already guaranteed to be a string (empty if not set)
+            };
+
+            // Double check the timezone value in the final config
+            console.log(`Final ${position} DATE_TIME_WIDGET config:`, config);
+            console.log(`Timezone in final config: "${config.timezone}", type: ${typeof config.timezone}`);
         }
         else if (widgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET) {
             // Get values directly from form for critical fields
@@ -1023,6 +1193,46 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
         );
     };
 
+    // Wrapper for DateTime widget config with position-specific field names
+    const DateTimeConfigWrapper = ({ position }: { position: 'top' | 'bottom' }) => {
+        // Create a wrapper context that correctly handles location and timezone updates
+        const wrapperContext = {
+            ...formContext,
+            register: (name: any, options: any) => formContext.register(getFieldName(position, name as string) as any, options),
+            watch: (name: any) => formContext.watch(getFieldName(position, name as string) as any),
+            setValue: (name: any, value: any, options: any) => {
+                // Handle timezone specially - when it's set from the API callback in DateTimeWidgetConfig
+                if (name === 'timezone') {
+                    console.log(`Setting ${position} timezone to:`, value);
+                    return formContext.setValue(getFieldName(position, 'timezone') as any, value, options);
+                }
+
+                // Normal field value setting
+                return formContext.setValue(getFieldName(position, name as string) as any, value, options);
+            },
+            getValues: (name?: any) => {
+                if (name) {
+                    return formContext.getValues(getFieldName(position, name as string) as any);
+                }
+                // If no name is provided, get all values with position prefix
+                const allValues = formContext.getValues();
+                const positionValues: Record<string, any> = {};
+
+                // Filter and transform keys
+                Object.keys(allValues).forEach(key => {
+                    if (key.startsWith(`${position}_`)) {
+                        const newKey = key.replace(`${position}_`, '');
+                        positionValues[newKey] = allValues[key as keyof typeof allValues];
+                    }
+                });
+
+                return positionValues;
+            }
+        } as UseFormReturn<FormValues>;
+
+        return <DateTimeWidgetConfig formContext={wrapperContext} />;
+    };
+
     // Create a custom wrapper for PiholeWidgetConfig to ensure API token and password fields work correctly
     const PiholeConfigWrapper = ({ position }: { position: 'top' | 'bottom' }) => {
         // Track field values with local state
@@ -1357,8 +1567,8 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
 
         switch (widgetType) {
         case ITEM_TYPE.DATE_TIME_WIDGET:
-            // Date & Time widget doesn't need additional configuration
-            return null;
+            // Date & Time widget now has additional configuration
+            return <DateTimeConfigWrapper position={position} />;
         case ITEM_TYPE.WEATHER_WIDGET:
             return <WeatherConfigWrapper position={position} />;
         case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
