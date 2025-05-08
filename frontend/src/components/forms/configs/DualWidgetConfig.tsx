@@ -1,5 +1,4 @@
-import { ArrowBack, ArrowForward } from '@mui/icons-material';
-import { Box, Button, Grid2 as Grid, TextField, Typography } from '@mui/material';
+import { Box, Grid2 as Grid, Tab, Tabs, TextField } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { CheckboxElement, SelectElement, TextFieldElement } from 'react-hook-form-mui';
@@ -423,25 +422,26 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
         }));
     };
 
-    // Handle page changes - save current state, then load the other state
-    const handlePageChange = (newPage: number) => {
-        if (newPage !== currentPage) {
+    // Handle tab change (replacing handlePageChange)
+    const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+        // Use the same logic as the original handlePageChange
+        if (newValue !== currentPage) {
             // Capture current form values to state
             const currentPosition = currentPage === 0 ? 'top' : 'bottom';
             captureFormValuesToState(currentPosition);
 
             // Change the page
-            setCurrentPage(newPage);
+            setCurrentPage(newValue);
 
             // Update active position
             setWidgetState(prevState => ({
                 ...prevState,
-                activePosition: newPage === 0 ? 'top' : 'bottom'
+                activePosition: newValue === 0 ? 'top' : 'bottom'
             }));
 
             // Apply form values for the new position after a short delay
             setTimeout(() => {
-                const newPosition = newPage === 0 ? 'top' : 'bottom';
+                const newPosition = newValue === 0 ? 'top' : 'bottom';
                 const fields = newPosition === 'top' ?
                     widgetState.topWidgetFields :
                     widgetState.bottomWidgetFields;
@@ -1398,17 +1398,48 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
             alignItems: 'center',
             width: '100%'
         }}>
-            {/* Pagination Header - keep the title but remove the buttons */}
+            {/* Replace pagination header with Tabs */}
             <Box sx={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
                 width: '100%',
-                mb: 2
+                borderBottom: `1px solid ${COLORS.BORDER}`,
+                mb: 3
             }}>
-                <Typography variant='h6' color='text.primary'>
-                    {currentPage === 0 ? 'Top Widget Configuration' : 'Bottom Widget Configuration'}
-                </Typography>
+                <Tabs
+                    value={currentPage}
+                    onChange={handleTabChange}
+                    centered
+                    indicatorColor='primary'
+                    textColor='primary'
+                    variant='fullWidth'
+                    sx={{
+                        minHeight: isMobile ? '42px' : '48px',
+                        width: '100%',
+                        '& .MuiTab-root': {
+                            color: theme.palette.text.primary,
+                            fontWeight: 'medium',
+                            fontSize: isMobile ? '0.75rem' : '0.875rem',
+                            padding: isMobile ? '6px 4px' : '12px 16px',
+                            minWidth: isMobile ? '50%' : '90px',
+                            flex: isMobile ? 1 : 'initial',
+                            minHeight: isMobile ? '42px' : '48px',
+                            '&:hover': {
+                                color: theme.palette.primary.main,
+                                opacity: 0.8
+                            },
+                            '&.Mui-selected': {
+                                color: theme.palette.primary.main,
+                                fontWeight: 'bold'
+                            }
+                        },
+                        '& .MuiTabs-indicator': {
+                            backgroundColor: theme.palette.primary.main,
+                            height: 3
+                        }
+                    }}
+                >
+                    <Tab label={'Top Widget'} />
+                    <Tab label={'Bottom Widget'} />
+                </Tabs>
             </Box>
 
             {/* Current Page Content */}
@@ -1480,33 +1511,6 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
                     </>
                 )}
             </Grid>
-
-            {/* Pagination Buttons - update labels to "Top" and "Bottom" */}
-            <Box sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                width: '100%',
-                mt: 3
-            }}>
-                <Button
-                    variant='contained'
-                    disabled={currentPage === 0}
-                    onClick={() => handlePageChange(0)}
-                    startIcon={<ArrowBack />}
-                    sx={{ visibility: currentPage === 0 ? 'hidden' : 'visible' }}
-                >
-                    Top
-                </Button>
-                <Button
-                    variant='contained'
-                    disabled={currentPage === 1}
-                    onClick={() => handlePageChange(1)}
-                    endIcon={<ArrowForward />}
-                    sx={{ visibility: currentPage === 1 ? 'hidden' : 'visible' }}
-                >
-                    Bottom
-                </Button>
-            </Box>
         </Box>
     );
 };

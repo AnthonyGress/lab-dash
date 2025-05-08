@@ -11,7 +11,7 @@ import {
     rectSortingStrategy,
     SortableContext,
 } from '@dnd-kit/sortable';
-import { Box, Grid2 as Grid } from '@mui/material';
+import { Box, Grid2 as Grid, useMediaQuery } from '@mui/material';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import { SortableDeluge } from './sortable-items/widgets/SortableDeluge';
@@ -29,6 +29,7 @@ import { SortablePihole } from './sortable-items/widgets/SortablePihole';
 import { SortableQBittorrent } from './sortable-items/widgets/SortableQBittorrent';
 import { SortableSystemMonitorWidget } from './sortable-items/widgets/SortableSystemMonitor';
 import { SortableWeatherWidget } from './sortable-items/widgets/SortableWeather';
+import { theme } from '../../theme/theme';
 
 
 export const DashboardGrid: React.FC = () => {
@@ -36,6 +37,7 @@ export const DashboardGrid: React.FC = () => {
     const [selectedItem, setSelectedItem] = useState<DashboardItem | null>(null);
     const [openEditModal, setOpenEditModal] = useState(false);
     const { dashboardLayout, setDashboardLayout, refreshDashboard, editMode, isAdmin, isLoggedIn } = useAppContext();
+    const isMed = useMediaQuery(theme.breakpoints.down('md'));
 
     // Filter out admin-only items if user is not an admin
     const items = useMemo(() => {

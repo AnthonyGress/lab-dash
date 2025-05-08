@@ -801,6 +801,7 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                         borderRadius: '8px',
                         boxShadow: 3,
                         backgroundColor: COLORS.GRAY,
+                        width: { xs: '80vw', sm: '60vw', md: '40vw', lg: '25vw' }
                     }}
                 >
                     <FormContainer
