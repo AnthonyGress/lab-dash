@@ -1,4 +1,4 @@
-import { Box, Button, Card, CardContent, CircularProgress, Grid2 as Grid, Skeleton, Tooltip, Typography } from '@mui/material';
+import { Box, Button, Card, CardContent, CircularProgress, Grid2 as Grid, Skeleton, Tooltip, Typography, useMediaQuery } from '@mui/material';
 import React, { useEffect, useRef, useState } from 'react';
 import { BsCloudLightningRainFill } from 'react-icons/bs';
 import { BsCloudSunFill } from 'react-icons/bs';
@@ -13,6 +13,7 @@ import { BsGeoAltFill } from 'react-icons/bs';
 import { DashApi } from '../../../../api/dash-api';
 import { FIFTEEN_MIN_IN_MS } from '../../../../constants/constants';
 import { styles } from '../../../../theme/styles';
+import { theme } from '../../../../theme/theme';
 
 interface WeatherData {
     current: { temperature_2m: number; weathercode: number; windspeed_10m: number };
@@ -76,6 +77,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
     const [locationName, setLocationName] = useState<string | null>(null);
     const timerRef = useRef<number | null>(null);
     const locationSet = useRef(false);
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     // Handle config changes and location setup
     useEffect(() => {
@@ -238,7 +240,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
                 fontSize: '0.8rem',
                 color: 'rgba(255, 255, 255, 0.8)',
                 position: 'absolute',
-                top: 5,
+                top: isMobile ? 2.5 : 0,
                 left: 0,
                 right: 0,
                 zIndex: 1

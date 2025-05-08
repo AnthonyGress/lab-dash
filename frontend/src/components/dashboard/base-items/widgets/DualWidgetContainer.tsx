@@ -1,9 +1,11 @@
-import { Card, CardContent } from '@mui/material';
+import { Card, CardContent, useMediaQuery } from '@mui/material';
 import React from 'react';
 
 import { EditMenu } from './EditMenu';
 import { StatusIndicator } from './StatusIndicator';
+import { DUAL_WIDGET_CONTAINER_HEIGHT } from '../../../../constants/widget-dimensions';
 import { COLORS } from '../../../../theme/styles';
+import { theme } from '../../../../theme/theme';
 
 type DualWidgetContainerProps = {
     children: React.ReactNode;
@@ -20,6 +22,8 @@ export const DualWidgetContainer: React.FC<DualWidgetContainerProps> = ({
     onDelete,
     url
 }) => {
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
     return (
         <Card
             sx={{
@@ -49,7 +53,7 @@ export const DualWidgetContainer: React.FC<DualWidgetContainerProps> = ({
             <CardContent
                 sx={{
                     flex: 1,
-                    p: 0.25,
+                    p: 1,
                     '&:last-child': {
                         pb: 0.25
                     },
@@ -57,7 +61,12 @@ export const DualWidgetContainer: React.FC<DualWidgetContainerProps> = ({
                     flexDirection: 'column',
                     height: '100%',
                     width: '100%',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    boxSizing: 'border-box',
+                    ...(isMobile ? {} : {
+                        minHeight: '400px'
+                    })
                 }}
             >
                 {children}

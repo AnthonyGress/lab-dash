@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 
 import { PopupManager } from '../../../../components/modals/PopupManager';
 import { BACKEND_URL } from '../../../../constants/constants';
+import { DUAL_WIDGET_CONTAINER_HEIGHT } from '../../../../constants/widget-dimensions';
 import { useAppContext } from '../../../../context/useAppContext';
 import { theme } from '../../../../theme/theme';
 import { TORRENT_CLIENT_TYPE } from '../../../../types';
@@ -459,7 +460,13 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
     // Just show error message and retry button if authentication failed
     if (!isAuthenticated) {
         return (
-            <CardContent sx={{ height: '100%', padding: 2 }}>
+            <CardContent sx={{
+                height: '100%',
+                padding: 2,
+                ...(isMobile ? {} : {
+                    minHeight: DUAL_WIDGET_CONTAINER_HEIGHT.sm
+                })
+            }}>
                 <Box
                     sx={{
                         display: 'flex',
@@ -522,7 +529,15 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
     }
 
     return (
-        <CardContent sx={{ height: '100%', padding: 2, maxWidth: '100%', width: '100%' }}>
+        <CardContent sx={{
+            height: '100%',
+            padding: 2,
+            maxWidth: '100%',
+            width: '100%',
+            ...(isMobile ? {} : {
+                minHeight: DUAL_WIDGET_CONTAINER_HEIGHT.sm
+            })
+        }}>
             <Box sx={{
                 display: 'flex',
                 flexDirection: 'column',

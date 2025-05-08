@@ -1,4 +1,4 @@
-import { Box, Divider, Typography } from '@mui/material';
+import { Box, Divider, Typography, useMediaQuery } from '@mui/material';
 import React from 'react';
 
 import { DateTimeWidget } from './DateTimeWidget';
@@ -6,7 +6,9 @@ import { DualWidgetContainer } from './DualWidgetContainer';
 import { PiholeWidget } from './PiholeWidget/PiholeWidget';
 import { SystemMonitorWidget } from './SystemMonitorWidget/SystemMonitorWidget';
 import { WeatherWidget } from './WeatherWidget';
+import { DUAL_WIDGET_SECTION_HEIGHT } from '../../../../constants/widget-dimensions';
 import { COLORS } from '../../../../theme/styles';
+import { theme } from '../../../../theme/theme';
 import { ITEM_TYPE } from '../../../../types';
 
 type DualWidgetProps = {
@@ -33,6 +35,8 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
     onDelete,
     url
 }) => {
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
     const renderWidget = (widgetConfig: { type: string; config?: any } | undefined, position: 'top' | 'bottom') => {
         if (!widgetConfig || !widgetConfig.type) {
             return (
@@ -110,13 +114,16 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
         >
             <Box
                 sx={{
-                    flex: 1,
+                    flex: isMobile ? '1 1 50%' : 1,
                     overflow: 'hidden',
                     display: 'flex',
                     flexDirection: 'column',
                     mb: 0.5,
                     justifyContent: 'center',
-                    position: 'relative'
+                    position: 'relative',
+                    minHeight: isMobile ? DUAL_WIDGET_SECTION_HEIGHT.xs : DUAL_WIDGET_SECTION_HEIGHT.sm,
+                    maxHeight: isMobile ? 'unset' : DUAL_WIDGET_SECTION_HEIGHT.sm,
+                    height: isMobile ? DUAL_WIDGET_SECTION_HEIGHT.xs : DUAL_WIDGET_SECTION_HEIGHT.sm
                 }}
             >
                 {renderWidget(config?.topWidget, 'top')}
@@ -124,20 +131,25 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
 
             <Divider
                 sx={{
-                    borderColor: COLORS.BORDER,
-                    my: 0.25
+                    borderColor: 'rgba(255,255,255,0.2)',
+                    width: '100%',
+                    my: 0.25,
+                    height: '1px'
                 }}
             />
 
             <Box
                 sx={{
-                    flex: 1,
+                    flex: isMobile ? '1 1 50%' : 1,
                     overflow: 'hidden',
                     display: 'flex',
                     flexDirection: 'column',
                     mt: 0.5,
                     justifyContent: 'center',
-                    position: 'relative'
+                    position: 'relative',
+                    minHeight: isMobile ? DUAL_WIDGET_SECTION_HEIGHT.xs : DUAL_WIDGET_SECTION_HEIGHT.sm,
+                    maxHeight: isMobile ? 'unset' : DUAL_WIDGET_SECTION_HEIGHT.sm,
+                    height: isMobile ? DUAL_WIDGET_SECTION_HEIGHT.xs : DUAL_WIDGET_SECTION_HEIGHT.sm
                 }}
             >
                 {renderWidget(config?.bottomWidget, 'bottom')}
