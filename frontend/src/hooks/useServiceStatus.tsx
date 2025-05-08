@@ -5,6 +5,7 @@ import { TWO_MIN_IN_MS } from '../constants/constants';
 
 export function useServiceStatus(
     pingUrl: string | null | undefined,
+    healthCheckType: 'http' | 'ping' = 'http',
     intervalMs = TWO_MIN_IN_MS
 ) {
     const [isOnline, setIsOnline] = useState<boolean | null>(null);
@@ -17,7 +18,7 @@ export function useServiceStatus(
         async function checkStatus() {
             try {
                 if (!pingUrl) return;
-                const status = await DashApi.checkServiceHealth(pingUrl);
+                const status = await DashApi.checkServiceHealth(pingUrl, healthCheckType);
                 setIsOnline(status === 'online');
             } catch {
                 setIsOnline(false);
@@ -30,7 +31,7 @@ export function useServiceStatus(
         return () => {
             if (timer) clearInterval(timer);
         };
-    }, [pingUrl, intervalMs]);
+    }, [pingUrl, healthCheckType, intervalMs]);
 
     return isOnline;
 }

@@ -1,6 +1,7 @@
 import { Box, Stack, Tooltip, Typography } from '@mui/material';
 import React from 'react';
 
+import { useIsMobile } from '../../../../../hooks/useIsMobile';
 import { theme } from '../../../../../theme/theme';
 
 
@@ -23,14 +24,14 @@ const formatSpace = (space: number): string => {
 export const DiskUsageBar: React.FC<DiskUsageBarProps> = ({ totalSpace, usedSpace, usedPercentage }) => {
     const freeSpace = totalSpace - usedSpace;
     const freePercentage = 100 - usedPercentage;
-
+    const isMobile = useIsMobile();
     return (
         <Box sx={{ width: '100%' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant='body1' gutterBottom>
+                <Typography variant='body1' gutterBottom sx={{ fontSize: { xs: 14, md: 15 } }}>
                         Disk Usage: {usedPercentage.toFixed(1)}%
                 </Typography>
-                <Typography variant='body1' gutterBottom>
+                <Typography variant='body1' gutterBottom sx={{ fontSize: { xs: 14, md: 15 } }}>
                     {formatSpace(usedSpace)} / {formatSpace(totalSpace)}
                 </Typography>
             </Box>

@@ -136,7 +136,7 @@ async function authenticatePihole(baseUrl: string, password: string): Promise<{ 
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                timeout: 1000
+                timeout: 2000
             }
         );
 
@@ -235,7 +235,7 @@ async function handleApiWith401Retry(
         const config = {
             params: { sid: authInfo.sid },
             headers: { 'X-FTL-CSRF': authInfo.csrf, 'Content-Type': 'application/json' },
-            timeout: 1000
+            timeout: 2000
         };
 
         // Make the API request based on the method

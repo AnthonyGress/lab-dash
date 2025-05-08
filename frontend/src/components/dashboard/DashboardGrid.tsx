@@ -11,7 +11,7 @@ import {
     rectSortingStrategy,
     SortableContext,
 } from '@dnd-kit/sortable';
-import { Box, Grid2 as Grid } from '@mui/material';
+import { Box, Grid2 as Grid, useMediaQuery } from '@mui/material';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import { SortableDeluge } from './sortable-items/widgets/SortableDeluge';
@@ -24,10 +24,12 @@ import { BlankAppShortcut } from './base-items/apps/BlankAppShortcut';
 import { BlankWidget } from './base-items/widgets/BlankWidget';
 import { SortableAppShortcut } from './sortable-items/apps/SortableAppShortcut';
 import { SortableDateTimeWidget } from './sortable-items/widgets/SortableDateTime';
+import { SortableDualWidget } from './sortable-items/widgets/SortableDualWidget';
 import { SortablePihole } from './sortable-items/widgets/SortablePihole';
 import { SortableQBittorrent } from './sortable-items/widgets/SortableQBittorrent';
 import { SortableSystemMonitorWidget } from './sortable-items/widgets/SortableSystemMonitor';
 import { SortableWeatherWidget } from './sortable-items/widgets/SortableWeather';
+import { theme } from '../../theme/theme';
 
 
 export const DashboardGrid: React.FC = () => {
@@ -35,6 +37,7 @@ export const DashboardGrid: React.FC = () => {
     const [selectedItem, setSelectedItem] = useState<DashboardItem | null>(null);
     const [openEditModal, setOpenEditModal] = useState(false);
     const { dashboardLayout, setDashboardLayout, refreshDashboard, editMode, isAdmin, isLoggedIn } = useAppContext();
+    const isMed = useMediaQuery(theme.breakpoints.down('md'));
 
     // Filter out admin-only items if user is not an admin
     const items = useMemo(() => {
@@ -147,7 +150,7 @@ export const DashboardGrid: React.FC = () => {
                                 case ITEM_TYPE.WEATHER_WIDGET:
                                     return <SortableWeatherWidget key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
                                 case ITEM_TYPE.DATE_TIME_WIDGET:
-                                    return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
+                                    return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
                                 case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
                                     return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
                                 case ITEM_TYPE.PIHOLE_WIDGET:
@@ -156,6 +159,21 @@ export const DashboardGrid: React.FC = () => {
                                     return item.config?.clientType === TORRENT_CLIENT_TYPE.DELUGE
                                         ? <SortableDeluge key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>
                                         : <SortableQBittorrent key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
+                                case ITEM_TYPE.DUAL_WIDGET: {
+                                    // Transform the existing config to the correct structure
+                                    const dualWidgetConfig = {
+                                        topWidget: item.config?.topWidget || undefined,
+                                        bottomWidget: item.config?.bottomWidget || undefined
+                                    };
+                                    return <SortableDualWidget
+                                        key={item.id}
+                                        id={item.id}
+                                        editMode={editMode}
+                                        config={dualWidgetConfig}
+                                        onDelete={() => handleDelete(item.id)}
+                                        onEdit={() => handleEdit(item)}
+                                    />;
+                                }
                                 case ITEM_TYPE.APP_SHORTCUT:
                                     return (
                                         <SortableAppShortcut
@@ -191,7 +209,7 @@ export const DashboardGrid: React.FC = () => {
                                 case ITEM_TYPE.WEATHER_WIDGET:
                                     return <SortableWeatherWidget key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
                                 case ITEM_TYPE.DATE_TIME_WIDGET:
-                                    return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} isOverlay/>;
+                                    return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
                                 case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
                                     return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
                                 case ITEM_TYPE.PIHOLE_WIDGET:
@@ -200,6 +218,20 @@ export const DashboardGrid: React.FC = () => {
                                     return item.config?.clientType === TORRENT_CLIENT_TYPE.DELUGE
                                         ? <SortableDeluge key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>
                                         : <SortableQBittorrent key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
+                                case ITEM_TYPE.DUAL_WIDGET: {
+                                    // Transform the existing config to the correct structure
+                                    const dualWidgetConfig = {
+                                        topWidget: item.config?.topWidget || undefined,
+                                        bottomWidget: item.config?.bottomWidget || undefined
+                                    };
+                                    return <SortableDualWidget
+                                        key={item.id}
+                                        id={item.id}
+                                        editMode={editMode}
+                                        config={dualWidgetConfig}
+                                        isOverlay
+                                    />;
+                                }
                                 case ITEM_TYPE.APP_SHORTCUT:
                                     return (
                                         <SortableAppShortcut

@@ -1,4 +1,5 @@
-import { Box, Button, Card, CardContent, CircularProgress, Grid2 as Grid, Skeleton, Tooltip, Typography } from '@mui/material';
+import { ErrorOutline } from '@mui/icons-material';
+import { Box, Button, Card, CardContent, CircularProgress, Grid2 as Grid, Skeleton, Tooltip, Typography, useMediaQuery } from '@mui/material';
 import React, { useEffect, useRef, useState } from 'react';
 import { BsCloudLightningRainFill } from 'react-icons/bs';
 import { BsCloudSunFill } from 'react-icons/bs';
@@ -13,6 +14,7 @@ import { BsGeoAltFill } from 'react-icons/bs';
 import { DashApi } from '../../../../api/dash-api';
 import { FIFTEEN_MIN_IN_MS } from '../../../../constants/constants';
 import { styles } from '../../../../theme/styles';
+import { theme } from '../../../../theme/theme';
 
 interface WeatherData {
     current: { temperature_2m: number; weathercode: number; windspeed_10m: number };
@@ -74,8 +76,10 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
     const [isFahrenheit, setIsFahrenheit] = useState(config?.temperatureUnit !== 'celsius');
     const [openTooltipIndex, setOpenTooltipIndex] = useState<number | null>(null);
     const [locationName, setLocationName] = useState<string | null>(null);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const timerRef = useRef<number | null>(null);
     const locationSet = useRef(false);
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     // Handle config changes and location setup
     useEffect(() => {
@@ -121,6 +125,42 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
         };
     }, [config]);
 
+    const fetchWeather = async () => {
+        try {
+            setIsLoading(true);
+
+            if (!location?.latitude || !location?.longitude) {
+                console.error('No coordinates available for weather fetch');
+                setWeatherData(null);
+                setIsLoading(false);
+                return;
+            }
+
+            const data = await DashApi.getWeather(location.latitude, location.longitude);
+            setWeatherData(data);
+            setErrorMessage(null); // Clear any previous errors
+            setIsLoading(false);
+
+        } catch (err: any) {
+            console.error('Error fetching weather:', err);
+            setWeatherData(null);
+            setIsLoading(false);
+
+            // Display rate limit errors from the backend to the user
+            if (err?.response?.status === 429 && err?.response?.data?.error_source === 'labdash_api') {
+                setErrorMessage(`API Rate limit: ${err.response?.data?.message}`);
+            } else if (err?.response?.status >= 400) {
+                // Handle other API errors
+                const message = err?.response?.data?.message || 'Error fetching weather data';
+                setErrorMessage(`API error: ${message}`);
+            } else if (err?.message) {
+                setErrorMessage(`Error: ${err.message}`);
+            } else {
+                setErrorMessage('An unknown error occurred');
+            }
+        }
+    };
+
     // Handle weather data fetching
     useEffect(() => {
         // Only fetch if location has been determined
@@ -128,35 +168,20 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
             return;
         }
 
-        const fetchWeather = async () => {
-            try {
-                setIsLoading(true);
-                // Only fetch when we have explicit coordinates
-                if (location.latitude && location.longitude) {
-                    const data = await DashApi.getWeather(location.latitude, location.longitude);
-                    setWeatherData(data);
-                } else {
-                    // If no coordinates are available, don't fetch
-                    console.error('No coordinates available for weather fetch');
-                    setWeatherData(null);
-                }
-            } catch (error) {
-                console.error('Error fetching weather:', error);
-                setWeatherData(null);
-            } finally {
-                setIsLoading(false);
-            }
-        };
+        let isComponentMounted = true;
 
-        // Fetch weather immediately
+        // Initial fetch
         fetchWeather();
 
         // Set up interval for periodic refresh
         timerRef.current = window.setInterval(() => {
-            fetchWeather();
+            if (isComponentMounted && !errorMessage) {
+                fetchWeather();
+            }
         }, FIFTEEN_MIN_IN_MS);
 
         return () => {
+            isComponentMounted = false;
             if (timerRef.current !== null) {
                 clearInterval(timerRef.current);
                 timerRef.current = null;
@@ -171,7 +196,13 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
 
         // Parse location parts from the full name
         const locationParts = locationName.split(',').map(part => part.trim());
-        const city = locationParts[0];
+
+        // Check if the first part is a US zip code (5 digits)
+        const isZipCodeFirst = /^\d{5}$/.test(locationParts[0]);
+
+        // If first part is a zip code, use the second part as the city
+        const cityIndex = isZipCodeFirst ? 1 : 0;
+        const city = locationParts[cityIndex] || locationParts[0]; // Fallback to first part if second doesn't exist
 
         let displayLocation = '';
 
@@ -215,7 +246,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
                 fontSize: '0.8rem',
                 color: 'rgba(255, 255, 255, 0.8)',
                 position: 'absolute',
-                top: 5,
+                top: isMobile ? 2.5 : 0,
                 left: 0,
                 right: 0,
                 zIndex: 1
@@ -256,59 +287,54 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
                     py: 0
                 }} key={index}>
                     <Box sx={{ textAlign: 'center', mb: 0.5, fontSize: '1rem', lineHeight: 1 }}>{getDay(weatherData.daily?.time[index])}</Box>
-                    <Tooltip
-                        title={
-                            <Box sx={{ p: 2 }}>
-                                <Typography variant='body2' align={'center'} sx={{ fontWeight: 'bold' }}>{date}</Typography>
-                                <Typography variant='body2' align={'center'} mb={2}>{weatherInfo.description}</Typography>
-                                <Typography variant='body2'>
-                                    <strong>High:</strong> {convertTemperature(weatherData.daily.temperature_2m_max[index])}°{isFahrenheit ? 'F' : 'C'}
-                                </Typography>
-                                <Typography variant='body2'>
-                                    <strong>Low:</strong> {convertTemperature(weatherData.daily.temperature_2m_min[index])}°{isFahrenheit ? 'F' : 'C'}
-                                </Typography>
-                                <Typography variant='body2'>
-                                    <strong>Wind Speed:</strong> {weatherData.current.windspeed_10m} mph
-                                </Typography>
-                                <Typography variant='body2'>
-                                    <strong>Sunrise:</strong> {new Date(sunrise).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                                </Typography>
-                                <Typography variant='body2'>
-                                    <strong>Sunset:</strong> {new Date(sunset).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                                </Typography>
-                            </Box>
+                    <Box
+                        onClick={(e) =>{
+                            e.stopPropagation(); // Prevents tooltip from closing when clicking inside
+                            setOpenTooltipIndex(openTooltipIndex === index ? null : index);}
                         }
-                        open={openTooltipIndex === index}
-                        onClose={() => setOpenTooltipIndex(null)}
-                        placement='bottom'
-                        arrow
-                        disableFocusListener
-                        disableHoverListener
-                        disableTouchListener
+                        sx={{
+                            cursor: 'pointer',
+                            mt: -0.25,
+                        }}
                     >
-                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                            <Box
-                                onClick={(e) =>{
-                                    e.stopPropagation(); // Prevents tooltip from closing when clicking inside
-                                    setOpenTooltipIndex(openTooltipIndex === index ? null : index);}
-                                }
-                                sx={{
-                                    cursor: 'pointer',
-                                    mt: -0.25,
-                                }}
-                            >
-                                {weatherInfo.icon}
-                            </Box>
-                            <Box sx={{ fontSize: { xs: '1rem', sm: '1rem', xl: '1.25rem' }, textAlign: 'center', mt: -0.5, lineHeight: 1.1 }}>
-                                {convertTemperature(weatherData.daily?.temperature_2m_max[index])}°
-                                {isFahrenheit ? 'F' : 'C'}
-                            </Box>
-                        </Box>
-                    </Tooltip>
+                        {weatherInfo.icon}
+                    </Box>
+                    <Box sx={{ fontSize: { xs: '1rem', sm: '1rem', xl: '1.25rem' }, textAlign: 'center', mt: -0.5, lineHeight: 1.1 }}>
+                        {convertTemperature(weatherData.daily?.temperature_2m_max[index])}°
+                        {isFahrenheit ? 'F' : 'C'}
+                    </Box>
                 </Grid>
             );
         });
     };
+
+    // If there's an error, show full-screen error message
+    if (errorMessage) {
+        return (
+            <Box sx={{
+                height: '100%',
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                p: 2
+            }}>
+                <Typography variant='subtitle1' align='center' sx={{ mb: 1 }}>
+                    {!errorMessage || errorMessage === 'null' ? 'Error fetching weather data' : errorMessage}
+                </Typography>
+                <Button
+                    variant='contained'
+                    color='primary'
+                    onClick={fetchWeather}
+                    disabled={isLoading}
+                    sx={{ mt: 2 }}
+                >
+                    {isLoading ? 'Retrying...' : 'Retry'}
+                </Button>
+            </Box>
+        );
+    }
 
     return (
         <CardContent sx={{

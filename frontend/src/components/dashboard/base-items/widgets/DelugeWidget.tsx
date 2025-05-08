@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { TorrentClientWidget } from './TorrentClientWidget';
 import { DashApi } from '../../../../api/dash-api';
@@ -29,18 +29,23 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
         password: config?.password || ''
     });
 
+    // Add a counter for login attempts and a maximum number of attempts
+    const loginAttemptsRef = useRef(0);
+    const MAX_LOGIN_ATTEMPTS = 3;
+
     // Update credentials when config changes
     useEffect(() => {
         if (config) {
             setLoginCredentials({
-                host: config.host || 'localhost',
+                host: config.host || '',
                 port: config.port || '8112',
                 ssl: config.ssl || false,
                 username: config.username || '',
                 password: config.password || ''
             });
-            // Reset failed flag when credentials are updated
+            // Reset failed flag and attempt counter when credentials are updated
             setLoginAttemptFailed(false);
+            loginAttemptsRef.current = 0;
         }
     }, [config]);
 
@@ -50,26 +55,65 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
         try {
             const success = await DashApi.delugeLogin(loginCredentials);
             setIsAuthenticated(success);
+
             if (!success) {
-                setAuthError('Login failed. Check your credentials and connection.');
-                setLoginAttemptFailed(true);
+                // Increment attempt counter
+                loginAttemptsRef.current += 1;
+
+                // Only set login as failed if we've reached the maximum attempts
+                if (loginAttemptsRef.current >= MAX_LOGIN_ATTEMPTS) {
+                    setAuthError('Login failed after multiple attempts. Check your credentials and connection.');
+                    setLoginAttemptFailed(true);
+                } else {
+                    // If we haven't reached max attempts, show a message but don't set loginAttemptFailed
+                    setAuthError(`Login attempt ${loginAttemptsRef.current}/${MAX_LOGIN_ATTEMPTS} failed. Retrying...`);
+
+                    // Schedule another attempt after a short delay
+                    setTimeout(() => {
+                        if (!isAuthenticated) {
+                            handleLogin();
+                        }
+                    }, 2000);
+                }
             } else {
+                // Reset counter on success
+                loginAttemptsRef.current = 0;
                 setLoginAttemptFailed(false);
             }
         } catch (error: any) {
             console.error('Login error:', error);
-            // Check for decryption error
-            if (error.response?.data?.error?.includes('Failed to decrypt password')) {
-                setAuthError('Failed to decrypt password. Please update your credentials in the widget settings.');
+
+            // Increment attempt counter
+            loginAttemptsRef.current += 1;
+
+            // Check if we've reached the maximum attempts
+            if (loginAttemptsRef.current >= MAX_LOGIN_ATTEMPTS) {
+                // Check for decryption error
+                if (error.response?.data?.error?.includes('Failed to decrypt password')) {
+                    setAuthError('Failed to decrypt password. Please update your credentials in the widget settings.');
+                } else {
+                    setAuthError('Connection error after multiple attempts. Check your Deluge WebUI settings.');
+                }
+                setIsAuthenticated(false);
+                setLoginAttemptFailed(true);
             } else {
-                setAuthError('Connection error. Check your Deluge WebUI settings.');
+                // If we haven't reached max attempts, show a retry message
+                setAuthError(`Login attempt ${loginAttemptsRef.current}/${MAX_LOGIN_ATTEMPTS} failed. Retrying...`);
+
+                // Schedule another attempt
+                setTimeout(() => {
+                    if (!isAuthenticated) {
+                        handleLogin();
+                    }
+                }, 2000);
             }
-            setIsAuthenticated(false);
-            setLoginAttemptFailed(true);
         } finally {
-            setIsLoading(false);
+            // Only set isLoading to false if we've finished all attempts or succeeded
+            if (loginAttemptsRef.current >= MAX_LOGIN_ATTEMPTS || isAuthenticated) {
+                setIsLoading(false);
+            }
         }
-    }, [loginCredentials]);
+    }, [loginCredentials, isAuthenticated]);
 
     const fetchStats = useCallback(async () => {
         if (loginAttemptFailed || !isAuthenticated) return;
@@ -168,7 +212,7 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
             const interval = setInterval(() => {
                 fetchStats();
                 fetchTorrents();
-            }, 5000); // Fixed interval of 5000ms as specified
+            }, 30000); // 30 seconds
 
             return () => clearInterval(interval);
         }

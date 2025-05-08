@@ -2,6 +2,7 @@ import { Box, Typography } from '@mui/material';
 import { Gauge, gaugeClasses } from '@mui/x-charts/Gauge';
 import React, { ReactNode } from 'react';
 
+import { useIsMobile } from '../../../../../hooks/useIsMobile';
 import { theme } from '../../../../../theme/theme';
 
 interface GaugeWidgetProps {
@@ -13,6 +14,7 @@ interface GaugeWidgetProps {
   total?: number;
   suffix?: string;
   customContent?: ReactNode;
+  isDualWidget?: boolean;
 }
 
 export const GaugeWidget: React.FC<GaugeWidgetProps> = ({
@@ -23,8 +25,11 @@ export const GaugeWidget: React.FC<GaugeWidgetProps> = ({
     isFahrenheit,
     total,
     suffix,
-    customContent
+    customContent,
+    isDualWidget
 }) => {
+    const isMobile = useIsMobile();
+
     // Calculate the maximum value for temperature gauge based on the unit
     const maxValue = temperature
         ? (isFahrenheit ? 212 : 100) // Max temp: 212°F or 100°C
@@ -35,6 +40,25 @@ export const GaugeWidget: React.FC<GaugeWidgetProps> = ({
         if (suffix) return suffix;
         if (temperature) return isFahrenheit ? '°F' : '°C';
         return '%';
+    };
+
+    // Define responsive width and height for the gauge
+    // Make gauges smaller on mobile and even smaller in dual widgets
+    const gaugeSizing = {
+        // Width is smaller in xs (mobile) and even smaller if in dual widget
+        width: {
+            xs: isDualWidget ? 90 : 108,
+            sm: 100,
+            md: 108,
+            xl: 135
+        },
+        // Height follows similar pattern as width
+        height: {
+            xs: isDualWidget ? 110 : 135,
+            sm: 120,
+            md: 130,
+            xl: 135
+        }
     };
 
     return (
@@ -54,8 +78,7 @@ export const GaugeWidget: React.FC<GaugeWidgetProps> = ({
                         [`& .${gaugeClasses.referenceArc}`]: {
                             fill: theme.palette.text.disabled,
                         },
-                        width: { xs: 108, sm: 100, md: 108, xl: 135 },
-                        height: { xs: 135, sm: 120, md: 130, xl: 135 },
+                        ...gaugeSizing,
                         pointerEvents: 'none',
                         touchAction: 'none',
                     }
@@ -77,7 +100,15 @@ export const GaugeWidget: React.FC<GaugeWidgetProps> = ({
                 {customContent ? (
                     customContent
                 ) : (
-                    <Typography fontSize={{ xs: 20, sm: 17, md: 22, lg: 20 }} fontWeight='bold'>
+                    <Typography
+                        fontSize={{
+                            xs: isDualWidget ? 18 : 20,
+                            sm: 17,
+                            md: 22,
+                            lg: 20
+                        }}
+                        fontWeight='bold'
+                    >
                         {value}{displaySuffix()}
                     </Typography>
                 )}
@@ -94,7 +125,10 @@ export const GaugeWidget: React.FC<GaugeWidgetProps> = ({
                     flexDirection: 'column',
                 }}
             >
-                <Typography fontSize={15} fontWeight='bold'>
+                <Typography
+                    fontSize={isDualWidget && isMobile ? 13 : 15}
+                    fontWeight='bold'
+                >
                     {title}
                 </Typography>
             </Box>

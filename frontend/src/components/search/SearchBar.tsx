@@ -130,9 +130,9 @@ export const SearchBar = ({
                             sx={{
                                 width: { xs: '100%',
                                     sm: '50%',
-                                    md: '70%',
-                                    lg: '55%',
-                                    xl: '40%'
+                                    md: '80%',
+                                    lg: '65%',
+                                    xl: '50%'
                                 },
                                 height: '60px',
                                 '& .MuiOutlinedInput-root': {

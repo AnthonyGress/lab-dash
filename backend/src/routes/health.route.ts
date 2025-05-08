@@ -24,15 +24,31 @@ const pingHost = (hostname: string): Promise<boolean> => {
 };
 
 healthRoute.get('/', async (req: Request, res: Response): Promise<void> => {
-    const { url } = req.query;
+    const { url, type } = req.query;
 
     if (!url || typeof url !== 'string') {
         res.status(400).json({ status: 'error', message: 'Invalid or missing URL' });
         return;
     }
 
+    const checkType = type as string || 'http';
+
     try {
-        // First attempt with axios
+        // For ping type health checks
+        if (checkType === 'ping') {
+            try {
+                // For ping, the URL parameter is just the hostname
+                const isReachable = await pingHost(url);
+                res.json({ status: isReachable ? 'online' : 'offline' });
+                return;
+            } catch (pingError) {
+                console.log('Ping failed for', url);
+                res.json({ status: 'offline' });
+                return;
+            }
+        }
+
+        // For HTTP health checks (default)
         const response = await axios.get(url, {
             timeout: 5000,
             httpsAgent,
@@ -44,16 +60,6 @@ healthRoute.get('/', async (req: Request, res: Response): Promise<void> => {
             res.json({ status: 'online' });
             return;
         }
-
-        // If axios doesn't return valid status, try ping as fallback
-        // try {
-        //     const parsedUrl = new URL(url);
-        //     const isReachable = await pingHost(parsedUrl.hostname);
-
-        //     res.json({ status: isReachable ? 'online' : 'offline' });
-        // } catch (pingError) {
-        //     res.json({ status: 'offline' });
-        // }
     } catch (error) {
         console.log('service is offline', req.query.url);
         res.json({ status: 'offline' });

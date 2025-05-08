@@ -25,7 +25,7 @@ export const CenteredModal = ({ open, handleClose, children, width, height, titl
             return width;
         }
 
-        if (windowDimensions.width <= 800) {
+        if (windowDimensions.width <= 1200) {
             return '92vw';
         }
 

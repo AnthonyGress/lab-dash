@@ -272,16 +272,23 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 if (err.pihole?.requiresReauth) {
                     setAuthFailed(true);
                     setError('Authentication failed. Please check your Pi-hole credentials in widget settings.');
-                } else if (err.response?.status === 401) {
+                } else if (err.response?.status === 401 || err.response?.status === 403) {
                     setAuthFailed(true);
                     setError('Authentication failed. Please check your Pi-hole credentials in widget settings.');
-                } else if (err.response?.status === 403) {
-                    setAuthFailed(true);
-                    setError('Access forbidden. Please check your Pi-hole credentials in widget settings.');
                 } else if (err.response?.status === 400) {
                     setAuthFailed(true);
                     setError('Bad Request: Invalid configuration or authentication data');
-                } else if (err.response?.status === 429 || err.pihole?.code === 'TOO_MANY_REQUESTS') {
+                } else if (err.response?.status === 429) {
+                    // Check if this is a rate limit from our backend API
+                    if (err.response?.data?.error_source === 'labdash_api') {
+                        setAuthFailed(true);
+                        setError(`Lab-Dash API rate limit exceeded: ${err.response?.data?.message}`);
+                    } else {
+                        // This is a rate limit from Pi-hole itself
+                        setAuthFailed(true);
+                        setError('Too many requests to Pi-hole API. The default session expiration is 30 minutes. You can manually clear unused sessions or increase the max_sessions setting in Pi-hole.');
+                    }
+                } else if (err.pihole?.code === 'TOO_MANY_REQUESTS') {
                     setAuthFailed(true);
                     setError('Too many requests to Pi-hole API. The default session expiration is 30 minutes. You can manually clear unused sessions or increase the max_sessions setting in Pi-hole.');
                 } else if (err.message?.includes('Network Error') || err.message?.includes('timeout')) {
@@ -337,11 +344,11 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
             // Determine the check interval based on state:
             let checkInterval = 30000; // Default: 30 seconds when enabled (reduced frequency)
 
-            if (!isBlocking) {
-                // Check every 5 seconds when disabled with a timer
-                // Check every 10 seconds when disabled indefinitely
-                checkInterval = disableEndTime !== null ? 5000 : 10000;
+            if (!isBlocking && disableEndTime !== null) {
+                // Check every 5 seconds only when disabled with an active timer
+                checkInterval = 5000;
             }
+            // When disabled indefinitely, use the same 30 second interval as when enabled
 
             // Set up sequential checking with dynamic intervals
             const scheduleNextCheck = () => {
@@ -351,27 +358,24 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 // Skip if an error occurred or auth failed
                 if (error || authFailed) return;
 
+                // Calculate the interval based on the current state
+                let interval = 30000; // 30 seconds for enabled state
+                if (!isBlocking && disableEndTime !== null) {
+                    // Use 5 seconds for disabled with timer
+                    interval = 5000;
+                }
+
                 // Store the timeout ID for cleanup
                 statusCheckIntervalRef.current = setTimeout(async () => {
                     // Double-check error and auth state before making the call
                     if (!error && !authFailed) {
                         await checkPiholeStatus();
-                    }
-
-                    // Only schedule next check if no errors occurred
-                    if (!error && !authFailed) {
-                        // Recalculate the interval based on the current state
-                        let nextInterval = 30000; // 30 seconds for enabled state
-
-                        if (!isBlocking) {
-                            // Use 5 seconds for disabled with timer, 10 seconds for indefinite
-                            nextInterval = disableEndTime !== null ? 5000 : 10000;
+                        // Schedule next check only if no errors occurred
+                        if (!error && !authFailed) {
+                            scheduleNextCheck();
                         }
-
-                        // Schedule the next check with the updated interval
-                        scheduleNextCheck();
                     }
-                }, checkInterval) as unknown as NodeJS.Timeout;
+                }, interval) as unknown as NodeJS.Timeout;
             };
 
             // Start the polling cycle
@@ -657,7 +661,17 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
             } else if (err.response?.status === 401 || err.response?.status === 403) {
                 setAuthFailed(true);
                 setError('Authentication failed. Please check your Pi-hole credentials in widget settings.');
-            } else if (err.response?.status === 429 || err.pihole?.code === 'TOO_MANY_REQUESTS') {
+            } else if (err.response?.status === 429) {
+                // Check if this is a rate limit from our backend API
+                if (err.response?.data?.error_source === 'labdash_api') {
+                    setAuthFailed(true);
+                    setError(`Lab-Dash API rate limit exceeded: ${err.response?.data?.message}`);
+                } else {
+                    // This is a rate limit from Pi-hole itself
+                    setAuthFailed(true);
+                    setError('Too many requests to Pi-hole API. The default session expiration is 30 minutes. You can manually clear unused sessions or increase the max_sessions setting in Pi-hole.');
+                }
+            } else if (err.pihole?.code === 'TOO_MANY_REQUESTS') {
                 setAuthFailed(true);
                 setError('Too many requests to Pi-hole API. The default session expiration is 30 minutes. You can manually clear unused sessions or increase the max_sessions setting in Pi-hole.');
             } else if (err.message?.includes('Network Error') || err.message?.includes('timeout')) {
@@ -716,7 +730,17 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
             } else if (err.response?.status === 401 || err.response?.status === 403) {
                 setAuthFailed(true);
                 setError('Authentication failed. Please check your Pi-hole credentials in widget settings.');
-            } else if (err.response?.status === 429 || err.pihole?.code === 'TOO_MANY_REQUESTS') {
+            } else if (err.response?.status === 429) {
+                // Check if this is a rate limit from our backend API
+                if (err.response?.data?.error_source === 'labdash_api') {
+                    setAuthFailed(true);
+                    setError(`Lab-Dash API rate limit exceeded: ${err.response?.data?.message}`);
+                } else {
+                    // This is a rate limit from Pi-hole itself
+                    setAuthFailed(true);
+                    setError('Too many requests to Pi-hole API. The default session expiration is 30 minutes. You can manually clear unused sessions or increase the max_sessions setting in Pi-hole.');
+                }
+            } else if (err.pihole?.code === 'TOO_MANY_REQUESTS') {
                 setAuthFailed(true);
                 setError('Too many requests to Pi-hole API. The default session expiration is 30 minutes. You can manually clear unused sessions or increase the max_sessions setting in Pi-hole.');
             } else if (err.message?.includes('Network Error') || err.message?.includes('timeout')) {
@@ -964,7 +988,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
     const percentageText = blockPercentage.toFixed(1);
 
     return (
-        <Box sx={{ p: 0.5, height: '100%' }}>
+        <Box sx={{ p: 0.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
             <Box sx={{
                 display: 'flex',
                 alignItems: 'center',
@@ -1041,7 +1065,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 </Menu>
             </Box>
 
-            <Grid container spacing={0.4}>
+            <Grid container spacing={0.4} sx={{ flex: 1 }}>
                 {/* Blocked Today */}
                 <Grid size={{ xs: 6 }}>
                     <Paper

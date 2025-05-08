@@ -77,13 +77,22 @@ export const IconSearch = ({ control, errors, onCustomIconSelect }: Props) => {
                         }
 
                         // Create a temporary preview URL
+                        // Validate file type
+                        if (!file.type.startsWith('image/')) {
+                            console.error('Invalid file type. Only image files are allowed.');
+                            return;
+                        }
+
                         const objectUrl = URL.createObjectURL(file);
                         setTempPreviewUrl(objectUrl);
+
+                        // Sanitize the object URL
+                        const sanitizedObjectUrl = encodeURI(objectUrl);
 
                         // Create a valid icon object
                         const tempIcon: Icon = {
                             name: file.name.replace(/\.[^/.]+$/, ''), // Remove extension
-                            path: objectUrl,
+                            path: sanitizedObjectUrl,
                             source: 'custom-pending'
                         };
 
@@ -203,7 +212,7 @@ export const IconSearch = ({ control, errors, onCustomIconSelect }: Props) => {
                                             <Box ml={1}>
                                                 <img
                                                     src={selectedIcon.source === 'custom-pending'
-                                                        ? selectedIcon.path
+                                                        ? encodeURI(selectedIcon.path)
                                                         : getIconPath(selectedIcon.path)}
                                                     alt={selectedIcon.name}
                                                     width={25}
