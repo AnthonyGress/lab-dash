@@ -28,7 +28,7 @@ export const DualWidgetContainer: React.FC<DualWidgetContainerProps> = ({
         <Card
             sx={{
                 width: '100%',
-                height: '100%',
+                height: isMobile ? 'auto' : '100%',
                 maxWidth: '100%',
                 minWidth: 0,
                 flexGrow: 1,
@@ -59,7 +59,7 @@ export const DualWidgetContainer: React.FC<DualWidgetContainerProps> = ({
                     },
                     display: 'flex',
                     flexDirection: 'column',
-                    height: '100%',
+                    height: isMobile ? 'auto' : '100%',
                     width: '100%',
                     justifyContent: 'center',
                     alignItems: 'center',

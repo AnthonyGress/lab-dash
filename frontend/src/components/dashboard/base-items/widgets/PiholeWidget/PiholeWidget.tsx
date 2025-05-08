@@ -988,7 +988,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
     const percentageText = blockPercentage.toFixed(1);
 
     return (
-        <Box sx={{ p: 0.5, height: '100%' }}>
+        <Box sx={{ p: 0.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
             <Box sx={{
                 display: 'flex',
                 alignItems: 'center',
@@ -1065,7 +1065,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 </Menu>
             </Box>
 
-            <Grid container spacing={0.4}>
+            <Grid container spacing={0.4} sx={{ flex: 1 }}>
                 {/* Blocked Today */}
                 <Grid size={{ xs: 6 }}>
                     <Paper

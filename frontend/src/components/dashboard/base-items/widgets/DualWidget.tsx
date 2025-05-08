@@ -114,45 +114,55 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
         >
             <Box
                 sx={{
-                    flex: isMobile ? '1 1 50%' : 1,
-                    overflow: 'hidden',
                     display: 'flex',
                     flexDirection: 'column',
-                    mb: 0.5,
-                    justifyContent: 'center',
-                    position: 'relative',
-                    minHeight: isMobile ? DUAL_WIDGET_SECTION_HEIGHT.xs : DUAL_WIDGET_SECTION_HEIGHT.sm,
-                    maxHeight: isMobile ? 'unset' : DUAL_WIDGET_SECTION_HEIGHT.sm,
-                    height: isMobile ? DUAL_WIDGET_SECTION_HEIGHT.xs : DUAL_WIDGET_SECTION_HEIGHT.sm
-                }}
-            >
-                {renderWidget(config?.topWidget, 'top')}
-            </Box>
-
-            <Divider
-                sx={{
-                    borderColor: 'rgba(255,255,255,0.2)',
                     width: '100%',
-                    my: 0.25,
-                    height: '1px'
-                }}
-            />
-
-            <Box
-                sx={{
-                    flex: isMobile ? '1 1 50%' : 1,
-                    overflow: 'hidden',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    mt: 0.5,
-                    justifyContent: 'center',
-                    position: 'relative',
-                    minHeight: isMobile ? DUAL_WIDGET_SECTION_HEIGHT.xs : DUAL_WIDGET_SECTION_HEIGHT.sm,
-                    maxHeight: isMobile ? 'unset' : DUAL_WIDGET_SECTION_HEIGHT.sm,
-                    height: isMobile ? DUAL_WIDGET_SECTION_HEIGHT.xs : DUAL_WIDGET_SECTION_HEIGHT.sm
+                    height: '100%',
+                    flex: 1,
                 }}
             >
-                {renderWidget(config?.bottomWidget, 'bottom')}
+                <Box
+                    sx={{
+                        flex: 1,
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        mb: 0.5,
+                        justifyContent: 'center',
+                        position: 'relative',
+                        minHeight: isMobile ? 'unset' : DUAL_WIDGET_SECTION_HEIGHT.sm,
+                        maxHeight: isMobile ? 'none' : DUAL_WIDGET_SECTION_HEIGHT.sm,
+                        height: isMobile ? 'auto' : DUAL_WIDGET_SECTION_HEIGHT.sm
+                    }}
+                >
+                    {renderWidget(config?.topWidget, 'top')}
+                </Box>
+
+                <Divider
+                    sx={{
+                        borderColor: 'rgba(255,255,255,0.2)',
+                        width: '100%',
+                        my: 0.25,
+                        height: '1px'
+                    }}
+                />
+
+                <Box
+                    sx={{
+                        flex: 1,
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        mt: 0.5,
+                        justifyContent: 'center',
+                        position: 'relative',
+                        minHeight: isMobile ? 'unset' : DUAL_WIDGET_SECTION_HEIGHT.sm,
+                        maxHeight: isMobile ? 'none' : DUAL_WIDGET_SECTION_HEIGHT.sm,
+                        height: isMobile ? 'auto' : DUAL_WIDGET_SECTION_HEIGHT.sm
+                    }}
+                >
+                    {renderWidget(config?.bottomWidget, 'bottom')}
+                </Box>
             </Box>
         </DualWidgetContainer>
     );
