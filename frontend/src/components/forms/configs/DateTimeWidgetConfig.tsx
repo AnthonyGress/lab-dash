@@ -1,5 +1,5 @@
 import ClearIcon from '@mui/icons-material/Clear';
-import { Autocomplete, Box, Grid, TextField, Typography } from '@mui/material';
+import { Autocomplete, Grid2 as Grid, TextField, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 
@@ -49,34 +49,19 @@ export const DateTimeWidgetConfig = ({ formContext }: DateTimeWidgetConfigProps)
         setTimezoneError(null);
 
         try {
-            console.log(`Fetching timezone for coordinates: lat=${latitude}, lon=${longitude}`);
-
             const response = await DashApi.getTimezone(latitude, longitude);
-            console.log('Timezone API response:', response);
 
             if (response && response.data && response.data.timezone) {
                 // Set the timezone in the form
                 const timezone = response.data.timezone;
-                console.log(`Successfully set timezone to: ${timezone}`);
                 formContext.setValue('timezone', timezone, { shouldDirty: true });
-
-                // Save a special debug flag to indicate the timezone was set correctly
-                console.log('✅ Timezone successfully set in form');
-
-                // Double check that the value was set
-                setTimeout(() => {
-                    const currentTimezone = formContext.getValues('timezone');
-                    console.log('Timezone value after setting:', currentTimezone);
-                }, 100);
             } else {
-                console.error('No timezone data in API response:', response);
                 setTimezoneError('Failed to fetch timezone: Invalid response format');
 
                 // Set an empty string timezone to ensure the property exists
                 formContext.setValue('timezone', '', { shouldDirty: true });
             }
         } catch (error) {
-            console.error('Error fetching timezone:', error);
             // More detailed error handling
             if (error instanceof Error) {
                 setTimezoneError(`Error: ${error.message}`);
@@ -168,80 +153,78 @@ export const DateTimeWidgetConfig = ({ formContext }: DateTimeWidgetConfigProps)
     };
 
     return (
-        <Box sx={{ width: '100%' }}>
-            <Grid container spacing={2} direction='column'>
-                <Grid>
-                    <Autocomplete
-                        options={locationOptions}
-                        getOptionLabel={(option) => {
-                            // Handle both string and LocationOption types
-                            if (typeof option === 'string') {
-                                return option;
-                            }
-                            return option.name;
-                        }}
-                        inputValue={locationSearch}
-                        onInputChange={(_, newValue) => {
-                            setLocationSearch(newValue);
-                        }}
-                        onChange={(_, newValue) => {
-                            // Handle both string and LocationOption types
-                            if (typeof newValue === 'string' || !newValue) {
-                                handleLocationSelected(null);
-                            } else {
-                                handleLocationSelected(newValue);
-                            }
-                        }}
-                        loading={isSearching}
-                        loadingText={
-                            <Typography style={{ color: theme.palette.text.primary }}>
-                                Searching...
-                            </Typography>
+        <>
+            <Grid>
+                <Autocomplete
+                    options={locationOptions}
+                    getOptionLabel={(option) => {
+                        // Handle both string and LocationOption types
+                        if (typeof option === 'string') {
+                            return option;
                         }
-                        noOptionsText={
-                            <Typography style={{ color: theme.palette.text.primary }}>
-                                {locationSearch.length < 2 ? 'Type to search...' : 'No locations found'}
-                            </Typography>
+                        return option.name;
+                    }}
+                    inputValue={locationSearch}
+                    onInputChange={(_, newValue) => {
+                        setLocationSearch(newValue);
+                    }}
+                    onChange={(_, newValue) => {
+                        // Handle both string and LocationOption types
+                        if (typeof newValue === 'string' || !newValue) {
+                            handleLocationSelected(null);
+                        } else {
+                            handleLocationSelected(newValue);
                         }
-                        fullWidth
-                        isOptionEqualToValue={(option, value) => option.id === value.id}
-                        clearOnBlur={false}
-                        clearOnEscape
-                        value={selectedLocation}
-                        freeSolo
-                        clearIcon={<ClearIcon style={{ color: theme.palette.text.primary }} />}
-                        renderInput={(params) => (
-                            <TextField
-                                {...params}
-                                label='Search location'
-                                variant='outlined'
-                                helperText={isFetchingTimezone ? 'Fetching timezone...' : (timezoneError || 'Enter a zip code or city')}
-                                FormHelperTextProps={{
-                                    style: {
-                                        color: timezoneError
-                                            ? 'rgba(255, 0, 0, 0.7)'
-                                            : theme.palette.text.primary
-                                    }
-                                }}
-                                sx={{
-                                    width: '100%',
-                                    minWidth: isMobile ? '65vw' : '20vw',
-                                    '& .MuiOutlinedInput-root': {
-                                        '& fieldset': {
-                                            borderColor: 'text.primary',
-                                        },
-                                        '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                                        '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
-                                    }
-                                }}
-                                InputLabelProps={{
-                                    style: { color: theme.palette.text.primary }
-                                }}
-                            />
-                        )}
-                    />
-                </Grid>
+                    }}
+                    loading={isSearching}
+                    loadingText={
+                        <Typography style={{ color: theme.palette.text.primary }}>
+                            Searching...
+                        </Typography>
+                    }
+                    noOptionsText={
+                        <Typography style={{ color: theme.palette.text.primary }}>
+                            {locationSearch.length < 2 ? 'Type to search...' : 'No locations found'}
+                        </Typography>
+                    }
+                    fullWidth
+                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    clearOnBlur={false}
+                    clearOnEscape
+                    value={selectedLocation}
+                    freeSolo
+                    clearIcon={<ClearIcon style={{ color: theme.palette.text.primary }} />}
+                    renderInput={(params) => (
+                        <TextField
+                            {...params}
+                            label='Search location'
+                            variant='outlined'
+                            helperText={isFetchingTimezone ? 'Fetching timezone...' : (timezoneError || 'Enter a zip code or city')}
+                            FormHelperTextProps={{
+                                style: {
+                                    color: timezoneError
+                                        ? 'rgba(255, 0, 0, 0.7)'
+                                        : theme.palette.text.primary
+                                }
+                            }}
+                            sx={{
+                                width: '100%',
+                                minWidth: isMobile ? '65vw' : '20vw',
+                                '& .MuiOutlinedInput-root': {
+                                    '& fieldset': {
+                                        borderColor: 'text.primary',
+                                    },
+                                    '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                }
+                            }}
+                            InputLabelProps={{
+                                style: { color: theme.palette.text.primary }
+                            }}
+                        />
+                    )}
+                />
             </Grid>
-        </Box>
+        </>
     );
 };

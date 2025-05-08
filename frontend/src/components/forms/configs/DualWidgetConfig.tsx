@@ -3,12 +3,12 @@ import { useEffect, useRef, useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { CheckboxElement, SelectElement, TextFieldElement } from 'react-hook-form-mui';
 
+import { DateTimeWidgetConfig } from './DateTimeWidgetConfig';
 import { DashApi } from '../../../api/dash-api';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { COLORS } from '../../../theme/styles';
 import { theme } from '../../../theme/theme';
 import { FormValues } from '../AddEditForm';
-import { DateTimeWidgetConfig } from './DateTimeWidgetConfig';
 import { WeatherWidgetConfig } from './WeatherWidgetConfig';
 import { ITEM_TYPE } from '../../../types';
 
@@ -450,13 +450,9 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
         else if (widgetType === ITEM_TYPE.DATE_TIME_WIDGET) {
             // Get timezone value
             const timezone = formContext.getValues(getFieldName(position, 'timezone'));
-            console.log(`Capturing ${position} timezone:`, timezone);
 
             // Ensure timezone is properly stored as a string, never null
             fields.timezone = timezone || '';
-
-            // Debugging: Double-check the value right after setting
-            console.log(`${position} timezone field set to:`, fields.timezone);
 
             // Get location data and ensure it has proper structure
             const locationValue = formContext.getValues(getFieldName(position, 'location'));
@@ -499,14 +495,12 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
             fields.showLabel = formContext.getValues(getFieldName(position, 'showLabel'));
         }
 
-        // Update the state with captured values and log the result
-        console.log(`Setting ${position} widget fields:`, fields);
+        // Update the state with captured values
         setWidgetState(prevState => {
             const newState = {
                 ...prevState,
                 [`${position}WidgetFields`]: { ...fields }
             };
-            console.log(`New widget state for ${position}:`, newState[`${position}WidgetFields`]);
             return newState;
         });
     };
@@ -522,7 +516,6 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
             if (formContext.watch(`${currentPosition}WidgetType`) === ITEM_TYPE.DATE_TIME_WIDGET) {
                 const timezoneFieldName = getFieldName(currentPosition, 'timezone');
                 const timezone = formContext.getValues(timezoneFieldName);
-                console.log(`Tab change: Saving ${currentPosition} timezone value:`, timezone);
 
                 // Explicitly set the timezone in the widget state
                 setWidgetState(prevState => {
@@ -531,7 +524,6 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
                         ...prevState[positionKey],
                         timezone: timezone || ''
                     };
-                    console.log(`Tab change: Updated ${currentPosition} widget fields:`, updatedFields);
 
                     return {
                         ...prevState,
@@ -560,12 +552,6 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
 
                 // Apply the fields
                 applyWidgetFieldsToForm(newPosition, fields);
-
-                // Check timezone value after switching tabs
-                if (formContext.watch(`${newPosition}WidgetType`) === ITEM_TYPE.DATE_TIME_WIDGET) {
-                    const timezoneFieldName = getFieldName(newPosition, 'timezone');
-                    console.log(`Tab change: ${newPosition} timezone after tab switch:`, formContext.getValues(timezoneFieldName));
-                }
 
                 // Trigger form validation
                 formContext.trigger();
@@ -626,19 +612,9 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
                 captureFormValuesToState('top');
                 captureFormValuesToState('bottom');
 
-                // Double-check timezone values directly from the form
-                const topTimezone = formContext.getValues('top_timezone');
-                const bottomTimezone = formContext.getValues('bottom_timezone');
-                console.log('Form Submit - Top timezone:', topTimezone);
-                console.log('Form Submit - Bottom timezone:', bottomTimezone);
-
                 // Build individual widget configs
                 const topWidget = buildWidgetConfig('top');
                 const bottomWidget = buildWidgetConfig('bottom');
-
-                // Log final widget configs for debugging
-                console.log('Final topWidget config:', topWidget);
-                console.log('Final bottomWidget config:', bottomWidget);
 
                 // Create the final dual widget config
                 const dualWidgetConfig = {
@@ -648,9 +624,6 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
 
                 // Set the config value for submission
                 (formContext as any).setValue('config', dualWidgetConfig);
-
-                // Log final config for debugging
-                console.log('Final dual widget config:', dualWidgetConfig);
             }, 0);
         };
 
@@ -718,8 +691,6 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
             // Explicitly retrieve timezone with a fallback empty string
             const timezone = formContext.getValues(getFieldName(position, 'timezone')) || '';
 
-            console.log(`Building ${position} DATE_TIME_WIDGET config with timezone:`, timezone);
-
             // Ensure location has the correct structure
             let processedLocation = null;
             if (location && typeof location === 'object' && 'name' in location) {
@@ -745,10 +716,6 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
                 location: processedLocation,
                 timezone: timezone // This is already guaranteed to be a string (empty if not set)
             };
-
-            // Double check the timezone value in the final config
-            console.log(`Final ${position} DATE_TIME_WIDGET config:`, config);
-            console.log(`Timezone in final config: "${config.timezone}", type: ${typeof config.timezone}`);
         }
         else if (widgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET) {
             // Get values directly from form for critical fields
@@ -1203,7 +1170,6 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
             setValue: (name: any, value: any, options: any) => {
                 // Handle timezone specially - when it's set from the API callback in DateTimeWidgetConfig
                 if (name === 'timezone') {
-                    console.log(`Setting ${position} timezone to:`, value);
                     return formContext.setValue(getFieldName(position, 'timezone') as any, value, options);
                 }
 
@@ -1230,7 +1196,12 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
             }
         } as UseFormReturn<FormValues>;
 
-        return <DateTimeWidgetConfig formContext={wrapperContext} />;
+        // Wrap with consistent styling to match single widget display
+        return (
+            <Box sx={{ width: '100%' }}>
+                <DateTimeWidgetConfig formContext={wrapperContext} />
+            </Box>
+        );
     };
 
     // Create a custom wrapper for PiholeWidgetConfig to ensure API token and password fields work correctly

@@ -75,8 +75,7 @@ export class DashApi {
             console.log('Logged out successfully');
 
             // Verify cookies are cleared
-            const cookieStatus = await this.checkCookies();
-            console.log('Cookie status after logout:', cookieStatus);
+            await this.checkCookies();
 
             // Force page reload to ensure state is reset
             window.location.reload();
@@ -298,8 +297,6 @@ export class DashApi {
 
     public static async getTimezone(latitude: number, longitude: number): Promise<any> {
         try {
-            console.log(`DashApi.getTimezone: Requesting timezone for lat=${latitude}, lon=${longitude}`);
-
             const res = await axios.get(`${BACKEND_URL}/api/timezone`, {
                 params: {
                     latitude,
@@ -307,9 +304,6 @@ export class DashApi {
                 },
                 timeout: 5000 // 5 second timeout
             });
-
-            console.log('DashApi.getTimezone: Raw response:', res);
-
             // Ensure we return the expected format - axios already includes 'data'
             // Return the whole response object to allow error checking
             return {

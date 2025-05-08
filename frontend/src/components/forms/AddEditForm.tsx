@@ -556,11 +556,6 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                     showLabel: data.top_showLabel
                 };
 
-                console.log('Top widget data for dual widget:', {
-                    timezone: data.top_timezone,
-                    location: data.top_location
-                });
-
                 const bottomWidgetData = {
                     ...data,
                     // Map position-specific fields to standard fields for the createWidgetConfig function
@@ -580,16 +575,8 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                     showLabel: data.bottom_showLabel
                 };
 
-                console.log('Bottom widget data for dual widget:', {
-                    timezone: data.bottom_timezone,
-                    location: data.bottom_location
-                });
-
                 const topConfig = await createWidgetConfig(data.topWidgetType || '', topWidgetData);
                 const bottomConfig = await createWidgetConfig(data.bottomWidgetType || '', bottomWidgetData);
-
-                console.log('Final top widget config:', topConfig);
-                console.log('Final bottom widget config:', bottomConfig);
 
                 config = {
                     topWidget: {
@@ -601,8 +588,6 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                         config: bottomConfig
                     }
                 };
-
-                console.log('Final dual widget config:', config);
             }
         } else if (data.itemType === ITEM_TYPE.APP_SHORTCUT) {
             config = {};
@@ -701,7 +686,6 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
 
             // Ensure timezone is always a string, never null
             const timezone = data.timezone || '';
-            console.log('AddEditForm: Setting DATE_TIME_WIDGET timezone to:', timezone);
 
             return {
                 location: processedLocation,
