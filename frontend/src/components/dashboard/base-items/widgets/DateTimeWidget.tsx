@@ -100,10 +100,10 @@ export const DateTimeWidget = ({ config }: DateTimeWidgetProps) => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 mb: 0,
-                fontSize: isMobile ? '0.9rem' : '1rem',
-                color: 'rgba(255, 255, 255, 0.9)',
+                fontSize: '0.8rem',
+                color: 'rgba(255, 255, 255, 0.8)',
                 position: 'absolute',
-                top: isMobile ? 2 : 2,
+                top: isMobile ? 2.5 : 0,
                 left: 0,
                 right: 0,
                 zIndex: 1,
@@ -111,8 +111,8 @@ export const DateTimeWidget = ({ config }: DateTimeWidgetProps) => {
                 padding: '4px 0'
             }}>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <BsGeoAltFill style={{ marginRight: '4px', fontSize: isMobile ? '0.9rem' : '1rem' }} />
-                    <Typography variant='body1' sx={{ fontWeight: 'medium' }}>
+                    <BsGeoAltFill style={{ marginRight: '2px', fontSize: '0.8rem' }} />
+                    <Typography variant='body2' sx={{ fontWeight: 'medium' }}>
                         {displayLocation}
                     </Typography>
                 </Box>
@@ -190,7 +190,7 @@ export const DateTimeWidget = ({ config }: DateTimeWidgetProps) => {
     return (
         <CardContent sx={{ position: 'relative' }}>
             {renderLocationName()}
-            <Box height={'100%'} mt={locationName ? (config?.timezone ? 5 : 3.5) : 0}>
+            <Box height={'100%'} mt={locationName ? (config?.timezone ? 4 : 3) : 0}>
                 <Typography fontSize={'3rem'} align={'center'} fontWeight={600}>
                     {getFormattedTime()}
                 </Typography>
