@@ -125,7 +125,6 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
         };
     }, [config]);
 
-    // Function to fetch weather data
     const fetchWeather = async () => {
         try {
             setIsLoading(true);
