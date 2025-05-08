@@ -39,7 +39,7 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
     });
     const [openSystemModal, setOpenSystemModal] = useState(false);
     const [isFahrenheit, setIsFahrenheit] = useState(config?.temperatureUnit !== 'celsius');
-    const [errorMessage, setErrorMessage] = useState<string | null>('null');
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
     // Default gauges if not specified in config
@@ -442,7 +442,7 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                 p: 2
             }}>
                 <Typography variant='subtitle1' align='center' sx={{ mb: 1 }}>
-                    {errorMessage}
+                    {!errorMessage || errorMessage === 'null' ? 'Error fetching system data' : errorMessage}
                 </Typography>
                 <Button
                     variant='contained'

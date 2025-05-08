@@ -316,7 +316,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
                 p: 2
             }}>
                 <Typography variant='subtitle1' align='center' sx={{ mb: 1 }}>
-                    {errorMessage}
+                    {!errorMessage || errorMessage === 'null' ? 'Error fetching weather data' : errorMessage}
                 </Typography>
                 <Button
                     variant='contained'
