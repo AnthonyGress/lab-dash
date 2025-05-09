@@ -153,7 +153,7 @@ process.on('SIGINT', async () => {
 
 delugeRoute.post('/login', async (req: Request, res: Response) => {
     try {
-        let password = req.body.password || req.query.password as string;  // Get password from body or query params
+        let password = req.body.password || req.query.password as string;
         const baseUrl = getBaseUrl(req);
         const host = req.query.host as string;
         const port = req.query.port as string;
