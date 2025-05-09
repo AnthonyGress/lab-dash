@@ -716,12 +716,17 @@ export class DashApi {
         ssl?: boolean;
     }): Promise<boolean> {
         try {
-            const { host, port, ssl, username, password } = credentials;
+            const { host, port, ssl, password } = credentials;
             const response = await axios.post(
                 `${BACKEND_URL}/api/deluge/login`,
-                { username, password },
+                {},
                 {
-                    params: { host, port, ssl },
+                    params: {
+                        host,
+                        port,
+                        ssl,
+                        password
+                    },
                     withCredentials: false
                 }
             );

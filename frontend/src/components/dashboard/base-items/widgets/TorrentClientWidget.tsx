@@ -1,4 +1,4 @@
-import { ArrowDownward, ArrowUpward, CheckCircle, Delete, Download, MoreVert, Pause, PlayArrow, Stop, Warning } from '@mui/icons-material';
+import { ArrowDownward, ArrowUpward, CheckCircle, Delete, Download, MoreVert, Pause, PlayArrow, Stop, Upload, Warning } from '@mui/icons-material';
 import { Box, Button, CardContent, CircularProgress, Grid, IconButton, LinearProgress, Link, Menu, MenuItem, TextField, Tooltip, Typography, useMediaQuery } from '@mui/material';
 import React, { useState } from 'react';
 
@@ -98,7 +98,7 @@ const getStatusIcon = (state: string) => {
     switch (state) {
     case 'downloading': return <Download sx={{ color: 'white' }} fontSize='small' />;
     case 'uploading':
-    case 'seeding': return <ArrowUpward sx={{ color: 'white' }} fontSize='small' />;
+    case 'seeding': return <Upload sx={{ color: 'white' }} fontSize='small' />;
     case 'pausedDL':
     case 'pausedUP': return <Pause sx={{ color: 'white' }} fontSize='small' />;
     case 'stalledDL':
