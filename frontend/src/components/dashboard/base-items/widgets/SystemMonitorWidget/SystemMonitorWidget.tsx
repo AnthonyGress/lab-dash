@@ -127,16 +127,8 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
     const getRamPercentage = (systemData: any) => {
         let totalPercentage = 0;
 
-        // Check if memory data is available
-        if (systemData?.memory?.total && systemData?.memory?.used) {
-            // Calculate used percentage using used memory instead of active memory
-            // The 'used' value is what most system monitors display as memory utilization
-            totalPercentage = Math.round((systemData.memory.used / systemData.memory.total) * 100);
-
-            // Log memory values for debugging
-            console.log('Memory total:', formatBytes(systemData.memory.total));
-            console.log('Memory used:', formatBytes(systemData.memory.used));
-            console.log('Memory percentage:', totalPercentage);
+        if (systemData?.memory?.total && systemData?.memory?.active) {
+            totalPercentage = Math.round((systemData.memory.active / systemData.memory.total) * 100);
         }
         setMemoryInformation(totalPercentage);
     };
