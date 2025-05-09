@@ -13,7 +13,7 @@ import { BsGeoAltFill } from 'react-icons/bs';
 
 import { DashApi } from '../../../../api/dash-api';
 import { FIFTEEN_MIN_IN_MS } from '../../../../constants/constants';
-import { styles } from '../../../../theme/styles';
+import { COLORS, styles } from '../../../../theme/styles';
 import { theme } from '../../../../theme/theme';
 
 interface WeatherData {
@@ -110,20 +110,32 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
             setIsLoading(false);
         }
 
-        const handleClickOutside = () => {
-            setOpenTooltipIndex(null); // Close tooltip when clicking anywhere
-        };
-
-        document.addEventListener('click', handleClickOutside);
+        // Moved clickOutside handler to a separate useEffect to avoid recreating on config changes
 
         return () => {
-            document.removeEventListener('click', handleClickOutside);
             if (timerRef.current !== null) {
                 clearInterval(timerRef.current);
                 timerRef.current = null;
             }
         };
     }, [config]);
+
+    // Handle tooltip clicks separately
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            // Only close tooltip if click is outside of any weather item
+            const weatherItemClicked = (e.target as HTMLElement).closest('[data-weather-item]');
+            if (!weatherItemClicked) {
+                setOpenTooltipIndex(null);
+            }
+        };
+
+        document.addEventListener('click', handleClickOutside);
+
+        return () => {
+            document.removeEventListener('click', handleClickOutside);
+        };
+    }, []);
 
     const fetchWeather = async () => {
         try {
@@ -246,7 +258,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
                 fontSize: '0.8rem',
                 color: 'rgba(255, 255, 255, 0.8)',
                 position: 'absolute',
-                top: isMobile ? 2.5 : 0,
+                top: isMobile ? 2.5 : 6,
                 left: 0,
                 right: 0,
                 zIndex: 1
@@ -261,7 +273,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
 
     const renderCurrentWeatherItem = () => {
         return weatherData &&
-        <Box mt={locationName ? 2 : 0.5} mb={1}>
+        <Box mt={locationName ? 3 : 0.5} mb={1}>
             <Box sx={styles.center}>
                 <Box>{weatherDescriptions[weatherData?.current?.weathercode]?.icon}</Box>
                 <Box ml={1} sx={{ fontSize: '1.4rem' }}>{convertTemperature(weatherData.current?.temperature_2m)}°{isFahrenheit ? 'F' : 'C'}</Box>
@@ -283,26 +295,69 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    py: 0
-                }} key={index}>
+                    justifyContent: 'center', }}
+                key={index}>
                     <Box sx={{ textAlign: 'center', mb: 0.5, fontSize: '1rem', lineHeight: 1 }}>{getDay(weatherData.daily?.time[index])}</Box>
-                    <Box
-                        onClick={(e) =>{
-                            e.stopPropagation(); // Prevents tooltip from closing when clicking inside
-                            setOpenTooltipIndex(openTooltipIndex === index ? null : index);}
+
+                    <Tooltip
+                        title={
+                            <Box sx={{ p: 2 }}>
+                                <Typography variant='body2' align={'center'} sx={{ fontWeight: 'bold' }}>{date}</Typography>
+                                <Typography variant='body2' align={'center'} mb={2}>{weatherInfo.description}</Typography>
+                                <Typography variant='body2'>
+                                    <strong>High:</strong> {convertTemperature(weatherData.daily.temperature_2m_max[index])}°{isFahrenheit ? 'F' : 'C'}
+                                </Typography>
+                                <Typography variant='body2'>
+                                    <strong>Low:</strong> {convertTemperature(weatherData.daily.temperature_2m_min[index])}°{isFahrenheit ? 'F' : 'C'}
+                                </Typography>
+                                <Typography variant='body2'>
+                                    <strong>Wind Speed:</strong> {weatherData.current.windspeed_10m} mph
+                                </Typography>
+                                <Typography variant='body2'>
+                                    <strong>Sunrise:</strong> {new Date(sunrise).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                                </Typography>
+                                <Typography variant='body2'>
+                                    <strong>Sunset:</strong> {new Date(sunset).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                                </Typography>
+                            </Box>
                         }
-                        sx={{
-                            cursor: 'pointer',
-                            mt: -0.25,
+                        open={openTooltipIndex === index}
+                        onClose={() => setOpenTooltipIndex(null)}
+                        placement='bottom'
+                        arrow
+                        disableFocusListener
+                        disableHoverListener
+                        disableTouchListener
+                        componentsProps={{
+                            tooltip: {
+                                sx: {
+                                    bgcolor: COLORS.BORDER, // Solid dark background
+                                    '.MuiTooltip-arrow': {
+                                        color: COLORS.BORDER // Match the arrow color
+                                    }
+                                }
+                            }
                         }}
                     >
-                        {weatherInfo.icon}
-                    </Box>
-                    <Box sx={{ fontSize: { xs: '1rem', sm: '1rem', xl: '1.25rem' }, textAlign: 'center', mt: -0.5, lineHeight: 1.1 }}>
-                        {convertTemperature(weatherData.daily?.temperature_2m_max[index])}°
-                        {isFahrenheit ? 'F' : 'C'}
-                    </Box>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <Box
+                                onClick={(e) =>{
+                                    e.stopPropagation(); // Prevents tooltip from closing when clicking inside
+                                    setOpenTooltipIndex(openTooltipIndex === index ? null : index);}
+                                }
+                                sx={{
+                                    cursor: 'pointer',
+                                    mt: -0.25,
+                                }}
+                            >
+                                {weatherInfo.icon}
+                            </Box>
+                            <Box sx={{ fontSize: { xs: '1rem', sm: '1rem', xl: '1.25rem' }, textAlign: 'center', mt: -0.5, lineHeight: 1.1 }}>
+                                {convertTemperature(weatherData.daily?.temperature_2m_max[index])}°
+                                {isFahrenheit ? 'F' : 'C'}
+                            </Box>
+                        </Box>
+                    </Tooltip>
                 </Grid>
             );
         });

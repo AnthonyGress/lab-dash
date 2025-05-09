@@ -32,36 +32,60 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
     // Add a counter for login attempts and a maximum number of attempts
     const loginAttemptsRef = useRef(0);
     const MAX_LOGIN_ATTEMPTS = 3;
+    const autoLoginAttemptedRef = useRef(false);
 
     // Update credentials when config changes
     useEffect(() => {
         if (config) {
-            setLoginCredentials({
+            // Only update if there are actual changes to credentials
+            const newCredentials = {
                 host: config.host || '',
                 port: config.port || '8112',
                 ssl: config.ssl || false,
                 username: config.username || '',
                 password: config.password || ''
-            });
-            // Reset failed flag and attempt counter when credentials are updated
-            setLoginAttemptFailed(false);
-            loginAttemptsRef.current = 0;
+            };
+
+            const credentialsChanged =
+                newCredentials.host !== loginCredentials.host ||
+                newCredentials.port !== loginCredentials.port ||
+                newCredentials.ssl !== loginCredentials.ssl ||
+                newCredentials.username !== loginCredentials.username ||
+                newCredentials.password !== loginCredentials.password;
+
+            if (credentialsChanged) {
+                console.log('Credentials changed, updating state');
+                setLoginCredentials(newCredentials);
+                // Reset failed flag and attempt counter when credentials are updated
+                setLoginAttemptFailed(false);
+                loginAttemptsRef.current = 0;
+                autoLoginAttemptedRef.current = false; // Reset auto-login flag when credentials change
+            }
         }
     }, [config]);
 
     const handleLogin = useCallback(async () => {
+        if (isLoading) {
+            console.log('Login already in progress, skipping');
+            return; // Prevent multiple simultaneous login attempts
+        }
+
         setIsLoading(true);
         setAuthError('');
+
         try {
             const success = await DashApi.delugeLogin(loginCredentials);
+            console.log('Deluge login result:', success);
             setIsAuthenticated(success);
 
             if (!success) {
                 // Increment attempt counter
                 loginAttemptsRef.current += 1;
+                console.log(`Login attempt ${loginAttemptsRef.current} failed`);
 
                 // Only set login as failed if we've reached the maximum attempts
                 if (loginAttemptsRef.current >= MAX_LOGIN_ATTEMPTS) {
+                    console.log('Max login attempts reached, setting failed flag');
                     setAuthError('Login failed after multiple attempts. Check your credentials and connection.');
                     setLoginAttemptFailed(true);
                 } else {
@@ -71,14 +95,17 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
                     // Schedule another attempt after a short delay
                     setTimeout(() => {
                         if (!isAuthenticated) {
+                            console.log('Retrying login...');
                             handleLogin();
                         }
                     }, 2000);
                 }
             } else {
+                console.log('Login successful');
                 // Reset counter on success
                 loginAttemptsRef.current = 0;
                 setLoginAttemptFailed(false);
+                autoLoginAttemptedRef.current = true;
             }
         } catch (error: any) {
             console.error('Login error:', error);
@@ -113,7 +140,23 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
                 setIsLoading(false);
             }
         }
-    }, [loginCredentials, isAuthenticated]);
+    }, [loginCredentials, isAuthenticated, isLoading]);
+
+    // Auto-login when component mounts or credentials change
+    useEffect(() => {
+        if (
+            config?.password &&
+            !autoLoginAttemptedRef.current &&
+            !isAuthenticated &&
+            !loginAttemptFailed
+        ) {
+            autoLoginAttemptedRef.current = true; // Mark that we've attempted auto-login
+            // Use a short delay to ensure component is fully mounted
+            setTimeout(() => {
+                handleLogin();
+            }, 500);
+        }
+    }, [config, handleLogin, isAuthenticated, loginAttemptFailed]);
 
     const fetchStats = useCallback(async () => {
         if (loginAttemptFailed || !isAuthenticated) return;
@@ -192,14 +235,8 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
         }));
         // Reset failed flag when credentials are changed manually
         setLoginAttemptFailed(false);
+        autoLoginAttemptedRef.current = false; // Allow auto-login to be attempted again
     };
-
-    // Auto-login when username and password are available and no previous login attempt failed
-    useEffect(() => {
-        if (config?.username && config?.password && !loginAttemptFailed && !isAuthenticated) {
-            handleLogin();
-        }
-    }, [config, handleLogin, loginAttemptFailed, isAuthenticated]);
 
     // Refresh stats and torrents periodically
     useEffect(() => {

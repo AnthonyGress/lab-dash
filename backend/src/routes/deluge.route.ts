@@ -153,13 +153,14 @@ process.on('SIGINT', async () => {
 
 delugeRoute.post('/login', async (req: Request, res: Response) => {
     try {
-        let { password } = req.body;
+        let password = req.body.password || req.query.password as string;  // Get password from body or query params
         const baseUrl = getBaseUrl(req);
         const host = req.query.host as string;
         const port = req.query.port as string;
         const ssl = req.query.ssl === 'true';
 
         if (!password) {
+            console.error('Password not provided in Deluge login request');
             res.status(400).json({ error: 'Password is required' });
             return;
         }
@@ -169,6 +170,7 @@ delugeRoute.post('/login', async (req: Request, res: Response) => {
             password = decrypt(password);
             // Check if decryption failed (returns empty string)
             if (!password) {
+                console.error('Password decryption failed for Deluge login');
                 res.status(400).json({
                     error: 'Failed to decrypt password. It may have been encrypted with a different key. Please update your credentials.'
                 });
@@ -176,6 +178,7 @@ delugeRoute.post('/login', async (req: Request, res: Response) => {
             }
         }
 
+        console.log(`Attempting Deluge login at ${baseUrl}`);
         const response = await axios.post(`${baseUrl}`,
             {
                 method: 'auth.login',
@@ -190,6 +193,7 @@ delugeRoute.post('/login', async (req: Request, res: Response) => {
 
         // Check if login was successful
         if (response.data.result !== true) {
+            console.error('Deluge login failed: Invalid credentials');
             res.status(401).json({
                 error: 'Failed to login to Deluge'
             });
@@ -207,6 +211,7 @@ delugeRoute.post('/login', async (req: Request, res: Response) => {
                 port,
                 ssl
             };
+            console.log('Deluge login successful');
         }
 
         res.status(200).json({ success: true });
