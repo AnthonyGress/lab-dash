@@ -1,7 +1,8 @@
 # Lab Dash
 This is an open-source user interface designed to be your internally/externally hosted homepage for your homelab/server. 
 
-<img width="1511" alt="Screenshot 2025-03-23 at 11 48 56 PM" src="https://github.com/user-attachments/assets/449c8744-58ca-46f2-bbf0-7eb953ede4da" />
+<img width="1912" alt="Screenshot 2025-05-08 at 8 58 34 PM" src="https://github.com/user-attachments/assets/55ae6a22-33e3-40ab-b1e2-a8deeaa5239b" />
+
 
 # Features
 Lab Dash features a customizable grid layout where you can add various widgets:
