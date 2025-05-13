@@ -15,6 +15,8 @@ type Props = {
     url?: string;
     healthCheckType?: 'http' | 'ping';
     rowPlaceholder?: boolean;
+    groupItem?: boolean;
+    isHighlighted?: boolean;
 };
 
 export const WidgetContainer: React.FC<Props> = ({
@@ -26,7 +28,9 @@ export const WidgetContainer: React.FC<Props> = ({
     placeholder=false,
     url,
     healthCheckType='http',
-    rowPlaceholder
+    rowPlaceholder,
+    groupItem,
+    isHighlighted = false
 }) => {
     return (
         <Card
@@ -40,7 +44,8 @@ export const WidgetContainer: React.FC<Props> = ({
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: placeholder ? 'transparent' : COLORS.TRANSPARENT_GRAY,
+                backgroundColor: isHighlighted ? 'rgba(255, 255, 255, 0.13)' :
+                    placeholder || groupItem ? 'transparent' : COLORS.TRANSPARENT_GRAY,
                 borderRadius: 2,
                 border: placeholder && editMode ? 'none' : !placeholder ? `1px solid ${COLORS.BORDER}` : 'none',
                 padding: 0,
@@ -49,7 +54,8 @@ export const WidgetContainer: React.FC<Props> = ({
                 position: 'relative',
                 overflow: 'hidden',
                 boxSizing: 'border-box',
-                backdropFilter: placeholder ? 'none' : '6px'
+                backdropFilter: placeholder || groupItem ? 'none' : '6px',
+                transition: 'background-color 0.3s ease, outline 0.3s ease'
             }}
         >
             <EditMenu editMode={editMode} onEdit={onEdit} onDelete={onDelete} />

@@ -6,6 +6,9 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useAppContext } from '../../../../context/useAppContext';
 import { DashboardItem, ITEM_TYPE } from '../../../../types';
 import { GroupItem } from '../../../../types/group';
+import { AddEditForm } from '../../../forms/AddEditForm';
+import { CenteredModal } from '../../../modals/CenteredModal';
+import { ConfirmationOptions, PopupManager } from '../../../modals/PopupManager';
 import GroupWidgetSmall from '../../base-items/widgets/GroupWidgetSmall';
 
 export interface GroupWidgetSmallConfig {
@@ -37,6 +40,9 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
     const { updateItem, dashboardLayout, setDashboardLayout, saveLayout } = useAppContext();
     const groupWidgetRef = useRef<HTMLDivElement | null>(null);
     const [isOver, setIsOver] = useState<boolean>(false);
+    const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+    const [openEditItemModal, setOpenEditItemModal] = useState(false);
+    const [isCurrentDropTarget, setIsCurrentDropTarget] = useState(false);
 
     // Ensure config.items is always initialized
     const ensureItems = useCallback(() => {
@@ -59,6 +65,96 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
             });
         }
     }, [id, config, updateItem]);
+
+    // Get a group item as a dashboard item for editing
+    const getItemAsDashboardItem = useCallback((itemId: string): DashboardItem | null => {
+        if (!config?.items) return null;
+
+        // Find the item in the group
+        const foundItem = config.items.find(item => item.id === itemId);
+        if (!foundItem) {
+            console.error('Could not find item to edit');
+            return null;
+        }
+
+        // Create a dashboard item from the group item to pass to the edit form
+        const dashboardItem: DashboardItem = {
+            id: foundItem.id,
+            type: ITEM_TYPE.APP_SHORTCUT,
+            label: foundItem.name,
+            url: foundItem.url,
+            showLabel: true,
+            icon: {
+                path: foundItem.icon || '',
+                name: foundItem.name
+            },
+            config: {}
+        };
+
+        // Add WoL properties if they exist
+        if (foundItem.isWol) {
+            dashboardItem.config = {
+                ...dashboardItem.config,
+                isWol: foundItem.isWol,
+                macAddress: foundItem.macAddress,
+                broadcastAddress: foundItem.broadcastAddress,
+                port: foundItem.port
+            };
+        }
+
+        // Add health check properties if they exist
+        if (foundItem.healthUrl) {
+            dashboardItem.config = {
+                ...dashboardItem.config,
+                healthUrl: foundItem.healthUrl,
+                healthCheckType: foundItem.healthCheckType
+            };
+        }
+
+        return dashboardItem;
+    }, [config]);
+
+    // Function to update a group item after it has been edited
+    const updateGroupItem = useCallback((itemId: string, updatedItem: DashboardItem) => {
+        if (!config?.items) return;
+
+        // Create an updated GroupItem from the updated DashboardItem
+        const updatedGroupItem: GroupItem = {
+            id: itemId,
+            name: updatedItem.label,
+            url: updatedItem.url?.toString() || '#',
+            icon: updatedItem.icon?.path || ''
+        };
+
+        // Add WoL properties if they exist
+        if (updatedItem.config?.isWol) {
+            updatedGroupItem.isWol = updatedItem.config.isWol;
+            updatedGroupItem.macAddress = updatedItem.config.macAddress;
+            updatedGroupItem.broadcastAddress = updatedItem.config.broadcastAddress;
+            updatedGroupItem.port = updatedItem.config.port;
+        }
+
+        // Add health check properties if they exist
+        if (updatedItem.config?.healthUrl) {
+            updatedGroupItem.healthUrl = updatedItem.config.healthUrl;
+            updatedGroupItem.healthCheckType = updatedItem.config.healthCheckType;
+        }
+
+        // Replace the item in the group's items array
+        const updatedItems = config.items.map(item =>
+            item.id === itemId ? updatedGroupItem : item
+        );
+
+        // Update the group widget with the updated items
+        if (updateItem) {
+            updateItem(id, {
+                config: {
+                    ...config,
+                    items: updatedItems
+                }
+            });
+        }
+    }, [config, id, updateItem]);
 
     // Handle when an item is dragged out of the group
     const handleItemDragOut = useCallback((itemId: string) => {
@@ -163,11 +259,14 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
             return;
         }
 
+        // Check if this is a normal app shortcut or a placeholder
+        const isPlaceholder = shortcutItem.type === ITEM_TYPE.BLANK_APP;
+
         // Create a new group item from the app shortcut
         const newGroupItem: GroupItem = {
             id: shortcutItem.id,
-            name: shortcutItem.label,
-            url: shortcutItem.url?.toString() || '#',
+            name: shortcutItem.label || (isPlaceholder ? 'Placeholder' : 'App'),
+            url: isPlaceholder ? '#' : (shortcutItem.url?.toString() || '#'),
             icon: shortcutItem.icon?.path || ''
         };
 
@@ -253,14 +352,23 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
             // Check if over this group or its droppable container
             const isOverThisGroup =
                 over?.id === id ||
-                (typeof over?.id === 'string' &&
-                 (over.id === `group-droppable-${id}` || over.id.includes(`group-droppable-item-${id}`)));
+                over?.id === `group-droppable-${id}` ||
+                (typeof over?.id === 'string' && over?.id.includes(`group-droppable-item-${id}`)) ||
+                (over?.data?.current?.groupId === id);
 
-            if (isOverThisGroup && active?.data?.current?.type === ITEM_TYPE.APP_SHORTCUT) {
-                console.log('DnD-kit: App shortcut over group widget:', id);
-                setIsOver(true);
-            } else if (isOver) {
-                setIsOver(false);
+            if (isOverThisGroup) {
+                const isAppShortcutType =
+                    active?.data?.current?.type === ITEM_TYPE.APP_SHORTCUT ||
+                    active?.data?.current?.type === ITEM_TYPE.BLANK_APP;
+
+                if (isAppShortcutType) {
+                    console.log('App shortcut directly over group widget:', id);
+                    setIsCurrentDropTarget(true);
+                } else {
+                    setIsCurrentDropTarget(false);
+                }
+            } else if (isCurrentDropTarget) {
+                setIsCurrentDropTarget(false);
             }
         };
 
@@ -273,6 +381,7 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
             if (!confirmed) {
                 console.log('Not a confirmed drop, ignoring');
                 setIsOver(false);
+                setIsCurrentDropTarget(false);
                 return;
             }
 
@@ -284,7 +393,11 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
                 overId.includes(`group-droppable-item-${id}`) ||
                 (over?.data?.current?.groupId === id);
 
-            if (isForThisGroup && active?.data?.current?.type === ITEM_TYPE.APP_SHORTCUT) {
+            const isAppShortcutType =
+                active?.data?.current?.type === ITEM_TYPE.APP_SHORTCUT ||
+                active?.data?.current?.type === ITEM_TYPE.BLANK_APP;
+
+            if (isForThisGroup && isAppShortcutType) {
                 console.log('App shortcut drop targeted at this group:', id);
 
                 // Find the app shortcut and add it to this group
@@ -296,6 +409,7 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
             }
 
             setIsOver(false);
+            setIsCurrentDropTarget(false);
         };
 
         const handleDndKitDragEnd = (event: any) => {
@@ -307,6 +421,7 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
             if (action === 'app-to-group') {
                 console.log('Already handled by app-to-group event');
                 setIsOver(false);
+                setIsCurrentDropTarget(false);
                 return;
             }
 
@@ -321,8 +436,12 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
                 overId.includes(`group-droppable-item-${id}`) ||
                 (over?.data?.current?.groupId === id);
 
+            const isAppShortcutType =
+                active?.data?.current?.type === ITEM_TYPE.APP_SHORTCUT ||
+                active?.data?.current?.type === ITEM_TYPE.BLANK_APP;
+
             // Only process actual drops directly on this group, not just near it
-            if (isOverThisGroup && active?.data?.current?.type === ITEM_TYPE.APP_SHORTCUT) {
+            if (isOverThisGroup && isAppShortcutType) {
                 console.log('DnD-kit: App shortcut dropped on group widget', id);
 
                 // Find the app shortcut in the dashboard layout
@@ -339,10 +458,12 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
 
             // Reset the isOver state
             setIsOver(false);
+            setIsCurrentDropTarget(false);
         };
 
         const handleDndKitInactive = () => {
             setIsOver(false);
+            setIsCurrentDropTarget(false);
         };
 
         // Listen for all DnD-kit events
@@ -378,6 +499,72 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
         }
     });
 
+    // Handle editing a specific item in the group
+    const handleItemEdit = useCallback((itemId: string) => {
+        console.log('Edit item in group:', itemId);
+
+        // Set the selected item id and open the edit modal
+        setSelectedItemId(itemId);
+        setOpenEditItemModal(true);
+    }, []);
+
+    // Handle closing the edit modal
+    const handleCloseEditModal = useCallback(() => {
+        setOpenEditItemModal(false);
+        setSelectedItemId(null);
+    }, []);
+
+    // Handle updating the item after edit
+    const handleItemUpdate = useCallback((updatedItem: DashboardItem) => {
+        if (selectedItemId && config?.items) {
+            // Update the group item with the new values
+            updateGroupItem(selectedItemId, updatedItem);
+        }
+        // Close the modal
+        handleCloseEditModal();
+    }, [selectedItemId, config, updateGroupItem, handleCloseEditModal]);
+
+    // Handle deleting a specific item from the group
+    const handleItemDelete = useCallback((itemId: string) => {
+        console.log('Delete item from group:', itemId);
+
+        if (!config?.items) return;
+
+        // Find the item in the group
+        const foundItem = config.items.find(item => item.id === itemId);
+        if (!foundItem) {
+            console.error('Could not find item to delete');
+            return;
+        }
+
+        const options: ConfirmationOptions = {
+            title: `Delete ${foundItem.name}?`,
+            confirmAction: () => {
+                // Remove the item from the group's items
+                const updatedItems = config.items?.filter(item => item.id !== itemId) || [];
+
+                // Update the group widget config
+                if (updateItem) {
+                    updateItem(id, {
+                        config: {
+                            ...config,
+                            items: updatedItems
+                        }
+                    });
+
+                    console.log('Item removed from group:', itemId);
+                }
+            }
+        };
+
+        PopupManager.deleteConfirmation(options);
+    }, [config, id, updateItem]);
+
+    // Get selected dashboard item for editing
+    const selectedDashboardItem = selectedItemId
+        ? getItemAsDashboardItem(selectedItemId)
+        : null;
+
     if (isOverlay) {
         return (
             <Grid2
@@ -397,47 +584,76 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
                     onEdit={onEdit}
                     isEditing={editMode}
                     onItemDragOut={handleItemDragOut}
+                    onItemEdit={handleItemEdit}
+                    onItemDelete={handleItemDelete}
                 />
             </Grid2>
         );
     }
 
     return (
-        <Grid2
-            size={{ xs: 12, sm: 6, md: 6, lg: 4, xl: 4 }}
-            ref={(node) => {
-                groupWidgetRef.current = node;
-                setNodeRef(node);
-            }}
-            {...attributes}
-            {...listeners}
-            sx={{
-                transition,
-                transform: transform ? CSS.Translate.toString(transform) : undefined,
-                opacity: isDragging ? 0.5 : 1,
-                visibility: isDragging ? 'hidden' : 'visible',
-                ...(isOver && {
-                    outline: '2px solid rgba(25, 118, 210, 0.8)',
-                    backgroundColor: 'rgba(25, 118, 210, 0.1)'
-                })
-            }}
-            data-type='group-widget-small'
-            data-widget-id={id}
-            data-accepts='app-shortcut'
-            data-id={id}
-        >
-            <div style={{ width: '100%', height: '100%' }}>
-                <GroupWidgetSmall
-                    id={id}
-                    name={config?.title || 'Group'}
-                    items={config?.items || []}
-                    onItemsChange={handleItemsChange}
-                    onRemove={onDelete}
-                    onEdit={onEdit}
-                    isEditing={editMode}
-                    onItemDragOut={handleItemDragOut}
-                />
-            </div>
-        </Grid2>
+        <>
+            <Grid2
+                size={{ xs: 12, sm: 6, md: 6, lg: 4, xl: 4 }}
+                ref={(node) => {
+                    groupWidgetRef.current = node;
+                    setNodeRef(node);
+                }}
+                {...attributes}
+                {...listeners}
+                sx={{
+                    transform: transform ? CSS.Translate.toString(transform) : undefined,
+                    opacity: isDragging ? 0.5 : 1,
+                    visibility: isDragging ? 'hidden' : 'visible',
+                    position: 'relative',
+                    backgroundColor: 'transparent',
+                    transition: 'background-color 0.3s ease, transform 0.2s',
+                    borderRadius: '8px',
+                    '& > div': {
+                        height: '100%',
+                        width: '100%',
+                        visibility: 'inherit'
+                    },
+                    '& * ': {
+                        visibility: 'inherit'
+                    }
+                }}
+                data-type='group-widget-small'
+                data-widget-id={id}
+                data-accepts='app-shortcut'
+                data-id={id}
+            >
+                <div style={{ width: '100%', height: '100%' }}>
+                    <GroupWidgetSmall
+                        id={id}
+                        name={config?.title || 'Group'}
+                        items={config?.items || []}
+                        onItemsChange={handleItemsChange}
+                        onRemove={onDelete}
+                        onEdit={onEdit}
+                        isEditing={editMode}
+                        onItemDragOut={handleItemDragOut}
+                        onItemEdit={handleItemEdit}
+                        onItemDelete={handleItemDelete}
+                        isHighlighted={isOver || isCurrentDropTarget}
+                    />
+                </div>
+            </Grid2>
+
+            {/* Modal for editing group items */}
+            <CenteredModal
+                open={openEditItemModal}
+                handleClose={handleCloseEditModal}
+                title='Edit App Shortcut'
+            >
+                {selectedDashboardItem && (
+                    <AddEditForm
+                        handleClose={handleCloseEditModal}
+                        existingItem={selectedDashboardItem}
+                        onSubmit={handleItemUpdate}
+                    />
+                )}
+            </CenteredModal>
+        </>
     );
 };

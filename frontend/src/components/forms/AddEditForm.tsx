@@ -17,6 +17,7 @@ import { isEncrypted } from '../../utils/utils';
 type Props = {
     handleClose: () => void
     existingItem?: DashboardItem | null;
+    onSubmit?: (item: DashboardItem) => void;
 }
 
 const ITEM_TYPE_OPTIONS = [
@@ -142,7 +143,7 @@ interface LocationOption {
     longitude: number;
 }
 
-export const AddEditForm = ({ handleClose, existingItem }: Props) => {
+export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
     const { formState: { errors } } = useForm();
     const { dashboardLayout, addItem, updateItem } = useAppContext();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -647,7 +648,21 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
 
         try {
             if (existingItem) {
-                updateItem(existingItem.id, updatedItem);
+                // Check if this is an item in a group widget
+                const isGroupItem = existingItem.type === ITEM_TYPE.APP_SHORTCUT &&
+                                   dashboardLayout.findIndex(item => item.id === existingItem.id) === -1;
+
+                // If this is an item in a group, call onSubmit with the updated item
+                if (isGroupItem && onSubmit) {
+                    const updated = {
+                        ...existingItem,
+                        ...updatedItem
+                    };
+                    onSubmit(updated as DashboardItem);
+                } else {
+                    // Otherwise update normally
+                    updateItem(existingItem.id, updatedItem);
+                }
             } else {
                 await addItem(updatedItem);
             }

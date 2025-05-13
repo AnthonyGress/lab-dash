@@ -47,9 +47,13 @@ const customCollisionDetection = (args: any) => {
                     container.id.toString().includes('group-droppable')
     );
 
+    const isAppShortcutType =
+        args.active.data.current?.type === ITEM_TYPE.APP_SHORTCUT ||
+        args.active.data.current?.type === ITEM_TYPE.BLANK_APP;
+
     // If the active item is an app shortcut and we have group containers,
     // use a more accurate detection for groups with a higher threshold
-    if (args.active.data.current?.type === ITEM_TYPE.APP_SHORTCUT && groups.length > 0) {
+    if (isAppShortcutType && groups.length > 0) {
         // Use rectIntersection with a higher threshold for app-to-group drops
         // This makes it require more precision when dropping onto a group
         const intersections = groups.map((container: any) => {
@@ -396,12 +400,16 @@ export const DashboardGrid: React.FC = () => {
                     </Box>
                 </SortableContext>
 
-                <DragOverlay>
+                <DragOverlay
+                    modifiers={[]}
+                    zIndex={1000}
+                >
                     {activeId ? (
                         // For group items being dragged out, always render as app shortcut
                         activeData?.type === 'group-item' ? (
                             // Render a app shortcut overlay for dragged group items
                             <SortableAppShortcut
+                                key={activeId}
                                 id={activeId}
                                 url={activeData.originalItem?.url || '#'}
                                 name={activeData.originalItem?.name || 'App'}

@@ -2,12 +2,16 @@ import { DndContext, DragEndEvent, DragOverEvent, DragStartEvent, useDraggable, 
 import { arrayMove, SortableContext, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import AddIcon from '@mui/icons-material/Add';
-import { Box, IconButton, Typography } from '@mui/material';
+import { Box, Grid2 as Grid, IconButton, Typography } from '@mui/material';
 import React, { useCallback, useEffect, useState } from 'react';
 
+import { EditMenu } from './EditMenu';
+import { StatusIndicator } from './StatusIndicator';
 import { WidgetContainer } from './WidgetContainer';
+import { DashboardItem, ITEM_TYPE } from '../../../../types';
 import { GroupItem } from '../../../../types/group';
 import { getIconPath } from '../../../../utils/utils';
+import { ConfirmationOptions, PopupManager } from '../../../modals/PopupManager';
 import { AppShortcut } from '../apps/AppShortcut';
 
 interface GroupWidgetSmallProps {
@@ -19,6 +23,9 @@ interface GroupWidgetSmallProps {
     onEdit?: () => void;
     isEditing?: boolean;
     onItemDragOut?: (itemId: string) => void;
+    onItemEdit?: (itemId: string) => void;
+    onItemDelete?: (itemId: string) => void;
+    isHighlighted?: boolean;
 }
 
 interface SortableGroupItemProps {
@@ -26,6 +33,8 @@ interface SortableGroupItemProps {
     isEditing: boolean;
     groupId: string;
     onDragStart?: (id: string) => void;
+    onEdit?: (id: string) => void;
+    onDelete?: (id: string) => void;
 }
 
 // Component for each sortable item within the group
@@ -33,7 +42,9 @@ const SortableGroupItem: React.FC<SortableGroupItemProps> = ({
     item,
     isEditing,
     groupId,
-    onDragStart
+    onDragStart,
+    onEdit,
+    onDelete
 }) => {
     const {
         attributes,
@@ -57,41 +68,49 @@ const SortableGroupItem: React.FC<SortableGroupItemProps> = ({
         }
     };
 
-    // Check if the item has health URL - if so, we need space for the status icon
-    const hasHealthUrl = !!item.healthUrl || !!item.healthCheckType;
+    // Call the parent's edit handler directly
+    const handleEdit = () => {
+        if (onEdit) {
+            onEdit(item.id);
+        }
+    };
+
+    // Call the parent's delete handler directly
+    const handleDelete = () => {
+        if (onDelete) {
+            onDelete(item.id);
+        }
+    };
 
     return (
-        <Box
+        <Grid
             ref={setNodeRef}
             {...attributes}
             {...listeners}
             sx={{
-                height: { xs: '70px', sm: '80px', md: '85px' },
+                height: { xs: '90px', sm: '100px', md: '95px' },
                 width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: 'transparent',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                borderRadius: '8px',
-                m: 0.5,
                 cursor: isEditing ? 'grab' : 'pointer',
                 transform: transform ? CSS.Translate.toString(transform) : undefined,
                 transition,
                 opacity: isDragging ? 0.5 : 1,
-                overflow: 'hidden',
                 position: 'relative',
-                '&:hover': {
-                    borderColor: 'rgba(255, 255, 255, 0.3)',
-                    boxShadow: '0 0 5px rgba(255, 255, 255, 0.1)'
-                }
+                m: 0.5, // Add margin for spacing
             }}
             data-item-id={item.id}
             data-group-id={groupId}
             data-type='group-item'
             onDragStart={handleDragStart}
         >
-            <Box sx={{ width: '100%', height: '100%', position: 'relative' }}>
+            <WidgetContainer
+                editMode={isEditing}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                appShortcut={true}
+                url={item.healthUrl || item.url}
+                healthCheckType={item.healthCheckType === 'ping' ? 'ping' : 'http'}
+                groupItem
+            >
                 <AppShortcut
                     url={item.url}
                     name={item.name}
@@ -107,8 +126,8 @@ const SortableGroupItem: React.FC<SortableGroupItemProps> = ({
                         healthCheckType: item.healthCheckType
                     }}
                 />
-            </Box>
-        </Box>
+            </WidgetContainer>
+        </Grid>
     );
 };
 
@@ -120,7 +139,10 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
     onRemove,
     onEdit,
     isEditing = false,
-    onItemDragOut
+    onItemDragOut,
+    onItemEdit,
+    onItemDelete,
+    isHighlighted = false
 }) => {
     const [activeId, setActiveId] = useState<string | null>(null);
     const [isDraggingOut, setIsDraggingOut] = useState(false);
@@ -194,7 +216,26 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
     };
 
     const handleDragOver = (event: DragOverEvent) => {
-        // Internal drag handling for group items
+        // Check if something is being dragged over the group
+        const { over, active } = event;
+
+        // Check if we're directly over this group
+        const isDirectlyOverThis = over && (
+            over.id === id ||
+            over.id === `group-droppable-${id}` ||
+            (typeof over.id === 'string' && over.id.includes(`group-droppable-item-${id}`))
+        );
+
+        if (isDirectlyOverThis) {
+            const isAppShortcut = active?.data?.current?.type === 'app-shortcut';
+            if (isAppShortcut) {
+                setIsCurrentDropTarget(true);
+            } else {
+                setIsCurrentDropTarget(false);
+            }
+        } else {
+            setIsCurrentDropTarget(false);
+        }
     };
 
     const handleDragEnd = (event: DragEndEvent) => {
@@ -207,6 +248,7 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
             }
             setActiveId(null);
             setIsDraggingOut(false);
+            setIsCurrentDropTarget(false);
             return;
         }
 
@@ -223,6 +265,7 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
 
         setActiveId(null);
         setIsDraggingOut(false);
+        setIsCurrentDropTarget(false);
     };
 
     // Check if an item is outside the group area
@@ -235,13 +278,94 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
                                     over?.data?.current?.type === 'group-item';
 
         setIsDraggingOut(!isOverGroupContainer);
-    }, []);
+
+        // Check if an app shortcut is being dragged over the group
+        const isAppShortcut = active?.data?.current?.type === 'app-shortcut';
+        const isDirectlyOverGroup = over && (
+            over.id === id ||
+            over.id === `group-droppable-${id}` ||
+            (typeof over.id === 'string' && over.id.includes(`group-droppable-item-${id}`))
+        );
+
+        if (isDirectlyOverGroup && isAppShortcut && items.length < MAX_ITEMS) {
+            setIsCurrentDropTarget(true);
+        } else if (isCurrentDropTarget) {
+            setIsCurrentDropTarget(false);
+        }
+    }, [id, items, MAX_ITEMS, isCurrentDropTarget]);
+
+    // Handle item edit - Convert group item to dashboard item for edit form
+    const handleItemEdit = useCallback((itemId: string) => {
+        // Find the item in the group
+        const foundItem = items.find(item => item.id === itemId);
+        if (!foundItem) {
+            console.error('Could not find item to edit');
+            return;
+        }
+
+        // Create a dashboard item from the group item for the edit form
+        const dashboardItem: DashboardItem = {
+            id: foundItem.id,
+            type: ITEM_TYPE.APP_SHORTCUT,
+            label: foundItem.name,
+            url: foundItem.url,
+            showLabel: true,
+            icon: {
+                path: foundItem.icon || '',
+                name: foundItem.name
+            },
+            config: {
+                // Add WoL properties if they exist
+                ...(foundItem.isWol && {
+                    isWol: foundItem.isWol,
+                    macAddress: foundItem.macAddress,
+                    broadcastAddress: foundItem.broadcastAddress,
+                    port: foundItem.port
+                }),
+                // Add health check properties if they exist
+                ...(foundItem.healthUrl && {
+                    healthUrl: foundItem.healthUrl,
+                    healthCheckType: foundItem.healthCheckType
+                })
+            }
+        };
+
+        // Pass to parent for editing
+        if (onItemEdit) {
+            onItemEdit(itemId);
+        } else {
+            // If no external handler, use the group's edit function
+            onEdit?.();
+        }
+    }, [items, onItemEdit, onEdit]);
+
+    // Handle item delete with confirmation
+    const handleItemDelete = useCallback((itemId: string) => {
+        // Find the item in the group
+        const foundItem = items.find(item => item.id === itemId);
+        if (!foundItem) {
+            console.error('Could not find item to delete');
+            return;
+        }
+
+        // Directly call the external delete handler if available
+        if (onItemDelete) {
+            onItemDelete(itemId);
+        } else {
+            // If no external handler, just update the items list
+            const updatedItems = items.filter(item => item.id !== itemId);
+            if (onItemsChange) {
+                onItemsChange(updatedItems);
+            }
+        }
+    }, [items, onItemsChange, onItemDelete]);
 
     return (
         <WidgetContainer
             editMode={isEditing}
             onEdit={onEdit}
             onDelete={onRemove}
+            isHighlighted={isHighlighted}
         >
             <DndContext
                 onDragStart={handleDragStart}
@@ -259,15 +383,8 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
                         gap: 0.5,
                         p: 1.5,
                         pt: 0.5,
-                        transition: 'background-color 0.2s',
-                        ...(isCurrentDropTarget && {
-                            backgroundColor: 'rgba(25, 118, 210, 0.2)', // Highlight when can drop
-                            // outline: '2px dashed rgba(25, 118, 210, 0.8)',
-                        }),
-                        ...(isOver && {
-                            backgroundColor: 'rgba(25, 118, 210, 0.3)',
-                            outline: '2px solid rgba(25, 118, 210, 0.8)',
-                        })
+                        transition: 'background-color 0.3s ease',
+                        backgroundColor: 'transparent'
                     }}
                     data-type='group-container'
                     data-id={id}
@@ -291,7 +408,7 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
                     </Typography>
 
                     {/* Group Items Container */}
-                    <Box sx={{
+                    <Grid sx={{
                         flex: 1,
                         display: 'flex',
                         flexDirection: 'row',
@@ -300,16 +417,25 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
                         alignItems: 'center',
                         gap: 1,
                         overflowY: 'auto',
-                        pb: 0.5
+                        pb: 0.5,
+                        size: { xs: 4 }
                     }}>
                         <SortableContext items={items.map(item => item.id)}>
                             {items.map((item) => (
-                                <Box width='30%'>
+                                <Box
+                                    width='30%'
+                                    key={item.id}
+                                    sx={{
+                                        display: 'flex',
+                                        justifyContent: 'center'
+                                    }}
+                                >
                                     <SortableGroupItem
-                                        key={item.id}
                                         item={item}
                                         isEditing={isEditing}
                                         groupId={id}
+                                        onEdit={handleItemEdit}
+                                        onDelete={handleItemDelete}
                                     />
                                 </Box>
                             ))}
@@ -318,28 +444,36 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
                         {/* Add Button */}
                         {items.length < MAX_ITEMS && isEditing && (
                             <Box
+                                width='30%'
                                 sx={{
-                                    height: { xs: '70px', sm: '80px', md: '85px' },
-                                    width: { xs: '70px', sm: '80px', md: '85px' },
                                     display: 'flex',
-                                    alignItems: 'center',
                                     justifyContent: 'center',
-                                    border: '1px dashed rgba(255, 255, 255, 0.3)',
-                                    borderRadius: '8px',
-                                    m: 0.5,
-                                    cursor: 'pointer',
-                                    '&:hover': {
-                                        borderColor: 'rgba(255, 255, 255, 0.5)',
-                                        backgroundColor: 'rgba(255, 255, 255, 0.05)'
-                                    }
+                                    m: 0.5
                                 }}
-                                onClick={handleAddClick}
-                                title='Edit group to add items'
                             >
-                                <AddIcon fontSize='medium' />
+                                <Box
+                                    sx={{
+                                        height: { xs: '70px', sm: '80px', md: '85px' },
+                                        width: '100%',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        border: '1px dashed rgba(255, 255, 255, 0.3)',
+                                        borderRadius: '8px',
+                                        cursor: 'pointer',
+                                        '&:hover': {
+                                            borderColor: 'rgba(255, 255, 255, 0.5)',
+                                            backgroundColor: 'rgba(255, 255, 255, 0.05)'
+                                        }
+                                    }}
+                                    onClick={handleAddClick}
+                                    title='Edit group to add items'
+                                >
+                                    <AddIcon fontSize='medium' />
+                                </Box>
                             </Box>
                         )}
-                    </Box>
+                    </Grid>
                 </Box>
             </DndContext>
         </WidgetContainer>
