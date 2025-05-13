@@ -13,8 +13,8 @@ import {
     rectSortingStrategy,
     SortableContext,
 } from '@dnd-kit/sortable';
-import { Box, Grid2 as Grid, useMediaQuery } from '@mui/material';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Backdrop, Box, Grid2 as Grid, useMediaQuery } from '@mui/material';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { SortableDeluge } from './sortable-items/widgets/SortableDeluge';
 import { useAppContext } from '../../context/useAppContext';
@@ -95,6 +95,25 @@ function getIntersectionArea(rect1: any, rect2: any) {
     return xOverlap * yOverlap;
 }
 
+// Add a backdrop component for group dragging with simpler conditions
+const GroupDragBackdrop = ({ isVisible }: { isVisible: boolean }) => {
+    console.log('Backdrop visibility:', isVisible);
+    return isVisible ? (
+        <Backdrop
+            open={true}
+            sx={{
+                zIndex: 9999,
+                backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0
+            }}
+        />
+    ) : null;
+};
+
 export const DashboardGrid: React.FC = () => {
     const [activeId, setActiveId] = useState<string | null>(null);
     const [activeData, setActiveData] = useState<any>(null);
@@ -103,6 +122,7 @@ export const DashboardGrid: React.FC = () => {
     const { dashboardLayout, setDashboardLayout, refreshDashboard, editMode, isAdmin, isLoggedIn, saveLayout } = useAppContext();
     const isMed = useMediaQuery(theme.breakpoints.down('md'));
     const containerRef = useRef<HTMLDivElement | null>(null);
+    const backdropRef = useRef<HTMLDivElement | null>(null);
 
     // Filter out admin-only items if user is not an admin
     const items = useMemo(() => {
@@ -145,11 +165,78 @@ export const DashboardGrid: React.FC = () => {
 
     const [isDragging, setIsDragging] = useState(false);
 
+    // Use a more direct approach to control the backdrop with additional safeguards
+    const showBackdrop = useCallback(() => {
+        console.log('SHOWING BACKDROP');
+
+        // Create backdrop if it doesn't exist
+        if (!backdropRef.current) {
+            const backdrop = document.createElement('div');
+            backdrop.style.position = 'fixed';
+            backdrop.style.top = '0';
+            backdrop.style.left = '0';
+            backdrop.style.right = '0';
+            backdrop.style.bottom = '0';
+            backdrop.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
+            backdrop.style.zIndex = '9999';
+            backdrop.id = 'group-drag-backdrop';
+            document.body.appendChild(backdrop);
+            backdropRef.current = backdrop;
+        } else {
+            backdropRef.current.style.display = 'block';
+        }
+    }, []);
+
+    const hideBackdrop = useCallback(() => {
+        console.log('HIDING BACKDROP');
+        if (backdropRef.current) {
+            backdropRef.current.style.display = 'none';
+        }
+    }, []);
+
+    // Add effect to listen for group-item-drag events
+    useEffect(() => {
+        const handleGroupItemDrag = (event: CustomEvent) => {
+            const { dragging, groupId, itemId } = event.detail || {};
+            console.log('Group item drag event received:', { dragging, groupId, itemId });
+
+            // Only show backdrop when explicitly told to do so with dragging=true
+            if (dragging === true && groupId && itemId) {
+                showBackdrop();
+            } else {
+                hideBackdrop();
+            }
+        };
+
+        // Listen for the custom event from group widgets
+        document.addEventListener('dndkit:group-item-drag', handleGroupItemDrag as EventListener);
+
+        // Clean up function
+        return () => {
+            document.removeEventListener('dndkit:group-item-drag', handleGroupItemDrag as EventListener);
+
+            // Clean up the backdrop on component unmount
+            if (backdropRef.current) {
+                document.body.removeChild(backdropRef.current);
+                backdropRef.current = null;
+            }
+        };
+    }, [showBackdrop, hideBackdrop]);
+
+    // Hide backdrop on any component update as a safety measure
+    useEffect(() => {
+        // Hide the backdrop when component updates as a safety measure
+        hideBackdrop();
+    }, [hideBackdrop]);
+
     const handleDragStart = (event: any) => {
         const { active } = event;
         setActiveId(active.id);
         setActiveData(active.data.current);
         setIsDragging(true);
+
+        // Let the group components decide when to show backdrop
+        // Don't show backdrop on drag start
 
         // Dispatch event that drag has started
         dispatchDndKitEvent('active', { active: { id: active.id, data: active.data.current } });
@@ -167,19 +254,25 @@ export const DashboardGrid: React.FC = () => {
 
         console.log('Drag end event:', { active, over });
 
+        // Always hide the backdrop when drag ends
+        hideBackdrop();
+        setIsDragging(false);
+
+        // Reset all drag states
+        setActiveId(null);
+        setActiveData(null);
+
         // Only proceed with events if we have both active and over
         if (!active || !over) {
             // Just dispatch the general drag end and inactive events
             dispatchDndKitEvent('dragend', { active, over });
-            setActiveId(null);
-            setActiveData(null);
-            setIsDragging(false);
             dispatchDndKitEvent('inactive', {});
             return;
         }
 
         // Now we have both active and over, so we can proceed with specific handling
         const isAppShortcut = active.data.current?.type === ITEM_TYPE.APP_SHORTCUT;
+        const isGroupItem = active.data.current?.type === 'group-item';
         const isGroupContainer =
             over.data.current?.type === 'group-widget-small' ||
             over.data.current?.type === 'group-container' ||
@@ -187,7 +280,7 @@ export const DashboardGrid: React.FC = () => {
 
         if (active && over) {
             // Handle group item dragging to dashboard
-            if (active.data.current?.type === 'group-item' &&
+            if (isGroupItem &&
                 active.data.current?.parentId &&
                 over.id !== active.data.current.parentId) {
                 // Item was dragged from a group to the dashboard
@@ -271,10 +364,6 @@ export const DashboardGrid: React.FC = () => {
             }
         }
 
-        setActiveId(null);
-        setActiveData(null);
-        setIsDragging(false);
-
         // Dispatch inactive event
         dispatchDndKitEvent('inactive', {});
     };
@@ -295,6 +384,11 @@ export const DashboardGrid: React.FC = () => {
     const handleEdit = (item: DashboardItem) => {
         setSelectedItem(item);
         setOpenEditModal(true);
+    };
+
+    const handleDragMove = (event: any) => {
+        // Don't control backdrop here
+        // Let group components decide when to show/hide backdrop
     };
 
     useEffect(() => {
@@ -320,6 +414,7 @@ export const DashboardGrid: React.FC = () => {
                 onDragStart={handleDragStart}
                 onDragOver={handleDragOver}
                 onDragEnd={handleDragEnd}
+                onDragMove={handleDragMove}
                 collisionDetection={customCollisionDetection}
                 measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
             >
@@ -402,7 +497,7 @@ export const DashboardGrid: React.FC = () => {
 
                 <DragOverlay
                     modifiers={[]}
-                    zIndex={1000}
+                    zIndex={10000}
                 >
                     {activeId ? (
                         // For group items being dragged out, always render as app shortcut
@@ -486,6 +581,7 @@ export const DashboardGrid: React.FC = () => {
                     ) : null}
                 </DragOverlay>
             </DndContext>
+
             <CenteredModal open={openEditModal} handleClose={() => setOpenEditModal(false)} title='Edit Item'>
                 <AddEditForm handleClose={() => setOpenEditModal(false)} existingItem={selectedItem}/>
             </CenteredModal>

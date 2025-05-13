@@ -43,6 +43,8 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
     const [openEditItemModal, setOpenEditItemModal] = useState(false);
     const [isCurrentDropTarget, setIsCurrentDropTarget] = useState(false);
+    const [itemBeingDraggedOut, setItemBeingDraggedOut] = useState<string | null>(null);
+    const [draggingOutStarted, setDraggingOutStarted] = useState(false);
 
     // Ensure config.items is always initialized
     const ensureItems = useCallback(() => {
@@ -156,11 +158,33 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
         }
     }, [config, id, updateItem]);
 
+    // Function to notify about dragging a group item
+    const notifyGroupItemDrag = useCallback((isDragging: boolean, itemId?: string) => {
+        console.log('Notifying about group item drag:', { isDragging, itemId, groupId: id });
+        // Use a direct event to DashboardGrid
+        document.dispatchEvent(new CustomEvent('dndkit:group-item-drag', {
+            detail: {
+                dragging: isDragging,
+                itemId,
+                groupId: id,
+            }
+        }));
+    }, [id]);
+
+    // Explicitly hide backdrop on mount to ensure clean state
+    useEffect(() => {
+        // Ensure backdrop is hidden when component mounts
+        notifyGroupItemDrag(false);
+    }, [notifyGroupItemDrag]);
+
     // Handle when an item is dragged out of the group
     const handleItemDragOut = useCallback((itemId: string) => {
         console.log('Item dragged out of group:', itemId);
 
         if (!dashboardLayout || !config || !config.items) return;
+
+        // Notify that we're dragging out
+        notifyGroupItemDrag(true, itemId);
 
         // Find the item in the group
         const draggedItem = config.items.find(item => item.id === itemId);
@@ -229,8 +253,8 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
 
         updatedLayout[groupIndex] = updatedGroupWidget;
 
-        // Add the app shortcut to the dashboard layout
-        updatedLayout.push(newAppShortcut);
+        // Insert the app shortcut at index+1 of the group in the dashboard layout
+        updatedLayout.splice(groupIndex + 1, 0, newAppShortcut);
 
         // Update the dashboard layout
         setDashboardLayout(updatedLayout);
@@ -238,8 +262,13 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
         // Save to server
         saveLayout(updatedLayout);
 
-        console.log('Item moved from group to dashboard');
-    }, [dashboardLayout, config, id, setDashboardLayout, saveLayout]);
+        console.log('Item moved from group to dashboard at position', groupIndex + 1);
+
+        // Reset the state
+        setItemBeingDraggedOut(null);
+
+        // We'll let the DashboardGrid's drag end handler clear the backdrop
+    }, [dashboardLayout, config, id, setDashboardLayout, saveLayout, notifyGroupItemDrag]);
 
     // Add an app shortcut to the group
     const addAppShortcutToGroup = useCallback((shortcutItem: DashboardItem) => {
@@ -344,6 +373,17 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
             if (active?.data?.current?.type === ITEM_TYPE.APP_SHORTCUT) {
                 console.log('DnD-kit: App shortcut drag started:', active.id);
             }
+
+            // Check if the drag started from a group item in this group
+            if (active?.data?.current?.type === 'group-item' &&
+                active?.data?.current?.parentId === id) {
+                console.log('Group item dragged from group:', id);
+                setItemBeingDraggedOut(active.id);
+                setDraggingOutStarted(false); // Initially not dragging out
+
+                // Explicitly ensure backdrop is hidden on drag start
+                notifyGroupItemDrag(false, active.id);
+            }
         };
 
         const handleDndKitDragOver = (event: any) => {
@@ -369,6 +409,26 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
                 }
             } else if (isCurrentDropTarget) {
                 setIsCurrentDropTarget(false);
+            }
+
+            // If we're dragging a group item
+            if (itemBeingDraggedOut &&
+                active?.data?.current?.type === 'group-item' &&
+                active?.data?.current?.parentId === id) {
+
+                // Check if inside or outside the group
+                if (!isOverThisGroup && !draggingOutStarted) {
+                    // Only now dragging outside group - show backdrop
+                    console.log('Group item NOW outside group, showing backdrop');
+                    setDraggingOutStarted(true);
+                    notifyGroupItemDrag(true, itemBeingDraggedOut);
+                }
+                else if (isOverThisGroup && draggingOutStarted) {
+                    // Returned to group - hide backdrop
+                    console.log('Group item returned to group, hiding backdrop');
+                    setDraggingOutStarted(false);
+                    notifyGroupItemDrag(false, itemBeingDraggedOut);
+                }
             }
         };
 
@@ -417,6 +477,16 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
 
             console.log('DnD-kit dragend event:', { active, over, action });
 
+            // Reset the states
+            setItemBeingDraggedOut(null);
+            setDraggingOutStarted(false);
+
+            // Always explicitly hide backdrop on drag end
+            notifyGroupItemDrag(false);
+
+            // Signal that the group item drag has ended
+            notifyGroupItemDrag(false);
+
             // If this was already handled by app-to-group, don't handle it again
             if (action === 'app-to-group') {
                 console.log('Already handled by app-to-group event');
@@ -464,6 +534,11 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
         const handleDndKitInactive = () => {
             setIsOver(false);
             setIsCurrentDropTarget(false);
+            setItemBeingDraggedOut(null);
+            setDraggingOutStarted(false);
+
+            // Always explicitly hide backdrop on inactive
+            notifyGroupItemDrag(false);
         };
 
         // Listen for all DnD-kit events
@@ -480,8 +555,9 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
             document.removeEventListener('dndkit:inactive', handleDndKitInactive);
             document.removeEventListener('dndkit:app-to-group', handleAppToGroup);
         };
-    }, [id, dashboardLayout, addAppShortcutToGroup, isOver]);
+    }, [id, dashboardLayout, addAppShortcutToGroup, isOver, notifyGroupItemDrag, itemBeingDraggedOut, draggingOutStarted, isCurrentDropTarget]);
 
+    // Directly listen for drag moves to detect dragging out of group
     const {
         attributes,
         listeners,

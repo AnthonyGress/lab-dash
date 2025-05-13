@@ -158,6 +158,19 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
         }
     });
 
+    // Function to notify about dragging a group item
+    const notifyGroupItemDrag = useCallback((isDragging: boolean, itemId?: string) => {
+        console.log('Base GroupWidgetSmall notifying about group item drag:', { isDragging, itemId, groupId: id });
+        // Use a direct event to DashboardGrid
+        document.dispatchEvent(new CustomEvent('dndkit:group-item-drag', {
+            detail: {
+                dragging: isDragging,
+                itemId,
+                groupId: id,
+            }
+        }));
+    }, [id]);
+
     // Handle click on add button - in a real app this would open a modal or picker
     const handleAddClick = useCallback(() => {
         if (isEditing && items.length < MAX_ITEMS) {
@@ -210,9 +223,20 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
         };
     }, [id, isCurrentDropTarget]);
 
+    // Explicitly hide backdrop on mount to ensure clean state
+    useEffect(() => {
+        notifyGroupItemDrag(false);
+    }, [notifyGroupItemDrag]);
+
     const handleDragStart = (event: DragStartEvent) => {
         const { active } = event;
         setActiveId(active.id.toString());
+        console.log('Group item drag started in GroupWidgetSmall:', active.id);
+
+        if (active.data.current?.type === 'group-item') {
+            // Explicitly ensure backdrop is hidden on drag start
+            notifyGroupItemDrag(false, active.id.toString());
+        }
     };
 
     const handleDragOver = (event: DragOverEvent) => {
@@ -238,8 +262,75 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
         }
     };
 
+    // Modified function to check if an item is clearly outside the group area (with margins)
+    const isRectOutsideGroup = (activeRect: any, containerRect: any) => {
+        // Add some margin to consider the item "inside" the group if it's near the border
+        const margin = 30; // pixels
+
+        return (
+            activeRect.left > containerRect.right + margin ||
+            activeRect.right < containerRect.left - margin ||
+            activeRect.top > containerRect.bottom + margin ||
+            activeRect.bottom < containerRect.top - margin
+        );
+    };
+
+    // Check if an item is outside the group area with improved positioning logic
+    const handleDragMove = useCallback((event: any) => {
+        // Get coordinates
+        const { active, over, activatorEvent } = event;
+
+        // Only proceed if we're dragging a group item
+        if (active?.data?.current?.type !== 'group-item') return;
+
+        // Get the group container element
+        const groupContainer = document.querySelector(`[data-group-id="${id}"][data-type="group-container"]`);
+        if (!groupContainer) return;
+
+        // Get the positions
+        const containerRect = groupContainer.getBoundingClientRect();
+        const activeRect = active.rect.current.translated;
+
+        // Check if the active item is clearly outside the group container
+        const isOutside = isRectOutsideGroup(activeRect, containerRect);
+
+        // Only update state if it changed
+        if (isOutside !== isDraggingOut) {
+            setIsDraggingOut(isOutside);
+
+            // If now dragging OUT, trigger backdrop
+            if (isOutside) {
+                console.log('Group item clearly outside group, showing backdrop');
+                notifyGroupItemDrag(true, active.id.toString());
+            }
+            // If now dragging INSIDE, hide backdrop
+            else {
+                console.log('Group item inside group bounds, hiding backdrop');
+                notifyGroupItemDrag(false, active.id.toString());
+            }
+        }
+
+        // Check if an app shortcut is being dragged over the group
+        const isAppShortcut = active?.data?.current?.type === 'app-shortcut';
+        const isDirectlyOverGroup = over && (
+            over.id === id ||
+            over.id === `group-droppable-${id}` ||
+            (typeof over.id === 'string' && over.id.includes(`group-droppable-item-${id}`))
+        );
+
+        if (isDirectlyOverGroup && isAppShortcut && items.length < MAX_ITEMS) {
+            setIsCurrentDropTarget(true);
+        } else if (isCurrentDropTarget) {
+            setIsCurrentDropTarget(false);
+        }
+    }, [id, items, MAX_ITEMS, isCurrentDropTarget, isDraggingOut, notifyGroupItemDrag]);
+
+    // Ensure backdrop is hidden when drag ends
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
+
+        // Always explicitly hide backdrop
+        notifyGroupItemDrag(false);
 
         if (!over) {
             // Item was dragged outside - handle removal if needed
@@ -267,32 +358,6 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
         setIsDraggingOut(false);
         setIsCurrentDropTarget(false);
     };
-
-    // Check if an item is outside the group area
-    const handleDragMove = useCallback((event: any) => {
-        // Get coordinates
-        const { active, over } = event;
-
-        // Check if we're dragging outside the group container
-        const isOverGroupContainer = over?.data?.current?.type === 'group-container' ||
-                                    over?.data?.current?.type === 'group-item';
-
-        setIsDraggingOut(!isOverGroupContainer);
-
-        // Check if an app shortcut is being dragged over the group
-        const isAppShortcut = active?.data?.current?.type === 'app-shortcut';
-        const isDirectlyOverGroup = over && (
-            over.id === id ||
-            over.id === `group-droppable-${id}` ||
-            (typeof over.id === 'string' && over.id.includes(`group-droppable-item-${id}`))
-        );
-
-        if (isDirectlyOverGroup && isAppShortcut && items.length < MAX_ITEMS) {
-            setIsCurrentDropTarget(true);
-        } else if (isCurrentDropTarget) {
-            setIsCurrentDropTarget(false);
-        }
-    }, [id, items, MAX_ITEMS, isCurrentDropTarget]);
 
     // Handle item edit - Convert group item to dashboard item for edit form
     const handleItemEdit = useCallback((itemId: string) => {
@@ -384,7 +449,8 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
                         p: 1.5,
                         pt: 0.5,
                         transition: 'background-color 0.3s ease',
-                        backgroundColor: 'transparent'
+                        backgroundColor: 'transparent',
+                        overflow: 'hidden'
                     }}
                     data-type='group-container'
                     data-id={id}
@@ -401,7 +467,10 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
                             pb: 1,
                             fontWeight: 500,
                             fontSize: '1rem',
-                            lineHeight: 1.2
+                            lineHeight: 1.2,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
                         }}
                     >
                         {name}
@@ -416,7 +485,8 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
                         justifyContent: 'center',
                         alignItems: 'center',
                         gap: 1,
-                        overflowY: 'auto',
+                        overflowY: 'hidden',
+                        overflowX: 'hidden',
                         pb: 0.5,
                         size: { xs: 4 }
                     }}>
