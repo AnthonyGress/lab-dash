@@ -33,7 +33,8 @@ const WIDGET_OPTIONS = [
     { id: ITEM_TYPE.SYSTEM_MONITOR_WIDGET, label: 'System Monitor' },
     { id: ITEM_TYPE.PIHOLE_WIDGET, label: 'Pi-hole' },
     { id: ITEM_TYPE.TORRENT_CLIENT, label: 'Torrent Client' },
-    { id: ITEM_TYPE.DUAL_WIDGET, label: 'Dual Widget' }
+    { id: ITEM_TYPE.DUAL_WIDGET, label: 'Dual Widget' },
+    { id: ITEM_TYPE.GROUP_WIDGET_SMALL, label: 'Group Widget' }
 ];
 
 const TEMPERATURE_UNIT_OPTIONS = [
@@ -163,7 +164,8 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                existingItem?.type === ITEM_TYPE.SYSTEM_MONITOR_WIDGET ||
                                existingItem?.type === ITEM_TYPE.PIHOLE_WIDGET ||
                                existingItem?.type === ITEM_TYPE.TORRENT_CLIENT ||
-                               existingItem?.type === ITEM_TYPE.DUAL_WIDGET
+                               existingItem?.type === ITEM_TYPE.DUAL_WIDGET ||
+                               existingItem?.type === ITEM_TYPE.GROUP_WIDGET_SMALL
             ? 'widget'
             : (existingItem?.type === ITEM_TYPE.BLANK_WIDGET || existingItem?.type === ITEM_TYPE.BLANK_ROW)
                 ? existingItem?.type
@@ -174,7 +176,8 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                                   existingItem?.type === ITEM_TYPE.SYSTEM_MONITOR_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.PIHOLE_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.TORRENT_CLIENT ||
-                                  existingItem?.type === ITEM_TYPE.DUAL_WIDGET
+                                  existingItem?.type === ITEM_TYPE.DUAL_WIDGET ||
+                                  existingItem?.type === ITEM_TYPE.GROUP_WIDGET_SMALL
             ? existingItem?.type
             : '';
 
@@ -520,6 +523,12 @@ export const AddEditForm = ({ handleClose, existingItem }: Props) => {
                     username: data.tcUsername,
                     password: encryptedPassword,
                     showLabel: data.showLabel
+                };
+            } else if (data.widgetType === ITEM_TYPE.GROUP_WIDGET_SMALL) {
+                // Create a simple group widget configuration
+                config = {
+                    title: data.shortcutName,
+                    items: [] // Initialize with empty items array
                 };
             } else if (data.widgetType === ITEM_TYPE.DUAL_WIDGET) {
                 // Create a dual widget configuration with both top and bottom widget configs

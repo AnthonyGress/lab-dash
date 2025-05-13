@@ -3,6 +3,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Grid2 } from '@mui/material';
 import React from 'react';
 
+import { ITEM_TYPE } from '../../../../types';
 import { AppShortcut } from '../../base-items/apps/AppShortcut';
 import { WidgetContainer } from '../../base-items/widgets/WidgetContainer';
 
@@ -31,7 +32,12 @@ export const SortableAppShortcut: React.FC<Props> = ({
     showLabel,
     config
 }) => {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+        id,
+        data: {
+            type: ITEM_TYPE.APP_SHORTCUT
+        }
+    });
 
     // Only show label in overlay when dragging, or when not dragging at all
     const shouldShowLabel = showLabel && (isOverlay || !isDragging);
@@ -54,6 +60,8 @@ export const SortableAppShortcut: React.FC<Props> = ({
                 opacity: isOverlay ? .6 : 1,
                 visibility: isDragging ? 'hidden' : 'visible'
             }}
+            data-type={ITEM_TYPE.APP_SHORTCUT}
+            data-id={id}
         >
             <WidgetContainer
                 editMode={editMode}

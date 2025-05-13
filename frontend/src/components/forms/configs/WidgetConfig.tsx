@@ -3,6 +3,7 @@ import { UseFormReturn } from 'react-hook-form';
 import { FormValues } from '../AddEditForm';
 import { DateTimeWidgetConfig } from './DateTimeWidgetConfig';
 import { DualWidgetConfig } from './DualWidgetConfig';
+import { GroupWidgetConfig } from './GroupWidgetConfig';
 import { PiholeWidgetConfig } from './PiholeWidgetConfig';
 import { SystemMonitorWidgetConfig } from './SystemMonitorWidgetConfig';
 import { TorrentClientWidgetConfig } from './TorrentClientWidgetConfig';
@@ -28,6 +29,8 @@ export const WidgetConfig = ({ formContext, widgetType }: WidgetConfigProps) => 
         return <TorrentClientWidgetConfig formContext={formContext} />;
     case ITEM_TYPE.DUAL_WIDGET:
         return <DualWidgetConfig formContext={formContext} />;
+    case ITEM_TYPE.GROUP_WIDGET_SMALL:
+        return <GroupWidgetConfig formContext={formContext} />;
     default:
         return null;
     }

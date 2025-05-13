@@ -5,6 +5,7 @@ export enum ITEM_TYPE {
     TORRENT_CLIENT = 'torrent-client',
     PIHOLE_WIDGET = 'pihole-widget',
     DUAL_WIDGET = 'dual-widget',
+    GROUP_WIDGET_SMALL = 'group-widget-small',
     APP_SHORTCUT = 'app-shortcut',
     BLANK_APP = 'blank-app',
     BLANK_WIDGET = 'blank-widget',
