@@ -158,110 +158,6 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
         }
     });
 
-    // Function to notify about dragging a group item
-    const notifyGroupItemDrag = useCallback((isDragging: boolean, itemId?: string) => {
-        console.log('Base GroupWidgetSmall notifying about group item drag:', { isDragging, itemId, groupId: id });
-        // Use a direct event to DashboardGrid
-        document.dispatchEvent(new CustomEvent('dndkit:group-item-drag', {
-            detail: {
-                dragging: isDragging,
-                itemId,
-                groupId: id,
-            }
-        }));
-    }, [id]);
-
-    // Handle click on add button - in a real app this would open a modal or picker
-    const handleAddClick = useCallback(() => {
-        if (isEditing && items.length < MAX_ITEMS) {
-            console.log('Add button clicked');
-            // In a real implementation, this would open a modal to add a new item
-            onEdit?.();
-        }
-    }, [isEditing, items.length, onEdit]);
-
-    // Listen for external dragover events for highlighting
-    useEffect(() => {
-        const handleDragOver = (e: any) => {
-            const detail = e.detail || {};
-            const { over, active } = detail;
-
-            // Calculate if we're directly over this group
-            const isDirectlyOverThis = over && (
-                over.id === id ||
-                over.id === `group-droppable-${id}` ||
-                (typeof over.id === 'string' && over.id.includes(`group-droppable-item-${id}`))
-            );
-
-            if (isDirectlyOverThis) {
-                const isAppShortcut = active?.data?.current?.type === 'app-shortcut';
-                if (isAppShortcut) {
-                    console.log('App shortcut directly over group:', id);
-                    setIsCurrentDropTarget(true);
-                } else {
-                    setIsCurrentDropTarget(false);
-                }
-            } else {
-                if (isCurrentDropTarget) {
-                    setIsCurrentDropTarget(false);
-                }
-            }
-        };
-
-        const handleDragEnd = () => {
-            setIsCurrentDropTarget(false);
-        };
-
-        document.addEventListener('dndkit:dragover', handleDragOver);
-        document.addEventListener('dndkit:dragend', handleDragEnd);
-        document.addEventListener('dndkit:inactive', handleDragEnd);
-
-        return () => {
-            document.removeEventListener('dndkit:dragover', handleDragOver);
-            document.removeEventListener('dndkit:dragend', handleDragEnd);
-            document.removeEventListener('dndkit:inactive', handleDragEnd);
-        };
-    }, [id, isCurrentDropTarget]);
-
-    // Explicitly hide backdrop on mount to ensure clean state
-    useEffect(() => {
-        notifyGroupItemDrag(false);
-    }, [notifyGroupItemDrag]);
-
-    const handleDragStart = (event: DragStartEvent) => {
-        const { active } = event;
-        setActiveId(active.id.toString());
-        console.log('Group item drag started in GroupWidgetSmall:', active.id);
-
-        if (active.data.current?.type === 'group-item') {
-            // Explicitly ensure backdrop is hidden on drag start
-            notifyGroupItemDrag(false, active.id.toString());
-        }
-    };
-
-    const handleDragOver = (event: DragOverEvent) => {
-        // Check if something is being dragged over the group
-        const { over, active } = event;
-
-        // Check if we're directly over this group
-        const isDirectlyOverThis = over && (
-            over.id === id ||
-            over.id === `group-droppable-${id}` ||
-            (typeof over.id === 'string' && over.id.includes(`group-droppable-item-${id}`))
-        );
-
-        if (isDirectlyOverThis) {
-            const isAppShortcut = active?.data?.current?.type === 'app-shortcut';
-            if (isAppShortcut) {
-                setIsCurrentDropTarget(true);
-            } else {
-                setIsCurrentDropTarget(false);
-            }
-        } else {
-            setIsCurrentDropTarget(false);
-        }
-    };
-
     // Modified function to check if an item is clearly outside the group area (with margins)
     const isRectOutsideGroup = (activeRect: any, containerRect: any) => {
         // Add some margin to consider the item "inside" the group if it's near the border
@@ -298,15 +194,34 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
         if (isOutside !== isDraggingOut) {
             setIsDraggingOut(isOutside);
 
-            // If now dragging OUT, trigger backdrop
+            // If now dragging OUT, show preview
             if (isOutside) {
-                console.log('Group item clearly outside group, showing backdrop');
-                notifyGroupItemDrag(true, active.id.toString());
+                console.log('Group item clearly outside group, showing preview');
+
+                // Dispatch event with position information for correct placement
+                document.dispatchEvent(new CustomEvent('dndkit:group-item-preview', {
+                    detail: {
+                        dragging: true,
+                        itemId: active.id.toString(),
+                        groupId: id,
+                        position: 'next', // Place at index+1
+                        // Find the item to get its details
+                        item: items.find(i => i.id === active.id.toString())
+                    }
+                }));
             }
-            // If now dragging INSIDE, hide backdrop
+            // If now dragging INSIDE, hide preview
             else {
-                console.log('Group item inside group bounds, hiding backdrop');
-                notifyGroupItemDrag(false, active.id.toString());
+                console.log('Group item inside group bounds, hiding preview');
+
+                // Hide the preview
+                document.dispatchEvent(new CustomEvent('dndkit:group-item-preview', {
+                    detail: {
+                        dragging: false,
+                        itemId: active.id.toString(),
+                        groupId: id
+                    }
+                }));
             }
         }
 
@@ -323,14 +238,20 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
         } else if (isCurrentDropTarget) {
             setIsCurrentDropTarget(false);
         }
-    }, [id, items, MAX_ITEMS, isCurrentDropTarget, isDraggingOut, notifyGroupItemDrag]);
+    }, [id, items, MAX_ITEMS, isCurrentDropTarget, isDraggingOut]);
 
-    // Ensure backdrop is hidden when drag ends
+    // Ensure preview is hidden when drag ends
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
 
-        // Always explicitly hide backdrop
-        notifyGroupItemDrag(false);
+        // Always hide preview
+        document.dispatchEvent(new CustomEvent('dndkit:group-item-preview', {
+            detail: {
+                dragging: false,
+                itemId: activeId || '',
+                groupId: id
+            }
+        }));
 
         if (!over) {
             // Item was dragged outside - handle removal if needed
@@ -424,6 +345,46 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
             }
         }
     }, [items, onItemsChange, onItemDelete]);
+
+    // Handle click on add button - opens the group edit modal
+    const handleAddClick = useCallback(() => {
+        if (isEditing && items.length < MAX_ITEMS) {
+            console.log('Add button clicked');
+            // Open the group edit modal
+            onEdit?.();
+        }
+    }, [isEditing, items.length, onEdit]);
+
+    // Add handler for drag start
+    const handleDragStart = (event: DragStartEvent) => {
+        const { active } = event;
+        setActiveId(active.id.toString());
+        console.log('Group item drag started in GroupWidgetSmall:', active.id);
+    };
+
+    // Add handler for drag over
+    const handleDragOver = (event: DragOverEvent) => {
+        // Check if something is being dragged over the group
+        const { over, active } = event;
+
+        // Check if we're directly over this group
+        const isDirectlyOverThis = over && (
+            over.id === id ||
+            over.id === `group-droppable-${id}` ||
+            (typeof over.id === 'string' && over.id.includes(`group-droppable-item-${id}`))
+        );
+
+        if (isDirectlyOverThis) {
+            const isAppShortcut = active?.data?.current?.type === 'app-shortcut';
+            if (isAppShortcut) {
+                setIsCurrentDropTarget(true);
+            } else {
+                setIsCurrentDropTarget(false);
+            }
+        } else {
+            setIsCurrentDropTarget(false);
+        }
+    };
 
     return (
         <WidgetContainer

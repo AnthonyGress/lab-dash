@@ -17,6 +17,7 @@ type Props = {
     rowPlaceholder?: boolean;
     groupItem?: boolean;
     isHighlighted?: boolean;
+    isPreview?: boolean;
 };
 
 export const WidgetContainer: React.FC<Props> = ({
@@ -30,7 +31,8 @@ export const WidgetContainer: React.FC<Props> = ({
     healthCheckType='http',
     rowPlaceholder,
     groupItem,
-    isHighlighted = false
+    isHighlighted = false,
+    isPreview = false
 }) => {
     return (
         <Card
@@ -45,9 +47,11 @@ export const WidgetContainer: React.FC<Props> = ({
                 alignItems: 'center',
                 justifyContent: 'center',
                 backgroundColor: isHighlighted ? 'rgba(255, 255, 255, 0.13)' :
-                    placeholder || groupItem ? 'transparent' : COLORS.TRANSPARENT_GRAY,
+                    isPreview ? 'rgba(76, 175, 80, 0.05)' :
+                        placeholder || groupItem ? 'transparent' : COLORS.TRANSPARENT_GRAY,
                 borderRadius: 2,
-                border: placeholder && editMode ? 'none' : !placeholder ? `1px solid ${COLORS.BORDER}` : 'none',
+                border: isPreview ? `2px dashed ${COLORS.LIGHT_GRAY_HOVER}` :
+                    placeholder && editMode ? 'none' : !placeholder ? `1px solid ${COLORS.BORDER}` : 'none',
                 padding: 0,
                 cursor: editMode ? 'grab' : !placeholder ? 'auto' : 'auto',
                 boxShadow: placeholder ? 0 : 2,
@@ -55,12 +59,21 @@ export const WidgetContainer: React.FC<Props> = ({
                 overflow: 'hidden',
                 boxSizing: 'border-box',
                 backdropFilter: placeholder || groupItem ? 'none' : '6px',
-                transition: 'background-color 0.3s ease, outline 0.3s ease'
+                transition: 'background-color 0.3s ease, outline 0.3s ease',
+                ...(isPreview && {
+                    animation: 'pulse 2s infinite ease-in-out',
+                    '@keyframes pulse': {
+                        '0%': { opacity: 0.7 },
+                        '50%': { opacity: 9 },
+                        '100%': { opacity: 0.7 }
+                    }
+                })
             }}
+            data-preview={isPreview ? 'true' : 'false'}
         >
-            <EditMenu editMode={editMode} onEdit={onEdit} onDelete={onDelete} />
+            {!isPreview && <EditMenu editMode={editMode} onEdit={onEdit} onDelete={onDelete} />}
             {children}
-            <StatusIndicator url={url} healthCheckType={healthCheckType} />
+            {!isPreview && <StatusIndicator url={url} healthCheckType={healthCheckType} />}
         </Card>
     );
 };

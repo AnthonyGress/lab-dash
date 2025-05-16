@@ -14,6 +14,7 @@ type Props = {
     iconName: string;
     editMode: boolean;
     isOverlay?: boolean;
+    isPreview?: boolean;
     onDelete?: () => void;
     onEdit?: () => void;
     showLabel?: boolean;
@@ -27,6 +28,7 @@ export const SortableAppShortcut: React.FC<Props> = ({
     iconName,
     editMode,
     isOverlay = false,
+    isPreview = false,
     onDelete,
     onEdit,
     showLabel,
@@ -40,7 +42,7 @@ export const SortableAppShortcut: React.FC<Props> = ({
     });
 
     // Only show label in overlay when dragging, or when not dragging at all
-    const shouldShowLabel = showLabel && (isOverlay || !isDragging);
+    const shouldShowLabel = showLabel && (isOverlay || isPreview || !isDragging);
 
     // Use healthUrl for status checking if available
     const healthUrl = config?.healthUrl;
@@ -50,18 +52,19 @@ export const SortableAppShortcut: React.FC<Props> = ({
     return (
         <Grid2
             size={{ xs: 4 , sm: 4, md: 2, lg: 4/3, xl: 4/3 }}
-            ref={!isOverlay ? setNodeRef : undefined}
-            {...(!isOverlay ? attributes : {})}
-            {...(!isOverlay ? listeners : {})}
+            ref={!isOverlay && !isPreview ? setNodeRef : undefined}
+            {...(!isOverlay && !isPreview ? attributes : {})}
+            {...(!isOverlay && !isPreview ? listeners : {})}
             sx={{
                 transition,
                 transform: transform ? CSS.Translate.toString(transform) : undefined,
-                pointerEvents: isDragging ? 'none' : 'auto',
-                opacity: isOverlay ? .6 : 1,
-                visibility: isDragging ? 'hidden' : 'visible'
+                pointerEvents: isDragging || isPreview ? 'none' : 'auto',
+                opacity: isOverlay ? 0.6 : isPreview ? 0.8 : 1,
+                visibility: isDragging ? 'hidden' : 'visible',
             }}
             data-type={ITEM_TYPE.APP_SHORTCUT}
             data-id={id}
+            data-preview={isPreview ? 'true' : 'false'}
         >
             <WidgetContainer
                 editMode={editMode}
@@ -70,14 +73,16 @@ export const SortableAppShortcut: React.FC<Props> = ({
                 appShortcut
                 url={statusUrl}
                 healthCheckType={healthCheckType}
+                isPreview={isPreview}
             >
                 <AppShortcut
                     url={url}
-                    name={name}
+                    name={isPreview ? `${name} (Drop Here)` : name}
                     iconName={iconName}
                     showLabel={shouldShowLabel}
                     editMode={editMode}
                     config={config}
+                    isPreview={isPreview}
                 />
             </WidgetContainer>
         </Grid2>

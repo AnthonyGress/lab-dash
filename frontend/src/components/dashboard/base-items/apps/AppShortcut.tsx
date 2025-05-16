@@ -14,9 +14,10 @@ type Props = {
     showLabel?: boolean;
     editMode?: boolean;
     config?: any;
+    isPreview?: boolean;
 }
 
-export const AppShortcut = ({ url, name, iconName, showLabel, editMode, config }: Props) => {
+export const AppShortcut = ({ url, name, iconName, showLabel, editMode, config, isPreview }: Props) => {
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const isWolShortcut = config?.isWol === true;
 
@@ -139,6 +140,10 @@ export const AppShortcut = ({ url, name, iconName, showLabel, editMode, config }
     return (
         <>
             {editMode ? (
+                <Box sx={{ ...styles.center, width: '100%', height: '100%' }} className='scale'>
+                    {shortcutContent}
+                </Box>
+            ) : isPreview ? (
                 <Box sx={{ ...styles.center, width: '100%', height: '100%' }} className='scale'>
                     {shortcutContent}
                 </Box>

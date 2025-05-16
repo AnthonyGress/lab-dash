@@ -13,7 +13,7 @@ import {
     rectSortingStrategy,
     SortableContext,
 } from '@dnd-kit/sortable';
-import { Backdrop, Box, Grid2 as Grid, useMediaQuery } from '@mui/material';
+import { Box, Grid2 as Grid, useMediaQuery } from '@mui/material';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { SortableDeluge } from './sortable-items/widgets/SortableDeluge';
@@ -95,25 +95,6 @@ function getIntersectionArea(rect1: any, rect2: any) {
     return xOverlap * yOverlap;
 }
 
-// Add a backdrop component for group dragging with simpler conditions
-const GroupDragBackdrop = ({ isVisible }: { isVisible: boolean }) => {
-    console.log('Backdrop visibility:', isVisible);
-    return isVisible ? (
-        <Backdrop
-            open={true}
-            sx={{
-                zIndex: 9999,
-                backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0
-            }}
-        />
-    ) : null;
-};
-
 export const DashboardGrid: React.FC = () => {
     const [activeId, setActiveId] = useState<string | null>(null);
     const [activeData, setActiveData] = useState<any>(null);
@@ -122,7 +103,13 @@ export const DashboardGrid: React.FC = () => {
     const { dashboardLayout, setDashboardLayout, refreshDashboard, editMode, isAdmin, isLoggedIn, saveLayout } = useAppContext();
     const isMed = useMediaQuery(theme.breakpoints.down('md'));
     const containerRef = useRef<HTMLDivElement | null>(null);
-    const backdropRef = useRef<HTMLDivElement | null>(null);
+    const [dragPlaceholder, setDragPlaceholder] = useState<{
+        groupId: string,
+        itemId: string,
+        item?: any,
+        visible: boolean,
+        position?: string
+    } | null>(null);
 
     // Filter out admin-only items if user is not an admin
     const items = useMemo(() => {
@@ -165,78 +152,49 @@ export const DashboardGrid: React.FC = () => {
 
     const [isDragging, setIsDragging] = useState(false);
 
-    // Use a more direct approach to control the backdrop with additional safeguards
-    const showBackdrop = useCallback(() => {
-        console.log('SHOWING BACKDROP');
-
-        // Create backdrop if it doesn't exist
-        if (!backdropRef.current) {
-            const backdrop = document.createElement('div');
-            backdrop.style.position = 'fixed';
-            backdrop.style.top = '0';
-            backdrop.style.left = '0';
-            backdrop.style.right = '0';
-            backdrop.style.bottom = '0';
-            backdrop.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
-            backdrop.style.zIndex = '9999';
-            backdrop.id = 'group-drag-backdrop';
-            document.body.appendChild(backdrop);
-            backdropRef.current = backdrop;
-        } else {
-            backdropRef.current.style.display = 'block';
-        }
-    }, []);
-
-    const hideBackdrop = useCallback(() => {
-        console.log('HIDING BACKDROP');
-        if (backdropRef.current) {
-            backdropRef.current.style.display = 'none';
-        }
-    }, []);
-
-    // Add effect to listen for group-item-drag events
+    // Listen for group item preview events
     useEffect(() => {
-        const handleGroupItemDrag = (event: CustomEvent) => {
-            const { dragging, groupId, itemId } = event.detail || {};
-            console.log('Group item drag event received:', { dragging, groupId, itemId });
+        // Handler for group item preview
+        const handleGroupItemPreview = (event: CustomEvent) => {
+            const { dragging, groupId, itemId, position, item } = event.detail || {};
+            console.log('Group item preview event received:', { dragging, groupId, itemId, position });
 
-            // Only show backdrop when explicitly told to do so with dragging=true
-            if (dragging === true && groupId && itemId) {
-                showBackdrop();
+            if (dragging && groupId && itemId) {
+                // Find the group index in the dashboard layout
+                const groupIndex = items.findIndex(i => i.id === groupId);
+
+                if (groupIndex !== -1) {
+                    // Set placeholder data for rendering
+                    setDragPlaceholder({
+                        groupId,
+                        itemId,
+                        item,
+                        visible: true,
+                        position: position || 'next' // Default to next position
+                    });
+                }
             } else {
-                hideBackdrop();
+                // Hide the placeholder if needed
+                if (dragPlaceholder?.visible) {
+                    setDragPlaceholder(null);
+                }
             }
         };
 
-        // Listen for the custom event from group widgets
-        document.addEventListener('dndkit:group-item-drag', handleGroupItemDrag as EventListener);
+        // Listen for the preview event from group widgets
+        document.addEventListener('dndkit:group-item-preview', handleGroupItemPreview as EventListener);
 
         // Clean up function
         return () => {
-            document.removeEventListener('dndkit:group-item-drag', handleGroupItemDrag as EventListener);
-
-            // Clean up the backdrop on component unmount
-            if (backdropRef.current) {
-                document.body.removeChild(backdropRef.current);
-                backdropRef.current = null;
-            }
+            document.removeEventListener('dndkit:group-item-preview', handleGroupItemPreview as EventListener);
         };
-    }, [showBackdrop, hideBackdrop]);
-
-    // Hide backdrop on any component update as a safety measure
-    useEffect(() => {
-        // Hide the backdrop when component updates as a safety measure
-        hideBackdrop();
-    }, [hideBackdrop]);
+    }, [dragPlaceholder, items]);
 
     const handleDragStart = (event: any) => {
         const { active } = event;
         setActiveId(active.id);
         setActiveData(active.data.current);
         setIsDragging(true);
-
-        // Let the group components decide when to show backdrop
-        // Don't show backdrop on drag start
 
         // Dispatch event that drag has started
         dispatchDndKitEvent('active', { active: { id: active.id, data: active.data.current } });
@@ -254,9 +212,8 @@ export const DashboardGrid: React.FC = () => {
 
         console.log('Drag end event:', { active, over });
 
-        // Always hide the backdrop when drag ends
-        hideBackdrop();
         setIsDragging(false);
+        setDragPlaceholder(null);
 
         // Reset all drag states
         setActiveId(null);
@@ -387,8 +344,7 @@ export const DashboardGrid: React.FC = () => {
     };
 
     const handleDragMove = (event: any) => {
-        // Don't control backdrop here
-        // Let group components decide when to show/hide backdrop
+        // Let group components handle the preview
     };
 
     useEffect(() => {
@@ -407,6 +363,162 @@ export const DashboardGrid: React.FC = () => {
         };
     }, [isDragging]);
 
+    // Find the group widget's index
+    const getGroupPosition = useCallback((groupId: string) => {
+        return items.findIndex(item => item.id === groupId);
+    }, [items]);
+
+    // Render our items with the placeholder inserted at the right position
+    const renderItems = () => {
+        // Clone the items array
+        const itemsToRender = [...items];
+
+        // If we have a visible placeholder and the group exists
+        if (dragPlaceholder?.visible) {
+            const groupIndex = getGroupPosition(dragPlaceholder.groupId);
+
+            if (groupIndex !== -1) {
+                // Determine target index based on position
+                const targetIndex = dragPlaceholder.position === 'next'
+                    ? groupIndex + 1 // Insert after group
+                    : groupIndex;    // Insert before group
+
+                // Insert the placeholder at the target index
+                const result: React.ReactNode[] = [];
+
+                itemsToRender.forEach((item, index) => {
+                    // If this is where we insert the placeholder
+                    if (index === targetIndex) {
+                        result.push(renderPlaceholder(dragPlaceholder));
+                    }
+
+                    // Always add the current item
+                    result.push(renderItem(item));
+                });
+
+                // If the placeholder goes at the end
+                if (targetIndex >= itemsToRender.length) {
+                    result.push(renderPlaceholder(dragPlaceholder));
+                }
+
+                return result;
+            }
+        }
+
+        // If no placeholder or group not found, just render the items normally
+        return itemsToRender.map(item => renderItem(item));
+    };
+
+    // Render a single item
+    const renderItem = (item: any) => {
+        switch (item.type) {
+        case ITEM_TYPE.WEATHER_WIDGET:
+            return <SortableWeatherWidget key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
+        case ITEM_TYPE.DATE_TIME_WIDGET:
+            return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
+        case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
+            return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
+        case ITEM_TYPE.PIHOLE_WIDGET:
+            return <SortablePihole key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
+        case ITEM_TYPE.TORRENT_CLIENT:
+            return item.config?.clientType === TORRENT_CLIENT_TYPE.DELUGE
+                ? <SortableDeluge key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>
+                : <SortableQBittorrent key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
+        case ITEM_TYPE.DUAL_WIDGET: {
+            // Transform the existing config to the correct structure
+            const dualWidgetConfig = {
+                topWidget: item.config?.topWidget || undefined,
+                bottomWidget: item.config?.bottomWidget || undefined
+            };
+            return <SortableDualWidget
+                key={item.id}
+                id={item.id}
+                editMode={editMode}
+                config={dualWidgetConfig}
+                onDelete={() => handleDelete(item.id)}
+                onEdit={() => handleEdit(item)}
+            />;
+        }
+        case ITEM_TYPE.GROUP_WIDGET_SMALL:
+            return <SortableGroupWidgetSmall
+                key={item.id}
+                id={item.id}
+                editMode={editMode}
+                config={item.config}
+                onDelete={() => handleDelete(item.id)}
+                onEdit={() => handleEdit(item)}
+            />;
+        case ITEM_TYPE.APP_SHORTCUT:
+            return (
+                <SortableAppShortcut
+                    key={item.id}
+                    id={item.id}
+                    url={item.url as string}
+                    name={item.label}
+                    iconName={item.icon?.path || ''}
+                    editMode={editMode}
+                    onDelete={() => handleDelete(item.id)}
+                    onEdit={() => handleEdit(item)}
+                    showLabel={item.showLabel}
+                    config={item.config}
+                />
+            );
+        case ITEM_TYPE.BLANK_APP:
+            return <BlankAppShortcut key={item.id} id={item.id} editMode={editMode} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} />;
+        case ITEM_TYPE.BLANK_ROW:
+            return <BlankWidget key={item.id} id={item.id} label={item.label} editMode={editMode} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} row/>;
+        default:
+            return <BlankWidget key={item.id} id={item.id} label={item.label} editMode={editMode} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} />;
+        }
+    };
+
+    // Render a placeholder app shortcut
+    const renderPlaceholder = (placeholder: any) => {
+        const name = placeholder.item?.name || 'Item';
+        const icon = placeholder.item?.icon || '';
+        const url = placeholder.item?.url || '#';
+        const healthUrl = placeholder.item?.healthUrl;
+        const healthCheckType = placeholder.item?.healthCheckType;
+        const isWol = placeholder.item?.isWol;
+
+        // Create a more complete config object based on available item properties
+        const config: any = {};
+
+        if (healthUrl) {
+            config.healthUrl = healthUrl;
+            config.healthCheckType = healthCheckType;
+        }
+
+        if (isWol) {
+            config.isWol = isWol;
+            config.macAddress = placeholder.item?.macAddress;
+            config.broadcastAddress = placeholder.item?.broadcastAddress;
+            config.port = placeholder.item?.port;
+        }
+
+        return (
+            <SortableAppShortcut
+                key='preview-placeholder'
+                id='preview-placeholder'
+                url={url}
+                name={name}
+                iconName={icon}
+                editMode={false}
+                showLabel={true}
+                config={config}
+                isPreview={true}
+            />
+        );
+    };
+
+    // Get ids including the placeholder if visible
+    const getSortableIds = () => {
+        if (dragPlaceholder?.visible) {
+            return [...items.map(item => item.id), 'placeholder'];
+        }
+        return items.map(item => item.id);
+    };
+
     return (
         <>
             <DndContext
@@ -418,7 +530,7 @@ export const DashboardGrid: React.FC = () => {
                 collisionDetection={customCollisionDetection}
                 measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
             >
-                <SortableContext items={items.map(item => item.id)} strategy={rectSortingStrategy} disabled={!editMode}>
+                <SortableContext items={getSortableIds()} strategy={rectSortingStrategy} disabled={!editMode}>
                     <Box
                         ref={containerRef}
                         sx={{ width: '100%', maxWidth: '100vw', boxSizing: 'border-box' }}
@@ -430,67 +542,7 @@ export const DashboardGrid: React.FC = () => {
                             px: 2,
                             paddingBottom: 4
                         }} spacing={2}>
-                            {items.map((item) => {
-                                switch (item.type) {
-                                case ITEM_TYPE.WEATHER_WIDGET:
-                                    return <SortableWeatherWidget key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
-                                case ITEM_TYPE.DATE_TIME_WIDGET:
-                                    return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
-                                case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
-                                    return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
-                                case ITEM_TYPE.PIHOLE_WIDGET:
-                                    return <SortablePihole key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
-                                case ITEM_TYPE.TORRENT_CLIENT:
-                                    return item.config?.clientType === TORRENT_CLIENT_TYPE.DELUGE
-                                        ? <SortableDeluge key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>
-                                        : <SortableQBittorrent key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
-                                case ITEM_TYPE.DUAL_WIDGET: {
-                                    // Transform the existing config to the correct structure
-                                    const dualWidgetConfig = {
-                                        topWidget: item.config?.topWidget || undefined,
-                                        bottomWidget: item.config?.bottomWidget || undefined
-                                    };
-                                    return <SortableDualWidget
-                                        key={item.id}
-                                        id={item.id}
-                                        editMode={editMode}
-                                        config={dualWidgetConfig}
-                                        onDelete={() => handleDelete(item.id)}
-                                        onEdit={() => handleEdit(item)}
-                                    />;
-                                }
-                                case ITEM_TYPE.GROUP_WIDGET_SMALL:
-                                    return <SortableGroupWidgetSmall
-                                        key={item.id}
-                                        id={item.id}
-                                        editMode={editMode}
-                                        config={item.config}
-                                        onDelete={() => handleDelete(item.id)}
-                                        onEdit={() => handleEdit(item)}
-                                    />;
-                                case ITEM_TYPE.APP_SHORTCUT:
-                                    return (
-                                        <SortableAppShortcut
-                                            key={item.id}
-                                            id={item.id}
-                                            url={item.url as string}
-                                            name={item.label}
-                                            iconName={item.icon?.path || ''}
-                                            editMode={editMode}
-                                            onDelete={() => handleDelete(item.id)}
-                                            onEdit={() => handleEdit(item)}
-                                            showLabel={item.showLabel}
-                                            config={item.config}
-                                        />
-                                    );
-                                case ITEM_TYPE.BLANK_APP:
-                                    return <BlankAppShortcut key={item.id} id={item.id} editMode={editMode} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} />;
-                                case ITEM_TYPE.BLANK_ROW:
-                                    return <BlankWidget key={item.id} id={item.id} label={item.label} editMode={editMode} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} row/>;
-                                default:
-                                    return <BlankWidget key={item.id} id={item.id} label={item.label} editMode={editMode} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} />;
-                                }
-                            })}
+                            {renderItems()}
                         </Grid>
                     </Box>
                 </SortableContext>
