@@ -10,6 +10,7 @@ type Props = {
     editMode: boolean;
     onEdit?: () => void
     onDelete?: () => void;
+    onDuplicate?: () => void;
     appShortcut?: boolean;
     placeholder?: boolean;
     url?: string;
@@ -26,6 +27,7 @@ export const WidgetContainer: React.FC<Props> = ({
     editMode,
     onEdit,
     onDelete,
+    onDuplicate,
     appShortcut=false,
     placeholder=false,
     url,
@@ -73,7 +75,7 @@ export const WidgetContainer: React.FC<Props> = ({
             }}
             data-preview={isPreview ? 'true' : 'false'}
         >
-            {!isPreview && <EditMenu editMode={editMode} onEdit={onEdit} onDelete={onDelete} />}
+            {!isPreview && <EditMenu editMode={editMode} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} />}
             {children}
             {!isPreview && <StatusIndicator url={url} healthCheckType={healthCheckType} />}
         </Card>

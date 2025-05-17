@@ -17,6 +17,7 @@ type Props = {
     isPreview?: boolean;
     onDelete?: () => void;
     onEdit?: () => void;
+    onDuplicate?: () => void;
     showLabel?: boolean;
     config?: any;
 };
@@ -31,6 +32,7 @@ export const SortableAppShortcut: React.FC<Props> = ({
     isPreview = false,
     onDelete,
     onEdit,
+    onDuplicate,
     showLabel,
     config
 }) => {
@@ -75,6 +77,7 @@ export const SortableAppShortcut: React.FC<Props> = ({
                 editMode={editMode}
                 onDelete={onDelete}
                 onEdit={onEdit}
+                onDuplicate={onDuplicate}
                 appShortcut
                 url={statusUrl}
                 healthCheckType={healthCheckType}

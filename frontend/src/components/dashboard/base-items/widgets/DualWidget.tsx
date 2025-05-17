@@ -11,7 +11,7 @@ import { COLORS } from '../../../../theme/styles';
 import { theme } from '../../../../theme/theme';
 import { ITEM_TYPE } from '../../../../types';
 
-type DualWidgetProps = {
+export interface DualWidgetProps {
     config?: {
         topWidget?: {
             type: string;
@@ -25,14 +25,16 @@ type DualWidgetProps = {
     editMode?: boolean;
     onEdit?: () => void;
     onDelete?: () => void;
+    onDuplicate?: () => void;
     url?: string;
-};
+}
 
 export const DualWidget: React.FC<DualWidgetProps> = ({
     config,
     editMode = false,
     onEdit,
     onDelete,
+    onDuplicate,
     url
 }) => {
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -110,6 +112,7 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
             editMode={editMode}
             onEdit={onEdit}
             onDelete={onDelete}
+            onDuplicate={onDuplicate}
             url={url}
         >
             <Box

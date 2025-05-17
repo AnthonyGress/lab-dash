@@ -17,6 +17,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/shortid": "^2.2.0",
     "concurrently": "^9.1.2",
     "rimraf": "^5.0.5"
   }

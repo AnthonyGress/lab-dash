@@ -6,9 +6,10 @@ type EditMenuProps = {
     editMode: boolean;
     onEdit?: () => void;
     onDelete?: () => void;
+    onDuplicate?: () => void;
 };
 
-export const EditMenu: React.FC<EditMenuProps> = ({ editMode, onEdit, onDelete }) => {
+export const EditMenu: React.FC<EditMenuProps> = ({ editMode, onEdit, onDelete, onDuplicate }) => {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
 
@@ -60,6 +61,16 @@ export const EditMenu: React.FC<EditMenuProps> = ({ editMode, onEdit, onDelete }
                 >
                     Edit
                 </MenuItem>
+                {onDuplicate && (
+                    <MenuItem
+                        onClick={() => { handleMenuClose(); onDuplicate(); }}
+                        sx={{
+                            py: 1,
+                        }}
+                    >
+                        Duplicate
+                    </MenuItem>
+                )}
                 <MenuItem
                     onClick={() => { handleMenuClose(); onDelete?.(); }}
                     sx={{

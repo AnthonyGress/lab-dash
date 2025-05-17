@@ -15,6 +15,7 @@ import {
 } from '@dnd-kit/sortable';
 import { Box, Grid2 as Grid, useMediaQuery } from '@mui/material';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import shortid from 'shortid';
 
 import { SortableDeluge } from './sortable-items/widgets/SortableDeluge';
 import { useAppContext } from '../../context/useAppContext';
@@ -94,6 +95,13 @@ function getIntersectionArea(rect1: any, rect2: any) {
     const yOverlap = Math.max(0, Math.min(rect1.y + rect1.height, rect2.y + rect2.height) - Math.max(rect1.y, rect2.y));
     return xOverlap * yOverlap;
 }
+
+// Function to generate a unique ID
+const generateUniqueId = () => {
+    const timestamp = Date.now().toString(36);
+    const randomStr = Math.random().toString(36).substring(2, 8);
+    return `item-${timestamp}${randomStr}`;
+};
 
 export const DashboardGrid: React.FC = () => {
     const [activeId, setActiveId] = useState<string | null>(null);
@@ -343,8 +351,42 @@ export const DashboardGrid: React.FC = () => {
         setOpenEditModal(true);
     };
 
-    const handleDragMove = (event: any) => {
-        // Let group components handle the preview
+    const handleDuplicate = (item: DashboardItem) => {
+        // Deep clone the item
+        const duplicatedItem: DashboardItem = JSON.parse(JSON.stringify(item));
+
+        // Generate a new unique ID for the main item
+        const newGroupId = shortid.generate();
+        duplicatedItem.id = newGroupId;
+
+        // If this is a group widget, generate new IDs for each item inside it
+        if (item.type === ITEM_TYPE.GROUP_WIDGET && item.config?.items) {
+
+            // Ensure config exists
+            if (!duplicatedItem.config) {
+                duplicatedItem.config = {};
+            }
+
+            // Ensure each item in the group gets a new ID
+            duplicatedItem.config.items = item.config.items.map((groupItem: any) => {
+                const newItemId = shortid.generate();
+
+                return {
+                    ...groupItem,
+                    id: newItemId // New ID for each group item
+                };
+            });
+        }
+
+        // Find the item's position in the layout
+        const index = dashboardLayout.findIndex((i) => i.id === item.id);
+
+        // Insert the duplicated item after the original
+        const updatedLayout = [...dashboardLayout];
+        updatedLayout.splice(index + 1, 0, duplicatedItem);
+        // Update the dashboard
+        setDashboardLayout(updatedLayout);
+        saveLayout(updatedLayout);
     };
 
     useEffect(() => {
@@ -409,21 +451,29 @@ export const DashboardGrid: React.FC = () => {
         return itemsToRender.map(item => renderItem(item));
     };
 
+    // Helper function to create a proper DateTimeConfig
+    const createDateTimeConfig = (config: any) => {
+        return {
+            location: config?.location || null,
+            timezone: config?.timezone || undefined
+        };
+    };
+
     // Render a single item
     const renderItem = (item: any) => {
         switch (item.type) {
         case ITEM_TYPE.WEATHER_WIDGET:
-            return <SortableWeatherWidget key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
+            return <SortableWeatherWidget key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
         case ITEM_TYPE.DATE_TIME_WIDGET:
-            return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
+            return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} config={createDateTimeConfig(item.config)} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
         case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
-            return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
+            return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
         case ITEM_TYPE.PIHOLE_WIDGET:
-            return <SortablePihole key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
+            return <SortablePihole key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
         case ITEM_TYPE.TORRENT_CLIENT:
             return item.config?.clientType === TORRENT_CLIENT_TYPE.DELUGE
-                ? <SortableDeluge key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>
-                : <SortableQBittorrent key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)}/>;
+                ? <SortableDeluge key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>
+                : <SortableQBittorrent key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
         case ITEM_TYPE.DUAL_WIDGET: {
             // Transform the existing config to the correct structure
             const dualWidgetConfig = {
@@ -437,6 +487,7 @@ export const DashboardGrid: React.FC = () => {
                 config={dualWidgetConfig}
                 onDelete={() => handleDelete(item.id)}
                 onEdit={() => handleEdit(item)}
+                onDuplicate={() => handleDuplicate(item)}
             />;
         }
         case ITEM_TYPE.GROUP_WIDGET:
@@ -447,6 +498,7 @@ export const DashboardGrid: React.FC = () => {
                 config={item.config}
                 onDelete={() => handleDelete(item.id)}
                 onEdit={() => handleEdit(item)}
+                onDuplicate={() => handleDuplicate(item)}
             />;
         case ITEM_TYPE.APP_SHORTCUT:
             return (
@@ -459,16 +511,17 @@ export const DashboardGrid: React.FC = () => {
                     editMode={editMode}
                     onDelete={() => handleDelete(item.id)}
                     onEdit={() => handleEdit(item)}
+                    onDuplicate={() => handleDuplicate(item)}
                     showLabel={item.showLabel}
                     config={item.config}
                 />
             );
         case ITEM_TYPE.BLANK_APP:
-            return <BlankAppShortcut key={item.id} id={item.id} editMode={editMode} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} />;
+            return <BlankAppShortcut key={item.id} id={item.id} editMode={editMode} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)} />;
         case ITEM_TYPE.BLANK_ROW:
-            return <BlankWidget key={item.id} id={item.id} label={item.label} editMode={editMode} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} row/>;
+            return <BlankWidget key={item.id} id={item.id} label={item.label} editMode={editMode} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)} row/>;
         default:
-            return <BlankWidget key={item.id} id={item.id} label={item.label} editMode={editMode} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} />;
+            return <BlankWidget key={item.id} id={item.id} label={item.label} editMode={editMode} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)} />;
         }
     };
 
@@ -526,7 +579,6 @@ export const DashboardGrid: React.FC = () => {
                 onDragStart={handleDragStart}
                 onDragOver={handleDragOver}
                 onDragEnd={handleDragEnd}
-                onDragMove={handleDragMove}
                 collisionDetection={customCollisionDetection}
                 measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
             >
@@ -573,16 +625,23 @@ export const DashboardGrid: React.FC = () => {
                                     switch (item.type) {
                                     case ITEM_TYPE.WEATHER_WIDGET:
                                         return <SortableWeatherWidget key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
-                                    case ITEM_TYPE.DATE_TIME_WIDGET:
-                                        return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
+                                    case ITEM_TYPE.DATE_TIME_WIDGET: {
+                                        // Create a properly typed config for DateTimeWidget
+                                        const dateTimeConfig = {
+                                            location: item.config?.location || null,
+                                            timezone: item.config?.timezone || undefined
+                                        };
+                                        return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} config={dateTimeConfig} isOverlay/>;
+                                    }
                                     case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
                                         return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
                                     case ITEM_TYPE.PIHOLE_WIDGET:
                                         return <SortablePihole key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
-                                    case ITEM_TYPE.TORRENT_CLIENT:
+                                    case ITEM_TYPE.TORRENT_CLIENT: {
                                         return item.config?.clientType === TORRENT_CLIENT_TYPE.DELUGE
                                             ? <SortableDeluge key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>
                                             : <SortableQBittorrent key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
+                                    }
                                     case ITEM_TYPE.DUAL_WIDGET: {
                                         // Transform the existing config to the correct structure
                                         const dualWidgetConfig = {

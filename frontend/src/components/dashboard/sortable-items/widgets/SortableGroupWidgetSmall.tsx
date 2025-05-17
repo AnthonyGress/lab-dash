@@ -2,6 +2,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Grid2 } from '@mui/material';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import shortid from 'shortid';
 
 import { DUAL_WIDGET_CONTAINER_HEIGHT, STANDARD_WIDGET_HEIGHT } from '../../../../constants/widget-dimensions';
 import { useAppContext } from '../../../../context/useAppContext';
@@ -23,12 +24,7 @@ import GroupWidget from '../../base-items/widgets/GroupWidget';
  * - This prevents duplicate key issues when items are moved between contexts
  */
 
-// Function to generate a unique ID
-const generateUniqueId = () => {
-    const timestamp = Date.now().toString(36);
-    const randomStr = Math.random().toString(36).substring(2, 8);
-    return `item-${timestamp}${randomStr}`;
-};
+// Use shortid for generating unique IDs
 
 export interface GroupWidgetSmallConfig {
   title?: string;
@@ -47,6 +43,7 @@ interface Props {
   editMode: boolean;
   onDelete?: () => void;
   onEdit?: () => void;
+  onDuplicate?: () => void;
   isOverlay?: boolean;
 }
 
@@ -56,6 +53,7 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
     editMode,
     onDelete,
     onEdit,
+    onDuplicate,
     isOverlay = false
 }) => {
     const { updateItem, dashboardLayout, setDashboardLayout, saveLayout } = useAppContext();
@@ -215,7 +213,7 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
         }
 
         // Generate a new unique ID for the app shortcut to avoid conflicts
-        const newItemId = generateUniqueId();
+        const newItemId = shortid.generate();
         console.log(`Generated new ID for item moving from group to dashboard: ${itemId} -> ${newItemId}`);
 
         // Create a new app shortcut from the group item with a NEW ID
@@ -328,7 +326,7 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
         const isPlaceholder = shortcutItem.type === ITEM_TYPE.BLANK_APP;
 
         // Generate a new unique ID for the group item to avoid conflicts
-        const newItemId = generateUniqueId();
+        const newItemId = shortid.generate();
         console.log(`Generated new ID for item moving from dashboard to group: ${shortcutItem.id} -> ${newItemId}`);
 
         // Create a new group item from the app shortcut with a NEW ID
@@ -701,6 +699,112 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
         PopupManager.deleteConfirmation(options);
     }, [config, id, updateItem]);
 
+    // Handle item duplication - can accept either item ID or GroupItem object
+    const handleItemDuplicate = useCallback((itemOrId: string | GroupItem) => {
+        // Determine whether we received an ID or a GroupItem
+        const isItemObject = typeof itemOrId !== 'string';
+        const itemId = isItemObject ? (itemOrId as GroupItem).id : itemOrId;
+
+        console.log('Duplicate item in group widget:', itemId);
+
+        if (!config?.items) return;
+
+        // Get max items value
+        const maxItems = getMaxItemsAsNumber();
+
+        // If we received a GroupItem directly, we're adding to dashboard
+        if (isItemObject) {
+            const groupItem = itemOrId as GroupItem;
+            console.log('Group at maximum capacity, adding duplicate to dashboard');
+
+            // Convert the group item to a dashboard item
+            const newDashboardItem: DashboardItem = {
+                id: shortid.generate(), // Generate a new unique ID
+                type: ITEM_TYPE.APP_SHORTCUT,
+                label: groupItem.name,
+                url: groupItem.url,
+                showLabel: true,
+                icon: {
+                    path: groupItem.icon || '',
+                    name: groupItem.name
+                },
+                config: {}
+            };
+
+            // Add WoL properties if they exist
+            if (groupItem.isWol) {
+                newDashboardItem.config = {
+                    ...newDashboardItem.config,
+                    isWol: groupItem.isWol,
+                    macAddress: groupItem.macAddress,
+                    broadcastAddress: groupItem.broadcastAddress,
+                    port: groupItem.port
+                };
+            }
+
+            // Add health check properties if they exist
+            if (groupItem.healthUrl) {
+                newDashboardItem.config = {
+                    ...newDashboardItem.config,
+                    healthUrl: groupItem.healthUrl,
+                    healthCheckType: groupItem.healthCheckType
+                };
+            }
+
+            // Find the group widget in the dashboard layout
+            const groupIndex = dashboardLayout.findIndex(layoutItem => layoutItem.id === id);
+            if (groupIndex === -1) {
+                console.error('Could not find group widget in dashboard layout');
+                return;
+            }
+
+            // Create updated dashboard layout
+            const updatedLayout = [...dashboardLayout];
+
+            // Add the new item after the group
+            updatedLayout.splice(groupIndex + 1, 0, newDashboardItem);
+
+            // Update the dashboard layout
+            setDashboardLayout(updatedLayout);
+
+            // Save to server
+            saveLayout(updatedLayout);
+
+            return;
+        }
+
+        // Otherwise, we're duplicating within the group
+        // Find the item in the group by ID
+        const itemToDuplicate = config.items.find(i => i.id === itemId);
+        if (!itemToDuplicate) {
+            console.error('Could not find item to duplicate');
+            return;
+        }
+
+        // Create duplicated item with new ID
+        const duplicatedItem: GroupItem = {
+            ...JSON.parse(JSON.stringify(itemToDuplicate)), // Deep clone
+            id: shortid.generate() // New unique ID
+        };
+
+        // Find the index of the original item
+        const originalIndex = config.items.findIndex(i => i.id === itemId);
+
+        // Insert the duplicate after the original
+        const updatedItems = [...config.items];
+        updatedItems.splice(originalIndex + 1, 0, duplicatedItem);
+
+        // Update the group widget with the new items
+        if (updateItem) {
+            updateItem(id, {
+                config: {
+                    ...config,
+                    items: updatedItems
+                }
+            });
+        }
+    }, [config, id, updateItem, getMaxItemsAsNumber, dashboardLayout, setDashboardLayout, saveLayout]);
+
     // Get selected dashboard item for editing
     const selectedDashboardItem = selectedItemId
         ? getItemAsDashboardItem(selectedItemId)
@@ -763,6 +867,7 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
                     onItemDragOut={handleItemDragOut}
                     onItemEdit={handleItemEdit}
                     onItemDelete={handleItemDelete}
+                    onItemDuplicate={handleItemDuplicate}
                     maxItems={getMaxItems()}
                     showLabel={config?.showLabel !== undefined ? config.showLabel : true}
                 />
@@ -819,10 +924,12 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
                         onItemsChange={handleItemsChange}
                         onRemove={onDelete}
                         onEdit={onEdit}
+                        onDuplicate={onDuplicate}
                         isEditing={editMode}
                         onItemDragOut={handleItemDragOut}
                         onItemEdit={handleItemEdit}
                         onItemDelete={handleItemDelete}
+                        onItemDuplicate={handleItemDuplicate}
                         maxItems={getMaxItems()}
                         isHighlighted={isOver || isCurrentDropTarget}
                         showLabel={config?.showLabel !== undefined ? config.showLabel : true}

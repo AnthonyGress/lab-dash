@@ -12,6 +12,7 @@ type DualWidgetContainerProps = {
     editMode?: boolean;
     onEdit?: () => void;
     onDelete?: () => void;
+    onDuplicate?: () => void;
     url?: string;
 };
 
@@ -20,6 +21,7 @@ export const DualWidgetContainer: React.FC<DualWidgetContainerProps> = ({
     editMode = false,
     onEdit,
     onDelete,
+    onDuplicate,
     url
 }) => {
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -48,7 +50,7 @@ export const DualWidgetContainer: React.FC<DualWidgetContainerProps> = ({
                 backdropFilter: '6px'
             }}
         >
-            <EditMenu editMode={editMode} onEdit={onEdit} onDelete={onDelete} />
+            <EditMenu editMode={editMode} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} />
 
             <CardContent
                 sx={{

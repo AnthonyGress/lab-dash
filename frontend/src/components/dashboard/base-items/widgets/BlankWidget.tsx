@@ -12,10 +12,11 @@ type Props = {
     editMode: boolean;
     onDelete?: () => void;
     onEdit?: () => void;
+    onDuplicate?: () => void;
     row?: boolean;
 };
 
-export const BlankWidget: React.FC<Props> = ({ id, label, editMode, isOverlay = false, onDelete, onEdit, row }) => {
+export const BlankWidget: React.FC<Props> = ({ id, label, editMode, isOverlay = false, onDelete, onEdit, onDuplicate, row }) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
     return (
@@ -31,7 +32,7 @@ export const BlankWidget: React.FC<Props> = ({ id, label, editMode, isOverlay = 
                 visibility: isDragging ? 'hidden' : 'visible',
             }}
         >
-            <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit} placeholder rowPlaceholder={row}>
+            <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit} onDuplicate={onDuplicate} placeholder rowPlaceholder={row}>
                 <Typography variant='h6' textAlign='center'>
                     {/* {label} */}
                 </Typography>

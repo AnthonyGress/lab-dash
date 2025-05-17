@@ -11,6 +11,7 @@ type Props = {
     isOverlay?: boolean;
     onDelete?: () => void;
     onEdit?: () => void;
+    onDuplicate?: () => void;
     config?: {
         topWidget?: {
             type: string;
@@ -30,6 +31,7 @@ export const SortableDualWidget: React.FC<Props> = ({
     isOverlay = false,
     onDelete,
     onEdit,
+    onDuplicate,
     config,
     url
 }) => {
@@ -53,6 +55,7 @@ export const SortableDualWidget: React.FC<Props> = ({
                 editMode={editMode}
                 onDelete={onDelete}
                 onEdit={onEdit}
+                onDuplicate={onDuplicate}
                 url={url}
             />
         </Grid2>

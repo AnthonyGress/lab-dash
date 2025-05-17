@@ -4,6 +4,7 @@ import { CSS } from '@dnd-kit/utilities';
 import AddIcon from '@mui/icons-material/Add';
 import { Box, Grid2 as Grid, IconButton, Typography } from '@mui/material';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import shortid from 'shortid';
 
 import { EditMenu } from './EditMenu';
 import { StatusIndicator } from './StatusIndicator';
@@ -15,6 +16,8 @@ import { getIconPath } from '../../../../utils/utils';
 import { ConfirmationOptions, PopupManager } from '../../../modals/PopupManager';
 import { AppShortcut } from '../apps/AppShortcut';
 
+// Use shortid for generating unique IDs
+
 interface GroupWidgetProps {
     id: string;
     name: string;
@@ -22,10 +25,12 @@ interface GroupWidgetProps {
     onItemsChange?: (items: GroupItem[]) => void;
     onRemove?: () => void;
     onEdit?: () => void;
+    onDuplicate?: () => void;
     isEditing?: boolean;
     onItemDragOut?: (itemId: string) => void;
     onItemEdit?: (itemId: string) => void;
     onItemDelete?: (itemId: string) => void;
+    onItemDuplicate?: (item: GroupItem) => void;
     isHighlighted?: boolean;
     maxItems?: number | string;
     showLabel?: boolean;
@@ -38,6 +43,7 @@ interface SortableGroupItemProps {
     onDragStart?: (id: string) => void;
     onEdit?: (id: string) => void;
     onDelete?: (id: string) => void;
+    onDuplicate?: () => void;
     itemSize?: 'small' | 'medium' | 'large';
 }
 
@@ -49,6 +55,7 @@ const SortableGroupItem: React.FC<SortableGroupItemProps> = ({
     onDragStart,
     onEdit,
     onDelete,
+    onDuplicate,
     itemSize = 'medium'
 }) => {
     const {
@@ -85,6 +92,13 @@ const SortableGroupItem: React.FC<SortableGroupItemProps> = ({
     const handleDelete = () => {
         if (onDelete) {
             onDelete(item.id);
+        }
+    };
+
+    // Call the parent's duplicate handler directly
+    const handleDuplicate = () => {
+        if (onDuplicate) {
+            onDuplicate();
         }
     };
 
@@ -126,6 +140,7 @@ const SortableGroupItem: React.FC<SortableGroupItemProps> = ({
                 editMode={isEditing}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                onDuplicate={handleDuplicate}
                 appShortcut={true}
                 url={item.healthUrl || item.url}
                 healthCheckType={item.healthCheckType === 'ping' ? 'ping' : 'http'}
@@ -158,10 +173,12 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
     onItemsChange,
     onRemove,
     onEdit,
+    onDuplicate,
     isEditing = false,
     onItemDragOut,
     onItemEdit,
     onItemDelete,
+    onItemDuplicate,
     isHighlighted = false,
     maxItems = 3,
     showLabel = true
@@ -400,6 +417,46 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
         setIsCurrentDropTarget(false);
     };
 
+    // Handle item duplicate
+    const handleItemDuplicate = useCallback((itemId: string) => {
+        console.log('Duplicate item in group:', itemId);
+
+        // Find the item in the group
+        const itemToDuplicate = items.find(item => item.id === itemId);
+        if (!itemToDuplicate) {
+            console.error('Could not find item to duplicate');
+            return;
+        }
+
+        // Create duplicated item with new ID
+        const duplicatedItem: GroupItem = {
+            ...JSON.parse(JSON.stringify(itemToDuplicate)), // Deep clone
+            id: shortid.generate() // New unique ID
+        };
+
+        // Check if we've reached maximum capacity
+        if (items.length >= MAX_ITEMS) {
+            // Instead of showing error, pass the duplicated item to parent for adding to dashboard
+            console.log('Group at maximum capacity, adding duplicate to main dashboard');
+            if (onItemDuplicate) {
+                onItemDuplicate(duplicatedItem);
+            }
+            return;
+        }
+
+        // Find the index of the original item
+        const originalIndex = items.findIndex(item => item.id === itemId);
+
+        // Insert the duplicate after the original
+        const updatedItems = [...items];
+        updatedItems.splice(originalIndex + 1, 0, duplicatedItem);
+
+        // Update the group's items
+        if (onItemsChange) {
+            onItemsChange(updatedItems);
+        }
+    }, [items, MAX_ITEMS, onItemsChange, onItemDuplicate]);
+
     // Handle item edit - Convert group item to dashboard item for edit form
     const handleItemEdit = useCallback((itemId: string) => {
         // Find the item in the group
@@ -522,13 +579,15 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
 
     // Helper function to get appropriate height based on itemSize
     const getItemHeight = () => {
-        if (gridSettings.itemSize === 'small') {
+        // Access the string value safely
+        const itemSizeValue = String(gridSettings.itemSize);
+
+        if (itemSizeValue === 'small') {
             return { xs: '75px', sm: '85px', md: '80px' };
-        } else if (gridSettings.itemSize === 'large') {
-            return { xs: '95px', sm: '105px', md: '100px' };
-        } else {
-            return { xs: '90px', sm: '100px', md: '95px' }; // medium or default
         }
+
+        // Default case (medium or any other value)
+        return { xs: '90px', sm: '100px', md: '95px' };
     };
 
     return (
@@ -536,6 +595,7 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
             editMode={isEditing}
             onEdit={onEdit}
             onDelete={onRemove}
+            onDuplicate={onDuplicate}
             isHighlighted={isHighlighted}
             customHeight={layout === '2x3' || layout === '3x2' ? DUAL_WIDGET_CONTAINER_HEIGHT : STANDARD_WIDGET_HEIGHT}
         >
@@ -620,6 +680,24 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                                         groupId={id}
                                         onEdit={handleItemEdit}
                                         onDelete={handleItemDelete}
+                                        onDuplicate={() => {
+                                            // Create a duplicate with a new ID
+                                            const duplicatedItem: GroupItem = {
+                                                ...JSON.parse(JSON.stringify(item)), // Deep clone
+                                                id: shortid.generate() // New unique ID
+                                            };
+
+                                            // Check if group is at capacity
+                                            if (items.length >= MAX_ITEMS) {
+                                                // Send to parent handler for adding to dashboard
+                                                if (onItemDuplicate) {
+                                                    onItemDuplicate(duplicatedItem);
+                                                }
+                                            } else {
+                                                // Add within the group
+                                                handleItemDuplicate(item.id);
+                                            }
+                                        }}
                                         itemSize={gridSettings.itemSize}
                                     />
                                 </Box>
