@@ -18,6 +18,7 @@ type Props = {
     groupItem?: boolean;
     isHighlighted?: boolean;
     isPreview?: boolean;
+    customHeight?: any; // Allow customizing widget height
 };
 
 export const WidgetContainer: React.FC<Props> = ({
@@ -32,7 +33,8 @@ export const WidgetContainer: React.FC<Props> = ({
     rowPlaceholder,
     groupItem,
     isHighlighted = false,
-    isPreview = false
+    isPreview = false,
+    customHeight
 }) => {
     return (
         <Card
@@ -41,7 +43,7 @@ export const WidgetContainer: React.FC<Props> = ({
                 maxWidth: '100%',
                 minWidth: 0,
                 flexGrow: 1,
-                minHeight: appShortcut || rowPlaceholder ? '6rem' : { xs: '12rem' },
+                minHeight: customHeight || (appShortcut || rowPlaceholder ? '6rem' : { xs: '12rem' }),
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',

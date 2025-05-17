@@ -1,12 +1,18 @@
 import { Grid2 as Grid, Typography } from '@mui/material';
 import { UseFormReturn } from 'react-hook-form';
-import { CheckboxElement, TextFieldElement } from 'react-hook-form-mui';
+import { CheckboxElement, SelectElement, TextFieldElement } from 'react-hook-form-mui';
 
 import { FormValues } from '../AddEditForm';
 
 interface GroupWidgetConfigProps {
     formContext: UseFormReturn<FormValues>;
 }
+
+const MAX_ITEMS_OPTIONS = [
+    { id: '3', label: '3 Items (3×1)' },
+    { id: '6_2x3', label: '6 Items (2×3)' },
+    { id: '6_3x2', label: '6 Items (3×2)' }
+];
 
 export const GroupWidgetConfig = ({ formContext }: GroupWidgetConfigProps) => {
     return (
@@ -17,8 +23,7 @@ export const GroupWidgetConfig = ({ formContext }: GroupWidgetConfigProps) => {
                     label='Group Title'
                     required
                     fullWidth
-                    parse={(value) => value?.trim()}
-                    validation={{
+                    rules={{
                         required: 'Title is required'
                     }}
                     sx={{
@@ -43,21 +48,44 @@ export const GroupWidgetConfig = ({ formContext }: GroupWidgetConfigProps) => {
                 </Typography>
             </Grid>
 
-            <Grid>
-                <CheckboxElement
-                    label='Show Label'
-                    name='showLabel'
-                    sx={{
-                        ml: 1,
-                        color: 'white',
-                        '& .MuiSvgIcon-root': { fontSize: 30 },
-                        '& .MuiFormHelperText-root': {
-                            marginLeft: 1,
-                            fontSize: '0.75rem',
-                            color: 'rgba(255, 255, 255, 0.7)'
-                        }
-                    }}
-                />
+            <Grid container spacing={2} alignItems='center'>
+                <Grid size={{ xs: 12, sm: 6, md: 6 }}>
+                    <SelectElement
+                        name='maxItems'
+                        label='Layout'
+                        options={MAX_ITEMS_OPTIONS}
+                        defaultValue='3'
+                        fullWidth
+                        sx={{
+                            '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                    borderColor: 'text.primary',
+                                },
+                                '&:hover fieldset': { borderColor: 'primary.main' },
+                                '&.Mui-focused fieldset': { borderColor: 'primary.main', },
+                            },
+                            '& .MuiFormLabel-root': {
+                                color: 'text.primary',
+                            },
+                        }}
+                    />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 6 }}>
+                    <CheckboxElement
+                        label='Show Label'
+                        name='showLabel'
+                        sx={{
+                            ml: 1,
+                            color: 'white',
+                            '& .MuiSvgIcon-root': { fontSize: 30 },
+                            '& .MuiFormHelperText-root': {
+                                marginLeft: 1,
+                                fontSize: '0.75rem',
+                                color: 'rgba(255, 255, 255, 0.7)'
+                            }
+                        }}
+                    />
+                </Grid>
             </Grid>
         </>
     );

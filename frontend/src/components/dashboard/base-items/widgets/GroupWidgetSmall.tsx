@@ -8,7 +8,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { EditMenu } from './EditMenu';
 import { StatusIndicator } from './StatusIndicator';
 import { WidgetContainer } from './WidgetContainer';
-import { DashboardItem, ITEM_TYPE } from '../../../../types';
+import { DUAL_WIDGET_CONTAINER_HEIGHT, STANDARD_WIDGET_HEIGHT } from '../../../../constants/widget-dimensions';
+import { DashboardItem, Icon, ITEM_TYPE } from '../../../../types';
 import { GroupItem } from '../../../../types/group';
 import { getIconPath } from '../../../../utils/utils';
 import { ConfirmationOptions, PopupManager } from '../../../modals/PopupManager';
@@ -26,6 +27,7 @@ interface GroupWidgetSmallProps {
     onItemEdit?: (itemId: string) => void;
     onItemDelete?: (itemId: string) => void;
     isHighlighted?: boolean;
+    maxItems?: number | string;
 }
 
 interface SortableGroupItemProps {
@@ -35,6 +37,7 @@ interface SortableGroupItemProps {
     onDragStart?: (id: string) => void;
     onEdit?: (id: string) => void;
     onDelete?: (id: string) => void;
+    itemSize?: 'small' | 'medium' | 'large';
 }
 
 // Component for each sortable item within the group
@@ -44,7 +47,8 @@ const SortableGroupItem: React.FC<SortableGroupItemProps> = ({
     groupId,
     onDragStart,
     onEdit,
-    onDelete
+    onDelete,
+    itemSize = 'medium'
 }) => {
     const {
         attributes,
@@ -82,13 +86,26 @@ const SortableGroupItem: React.FC<SortableGroupItemProps> = ({
         }
     };
 
+    // Determine item height based on size prop
+    const getItemHeight = () => {
+        switch (itemSize) {
+        case 'small':
+            return { xs: '75px', sm: '85px', md: '80px' };
+        case 'large':
+            return { xs: '95px', sm: '105px', md: '100px' };
+        case 'medium':
+        default:
+            return { xs: '90px', sm: '100px', md: '95px' };
+        }
+    };
+
     return (
         <Grid
             ref={setNodeRef}
             {...attributes}
             {...listeners}
             sx={{
-                height: { xs: '90px', sm: '100px', md: '95px' },
+                height: getItemHeight(),
                 width: '100%',
                 cursor: isEditing ? 'grab' : 'pointer',
                 transform: transform ? CSS.Translate.toString(transform) : undefined,
@@ -142,12 +159,76 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
     onItemDragOut,
     onItemEdit,
     onItemDelete,
-    isHighlighted = false
+    isHighlighted = false,
+    maxItems = 3
 }) => {
     const [activeId, setActiveId] = useState<string | null>(null);
     const [isDraggingOut, setIsDraggingOut] = useState(false);
     const [isCurrentDropTarget, setIsCurrentDropTarget] = useState(false);
-    const MAX_ITEMS = 3;
+
+    // Extract the actual max items value and layout from the maxItems prop
+    const getLayoutConfig = () => {
+        // Convert to string to handle both string and numeric maxItems
+        const maxItemsStr = String(maxItems);
+        console.log('GroupWidgetSmall: maxItems =', maxItemsStr);
+
+        // Check for the special layout formats
+        if (maxItemsStr === '6_2x3') {
+            return {
+                maxItems: 6,
+                layout: '2x3'
+            };
+        } else if (maxItemsStr === '6_3x2' || maxItemsStr === '6') {
+            return {
+                maxItems: 6,
+                layout: '3x2'
+            };
+        } else {
+            // Default layout (3 items in one row)
+            return {
+                maxItems: parseInt(maxItemsStr, 10) || 3,
+                layout: '3x1'
+            };
+        }
+    };
+
+    const { maxItems: MAX_ITEMS, layout } = getLayoutConfig();
+
+    const getGridSettings = () => {
+        if (layout === '2x3') {
+            return {
+                // 2x3 grid layout (6 items in 3 rows of 2 items each)
+                width: '45%',  // Wider items, 2 per row
+                rows: 3,
+                cols: 2,
+                height: DUAL_WIDGET_CONTAINER_HEIGHT,
+                itemSize: 'small' as const,
+                titleHeight: '2rem'
+            };
+        } else if (layout === '3x2') {
+            return {
+                // 3x2 grid layout (6 items in 2 rows of 3 items each)
+                width: '30%',  // Narrower items, 3 per row
+                rows: 2,
+                cols: 3,
+                height: DUAL_WIDGET_CONTAINER_HEIGHT,
+                itemSize: 'small' as const,
+                titleHeight: '2rem'
+            };
+        } else {
+            // Default 3x1 layout (3 items in one row)
+            return {
+                width: '30%',
+                rows: 1,
+                cols: 3,
+                height: STANDARD_WIDGET_HEIGHT,  // Using standard widget height for 3x1 layout
+                itemSize: 'medium' as const,
+                titleHeight: '2rem'
+            };
+        }
+    };
+
+    const gridSettings = getGridSettings();
 
     const { setNodeRef: setDroppableRef, isOver } = useDroppable({
         id: `group-droppable-${id}`,
@@ -353,7 +434,7 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
             // Open the group edit modal
             onEdit?.();
         }
-    }, [isEditing, items.length, onEdit]);
+    }, [isEditing, items.length, onEdit, MAX_ITEMS]);
 
     // Add handler for drag start
     const handleDragStart = (event: DragStartEvent) => {
@@ -386,12 +467,16 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
         }
     };
 
+    // Limit items displayed to MAX_ITEMS
+    const visibleItems = items.slice(0, MAX_ITEMS);
+
     return (
         <WidgetContainer
             editMode={isEditing}
             onEdit={onEdit}
             onDelete={onRemove}
             isHighlighted={isHighlighted}
+            customHeight={layout === '2x3' || layout === '3x2' ? DUAL_WIDGET_CONTAINER_HEIGHT : STANDARD_WIDGET_HEIGHT}
         >
             <DndContext
                 onDragStart={handleDragStart}
@@ -403,7 +488,6 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
                     ref={setDroppableRef}
                     sx={{
                         width: '100%',
-                        height: '100%',
                         display: 'flex',
                         flexDirection: 'column',
                         gap: 0.5,
@@ -411,7 +495,9 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
                         pt: 0.5,
                         transition: 'background-color 0.3s ease',
                         backgroundColor: 'transparent',
-                        overflow: 'hidden'
+                        overflow: 'hidden',
+                        height: layout === '2x3' || layout === '3x2' ? DUAL_WIDGET_CONTAINER_HEIGHT.sm : STANDARD_WIDGET_HEIGHT.sm,
+                        maxHeight: layout === '2x3' || layout === '3x2' ? DUAL_WIDGET_CONTAINER_HEIGHT.sm : STANDARD_WIDGET_HEIGHT.sm
                     }}
                     data-type='group-container'
                     data-id={id}
@@ -425,10 +511,11 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
                         sx={{
                             px: 1,
                             pt: 0.5,
-                            pb: 1,
+                            pb: 0.5,
                             fontWeight: 500,
                             fontSize: '1rem',
                             lineHeight: 1.2,
+                            height: gridSettings.titleHeight,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap'
@@ -445,16 +532,16 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
                         flexWrap: 'wrap',
                         justifyContent: 'center',
                         alignItems: 'center',
-                        gap: 1,
+                        gap: 0.5,
                         overflowY: 'hidden',
                         overflowX: 'hidden',
                         pb: 0.5,
                         size: { xs: 4 }
                     }}>
-                        <SortableContext items={items.map(item => item.id)}>
-                            {items.map((item) => (
+                        <SortableContext items={visibleItems.map(item => item.id)}>
+                            {visibleItems.map((item) => (
                                 <Box
-                                    width='30%'
+                                    width={gridSettings.width}
                                     key={item.id}
                                     sx={{
                                         display: 'flex',
@@ -467,15 +554,16 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
                                         groupId={id}
                                         onEdit={handleItemEdit}
                                         onDelete={handleItemDelete}
+                                        itemSize={gridSettings.itemSize}
                                     />
                                 </Box>
                             ))}
                         </SortableContext>
 
                         {/* Add Button */}
-                        {items.length < MAX_ITEMS && isEditing && (
+                        {visibleItems.length < MAX_ITEMS && isEditing && (
                             <Box
-                                width='30%'
+                                width={gridSettings.width}
                                 sx={{
                                     display: 'flex',
                                     justifyContent: 'center',
@@ -484,7 +572,9 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
                             >
                                 <Box
                                     sx={{
-                                        height: { xs: '70px', sm: '80px', md: '85px' },
+                                        height: gridSettings.itemSize === 'small'
+                                            ? { xs: '70px', sm: '80px', md: '75px' }
+                                            : { xs: '70px', sm: '80px', md: '85px' },
                                         width: '100%',
                                         display: 'flex',
                                         alignItems: 'center',

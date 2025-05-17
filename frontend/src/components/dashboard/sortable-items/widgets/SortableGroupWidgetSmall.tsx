@@ -3,6 +3,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Grid2 } from '@mui/material';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
+import { DUAL_WIDGET_CONTAINER_HEIGHT, STANDARD_WIDGET_HEIGHT } from '../../../../constants/widget-dimensions';
 import { useAppContext } from '../../../../context/useAppContext';
 import { DashboardItem, ITEM_TYPE } from '../../../../types';
 import { GroupItem } from '../../../../types/group';
@@ -17,6 +18,7 @@ export interface GroupWidgetSmallConfig {
   temperatureUnit?: string;
   healthUrl?: string;
   healthCheckType?: string;
+  maxItems?: number;
   [key: string]: any;
 }
 
@@ -279,12 +281,15 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
             return;
         }
 
-        const MAX_ITEMS = 3;
+        // Use the configured maxItems instead of hardcoding
+        const MAX_ITEMS = config.maxItems || 3;
+        console.log('Using max items:', MAX_ITEMS, 'from config:', config);
+
         const currentItems = ensureItems();
 
         // Check if we already have maximum items
         if (currentItems.length >= MAX_ITEMS) {
-            console.log('Maximum items reached');
+            console.log('Maximum items reached:', currentItems.length, '>=', MAX_ITEMS);
             return;
         }
 
@@ -641,13 +646,57 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
         ? getItemAsDashboardItem(selectedItemId)
         : null;
 
+    // Extract maxItems from config, defaulting to 3
+    const getMaxItems = useCallback(() => {
+        if (!config || !config.maxItems) {
+            return '3'; // Default to 3 items in 3x1 layout
+        }
+        return config.maxItems;
+    }, [config]);
+
+    // Extract layout information from the maxItems configuration
+    const getLayoutType = useCallback(() => {
+        if (!config || !config.maxItems) return '3x1';
+
+        const maxItemsStr = String(config.maxItems);
+        if (maxItemsStr === '6_2x3') return '2x3';
+        if (maxItemsStr === '6_3x2' || maxItemsStr === '6') return '3x2';
+        return '3x1';
+    }, [config]);
+
+    const layout = getLayoutType();
+
+    // Define fixed height values directly based on layout
+    const getWidgetHeight = useCallback(() => {
+        if (layout === '2x3' || layout === '3x2') {
+            // 6-item layouts use dual widget height
+            return {
+                xs: DUAL_WIDGET_CONTAINER_HEIGHT.xs,
+                sm: DUAL_WIDGET_CONTAINER_HEIGHT.sm,
+                md: DUAL_WIDGET_CONTAINER_HEIGHT.md,
+                lg: DUAL_WIDGET_CONTAINER_HEIGHT.lg
+            };
+        } else {
+            // 3-item layout uses standard widget height
+            return {
+                xs: STANDARD_WIDGET_HEIGHT.xs,
+                sm: STANDARD_WIDGET_HEIGHT.sm,
+                md: STANDARD_WIDGET_HEIGHT.md,
+                lg: STANDARD_WIDGET_HEIGHT.lg
+            };
+        }
+    }, [layout]);
+
+    const widgetHeight = getWidgetHeight();
+
     if (isOverlay) {
         return (
             <Grid2
                 size={{ xs: 12, sm: 6, md: 6, lg: 4, xl: 4 }}
                 sx={{
                     opacity: 0.6,
-                    height: '100%',
+                    height: widgetHeight.sm,
+                    minHeight: widgetHeight.sm,
                     width: '100%',
                 }}
             >
@@ -662,6 +711,7 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
                     onItemDragOut={handleItemDragOut}
                     onItemEdit={handleItemEdit}
                     onItemDelete={handleItemDelete}
+                    maxItems={getMaxItems()}
                 />
             </Grid2>
         );
@@ -685,6 +735,8 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
                     backgroundColor: 'transparent',
                     transition: 'background-color 0.3s ease, transform 0.2s',
                     borderRadius: '8px',
+                    height: widgetHeight.sm,
+                    minHeight: widgetHeight.sm,
                     '& > div': {
                         height: '100%',
                         width: '100%',
@@ -711,6 +763,7 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
                         onItemDragOut={handleItemDragOut}
                         onItemEdit={handleItemEdit}
                         onItemDelete={handleItemDelete}
+                        maxItems={config?.maxItems || 3}
                         isHighlighted={isOver || isCurrentDropTarget}
                     />
                 </div>

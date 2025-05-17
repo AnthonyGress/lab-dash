@@ -134,6 +134,7 @@ export type FormValues = {
     macAddress?: string;
     broadcastAddress?: string;
     port?: string;
+    maxItems?: string;
 };
 
 interface LocationOption {
@@ -206,6 +207,20 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
         const piholeName = existingItem?.config?.displayName || '';
         const healthUrl = existingItem?.config?.healthUrl || '';
 
+        // Extract maxItems for group widget
+        let maxItems = '3'; // Default to 3
+        if (existingItem?.type === ITEM_TYPE.GROUP_WIDGET_SMALL && existingItem?.config?.maxItems) {
+            // Check if it's one of the special format strings
+            if (existingItem.config.maxItems === 6) {
+                // Default to 6_3x2 layout for backward compatibility
+                maxItems = '6_3x2';
+            } else {
+                // Use the exact value from config
+                maxItems = String(existingItem.config.maxItems);
+            }
+            console.log('Loaded maxItems from config:', maxItems);
+        }
+
         // Special handling for dual widget - extract top and bottom widget types
         if (existingItem?.type === ITEM_TYPE.DUAL_WIDGET && existingItem?.config) {
             if (existingItem.config.topWidget?.type) {
@@ -241,6 +256,8 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             port: existingItem?.config?.port || '',
             healthUrl: healthUrl,
             healthCheckType: (existingItem?.config?.healthCheckType || 'http') as 'http' | 'ping',
+            // Add maxItems for group widget
+            maxItems: maxItems,
             // Torrent client config
             tcHost: existingItem?.config?.host || 'localhost',
             tcPort: existingItem?.config?.port ||
@@ -436,6 +453,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
     };
 
     const handleSubmit = async (data: FormValues) => {
+        console.log('Form submitted with data:', data);
         let iconData = data.icon;
 
         if (customIconFile && data.icon?.source === 'custom-pending') {
@@ -526,10 +544,16 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                     showLabel: data.showLabel
                 };
             } else if (data.widgetType === ITEM_TYPE.GROUP_WIDGET_SMALL) {
-                // Create a simple group widget configuration
+                // For group widget, use the exact maxItems value from the form
+                // This preserves the layout format (e.g., "6_2x3" or "6_3x2")
+                const maxItems = data.maxItems || '3';
+                console.log('Setting maxItems in GROUP_WIDGET_SMALL:', maxItems);
+
                 config = {
                     title: data.shortcutName,
-                    items: [] // Initialize with empty items array
+                    items: existingItem?.config?.items || [],  // Preserve existing items when updating
+                    showLabel: data.showLabel,
+                    maxItems: maxItems  // Store the original string value to preserve layout information
                 };
             } else if (data.widgetType === ITEM_TYPE.DUAL_WIDGET) {
                 // Create a dual widget configuration with both top and bottom widget configs
@@ -667,10 +691,14 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                 await addItem(updatedItem);
             }
 
+            console.log('Form submission complete, resetting form');
             formContext.reset();
             handleFormClose();
         } catch (error) {
             console.error('Error submitting form:', error);
+            // Still close the form even if there's an error
+            formContext.reset();
+            handleFormClose();
         }
     };
 
@@ -785,6 +813,8 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
 
     // Function to completely reset form when closing
     const handleFormClose = () => {
+        console.log('Closing form');
+
         // Reset all component state
         setCustomIconFile(null);
 
@@ -857,7 +887,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             bottom_showLabel: false,
         });
 
-        // This ensures that when the form is reopened, the initial effect will run and set values from existingItem
+        // Call the handleClose prop to close the modal
         handleClose();
     };
 
