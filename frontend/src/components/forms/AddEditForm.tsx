@@ -654,7 +654,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
 
         const url = (data.itemType === ITEM_TYPE.APP_SHORTCUT && data.isWol)
             ? (data.url || '#')
-            : data.url;
+            : data.url; // Allow URL to be undefined when health URL is provided but no URL is set
 
         const updatedItem: NewItem = {
             label: data.shortcutName || '',

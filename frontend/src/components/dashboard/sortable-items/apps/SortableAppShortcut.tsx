@@ -9,7 +9,7 @@ import { WidgetContainer } from '../../base-items/widgets/WidgetContainer';
 
 type Props = {
     id: string;
-    url: string;
+    url?: string;
     name: string;
     iconName: string;
     editMode: boolean;

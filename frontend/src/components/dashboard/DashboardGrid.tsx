@@ -499,7 +499,7 @@ export const DashboardGrid: React.FC = () => {
                 <SortableAppShortcut
                     key={item.id}
                     id={item.id}
-                    url={item.url as string}
+                    url={item.url}
                     name={item.label}
                     iconName={item.icon?.path || ''}
                     editMode={editMode}
@@ -523,7 +523,7 @@ export const DashboardGrid: React.FC = () => {
     const renderPlaceholder = (placeholder: any) => {
         const name = placeholder.item?.name || 'Item';
         const icon = placeholder.item?.icon || '';
-        const url = placeholder.item?.url || '#';
+        const url = placeholder.item?.url;
         const healthUrl = placeholder.item?.healthUrl;
         const healthCheckType = placeholder.item?.healthCheckType;
         const isWol = placeholder.item?.isWol;
@@ -604,7 +604,7 @@ export const DashboardGrid: React.FC = () => {
                             <SortableAppShortcut
                                 key={activeId}
                                 id={activeId}
-                                url={activeData.originalItem?.url || '#'}
+                                url={activeData.originalItem?.url}
                                 name={activeData.originalItem?.name || 'App'}
                                 iconName={activeData.originalItem?.icon || ''}
                                 editMode={editMode}
@@ -663,7 +663,7 @@ export const DashboardGrid: React.FC = () => {
                                             <SortableAppShortcut
                                                 key={item.id}
                                                 id={item.id}
-                                                url={item.url as string}
+                                                url={item.url}
                                                 name={item.label}
                                                 iconName={item.icon?.path || ''}
                                                 editMode={editMode}
