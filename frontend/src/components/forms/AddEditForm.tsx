@@ -35,7 +35,7 @@ const WIDGET_OPTIONS = [
     { id: ITEM_TYPE.PIHOLE_WIDGET, label: 'Pi-hole' },
     { id: ITEM_TYPE.TORRENT_CLIENT, label: 'Torrent Client' },
     { id: ITEM_TYPE.DUAL_WIDGET, label: 'Dual Widget' },
-    { id: ITEM_TYPE.GROUP_WIDGET_SMALL, label: 'Group Widget' }
+    { id: ITEM_TYPE.GROUP_WIDGET, label: 'Group Widget' }
 ];
 
 const TEMPERATURE_UNIT_OPTIONS = [
@@ -167,7 +167,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                existingItem?.type === ITEM_TYPE.PIHOLE_WIDGET ||
                                existingItem?.type === ITEM_TYPE.TORRENT_CLIENT ||
                                existingItem?.type === ITEM_TYPE.DUAL_WIDGET ||
-                               existingItem?.type === ITEM_TYPE.GROUP_WIDGET_SMALL
+                               existingItem?.type === ITEM_TYPE.GROUP_WIDGET
             ? 'widget'
             : (existingItem?.type === ITEM_TYPE.BLANK_WIDGET || existingItem?.type === ITEM_TYPE.BLANK_ROW)
                 ? existingItem?.type
@@ -179,7 +179,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                   existingItem?.type === ITEM_TYPE.PIHOLE_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.TORRENT_CLIENT ||
                                   existingItem?.type === ITEM_TYPE.DUAL_WIDGET ||
-                                  existingItem?.type === ITEM_TYPE.GROUP_WIDGET_SMALL
+                                  existingItem?.type === ITEM_TYPE.GROUP_WIDGET
             ? existingItem?.type
             : '';
 
@@ -209,7 +209,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
 
         // Extract maxItems for group widget
         let maxItems = '3'; // Default to 3
-        if (existingItem?.type === ITEM_TYPE.GROUP_WIDGET_SMALL && existingItem?.config?.maxItems) {
+        if (existingItem?.type === ITEM_TYPE.GROUP_WIDGET && existingItem?.config?.maxItems) {
             // Check if it's one of the special format strings
             if (existingItem.config.maxItems === 6) {
                 // Default to 6_3x2 layout for backward compatibility
@@ -543,7 +543,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                     password: encryptedPassword,
                     showLabel: data.showLabel
                 };
-            } else if (data.widgetType === ITEM_TYPE.GROUP_WIDGET_SMALL) {
+            } else if (data.widgetType === ITEM_TYPE.GROUP_WIDGET) {
                 // For group widget, use the exact maxItems value from the form
                 // This preserves the layout format (e.g., "6_2x3" or "6_3x2")
                 const maxItems = data.maxItems || '3';

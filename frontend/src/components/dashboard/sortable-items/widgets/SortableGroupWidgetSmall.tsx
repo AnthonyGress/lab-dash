@@ -10,7 +10,7 @@ import { GroupItem } from '../../../../types/group';
 import { AddEditForm } from '../../../forms/AddEditForm';
 import { CenteredModal } from '../../../modals/CenteredModal';
 import { ConfirmationOptions, PopupManager } from '../../../modals/PopupManager';
-import GroupWidgetSmall from '../../base-items/widgets/GroupWidgetSmall';
+import GroupWidget from '../../base-items/widgets/GroupWidget';
 
 /**
  * SortableGroupWidgetSmall Component
@@ -37,6 +37,7 @@ export interface GroupWidgetSmallConfig {
   healthUrl?: string;
   healthCheckType?: string;
   maxItems?: number;
+  showLabel?: boolean;
   [key: string]: any;
 }
 
@@ -734,7 +735,7 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
                     width: '100%',
                 }}
             >
-                <GroupWidgetSmall
+                <GroupWidget
                     id={id}
                     name={config?.title || 'Group'}
                     items={config?.items || []}
@@ -746,6 +747,7 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
                     onItemEdit={handleItemEdit}
                     onItemDelete={handleItemDelete}
                     maxItems={getMaxItems()}
+                    showLabel={config?.showLabel !== undefined ? config.showLabel : true}
                 />
             </Grid2>
         );
@@ -786,7 +788,7 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
                 data-id={id}
             >
                 <div style={{ width: '100%', height: '100%' }}>
-                    <GroupWidgetSmall
+                    <GroupWidget
                         id={id}
                         name={config?.title || 'Group'}
                         items={config?.items || []}
@@ -799,6 +801,7 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
                         onItemDelete={handleItemDelete}
                         maxItems={config?.maxItems || 3}
                         isHighlighted={isOver || isCurrentDropTarget}
+                        showLabel={config?.showLabel !== undefined ? config.showLabel : true}
                     />
                 </div>
             </Grid2>

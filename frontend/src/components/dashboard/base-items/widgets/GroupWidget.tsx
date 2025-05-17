@@ -15,7 +15,7 @@ import { getIconPath } from '../../../../utils/utils';
 import { ConfirmationOptions, PopupManager } from '../../../modals/PopupManager';
 import { AppShortcut } from '../apps/AppShortcut';
 
-interface GroupWidgetSmallProps {
+interface GroupWidgetProps {
     id: string;
     name: string;
     items: GroupItem[];
@@ -28,6 +28,7 @@ interface GroupWidgetSmallProps {
     onItemDelete?: (itemId: string) => void;
     isHighlighted?: boolean;
     maxItems?: number | string;
+    showLabel?: boolean;
 }
 
 interface SortableGroupItemProps {
@@ -150,7 +151,7 @@ const SortableGroupItem: React.FC<SortableGroupItemProps> = ({
     );
 };
 
-const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
+const GroupWidget: React.FC<GroupWidgetProps> = ({
     id,
     name,
     items = [],
@@ -162,7 +163,8 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
     onItemEdit,
     onItemDelete,
     isHighlighted = false,
-    maxItems = 3
+    maxItems = 3,
+    showLabel = true
 }) => {
     const [activeId, setActiveId] = useState<string | null>(null);
     const [isDraggingOut, setIsDraggingOut] = useState(false);
@@ -407,33 +409,6 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
             return;
         }
 
-        // Create a dashboard item from the group item for the edit form
-        const dashboardItem: DashboardItem = {
-            id: foundItem.id,
-            type: ITEM_TYPE.APP_SHORTCUT,
-            label: foundItem.name,
-            url: foundItem.url,
-            showLabel: true,
-            icon: {
-                path: foundItem.icon || '',
-                name: foundItem.name
-            },
-            config: {
-                // Add WoL properties if they exist
-                ...(foundItem.isWol && {
-                    isWol: foundItem.isWol,
-                    macAddress: foundItem.macAddress,
-                    broadcastAddress: foundItem.broadcastAddress,
-                    port: foundItem.port
-                }),
-                // Add health check properties if they exist
-                ...(foundItem.healthUrl && {
-                    healthUrl: foundItem.healthUrl,
-                    healthCheckType: foundItem.healthCheckType
-                })
-            }
-        };
-
         // Pass to parent for editing
         if (onItemEdit) {
             onItemEdit(itemId);
@@ -583,24 +558,26 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
                     data-accepts='app-shortcut'
                     data-droppable='true'
                 >
-                    {/* Group Title */}
-                    <Typography
-                        variant='subtitle1'
-                        sx={{
-                            px: 1,
-                            pt: 0.5,
-                            pb: 0.5,
-                            fontWeight: 500,
-                            fontSize: '1rem',
-                            lineHeight: 1.2,
-                            height: gridSettings.titleHeight,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
-                        }}
-                    >
-                        {name}
-                    </Typography>
+                    {/* Group Title - Only show if showLabel is true */}
+                    {showLabel && (
+                        <Typography
+                            variant='subtitle1'
+                            sx={{
+                                px: 1,
+                                pt: 0.5,
+                                pb: 0.5,
+                                fontWeight: 500,
+                                fontSize: '1rem',
+                                lineHeight: 1.2,
+                                height: gridSettings.titleHeight,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                            }}
+                        >
+                            {name}
+                        </Typography>
+                    )}
 
                     {/* Group Items Container */}
                     <Grid sx={{
@@ -679,4 +656,4 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
     );
 };
 
-export default GroupWidgetSmall;
+export default GroupWidget;

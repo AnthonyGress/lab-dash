@@ -439,7 +439,7 @@ export const DashboardGrid: React.FC = () => {
                 onEdit={() => handleEdit(item)}
             />;
         }
-        case ITEM_TYPE.GROUP_WIDGET_SMALL:
+        case ITEM_TYPE.GROUP_WIDGET:
             return <SortableGroupWidgetSmall
                 key={item.id}
                 id={item.id}
@@ -597,7 +597,7 @@ export const DashboardGrid: React.FC = () => {
                                             isOverlay
                                         />;
                                     }
-                                    case ITEM_TYPE.GROUP_WIDGET_SMALL:
+                                    case ITEM_TYPE.GROUP_WIDGET:
                                         return <SortableGroupWidgetSmall
                                             key={item.id}
                                             id={item.id}

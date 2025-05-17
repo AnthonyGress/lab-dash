@@ -29,7 +29,7 @@ export const WidgetConfig = ({ formContext, widgetType }: WidgetConfigProps) => 
         return <TorrentClientWidgetConfig formContext={formContext} />;
     case ITEM_TYPE.DUAL_WIDGET:
         return <DualWidgetConfig formContext={formContext} />;
-    case ITEM_TYPE.GROUP_WIDGET_SMALL:
+    case ITEM_TYPE.GROUP_WIDGET:
         return <GroupWidgetConfig formContext={formContext} />;
     default:
         return null;
