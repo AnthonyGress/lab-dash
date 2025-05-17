@@ -132,7 +132,7 @@ export const AppShortcutConfig = ({ formContext, onCustomIconSelect }: AppShortc
                             rules={{
                                 required: {
                                     value: !healthUrl,
-                                    message: 'URL is required unless a health check URL is provided'
+                                    message: 'This field is required'
                                 },
                                 validate: (value: any) => {
                                     // If health URL is provided, URL is optional
