@@ -1,9 +1,9 @@
-import { DndContext, DragEndEvent, DragOverEvent, DragStartEvent, useDraggable, useDroppable } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, DragOverEvent, DragStartEvent, PointerSensor, useDraggable, useDroppable, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import AddIcon from '@mui/icons-material/Add';
 import { Box, Grid2 as Grid, IconButton, Typography } from '@mui/material';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { EditMenu } from './EditMenu';
 import { StatusIndicator } from './StatusIndicator';
@@ -63,7 +63,8 @@ const SortableGroupItem: React.FC<SortableGroupItemProps> = ({
             type: 'group-item',
             originalItem: item,
             parentId: groupId
-        }
+        },
+        disabled: !isEditing // Only allow dragging in edit mode
     });
 
     const handleDragStart = () => {
@@ -113,6 +114,7 @@ const SortableGroupItem: React.FC<SortableGroupItemProps> = ({
                 opacity: isDragging ? 0.5 : 1,
                 position: 'relative',
                 m: 0.5, // Add margin for spacing
+                touchAction: 'none', // Ensure touch events are captured properly on mobile
             }}
             data-item-id={item.id}
             data-group-id={groupId}
@@ -166,6 +168,23 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
     const [isDraggingOut, setIsDraggingOut] = useState(false);
     const [isCurrentDropTarget, setIsCurrentDropTarget] = useState(false);
 
+    // Detect mobile devices
+    const isMobile = useMemo(() => {
+        return (
+            'ontouchstart' in window ||
+            navigator.maxTouchPoints > 0 ||
+            window.matchMedia('(pointer: coarse)').matches
+        );
+    }, []);
+
+    // Pointer sensor configuration for better mobile support
+    const sensors = useSensors(useSensor(PointerSensor, {
+        activationConstraint: {
+            delay: isMobile ? 100 : 0, // Prevents accidental drags
+            tolerance: 5, // Ensures drag starts after small movement
+        }
+    }));
+
     // Extract the actual max items value and layout from the maxItems prop
     const getLayoutConfig = () => {
         // Convert to string to handle both string and numeric maxItems
@@ -184,7 +203,7 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
                 layout: '3x2'
             };
         } else {
-            // Default layout (3 items in one row)
+            // Default 3x1 layout (3 items in one row)
             return {
                 maxItems: parseInt(maxItemsStr, 10) || 3,
                 layout: '3x1'
@@ -196,8 +215,8 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
 
     const getGridSettings = () => {
         if (layout === '2x3') {
+            // 2x3 grid layout (6 items in 3 rows of 2 items each)
             return {
-                // 2x3 grid layout (6 items in 3 rows of 2 items each)
                 width: '45%',  // Wider items, 2 per row
                 rows: 3,
                 cols: 2,
@@ -206,8 +225,8 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
                 titleHeight: '2rem'
             };
         } else if (layout === '3x2') {
+            // 3x2 grid layout (6 items in 2 rows of 3 items each)
             return {
-                // 3x2 grid layout (6 items in 2 rows of 3 items each)
                 width: '30%',  // Narrower items, 3 per row
                 rows: 2,
                 cols: 3,
@@ -334,6 +353,11 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
             }
         }));
 
+        // Restore normal scrolling on mobile
+        if (isMobile) {
+            document.body.style.overflow = '';
+        }
+
         if (!over) {
             // Item was dragged outside - handle removal if needed
             if (isDraggingOut && activeId && onItemDragOut) {
@@ -353,6 +377,14 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
             if (oldIndex !== -1 && newIndex !== -1) {
                 const newItems = arrayMove(items, oldIndex, newIndex);
                 onItemsChange(newItems);
+
+                // Log successful reordering for debugging
+                console.log('Group items reordered:', {
+                    oldIndex,
+                    newIndex,
+                    activeId: active.id,
+                    overId: over.id
+                });
             }
         }
 
@@ -436,11 +468,49 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
         }
     }, [isEditing, items.length, onEdit, MAX_ITEMS]);
 
+    // Cleanup effects for mobile
+    useEffect(() => {
+        // Cleanup function to ensure we don't leave lingering event listeners
+        return () => {
+            if (isMobile) {
+                document.body.style.overflow = '';
+
+                // Remove any lingering touch event handlers
+                const noop = () => {};
+                document.removeEventListener('touchmove', noop);
+            }
+        };
+    }, [isMobile]);
+
     // Add handler for drag start
     const handleDragStart = (event: DragStartEvent) => {
         const { active } = event;
         setActiveId(active.id.toString());
         console.log('Group item drag started in GroupWidgetSmall:', active.id);
+
+        // For mobile: ensure all document touchmove events are captured
+        if (isMobile) {
+            // This prevents the page from scrolling during drag on mobile
+            document.body.style.overflow = 'hidden';
+
+            // Prevent default behavior for touch events
+            const preventDefaultTouchMove = (e: TouchEvent) => {
+                if (activeId) {
+                    e.preventDefault();
+                }
+            };
+
+            document.addEventListener('touchmove', preventDefaultTouchMove, { passive: false });
+
+            // Clean up on next dragend
+            const cleanup = () => {
+                document.body.style.overflow = '';
+                document.removeEventListener('touchmove', preventDefaultTouchMove);
+                document.removeEventListener('dragend', cleanup);
+            };
+
+            document.addEventListener('dragend', cleanup, { once: true });
+        }
     };
 
     // Add handler for drag over
@@ -483,6 +553,9 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
                 onDragOver={handleDragOver}
                 onDragEnd={handleDragEnd}
                 onDragMove={handleDragMove}
+                sensors={sensors}
+                autoScroll={false} // Disable auto-scrolling to prevent issues
+                modifiers={[]} // No modifiers needed for this simple drag case
             >
                 <Box
                     ref={setDroppableRef}
