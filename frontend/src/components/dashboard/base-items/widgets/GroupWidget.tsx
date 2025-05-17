@@ -208,7 +208,6 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
     const getLayoutConfig = () => {
         // Convert to string to handle both string and numeric maxItems
         const maxItemsStr = String(maxItems);
-        console.log('GroupWidgetSmall: maxItems =', maxItemsStr);
 
         // Check for the special layout formats
         if (maxItemsStr === '6_2x3') {
@@ -315,8 +314,6 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
 
             // If now dragging OUT, show preview
             if (isOutside) {
-                console.log('Group item clearly outside group, showing preview');
-
                 // Find the item to get its details
                 const draggedItem = items.find(i => i.id === active.id.toString());
 
@@ -334,8 +331,6 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
             }
             // If now dragging INSIDE, hide preview
             else {
-                console.log('Group item inside group bounds, hiding preview');
-
                 // Hide the preview
                 document.dispatchEvent(new CustomEvent('dndkit:group-item-preview', {
                     detail: {
@@ -401,14 +396,6 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
             if (oldIndex !== -1 && newIndex !== -1) {
                 const newItems = arrayMove(items, oldIndex, newIndex);
                 onItemsChange(newItems);
-
-                // Log successful reordering for debugging
-                console.log('Group items reordered:', {
-                    oldIndex,
-                    newIndex,
-                    activeId: active.id,
-                    overId: over.id
-                });
             }
         }
 
@@ -419,8 +406,6 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
 
     // Handle item duplicate
     const handleItemDuplicate = useCallback((itemId: string) => {
-        console.log('Duplicate item in group:', itemId);
-
         // Find the item in the group
         const itemToDuplicate = items.find(item => item.id === itemId);
         if (!itemToDuplicate) {
@@ -437,7 +422,6 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
         // Check if we've reached maximum capacity
         if (items.length >= MAX_ITEMS) {
             // Instead of showing error, pass the duplicated item to parent for adding to dashboard
-            console.log('Group at maximum capacity, adding duplicate to main dashboard');
             if (onItemDuplicate) {
                 onItemDuplicate(duplicatedItem);
             }
@@ -499,7 +483,6 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
     // Handle click on add button - opens the group edit modal
     const handleAddClick = useCallback(() => {
         if (isEditing && items.length < MAX_ITEMS) {
-            console.log('Add button clicked');
             // Open the group edit modal
             onEdit?.();
         }
@@ -523,8 +506,6 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
     const handleDragStart = (event: DragStartEvent) => {
         const { active } = event;
         setActiveId(active.id.toString());
-        console.log('Group item drag started in GroupWidgetSmall:', active.id);
-
         // For mobile: ensure all document touchmove events are captured
         if (isMobile) {
             // This prevents the page from scrolling during drag on mobile
