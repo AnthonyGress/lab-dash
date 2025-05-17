@@ -28,7 +28,7 @@ import { BlankWidget } from './base-items/widgets/BlankWidget';
 import { SortableAppShortcut } from './sortable-items/apps/SortableAppShortcut';
 import { SortableDateTimeWidget } from './sortable-items/widgets/SortableDateTime';
 import { SortableDualWidget } from './sortable-items/widgets/SortableDualWidget';
-import { SortableGroupWidgetSmall } from './sortable-items/widgets/SortableGroupWidgetSmall';
+import { SortableGroupWidget } from './sortable-items/widgets/SortableGroupWidget';
 import { SortablePihole } from './sortable-items/widgets/SortablePihole';
 import { SortableQBittorrent } from './sortable-items/widgets/SortableQBittorrent';
 import { SortableSystemMonitorWidget } from './sortable-items/widgets/SortableSystemMonitor';
@@ -165,7 +165,6 @@ export const DashboardGrid: React.FC = () => {
         // Handler for group item preview
         const handleGroupItemPreview = (event: CustomEvent) => {
             const { dragging, groupId, itemId, position, item } = event.detail || {};
-            console.log('Group item preview event received:', { dragging, groupId, itemId, position });
 
             if (dragging && groupId && itemId) {
                 // Find the group index in the dashboard layout
@@ -218,8 +217,6 @@ export const DashboardGrid: React.FC = () => {
     const handleDragEnd = (event: any) => {
         const { active, over } = event;
 
-        console.log('Drag end event:', { active, over });
-
         setIsDragging(false);
         setDragPlaceholder(null);
 
@@ -249,8 +246,6 @@ export const DashboardGrid: React.FC = () => {
                 active.data.current?.parentId &&
                 over.id !== active.data.current.parentId) {
                 // Item was dragged from a group to the dashboard
-                // This is handled by the group widget's onItemDragOut callback
-                console.log('Group item dragged to dashboard');
 
                 // Dispatch the standard drag end event
                 dispatchDndKitEvent('dragend', {
@@ -266,7 +261,6 @@ export const DashboardGrid: React.FC = () => {
             // Handle app shortcut dragging to group ONLY if directly over the group
             else if (isAppShortcut && isGroupContainer) {
                 // Item was dragged to a group
-                console.log('App shortcut dragged directly over group widget:', over.id);
 
                 // Dispatch a special event for group widgets
                 dispatchDndKitEvent('app-to-group', {
@@ -491,7 +485,7 @@ export const DashboardGrid: React.FC = () => {
             />;
         }
         case ITEM_TYPE.GROUP_WIDGET:
-            return <SortableGroupWidgetSmall
+            return <SortableGroupWidget
                 key={item.id}
                 id={item.id}
                 editMode={editMode}
@@ -657,7 +651,7 @@ export const DashboardGrid: React.FC = () => {
                                         />;
                                     }
                                     case ITEM_TYPE.GROUP_WIDGET:
-                                        return <SortableGroupWidgetSmall
+                                        return <SortableGroupWidget
                                             key={item.id}
                                             id={item.id}
                                             editMode={editMode}

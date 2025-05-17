@@ -47,7 +47,7 @@ interface Props {
   isOverlay?: boolean;
 }
 
-export const SortableGroupWidgetSmall: React.FC<Props> = ({
+export const SortableGroupWidget: React.FC<Props> = ({
     id,
     config,
     editMode,
@@ -76,8 +76,6 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
     // Handle item changes (reordering within the group)
     const handleItemsChange = useCallback((newItems: GroupItem[]) => {
         if (config && updateItem) {
-            console.log('Reordering items in group widget:', newItems);
-
             updateItem(id, {
                 config: {
                     ...config,
@@ -179,7 +177,6 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
 
     // Function to notify about dragging a group item
     const notifyGroupItemDrag = useCallback((isDragging: boolean, itemId?: string) => {
-        console.log('Notifying about group item drag:', { isDragging, itemId, groupId: id });
         // Use a direct event to DashboardGrid
         document.dispatchEvent(new CustomEvent('dndkit:group-item-drag', {
             detail: {
@@ -198,8 +195,6 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
 
     // Handle when an item is dragged out of the group
     const handleItemDragOut = useCallback((itemId: string) => {
-        console.log('Item dragged out of group:', itemId);
-
         if (!dashboardLayout || !config || !config.items) return;
 
         // Notify that we're dragging out
@@ -214,7 +209,6 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
 
         // Generate a new unique ID for the app shortcut to avoid conflicts
         const newItemId = shortid.generate();
-        console.log(`Generated new ID for item moving from group to dashboard: ${itemId} -> ${newItemId}`);
 
         // Create a new app shortcut from the group item with a NEW ID
         const newAppShortcut: DashboardItem = {
@@ -285,8 +279,6 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
         // Save to server
         saveLayout(updatedLayout);
 
-        console.log('Item moved from group to dashboard at position', groupIndex + 1);
-
         // Reset the state
         setItemBeingDraggedOut(null);
 
@@ -295,8 +287,6 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
 
     // Add an app shortcut to the group
     const addAppShortcutToGroup = useCallback((shortcutItem: DashboardItem) => {
-        console.log('Adding app shortcut to group:', shortcutItem);
-
         if (!config || !dashboardLayout) {
             console.error('Missing config or dashboardLayout');
             return;
@@ -312,13 +302,10 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
             MAX_ITEMS = parseInt(maxItemsStr, 10) || 3;
         }
 
-        console.log('Using max items:', MAX_ITEMS, 'from config:', config);
-
         const currentItems = ensureItems();
 
         // Check if we already have maximum items
         if (currentItems.length >= MAX_ITEMS) {
-            console.log('Maximum items reached:', currentItems.length, '>=', MAX_ITEMS);
             return;
         }
 
@@ -327,7 +314,6 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
 
         // Generate a new unique ID for the group item to avoid conflicts
         const newItemId = shortid.generate();
-        console.log(`Generated new ID for item moving from dashboard to group: ${shortcutItem.id} -> ${newItemId}`);
 
         // Create a new group item from the app shortcut with a NEW ID
         const newGroupItem: GroupItem = {
@@ -356,12 +342,9 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
         const updatedItems = [...currentItems, newGroupItem];
 
         // Clone the dashboardLayout to avoid mutation
-        console.log('Current dashboard layout:', dashboardLayout);
 
         // Remove the app shortcut from the dashboard layout
         const updatedLayout = dashboardLayout.filter(item => item.id !== shortcutItem.id);
-
-        console.log('Updated layout after filtering:', updatedLayout);
 
         // Find the group widget in the updated layout
         const groupIndex = updatedLayout.findIndex(item => item.id === id);
@@ -383,15 +366,11 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
 
         updatedLayout[groupIndex] = updatedGroupWidget;
 
-        console.log('Final updated layout:', updatedLayout);
-
         // Update the dashboard layout
         setDashboardLayout(updatedLayout);
 
         // Save to server
         saveLayout(updatedLayout);
-
-        console.log('App shortcut added to group and removed from dashboard');
     }, [dashboardLayout, config, id, ensureItems, setDashboardLayout, saveLayout]);
 
     // Get maximum items allowed in the group
@@ -430,13 +409,12 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
         const handleDndKitDragStart = (event: any) => {
             const { active } = event.detail || {};
             if (active?.data?.current?.type === ITEM_TYPE.APP_SHORTCUT) {
-                console.log('DnD-kit: App shortcut drag started:', active.id);
+                // App shortcut drag started
             }
 
             // Check if the drag started from a group item in this group
             if (active?.data?.current?.type === 'group-item' &&
                 active?.data?.current?.parentId === id) {
-                console.log('Group item dragged from group:', id);
                 setItemBeingDraggedOut(active.id);
                 setDraggingOutStarted(false); // Initially not dragging out
 
@@ -465,7 +443,6 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
                     const currentItems = ensureItems();
                     const maxItems = getMaxItemsAsNumber();
 
-                    console.log('App shortcut directly over group widget:', id);
                     setIsCurrentDropTarget(currentItems.length < maxItems);
                 } else {
                     setIsCurrentDropTarget(false);
@@ -482,13 +459,11 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
                 // Check if inside or outside the group
                 if (!isOverThisGroup && !draggingOutStarted) {
                     // Only now dragging outside group - show backdrop
-                    console.log('Group item NOW outside group, showing backdrop');
                     setDraggingOutStarted(true);
                     notifyGroupItemDrag(true, itemBeingDraggedOut);
                 }
                 else if (isOverThisGroup && draggingOutStarted) {
                     // Returned to group - hide backdrop
-                    console.log('Group item returned to group, hiding backdrop');
                     setDraggingOutStarted(false);
                     notifyGroupItemDrag(false, itemBeingDraggedOut);
                 }
@@ -498,11 +473,9 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
         // Special handler for direct app shortcut to group drop
         const handleAppToGroup = (event: any) => {
             const { active, over, confirmed } = event.detail || {};
-            console.log('Special app-to-group event received:', { active, over, confirmed });
 
             // Only process if this is a confirmed drop (not just a hover)
             if (!confirmed) {
-                console.log('Not a confirmed drop, ignoring');
                 setIsOver(false);
                 setIsCurrentDropTarget(false);
                 return;
@@ -521,12 +494,9 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
                 active?.data?.current?.type === ITEM_TYPE.BLANK_APP;
 
             if (isForThisGroup && isAppShortcutType) {
-                console.log('App shortcut drop targeted at this group:', id);
-
                 // Find the app shortcut and add it to this group
                 const shortcutIndex = dashboardLayout.findIndex(item => item.id === active.id);
                 if (shortcutIndex !== -1) {
-                    console.log('Found app shortcut, adding to group immediately');
                     addAppShortcutToGroup(dashboardLayout[shortcutIndex]);
                 }
             }
@@ -537,8 +507,6 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
 
         const handleDndKitDragEnd = (event: any) => {
             const { active, over, action } = event.detail || {};
-
-            console.log('DnD-kit dragend event:', { active, over, action });
 
             // Reset the states
             setItemBeingDraggedOut(null);
@@ -552,7 +520,6 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
 
             // If this was already handled by app-to-group, don't handle it again
             if (action === 'app-to-group') {
-                console.log('Already handled by app-to-group event');
                 setIsOver(false);
                 setIsCurrentDropTarget(false);
                 return;
@@ -575,18 +542,13 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
 
             // Only process actual drops directly on this group, not just near it
             if (isOverThisGroup && isAppShortcutType) {
-                console.log('DnD-kit: App shortcut dropped on group widget', id);
-
                 // Find the app shortcut in the dashboard layout
                 const shortcutIndex = dashboardLayout.findIndex(item => item.id === active.id);
                 if (shortcutIndex !== -1) {
-                    console.log('Found app shortcut in dashboard layout, adding to group');
                     addAppShortcutToGroup(dashboardLayout[shortcutIndex]);
                 } else {
                     console.error('Could not find app shortcut in dashboard layout:', active.id);
                 }
-            } else {
-                console.log('Drop not targeted at this group or not an app shortcut');
             }
 
             // Reset the isOver state
@@ -640,8 +602,6 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
 
     // Handle editing a specific item in the group
     const handleItemEdit = useCallback((itemId: string) => {
-        console.log('Edit item in group:', itemId);
-
         // Set the selected item id and open the edit modal
         setSelectedItemId(itemId);
         setOpenEditItemModal(true);
@@ -665,8 +625,6 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
 
     // Handle deleting a specific item from the group
     const handleItemDelete = useCallback((itemId: string) => {
-        console.log('Delete item from group:', itemId);
-
         if (!config?.items) return;
 
         // Find the item in the group
@@ -690,8 +648,6 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
                             items: updatedItems
                         }
                     });
-
-                    console.log('Item removed from group:', itemId);
                 }
             }
         };
@@ -705,8 +661,6 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
         const isItemObject = typeof itemOrId !== 'string';
         const itemId = isItemObject ? (itemOrId as GroupItem).id : itemOrId;
 
-        console.log('Duplicate item in group widget:', itemId);
-
         if (!config?.items) return;
 
         // Get max items value
@@ -715,7 +669,6 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
         // If we received a GroupItem directly, we're adding to dashboard
         if (isItemObject) {
             const groupItem = itemOrId as GroupItem;
-            console.log('Group at maximum capacity, adding duplicate to dashboard');
 
             // Convert the group item to a dashboard item
             const newDashboardItem: DashboardItem = {
