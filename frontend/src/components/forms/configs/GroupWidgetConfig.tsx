@@ -2,6 +2,7 @@ import { Grid2 as Grid, Typography } from '@mui/material';
 import { UseFormReturn } from 'react-hook-form';
 import { CheckboxElement, SelectElement, TextFieldElement } from 'react-hook-form-mui';
 
+import { theme } from '../../../theme/theme';
 import { FormValues } from '../AddEditForm';
 
 interface GroupWidgetConfigProps {
@@ -9,9 +10,9 @@ interface GroupWidgetConfigProps {
 }
 
 const MAX_ITEMS_OPTIONS = [
-    { id: '3', label: '3 Items (3×1)' },
-    { id: '6_2x3', label: '6 Items (2×3)' },
-    { id: '6_3x2', label: '6 Items (3×2)' }
+    { id: '3', label: '3 Items (3x1)' },
+    { id: '6_2x3', label: '6 Items (2x3)' },
+    { id: '6_3x2', label: '6 Items (3x2)' }
 ];
 
 export const GroupWidgetConfig = ({ formContext }: GroupWidgetConfigProps) => {
@@ -27,7 +28,6 @@ export const GroupWidgetConfig = ({ formContext }: GroupWidgetConfigProps) => {
                         required: 'Title is required'
                     }}
                     sx={{
-                        pb: 2,
                         '& .MuiOutlinedInput-root': {
                             '& fieldset': {
                                 borderColor: 'text.primary',
@@ -42,14 +42,8 @@ export const GroupWidgetConfig = ({ formContext }: GroupWidgetConfigProps) => {
                 />
             </Grid>
 
-            <Grid>
-                <Typography variant='body2' sx={{ mb: 1, mt: 1 }}>
-                    Group Options
-                </Typography>
-            </Grid>
-
             <Grid container spacing={2} alignItems='center'>
-                <Grid size={{ xs: 12, sm: 6, md: 6 }}>
+                <Grid size={{ xs: 12, sm: 12, md: 12 }}>
                     <SelectElement
                         name='maxItems'
                         label='Layout'
@@ -63,6 +57,9 @@ export const GroupWidgetConfig = ({ formContext }: GroupWidgetConfigProps) => {
                                 },
                                 '&:hover fieldset': { borderColor: 'primary.main' },
                                 '&.Mui-focused fieldset': { borderColor: 'primary.main', },
+                                '.MuiSvgIcon-root ': {
+                                    fill: theme.palette.text.primary,
+                                },
                             },
                             '& .MuiFormLabel-root': {
                                 color: 'text.primary',
@@ -70,9 +67,9 @@ export const GroupWidgetConfig = ({ formContext }: GroupWidgetConfigProps) => {
                         }}
                     />
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 6 }}>
+                <Grid size={{ xs: 12, sm: 12, md: 12 }}>
                     <CheckboxElement
-                        label='Show Label'
+                        label='Show Name'
                         name='showLabel'
                         sx={{
                             ml: 1,

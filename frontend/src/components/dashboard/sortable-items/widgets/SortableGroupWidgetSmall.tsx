@@ -12,6 +12,24 @@ import { CenteredModal } from '../../../modals/CenteredModal';
 import { ConfirmationOptions, PopupManager } from '../../../modals/PopupManager';
 import GroupWidgetSmall from '../../base-items/widgets/GroupWidgetSmall';
 
+/**
+ * SortableGroupWidgetSmall Component
+ *
+ * This component manages a group of items that can be sorted and organized.
+ *
+ * Important note on ID handling:
+ * - When adding an item from the dashboard to a group, a new unique ID is generated to avoid conflicts
+ * - When dragging an item out from a group to the dashboard, a new unique ID is also generated
+ * - This prevents duplicate key issues when items are moved between contexts
+ */
+
+// Function to generate a unique ID
+const generateUniqueId = () => {
+    const timestamp = Date.now().toString(36);
+    const randomStr = Math.random().toString(36).substring(2, 8);
+    return `item-${timestamp}${randomStr}`;
+};
+
 export interface GroupWidgetSmallConfig {
   title?: string;
   items?: GroupItem[];
@@ -195,9 +213,13 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
             return;
         }
 
-        // Create a new app shortcut from the group item
+        // Generate a new unique ID for the app shortcut to avoid conflicts
+        const newItemId = generateUniqueId();
+        console.log(`Generated new ID for item moving from group to dashboard: ${itemId} -> ${newItemId}`);
+
+        // Create a new app shortcut from the group item with a NEW ID
         const newAppShortcut: DashboardItem = {
-            id: itemId,
+            id: newItemId, // Use the new ID here
             type: ITEM_TYPE.APP_SHORTCUT,
             label: draggedItem.name,
             url: draggedItem.url,
@@ -281,8 +303,16 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
             return;
         }
 
-        // Use the configured maxItems instead of hardcoding
-        const MAX_ITEMS = config.maxItems || 3;
+        // Use the configured maxItems or parse from the special format strings
+        const maxItemsStr = String(config.maxItems || 3);
+        let MAX_ITEMS = 3;
+
+        if (maxItemsStr === '6_2x3' || maxItemsStr === '6_3x2') {
+            MAX_ITEMS = 6;
+        } else {
+            MAX_ITEMS = parseInt(maxItemsStr, 10) || 3;
+        }
+
         console.log('Using max items:', MAX_ITEMS, 'from config:', config);
 
         const currentItems = ensureItems();
@@ -296,9 +326,13 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
         // Check if this is a normal app shortcut or a placeholder
         const isPlaceholder = shortcutItem.type === ITEM_TYPE.BLANK_APP;
 
-        // Create a new group item from the app shortcut
+        // Generate a new unique ID for the group item to avoid conflicts
+        const newItemId = generateUniqueId();
+        console.log(`Generated new ID for item moving from dashboard to group: ${shortcutItem.id} -> ${newItemId}`);
+
+        // Create a new group item from the app shortcut with a NEW ID
         const newGroupItem: GroupItem = {
-            id: shortcutItem.id,
+            id: newItemId, // Use the new ID here
             name: shortcutItem.label || (isPlaceholder ? 'Placeholder' : 'App'),
             url: isPlaceholder ? '#' : (shortcutItem.url?.toString() || '#'),
             icon: shortcutItem.icon?.path || ''

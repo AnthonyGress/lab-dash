@@ -298,15 +298,18 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
             if (isOutside) {
                 console.log('Group item clearly outside group, showing preview');
 
-                // Dispatch event with position information for correct placement
+                // Find the item to get its details
+                const draggedItem = items.find(i => i.id === active.id.toString());
+
+                // When dragged out, we'll generate a new ID in the handleItemDragOut function
+                // to prevent conflicts, but for the preview we use the current ID
                 document.dispatchEvent(new CustomEvent('dndkit:group-item-preview', {
                     detail: {
                         dragging: true,
                         itemId: active.id.toString(),
                         groupId: id,
                         position: 'next', // Place at index+1
-                        // Find the item to get its details
-                        item: items.find(i => i.id === active.id.toString())
+                        item: draggedItem
                     }
                 }));
             }
@@ -361,6 +364,8 @@ const GroupWidgetSmall: React.FC<GroupWidgetSmallProps> = ({
         if (!over) {
             // Item was dragged outside - handle removal if needed
             if (isDraggingOut && activeId && onItemDragOut) {
+                // When the item is dragged out, it will get a new ID to prevent conflicts
+                // The onItemDragOut callback will handle moving the item to the dashboard
                 onItemDragOut(activeId);
             }
             setActiveId(null);
