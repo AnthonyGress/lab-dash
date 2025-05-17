@@ -506,7 +506,7 @@ export const DashboardGrid: React.FC = () => {
                 editMode={false}
                 showLabel={true}
                 config={config}
-                isPreview={true}
+                isOverlay={true}
             />
         );
     };

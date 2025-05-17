@@ -1,7 +1,7 @@
 import CloseIcon from '@mui/icons-material/Close';
 import { Autocomplete, Box, InputAdornment, TextField, Typography } from '@mui/material';
 import { nanoid } from 'nanoid';
-import { Dispatch, SetStateAction } from 'react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { FaSearch } from 'react-icons/fa';
 
 import { useAppContext } from '../../context/useAppContext';
@@ -27,9 +27,40 @@ export const SearchBar = ({
     autocompleteOptions = []
 }: Props) => {
     const { config } = useAppContext();
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
     // Default to Google if no search provider is configured
     const searchProvider = config?.searchProvider || { name: 'Google', url: 'https://www.google.com/search?q={query}' };
+
+    // Prevent body scrolling when dropdown is open
+    useEffect(() => {
+        if (isDropdownOpen) {
+            // Save current scroll position
+            const scrollY = window.scrollY;
+            // Disable scrolling
+            document.body.style.position = 'fixed';
+            document.body.style.top = `-${scrollY}px`;
+            document.body.style.width = '100%';
+        } else {
+            // Get scroll position
+            const scrollY = document.body.style.top;
+            // Enable scrolling
+            document.body.style.position = '';
+            document.body.style.top = '';
+            document.body.style.width = '';
+            // Restore scroll position
+            if (scrollY) {
+                window.scrollTo(0, parseInt(scrollY || '0', 10) * -1);
+            }
+        }
+
+        // Cleanup on unmount
+        return () => {
+            document.body.style.position = '';
+            document.body.style.top = '';
+            document.body.style.width = '';
+        };
+    }, [isDropdownOpen]);
 
     const getSearchUrl = (query: string) => {
         if (!query.trim()) return '';
@@ -64,6 +95,8 @@ export const SearchBar = ({
                 onInputChange={(_event, newInputValue) => {
                     setSearchValue(newInputValue);
                 }}
+                onOpen={() => setIsDropdownOpen(true)}
+                onClose={() => setIsDropdownOpen(false)}
                 filterOptions={(options, state) => {
                     const filtered = options.filter((option) =>
                         option.label.toLowerCase().includes(state.inputValue.toLowerCase())
@@ -171,7 +204,6 @@ export const SearchBar = ({
                             },
                         },
                     },
-
                 }}
             />
         </Box>

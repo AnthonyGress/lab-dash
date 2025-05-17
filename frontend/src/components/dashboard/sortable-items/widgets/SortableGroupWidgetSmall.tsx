@@ -396,14 +396,35 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
         console.log('App shortcut added to group and removed from dashboard');
     }, [dashboardLayout, config, id, ensureItems, setDashboardLayout, saveLayout]);
 
+    // Get maximum items allowed in the group
+    const getMaxItems = useCallback(() => {
+        if (!config || !config.maxItems) {
+            return '3'; // Default to 3 items in 3x1 layout
+        }
+        return config.maxItems;
+    }, [config]);
+
+    // Helper function to interpret max items string value into a number
+    const getMaxItemsAsNumber = useCallback(() => {
+        const maxItemsStr = String(getMaxItems());
+        if (maxItemsStr === '6_2x3' || maxItemsStr === '6_3x2' || maxItemsStr === '6') {
+            return 6;
+        }
+        return parseInt(maxItemsStr, 10) || 3;
+    }, [getMaxItems]);
+
     // Handle drag over events directly
     const handleDragOver = useCallback((event: any) => {
         if (event.over && event.over.id === id) {
-            setIsOver(true);
+            // Only set isOver to true if we haven't reached max items
+            const currentItems = ensureItems();
+            const maxItems = getMaxItemsAsNumber();
+
+            setIsOver(currentItems.length < maxItems);
         } else {
             setIsOver(false);
         }
-    }, [id]);
+    }, [id, ensureItems, getMaxItemsAsNumber]);
 
     // Subscribe to all the necessary DnD-kit events
     useEffect(() => {
@@ -442,8 +463,12 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
                     active?.data?.current?.type === ITEM_TYPE.BLANK_APP;
 
                 if (isAppShortcutType) {
+                    // Only set drop target if we haven't reached max items
+                    const currentItems = ensureItems();
+                    const maxItems = getMaxItemsAsNumber();
+
                     console.log('App shortcut directly over group widget:', id);
-                    setIsCurrentDropTarget(true);
+                    setIsCurrentDropTarget(currentItems.length < maxItems);
                 } else {
                     setIsCurrentDropTarget(false);
                 }
@@ -681,14 +706,6 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
         ? getItemAsDashboardItem(selectedItemId)
         : null;
 
-    // Extract maxItems from config, defaulting to 3
-    const getMaxItems = useCallback(() => {
-        if (!config || !config.maxItems) {
-            return '3'; // Default to 3 items in 3x1 layout
-        }
-        return config.maxItems;
-    }, [config]);
-
     // Extract layout information from the maxItems configuration
     const getLayoutType = useCallback(() => {
         if (!config || !config.maxItems) return '3x1';
@@ -769,18 +786,25 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
                     visibility: isDragging ? 'hidden' : 'visible',
                     position: 'relative',
                     backgroundColor: 'transparent',
-                    transition: 'background-color 0.3s ease, transform 0.2s',
+                    transition: isDragging ? 'none' : 'background-color 0.3s ease, transform 0.2s',
+                    transitionProperty: isDragging ? 'none' : 'all',
+                    transitionDuration: isDragging ? '0ms' : '250ms',
                     borderRadius: '8px',
                     height: widgetHeight.sm,
                     minHeight: widgetHeight.sm,
                     '& > div': {
                         height: '100%',
                         width: '100%',
-                        visibility: 'inherit'
+                        visibility: 'inherit',
+                        transition: isDragging ? 'none' : undefined
                     },
-                    '& * ': {
-                        visibility: 'inherit'
-                    }
+                    // Only apply immediate disappearance when THIS component is dragging
+                    ...(isDragging && {
+                        '& > div > div': {
+                            opacity: 0,
+                            transition: 'none'
+                        }
+                    })
                 }}
                 data-type='group-widget-small'
                 data-widget-id={id}
@@ -799,7 +823,7 @@ export const SortableGroupWidgetSmall: React.FC<Props> = ({
                         onItemDragOut={handleItemDragOut}
                         onItemEdit={handleItemEdit}
                         onItemDelete={handleItemDelete}
-                        maxItems={config?.maxItems || 3}
+                        maxItems={getMaxItems()}
                         isHighlighted={isOver || isCurrentDropTarget}
                         showLabel={config?.showLabel !== undefined ? config.showLabel : true}
                     />

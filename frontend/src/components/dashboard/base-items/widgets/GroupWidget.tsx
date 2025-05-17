@@ -520,6 +520,17 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
     // Limit items displayed to MAX_ITEMS
     const visibleItems = items.slice(0, MAX_ITEMS);
 
+    // Helper function to get appropriate height based on itemSize
+    const getItemHeight = () => {
+        if (gridSettings.itemSize === 'small') {
+            return { xs: '75px', sm: '85px', md: '80px' };
+        } else if (gridSettings.itemSize === 'large') {
+            return { xs: '95px', sm: '105px', md: '100px' };
+        } else {
+            return { xs: '90px', sm: '100px', md: '95px' }; // medium or default
+        }
+    };
+
     return (
         <WidgetContainer
             editMode={isEditing}
@@ -625,11 +636,9 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                                     m: 0.5
                                 }}
                             >
-                                <Box
+                                <Grid
                                     sx={{
-                                        height: gridSettings.itemSize === 'small'
-                                            ? { xs: '70px', sm: '80px', md: '75px' }
-                                            : { xs: '70px', sm: '80px', md: '85px' },
+                                        height: getItemHeight(),
                                         width: '100%',
                                         display: 'flex',
                                         alignItems: 'center',
@@ -646,7 +655,7 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                                     title='Edit group to add items'
                                 >
                                     <AddIcon fontSize='medium' />
-                                </Box>
+                                </Grid>
                             </Box>
                         )}
                     </Grid>

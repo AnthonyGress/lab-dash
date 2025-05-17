@@ -56,11 +56,16 @@ export const SortableAppShortcut: React.FC<Props> = ({
             {...(!isOverlay && !isPreview ? attributes : {})}
             {...(!isOverlay && !isPreview ? listeners : {})}
             sx={{
-                transition,
+                transition: isDragging ? undefined : transition,
                 transform: transform ? CSS.Translate.toString(transform) : undefined,
                 pointerEvents: isDragging || isPreview ? 'none' : 'auto',
-                opacity: isOverlay ? 0.6 : isPreview ? 0.8 : 1,
-                visibility: isDragging ? 'hidden' : 'visible',
+                opacity: (isDragging && !isOverlay && !isPreview) ? 0 :
+                    isOverlay ? 0.6 : isPreview ? 0.8 : 1,
+                visibility: (isDragging && !isOverlay && !isPreview) ? 'hidden' : 'visible',
+                // Apply instant opacity change for dragging
+                transitionProperty: isDragging ? 'none' : 'transform',
+                // Ensure smooth animation for movement only
+                transitionDuration: isDragging ? '0ms' : '250ms',
             }}
             data-type={ITEM_TYPE.APP_SHORTCUT}
             data-id={id}
