@@ -11,7 +11,8 @@ import { FormValues } from '../AddEditForm';
 
 const TORRENT_CLIENT_OPTIONS = [
     { id: TORRENT_CLIENT_TYPE.QBITTORRENT, label: 'qBittorrent' },
-    { id: TORRENT_CLIENT_TYPE.DELUGE, label: 'Deluge' }
+    { id: TORRENT_CLIENT_TYPE.DELUGE, label: 'Deluge' },
+    { id: TORRENT_CLIENT_TYPE.TRANSMISSION, label: 'Transmission' }
 ];
 
 interface TorrentClientWidgetConfigProps {
@@ -30,7 +31,9 @@ export const TorrentClientWidgetConfig = ({ formContext }: TorrentClientWidgetCo
             setTorrentClientType(watchedTorrentClientType);
 
             // Update the port based on torrent client type
-            const defaultPort = watchedTorrentClientType === TORRENT_CLIENT_TYPE.DELUGE ? '8112' : '8080';
+            const defaultPort = watchedTorrentClientType === TORRENT_CLIENT_TYPE.DELUGE ? '8112'
+                : watchedTorrentClientType === TORRENT_CLIENT_TYPE.TRANSMISSION ? '9091'
+                    : '8080';
             formContext.setValue('tcPort', defaultPort);
         }
     }, [formContext.watch('torrentClientType'), formContext]);
@@ -130,8 +133,8 @@ export const TorrentClientWidgetConfig = ({ formContext }: TorrentClientWidgetCo
                     }}
                 />
             </Grid>
-            {/* Only show username field for qBittorrent */}
-            {torrentClientType === TORRENT_CLIENT_TYPE.QBITTORRENT && (
+            {/* Only show username field for qBittorrent and Transmission */}
+            {(torrentClientType === TORRENT_CLIENT_TYPE.QBITTORRENT || torrentClientType === TORRENT_CLIENT_TYPE.TRANSMISSION) && (
                 <Grid>
                     <TextFieldElement
                         name='tcUsername'
@@ -139,7 +142,7 @@ export const TorrentClientWidgetConfig = ({ formContext }: TorrentClientWidgetCo
                         variant='outlined'
                         fullWidth
                         autoComplete='off'
-                        required
+                        required={torrentClientType !== TORRENT_CLIENT_TYPE.TRANSMISSION}
                         sx={{
                             width: '100%',
                             '& .MuiOutlinedInput-root': {
@@ -164,7 +167,7 @@ export const TorrentClientWidgetConfig = ({ formContext }: TorrentClientWidgetCo
                     variant='outlined'
                     fullWidth
                     autoComplete='off'
-                    required
+                    required={torrentClientType !== TORRENT_CLIENT_TYPE.TRANSMISSION}
                     sx={{
                         width: '100%',
                         '& .MuiOutlinedInput-root': {

@@ -209,22 +209,24 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
         }
     }, [config, handleLogin, isAuthenticated, loginAttemptFailed]);
 
+
+
     // Refresh stats and torrents periodically
     useEffect(() => {
-        // Only fetch data if authenticated
-        if (isAuthenticated) {
+        if (!isAuthenticated) return;
+
+        // Initial fetch
+        fetchStats();
+        fetchTorrents();
+
+        // Simple fixed interval to avoid dependency loops
+        const interval = setInterval(() => {
             fetchStats();
             fetchTorrents();
+        }, 20000); // Fixed 20 seconds - compromise between 15 and 30
 
-            // Set up periodic refresh
-            const interval = setInterval(() => {
-                fetchStats();
-                fetchTorrents();
-            }, 30000); // 30 seconds
-
-            return () => clearInterval(interval);
-        }
-    }, [fetchStats, fetchTorrents, isAuthenticated]);
+        return () => clearInterval(interval);
+    }, [isAuthenticated, fetchStats, fetchTorrents]);
 
     // Torrent actions
     const handleStartTorrent = useCallback(async (hash: string) => {
@@ -242,6 +244,10 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
             // Refresh the torrents list after operation
             if (success) {
                 await fetchTorrents();
+                // Schedule another refresh after 2 seconds to ensure state is updated
+                setTimeout(() => {
+                    fetchTorrents();
+                }, 2000);
             }
 
             return success;
@@ -271,6 +277,10 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
             // Refresh the torrents list after operation
             if (success) {
                 await fetchTorrents();
+                // Schedule another refresh after 2 seconds to ensure state is updated
+                setTimeout(() => {
+                    fetchTorrents();
+                }, 2000);
             }
 
             return success;
@@ -299,6 +309,10 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
             // Refresh the torrents list after operation
             if (success) {
                 await fetchTorrents();
+                // Schedule another refresh after 2 seconds to ensure state is updated
+                setTimeout(() => {
+                    fetchTorrents();
+                }, 2000);
             }
 
             return success;

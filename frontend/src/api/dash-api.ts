@@ -857,6 +857,155 @@ export class DashApi {
         }
     }
 
+    // Transmission methods
+    public static async transmissionLogin(credentials: {
+        username: string;
+        password: string;
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+    }): Promise<boolean> {
+        try {
+            const { host, port, ssl, username, password } = credentials;
+            const response = await axios.post(
+                `${BACKEND_URL}/api/transmission/login`,
+                { username, password },
+                {
+                    params: { host, port, ssl },
+                    withCredentials: false
+                }
+            );
+            return response.data.success;
+        } catch (error) {
+            console.error('Failed to login to Transmission:', error);
+            return false;
+        }
+    }
+
+    public static async transmissionGetStats(connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+        username?: string;
+        password?: string;
+    }): Promise<any> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/transmission/stats`, {
+                params: connectionInfo,
+                withCredentials: false
+            });
+            return res.data;
+        } catch (error) {
+            console.error('Transmission stats error:', error);
+            throw error;
+        }
+    }
+
+    public static async transmissionGetTorrents(connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+        username?: string;
+        password?: string;
+    }): Promise<any[]> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/transmission/torrents`, {
+                params: connectionInfo,
+                withCredentials: false
+            });
+            return res.data;
+        } catch (error) {
+            console.error('Transmission torrents error:', error);
+            return [];
+        }
+    }
+
+    public static async transmissionLogout(connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+    }): Promise<boolean> {
+        try {
+            await axios.post(`${BACKEND_URL}/api/transmission/logout`, {}, {
+                params: connectionInfo,
+                withCredentials: true
+            });
+            return true;
+        } catch (error) {
+            console.error('Transmission logout error:', error);
+            return false;
+        }
+    }
+
+    public static async transmissionStartTorrent(id: string, connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+        username?: string;
+        password?: string;
+    }): Promise<boolean> {
+        try {
+            const response = await axios.post(
+                `${BACKEND_URL}/api/transmission/torrents/start`,
+                { ids: [id] },
+                {
+                    params: connectionInfo,
+                    withCredentials: true
+                }
+            );
+            return true;
+        } catch (error) {
+            console.error('Transmission start error:', error);
+            return false;
+        }
+    }
+
+    public static async transmissionStopTorrent(id: string, connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+        username?: string;
+        password?: string;
+    }): Promise<boolean> {
+        try {
+            const response = await axios.post(
+                `${BACKEND_URL}/api/transmission/torrents/stop`,
+                { ids: [id] },
+                {
+                    params: connectionInfo,
+                    withCredentials: true
+                }
+            );
+            return true;
+        } catch (error) {
+            console.error('Transmission stop error:', error);
+            return false;
+        }
+    }
+
+    public static async transmissionDeleteTorrent(id: string, deleteFiles: boolean = false, connectionInfo?: {
+        host?: string;
+        port?: string;
+        ssl?: boolean;
+        username?: string;
+        password?: string;
+    }): Promise<boolean> {
+        try {
+            const response = await axios.post(
+                `${BACKEND_URL}/api/transmission/torrents/delete`,
+                { ids: [id], deleteFiles },
+                {
+                    params: connectionInfo,
+                    withCredentials: true
+                }
+            );
+            return true;
+        } catch (error) {
+            console.error('Transmission delete error:', error);
+            return false;
+        }
+    }
+
     // Pi-hole methods
     public static async getPiholeStats(connectionInfo?: {
         host?: string;

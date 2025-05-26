@@ -52,7 +52,8 @@ const SYSTEM_MONITOR_GAUGE_OPTIONS = [
 
 const TORRENT_CLIENT_OPTIONS = [
     { id: TORRENT_CLIENT_TYPE.QBITTORRENT, label: 'qBittorrent' },
-    { id: TORRENT_CLIENT_TYPE.DELUGE, label: 'Deluge' }
+    { id: TORRENT_CLIENT_TYPE.DELUGE, label: 'Deluge' },
+    { id: TORRENT_CLIENT_TYPE.TRANSMISSION, label: 'Transmission' }
 ];
 
 export type FormValues = {
@@ -271,7 +272,9 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             // Torrent client config
             tcHost: existingItem?.config?.host || 'localhost',
             tcPort: existingItem?.config?.port ||
-                (existingItem?.config?.clientType === TORRENT_CLIENT_TYPE.DELUGE ? '8112' : '8080'),
+                (existingItem?.config?.clientType === TORRENT_CLIENT_TYPE.DELUGE ? '8112'
+                    : existingItem?.config?.clientType === TORRENT_CLIENT_TYPE.TRANSMISSION ? '9091'
+                        : '8080'),
             tcSsl: existingItem?.config?.ssl || false,
             tcUsername: existingItem?.config?.username || '',
             tcPassword: existingItem?.config?.password || '',
@@ -705,7 +708,9 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
         let itemLabel = data.shortcutName || '';
         if (actualItemType === ITEM_TYPE.TORRENT_CLIENT && !itemLabel) {
             const clientType = data.torrentClientType || TORRENT_CLIENT_TYPE.QBITTORRENT;
-            const clientName = clientType === TORRENT_CLIENT_TYPE.DELUGE ? 'Deluge' : 'qBittorrent';
+            const clientName = clientType === TORRENT_CLIENT_TYPE.DELUGE ? 'Deluge'
+                : clientType === TORRENT_CLIENT_TYPE.TRANSMISSION ? 'Transmission'
+                    : 'qBittorrent';
             itemLabel = `${clientName} Client`;
         }
 

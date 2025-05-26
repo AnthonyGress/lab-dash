@@ -18,6 +18,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import shortid from 'shortid';
 
 import { SortableDeluge } from './sortable-items/widgets/SortableDeluge';
+import { SortableTransmission } from './sortable-items/widgets/SortableTransmission';
 import { useAppContext } from '../../context/useAppContext';
 import { DashboardItem, ITEM_TYPE, TORRENT_CLIENT_TYPE } from '../../types';
 import { AddEditForm } from '../forms/AddEditForm';
@@ -537,7 +538,9 @@ export const DashboardGrid: React.FC = () => {
         case ITEM_TYPE.TORRENT_CLIENT:
             return item.config?.clientType === TORRENT_CLIENT_TYPE.DELUGE
                 ? <SortableDeluge key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>
-                : <SortableQBittorrent key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
+                : item.config?.clientType === TORRENT_CLIENT_TYPE.TRANSMISSION
+                    ? <SortableTransmission key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>
+                    : <SortableQBittorrent key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
         case ITEM_TYPE.DUAL_WIDGET: {
             // Transform the existing config to the correct structure
             const dualWidgetConfig = {
@@ -704,7 +707,9 @@ export const DashboardGrid: React.FC = () => {
                                     case ITEM_TYPE.TORRENT_CLIENT: {
                                         return item.config?.clientType === TORRENT_CLIENT_TYPE.DELUGE
                                             ? <SortableDeluge key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>
-                                            : <SortableQBittorrent key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
+                                            : item.config?.clientType === TORRENT_CLIENT_TYPE.TRANSMISSION
+                                                ? <SortableTransmission key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>
+                                                : <SortableQBittorrent key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
                                     }
                                     case ITEM_TYPE.DUAL_WIDGET: {
                                         // Transform the existing config to the correct structure

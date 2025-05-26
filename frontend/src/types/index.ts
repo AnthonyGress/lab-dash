@@ -17,7 +17,8 @@ export enum ITEM_TYPE {
 
 export enum TORRENT_CLIENT_TYPE {
     QBITTORRENT = 'qbittorrent',
-    DELUGE = 'deluge'
+    DELUGE = 'deluge',
+    TRANSMISSION = 'transmission'
 }
 
 export type NewItem = {

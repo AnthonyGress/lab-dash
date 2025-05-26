@@ -3,17 +3,32 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { TorrentClientWidget } from './TorrentClientWidget';
 import { DashApi } from '../../../../api/dash-api';
 
-type DelugeWidgetConfig = {
+// Helper function to convert Transmission status codes to common state strings
+const getTransmissionState = (status: number): string => {
+    switch (status) {
+    case 0: return 'stopped';        // TR_STATUS_STOPPED
+    case 1: return 'checkingResumeData'; // TR_STATUS_CHECK_WAIT
+    case 2: return 'checkingDL';     // TR_STATUS_CHECK
+    case 3: return 'stalledDL';      // TR_STATUS_DOWNLOAD_WAIT
+    case 4: return 'downloading';    // TR_STATUS_DOWNLOAD
+    case 5: return 'stalledUP';      // TR_STATUS_SEED_WAIT
+    case 6: return 'seeding';        // TR_STATUS_SEED
+    default: return 'unknown';
+    }
+};
+
+type TransmissionWidgetConfig = {
     host?: string;
     port?: string;
     ssl?: boolean;
     username?: string;
     password?: string;
+    refreshInterval?: number;
     maxDisplayedTorrents?: number;
     showLabel?: boolean;
 };
 
-export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
+export const TransmissionWidget = (props: { config?: TransmissionWidgetConfig }) => {
     const { config } = props;
     const [isLoading, setIsLoading] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -23,7 +38,7 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
     const [loginAttemptFailed, setLoginAttemptFailed] = useState(false);
     const [loginCredentials, setLoginCredentials] = useState({
         host: config?.host || 'localhost',
-        port: config?.port || '8112',
+        port: config?.port || '9091',
         ssl: config?.ssl || false,
         username: config?.username || '',
         password: config?.password || ''
@@ -32,60 +47,45 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
     // Add a counter for login attempts and a maximum number of attempts
     const loginAttemptsRef = useRef(0);
     const MAX_LOGIN_ATTEMPTS = 3;
-    const autoLoginAttemptedRef = useRef(false);
 
     // Update credentials when config changes
     useEffect(() => {
         if (config) {
-            // Only update if there are actual changes to credentials
-            const newCredentials = {
+            setLoginCredentials({
                 host: config.host || '',
-                port: config.port || '8112',
+                port: config.port || '9091',
                 ssl: config.ssl || false,
                 username: config.username || '',
                 password: config.password || ''
-            };
-
-            const credentialsChanged =
-                newCredentials.host !== loginCredentials.host ||
-                newCredentials.port !== loginCredentials.port ||
-                newCredentials.ssl !== loginCredentials.ssl ||
-                newCredentials.username !== loginCredentials.username ||
-                newCredentials.password !== loginCredentials.password;
-
-            if (credentialsChanged) {
-                console.log('Credentials changed, updating state');
-                setLoginCredentials(newCredentials);
-                // Reset failed flag and attempt counter when credentials are updated
-                setLoginAttemptFailed(false);
-                loginAttemptsRef.current = 0;
-                autoLoginAttemptedRef.current = false; // Reset auto-login flag when credentials change
-            }
+            });
+            // Reset attempt counter and failed flag when credentials change
+            loginAttemptsRef.current = 0;
+            setLoginAttemptFailed(false);
         }
     }, [config]);
 
     const handleLogin = useCallback(async () => {
-        if (isLoading) {
-            console.log('Login already in progress, skipping');
-            return; // Prevent multiple simultaneous login attempts
-        }
-
         setIsLoading(true);
         setAuthError('');
-
         try {
-            const success = await DashApi.delugeLogin(loginCredentials);
-            console.log('Deluge login result:', success);
+            // If no username/password provided, skip login and go straight to authenticated state
+            if (!loginCredentials.username && !loginCredentials.password) {
+                setIsAuthenticated(true);
+                loginAttemptsRef.current = 0;
+                setLoginAttemptFailed(false);
+                setIsLoading(false);
+                return;
+            }
+
+            const success = await DashApi.transmissionLogin(loginCredentials);
             setIsAuthenticated(success);
 
             if (!success) {
                 // Increment attempt counter
                 loginAttemptsRef.current += 1;
-                console.log(`Login attempt ${loginAttemptsRef.current} failed`);
 
                 // Only set login as failed if we've reached the maximum attempts
                 if (loginAttemptsRef.current >= MAX_LOGIN_ATTEMPTS) {
-                    console.log('Max login attempts reached, setting failed flag');
                     setAuthError('Login failed after multiple attempts. Check your credentials and connection.');
                     setLoginAttemptFailed(true);
                 } else {
@@ -95,17 +95,14 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
                     // Schedule another attempt after a short delay
                     setTimeout(() => {
                         if (!isAuthenticated) {
-                            console.log('Retrying login...');
                             handleLogin();
                         }
                     }, 2000);
                 }
             } else {
-                console.log('Login successful');
                 // Reset counter on success
                 loginAttemptsRef.current = 0;
                 setLoginAttemptFailed(false);
-                autoLoginAttemptedRef.current = true;
             }
         } catch (error: any) {
             console.error('Login error:', error);
@@ -119,7 +116,7 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
                 if (error.response?.data?.error?.includes('Failed to decrypt password')) {
                     setAuthError('Failed to decrypt password. Please update your credentials in the widget settings.');
                 } else {
-                    setAuthError('Connection error after multiple attempts. Check your Deluge WebUI settings.');
+                    setAuthError('Connection error after multiple attempts. Check your Transmission settings.');
                 }
                 setIsAuthenticated(false);
                 setLoginAttemptFailed(true);
@@ -140,26 +137,10 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
                 setIsLoading(false);
             }
         }
-    }, [loginCredentials, isAuthenticated, isLoading]);
-
-    // Auto-login when component mounts or credentials change
-    useEffect(() => {
-        if (
-            config?.password &&
-            !autoLoginAttemptedRef.current &&
-            !isAuthenticated &&
-            !loginAttemptFailed
-        ) {
-            autoLoginAttemptedRef.current = true; // Mark that we've attempted auto-login
-            // Use a short delay to ensure component is fully mounted
-            setTimeout(() => {
-                handleLogin();
-            }, 500);
-        }
-    }, [config, handleLogin, isAuthenticated, loginAttemptFailed]);
+    }, [loginCredentials, isAuthenticated]);
 
     const fetchStats = useCallback(async () => {
-        if (loginAttemptFailed || !isAuthenticated) return;
+        if (!isAuthenticated) return;
 
         try {
             const connectionInfo = {
@@ -169,7 +150,7 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
                 username: loginCredentials.username,
                 password: loginCredentials.password
             };
-            const statsData = await DashApi.delugeGetStats(connectionInfo);
+            const statsData = await DashApi.transmissionGetStats(connectionInfo);
 
             // Check for decryption error
             if (statsData.decryptionError) {
@@ -178,19 +159,35 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
                 return;
             }
 
-            setStats(statsData);
+            // Convert Transmission stats format to common format
+            // Transmission session-stats returns: downloadSpeed, uploadSpeed, cumulative-stats with downloadedBytes/uploadedBytes
+            const convertedStats = {
+                dl_info_speed: statsData.downloadSpeed || 0,
+                dl_info_data: statsData['cumulative-stats']?.downloadedBytes || 0,
+                up_info_speed: statsData.uploadSpeed || 0,
+                up_info_data: statsData['cumulative-stats']?.uploadedBytes || 0,
+                torrents: {
+                    total: statsData.torrentCount || 0,
+                    downloading: statsData.activeTorrentCount || 0,
+                    seeding: statsData.activeTorrentCount || 0,
+                    completed: 0,
+                    paused: statsData.pausedTorrentCount || 0
+                }
+            };
+
+            setStats(convertedStats);
         } catch (error) {
-            console.error('Error fetching Deluge stats:', error);
+            console.error('Error fetching Transmission stats:', error);
             // If we get an auth error, set isAuthenticated to false to show login form
             if ((error as any)?.response?.status === 401) {
                 setIsAuthenticated(false);
                 setAuthError('Session expired. Please login again.');
             }
         }
-    }, [loginCredentials, isAuthenticated, loginAttemptFailed]);
+    }, [loginCredentials, isAuthenticated]);
 
     const fetchTorrents = useCallback(async () => {
-        if (loginAttemptFailed || !isAuthenticated) return;
+        if (!isAuthenticated) return;
 
         try {
             const connectionInfo = {
@@ -200,9 +197,31 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
                 username: loginCredentials.username,
                 password: loginCredentials.password
             };
-            const torrentsData = await DashApi.delugeGetTorrents(connectionInfo);
+            const torrentsData = await DashApi.transmissionGetTorrents(connectionInfo);
+
+            // Check if an empty array was returned due to decryption error
+            if (Array.isArray(torrentsData) && torrentsData.length === 0 && loginCredentials.username && loginCredentials.password) {
+                // If we have credentials but get empty results, it could be a decryption error
+                // We'll handle this case by checking the auth status in the next stats fetch
+                setTorrents([]);
+                return;
+            }
+
+            // Convert Transmission format to common format and sort
+            const convertedTorrents = torrentsData.map((torrent: any) => ({
+                hash: torrent.hashString || torrent.id?.toString() || '',
+                id: torrent.id, // Keep original ID for API calls
+                name: torrent.name || '',
+                state: getTransmissionState(torrent.status),
+                progress: torrent.percentDone || 0,
+                size: torrent.totalSize || 0,
+                dlspeed: torrent.rateDownload || 0,
+                upspeed: torrent.rateUpload || 0,
+                eta: torrent.eta && torrent.eta > 0 ? torrent.eta : undefined
+            }));
+
             // Sort by progress (downloading first) then by name
-            const sortedTorrents = torrentsData.sort((a, b) => {
+            const sortedTorrents = convertedTorrents.sort((a: any, b: any) => {
                 // Prioritize downloading torrents
                 if (a.state === 'downloading' && b.state !== 'downloading') return -1;
                 if (a.state !== 'downloading' && b.state === 'downloading') return 1;
@@ -218,13 +237,13 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
             const maxTorrents = config?.maxDisplayedTorrents || 5;
             setTorrents(sortedTorrents.slice(0, maxTorrents));
         } catch (error) {
-            console.error('Error fetching Deluge torrents:', error);
+            console.error('Error fetching Transmission torrents:', error);
             if ((error as any)?.response?.status === 401) {
                 setIsAuthenticated(false);
                 setAuthError('Session expired. Please login again.');
             }
         }
-    }, [loginCredentials, config?.maxDisplayedTorrents, isAuthenticated, loginAttemptFailed]);
+    }, [loginCredentials, config?.maxDisplayedTorrents, isAuthenticated]);
 
     // Handle input changes
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -233,10 +252,15 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
             ...prev,
             [name]: type === 'checkbox' ? checked : value
         }));
-        // Reset failed flag when credentials are changed manually
-        setLoginAttemptFailed(false);
-        autoLoginAttemptedRef.current = false; // Allow auto-login to be attempted again
     };
+
+    // Auto-login when config is available and not authenticated
+    // For Transmission, credentials are optional
+    useEffect(() => {
+        if (config && !isAuthenticated && !loginAttemptFailed) {
+            handleLogin();
+        }
+    }, [config, handleLogin, isAuthenticated, loginAttemptFailed]);
 
 
 
@@ -258,7 +282,7 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
     }, [isAuthenticated, fetchStats, fetchTorrents]);
 
     // Torrent actions
-    const handleResumeTorrent = useCallback(async (hash: string) => {
+    const handleStartTorrent = useCallback(async (hash: string) => {
         try {
             const connectionInfo = {
                 host: loginCredentials.host,
@@ -267,7 +291,11 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
                 username: loginCredentials.username,
                 password: loginCredentials.password
             };
-            const success = await DashApi.delugeResumeTorrent(hash, connectionInfo);
+            // For Transmission, we need to find the torrent ID from the hash
+            const torrent = torrents.find(t => t.hash === hash);
+            if (!torrent) return false;
+
+            const success = await DashApi.transmissionStartTorrent(torrent.id || hash, connectionInfo);
 
             // Refresh the torrents list after operation
             if (success) {
@@ -279,13 +307,18 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
             }
 
             return success;
-        } catch (error) {
-            console.error('Error resuming Deluge torrent:', error);
+        } catch (error: any) {
+            console.error('Error starting Transmission torrent:', error);
+            // Check for decryption error
+            if (error.response?.data?.error?.includes('Failed to decrypt password')) {
+                setAuthError('Failed to decrypt password. Please update your credentials in the widget settings.');
+                setIsAuthenticated(false);
+            }
             return false;
         }
-    }, [loginCredentials, fetchTorrents]);
+    }, [loginCredentials, fetchTorrents, torrents]);
 
-    const handlePauseTorrent = useCallback(async (hash: string) => {
+    const handleStopTorrent = useCallback(async (hash: string) => {
         try {
             const connectionInfo = {
                 host: loginCredentials.host,
@@ -294,7 +327,11 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
                 username: loginCredentials.username,
                 password: loginCredentials.password
             };
-            const success = await DashApi.delugePauseTorrent(hash, connectionInfo);
+            // For Transmission, we need to find the torrent ID from the hash
+            const torrent = torrents.find(t => t.hash === hash);
+            if (!torrent) return false;
+
+            const success = await DashApi.transmissionStopTorrent(torrent.id || hash, connectionInfo);
 
             // Refresh the torrents list after operation
             if (success) {
@@ -306,11 +343,16 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
             }
 
             return success;
-        } catch (error) {
-            console.error('Error pausing Deluge torrent:', error);
+        } catch (error: any) {
+            console.error('Error stopping Transmission torrent:', error);
+            // Check for decryption error
+            if (error.response?.data?.error?.includes('Failed to decrypt password')) {
+                setAuthError('Failed to decrypt password. Please update your credentials in the widget settings.');
+                setIsAuthenticated(false);
+            }
             return false;
         }
-    }, [loginCredentials, fetchTorrents]);
+    }, [loginCredentials, fetchTorrents, torrents]);
 
     const handleDeleteTorrent = useCallback(async (hash: string, deleteFiles: boolean) => {
         try {
@@ -321,7 +363,11 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
                 username: loginCredentials.username,
                 password: loginCredentials.password
             };
-            const success = await DashApi.delugeDeleteTorrent(hash, deleteFiles, connectionInfo);
+            // For Transmission, we need to find the torrent ID from the hash
+            const torrent = torrents.find(t => t.hash === hash);
+            if (!torrent) return false;
+
+            const success = await DashApi.transmissionDeleteTorrent(torrent.id || hash, deleteFiles, connectionInfo);
 
             // Refresh the torrents list after operation
             if (success) {
@@ -333,15 +379,20 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
             }
 
             return success;
-        } catch (error) {
-            console.error('Error deleting Deluge torrent:', error);
+        } catch (error: any) {
+            console.error('Error deleting Transmission torrent:', error);
+            // Check for decryption error
+            if (error.response?.data?.error?.includes('Failed to decrypt password')) {
+                setAuthError('Failed to decrypt password. Please update your credentials in the widget settings.');
+                setIsAuthenticated(false);
+            }
             return false;
         }
-    }, [loginCredentials, fetchTorrents]);
+    }, [loginCredentials, fetchTorrents, torrents]);
 
     return (
         <TorrentClientWidget
-            clientName='Deluge'
+            clientName='Transmission'
             isLoading={isLoading}
             isAuthenticated={isAuthenticated}
             authError={authError}
@@ -351,8 +402,8 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
             handleInputChange={handleInputChange}
             handleLogin={handleLogin}
             showLabel={config?.showLabel || false}
-            onResumeTorrent={handleResumeTorrent}
-            onPauseTorrent={handlePauseTorrent}
+            onResumeTorrent={handleStartTorrent}
+            onPauseTorrent={handleStopTorrent}
             onDeleteTorrent={handleDeleteTorrent}
         />
     );
