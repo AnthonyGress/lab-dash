@@ -14,8 +14,8 @@ type QBittorrentWidgetConfig = {
     showLabel?: boolean;
 };
 
-export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) => {
-    const { config } = props;
+export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig; id?: string }) => {
+    const { config, id } = props;
     const [isLoading, setIsLoading] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [authError, setAuthError] = useState('');
@@ -54,7 +54,7 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
         setIsLoading(true);
         setAuthError('');
         try {
-            const success = await DashApi.qbittorrentLogin(loginCredentials);
+            const success = await DashApi.qbittorrentLogin(id || '');
             setIsAuthenticated(success);
 
             if (!success) {
@@ -120,14 +120,7 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
         if (!isAuthenticated) return;
 
         try {
-            const connectionInfo = {
-                host: loginCredentials.host,
-                port: loginCredentials.port,
-                ssl: loginCredentials.ssl,
-                username: loginCredentials.username,
-                password: loginCredentials.password
-            };
-            const statsData = await DashApi.qbittorrentGetStats(connectionInfo);
+            const statsData = await DashApi.qbittorrentGetStats(id || '');
 
             // Check for decryption error
             if (statsData.decryptionError) {
@@ -151,14 +144,7 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
         if (!isAuthenticated) return;
 
         try {
-            const connectionInfo = {
-                host: loginCredentials.host,
-                port: loginCredentials.port,
-                ssl: loginCredentials.ssl,
-                username: loginCredentials.username,
-                password: loginCredentials.password
-            };
-            const torrentsData = await DashApi.qbittorrentGetTorrents(connectionInfo);
+            const torrentsData = await DashApi.qbittorrentGetTorrents(id || '');
 
             // Check if an empty array was returned due to decryption error
             if (Array.isArray(torrentsData) && torrentsData.length === 0 && loginCredentials.username && loginCredentials.password) {
@@ -231,15 +217,8 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
     // Torrent actions
     const handleStartTorrent = useCallback(async (hash: string) => {
         try {
-            const connectionInfo = {
-                host: loginCredentials.host,
-                port: loginCredentials.port,
-                ssl: loginCredentials.ssl,
-                username: loginCredentials.username,
-                password: loginCredentials.password
-            };
             // Use the existing resume API endpoint
-            const success = await DashApi.qbittorrentStartTorrent(hash, connectionInfo);
+            const success = await DashApi.qbittorrentStartTorrent(hash, id || '');
 
             // Refresh the torrents list after operation
             if (success) {
@@ -264,15 +243,8 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
 
     const handleStopTorrent = useCallback(async (hash: string) => {
         try {
-            const connectionInfo = {
-                host: loginCredentials.host,
-                port: loginCredentials.port,
-                ssl: loginCredentials.ssl,
-                username: loginCredentials.username,
-                password: loginCredentials.password
-            };
             // Use the existing pause API endpoint
-            const success = await DashApi.qbittorrentStopTorrent(hash, connectionInfo);
+            const success = await DashApi.qbittorrentStopTorrent(hash, id || '');
 
             // Refresh the torrents list after operation
             if (success) {
@@ -297,14 +269,7 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig }) =
 
     const handleDeleteTorrent = useCallback(async (hash: string, deleteFiles: boolean) => {
         try {
-            const connectionInfo = {
-                host: loginCredentials.host,
-                port: loginCredentials.port,
-                ssl: loginCredentials.ssl,
-                username: loginCredentials.username,
-                password: loginCredentials.password
-            };
-            const success = await DashApi.qbittorrentDeleteTorrent(hash, deleteFiles, connectionInfo);
+            const success = await DashApi.qbittorrentDeleteTorrent(hash, deleteFiles, id || '');
 
             // Refresh the torrents list after operation
             if (success) {

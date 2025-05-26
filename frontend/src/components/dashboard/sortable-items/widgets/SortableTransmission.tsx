@@ -41,7 +41,7 @@ export const SortableTransmission: React.FC<Props> = ({
             }}
         >
             <WidgetContainer editMode={editMode} id={id} onDelete={onDelete} onEdit={onEdit} onDuplicate={onDuplicate}>
-                <TransmissionWidget config={config} />
+                <TransmissionWidget config={config} id={id} />
             </WidgetContainer>
         </Grid2>
     );

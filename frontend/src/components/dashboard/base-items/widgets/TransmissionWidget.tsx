@@ -28,8 +28,8 @@ type TransmissionWidgetConfig = {
     showLabel?: boolean;
 };
 
-export const TransmissionWidget = (props: { config?: TransmissionWidgetConfig }) => {
-    const { config } = props;
+export const TransmissionWidget = (props: { config?: TransmissionWidgetConfig; id?: string }) => {
+    const { config, id } = props;
     const [isLoading, setIsLoading] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [authError, setAuthError] = useState('');
@@ -77,7 +77,7 @@ export const TransmissionWidget = (props: { config?: TransmissionWidgetConfig })
                 return;
             }
 
-            const success = await DashApi.transmissionLogin(loginCredentials);
+            const success = await DashApi.transmissionLogin(id || '');
             setIsAuthenticated(success);
 
             if (!success) {
@@ -143,14 +143,7 @@ export const TransmissionWidget = (props: { config?: TransmissionWidgetConfig })
         if (!isAuthenticated) return;
 
         try {
-            const connectionInfo = {
-                host: loginCredentials.host,
-                port: loginCredentials.port,
-                ssl: loginCredentials.ssl,
-                username: loginCredentials.username,
-                password: loginCredentials.password
-            };
-            const statsData = await DashApi.transmissionGetStats(connectionInfo);
+            const statsData = await DashApi.transmissionGetStats(id || '');
 
             // Check for decryption error
             if (statsData.decryptionError) {
@@ -190,14 +183,7 @@ export const TransmissionWidget = (props: { config?: TransmissionWidgetConfig })
         if (!isAuthenticated) return;
 
         try {
-            const connectionInfo = {
-                host: loginCredentials.host,
-                port: loginCredentials.port,
-                ssl: loginCredentials.ssl,
-                username: loginCredentials.username,
-                password: loginCredentials.password
-            };
-            const torrentsData = await DashApi.transmissionGetTorrents(connectionInfo);
+            const torrentsData = await DashApi.transmissionGetTorrents(id || '');
 
             // Check if an empty array was returned due to decryption error
             if (Array.isArray(torrentsData) && torrentsData.length === 0 && loginCredentials.username && loginCredentials.password) {
@@ -284,18 +270,11 @@ export const TransmissionWidget = (props: { config?: TransmissionWidgetConfig })
     // Torrent actions
     const handleStartTorrent = useCallback(async (hash: string) => {
         try {
-            const connectionInfo = {
-                host: loginCredentials.host,
-                port: loginCredentials.port,
-                ssl: loginCredentials.ssl,
-                username: loginCredentials.username,
-                password: loginCredentials.password
-            };
             // For Transmission, we need to find the torrent ID from the hash
             const torrent = torrents.find(t => t.hash === hash);
             if (!torrent) return false;
 
-            const success = await DashApi.transmissionStartTorrent(torrent.id || hash, connectionInfo);
+            const success = await DashApi.transmissionStartTorrent(torrent.id || hash, id || '');
 
             // Refresh the torrents list after operation
             if (success) {
@@ -320,18 +299,11 @@ export const TransmissionWidget = (props: { config?: TransmissionWidgetConfig })
 
     const handleStopTorrent = useCallback(async (hash: string) => {
         try {
-            const connectionInfo = {
-                host: loginCredentials.host,
-                port: loginCredentials.port,
-                ssl: loginCredentials.ssl,
-                username: loginCredentials.username,
-                password: loginCredentials.password
-            };
             // For Transmission, we need to find the torrent ID from the hash
             const torrent = torrents.find(t => t.hash === hash);
             if (!torrent) return false;
 
-            const success = await DashApi.transmissionStopTorrent(torrent.id || hash, connectionInfo);
+            const success = await DashApi.transmissionStopTorrent(torrent.id || hash, id || '');
 
             // Refresh the torrents list after operation
             if (success) {
@@ -356,18 +328,11 @@ export const TransmissionWidget = (props: { config?: TransmissionWidgetConfig })
 
     const handleDeleteTorrent = useCallback(async (hash: string, deleteFiles: boolean) => {
         try {
-            const connectionInfo = {
-                host: loginCredentials.host,
-                port: loginCredentials.port,
-                ssl: loginCredentials.ssl,
-                username: loginCredentials.username,
-                password: loginCredentials.password
-            };
             // For Transmission, we need to find the torrent ID from the hash
             const torrent = torrents.find(t => t.hash === hash);
             if (!torrent) return false;
 
-            const success = await DashApi.transmissionDeleteTorrent(torrent.id || hash, deleteFiles, connectionInfo);
+            const success = await DashApi.transmissionDeleteTorrent(torrent.id || hash, deleteFiles, id || '');
 
             // Refresh the torrents list after operation
             if (success) {

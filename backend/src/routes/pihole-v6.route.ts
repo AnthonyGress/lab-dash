@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { Request, Response, Router } from 'express';
 
+import { getItemConnectionInfo } from '../utils/config-lookup';
 import { decrypt, encrypt, isEncrypted } from '../utils/crypto';
 
 export const piholeV6Route = Router();
@@ -66,16 +67,33 @@ setInterval(async () => {
     }
 }, 60000); // Check every minute
 
+// Helper function to validate and get itemId with better error message
+const validateItemId = (req: Request): string => {
+    const itemId = req.query.itemId as string;
+    if (!itemId) {
+        throw new Error('itemId parameter is required. Please ensure the widget is properly configured with an item ID.');
+    }
+    return itemId;
+};
+
 const getBaseUrl = (req: Request): string => {
-    const host = req.query.host as string || 'localhost';
-    const port = req.query.port as string || '80';
-    const ssl = req.query.ssl === 'true';
+    const itemId = validateItemId(req);
+    const connectionInfo = getItemConnectionInfo(itemId);
+    const host = connectionInfo.host || 'localhost';
+    const port = connectionInfo.port || '80';
+    const ssl = connectionInfo.ssl || false;
     const protocol = ssl ? 'https' : 'http';
     return `${protocol}://${host}:${port}`;
 };
 
-const getPassword = (req: Request): string => {
-    let password = req.query.password as string || '';
+const getPassword = (req: Request): string | null => {
+    const itemId = validateItemId(req);
+    const connectionInfo = getItemConnectionInfo(itemId);
+    let password = connectionInfo.password;
+
+    if (!password) {
+        return null;
+    }
 
     // Handle encrypted password
     if (isEncrypted(password)) {

@@ -512,20 +512,13 @@ export class DashApi {
     }
 
     // qBittorrent methods
-    public static async qbittorrentLogin(credentials: {
-        username: string;
-        password: string;
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-    }): Promise<boolean> {
+    public static async qbittorrentLogin(itemId: string): Promise<boolean> {
         try {
-            const { host, port, ssl, username, password } = credentials;
             const response = await axios.post(
                 `${BACKEND_URL}/api/qbittorrent/login`,
-                { username, password },
+                {},
                 {
-                    params: { host, port, ssl },
+                    params: { itemId },
                     withCredentials: false
                 }
             );
@@ -558,16 +551,10 @@ export class DashApi {
         }
     }
 
-    public static async qbittorrentGetStats(connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-        username?: string;
-        password?: string;
-    }): Promise<any> {
+    public static async qbittorrentGetStats(itemId: string): Promise<any> {
         try {
             const res = await axios.get(`${BACKEND_URL}/api/qbittorrent/stats`, {
-                params: connectionInfo,
+                params: { itemId },
                 withCredentials: false
             });
             return res.data;
@@ -577,16 +564,10 @@ export class DashApi {
         }
     }
 
-    public static async qbittorrentGetTorrents(connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-        username?: string;
-        password?: string;
-    }): Promise<any[]> {
+    public static async qbittorrentGetTorrents(itemId: string): Promise<any[]> {
         try {
             const res = await axios.get(`${BACKEND_URL}/api/qbittorrent/torrents`, {
-                params: connectionInfo,
+                params: { itemId },
                 withCredentials: false
             });
             return res.data;
@@ -596,14 +577,10 @@ export class DashApi {
         }
     }
 
-    public static async qbittorrentLogout(connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-    }): Promise<boolean> {
+    public static async qbittorrentLogout(itemId: string): Promise<boolean> {
         try {
             await axios.post(`${BACKEND_URL}/api/qbittorrent/logout`, {}, {
-                params: connectionInfo,
+                params: { itemId },
                 withCredentials: true
             });
             return true;
@@ -613,13 +590,7 @@ export class DashApi {
         }
     }
 
-    public static async qbittorrentStartTorrent(hash: string, connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-        username?: string;
-        password?: string;
-    }): Promise<boolean> {
+    public static async qbittorrentStartTorrent(hash: string, itemId: string): Promise<boolean> {
         try {
             // Create a URLSearchParams object for form data
             const formData = new URLSearchParams();
@@ -629,7 +600,7 @@ export class DashApi {
                 `${BACKEND_URL}/api/qbittorrent/torrents/start`,
                 formData.toString(),
                 {
-                    params: connectionInfo,
+                    params: { itemId },
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded'
                     },
@@ -644,13 +615,7 @@ export class DashApi {
         }
     }
 
-    public static async qbittorrentStopTorrent(hash: string, connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-        username?: string;
-        password?: string;
-    }): Promise<boolean> {
+    public static async qbittorrentStopTorrent(hash: string, itemId: string): Promise<boolean> {
         try {
             // Create a URLSearchParams object for form data
             const formData = new URLSearchParams();
@@ -660,7 +625,7 @@ export class DashApi {
                 `${BACKEND_URL}/api/qbittorrent/torrents/stop`,
                 formData.toString(),
                 {
-                    params: connectionInfo,
+                    params: { itemId },
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded'
                     },
@@ -675,13 +640,7 @@ export class DashApi {
         }
     }
 
-    public static async qbittorrentDeleteTorrent(hash: string, deleteFiles: boolean = false, connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-        username?: string;
-        password?: string;
-    }): Promise<boolean> {
+    public static async qbittorrentDeleteTorrent(hash: string, deleteFiles: boolean = false, itemId: string): Promise<boolean> {
         try {
             // Create a URLSearchParams object for form data
             const formData = new URLSearchParams();
@@ -692,7 +651,7 @@ export class DashApi {
                 `${BACKEND_URL}/api/qbittorrent/torrents/delete`,
                 formData.toString(),
                 {
-                    params: connectionInfo,
+                    params: { itemId },
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded'
                     },
@@ -708,25 +667,13 @@ export class DashApi {
     }
 
     // Deluge methods
-    public static async delugeLogin(credentials: {
-        username: string;
-        password: string;
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-    }): Promise<boolean> {
+    public static async delugeLogin(itemId: string): Promise<boolean> {
         try {
-            const { host, port, ssl, password } = credentials;
             const response = await axios.post(
                 `${BACKEND_URL}/api/deluge/login`,
                 {},
                 {
-                    params: {
-                        host,
-                        port,
-                        ssl,
-                        password
-                    },
+                    params: { itemId },
                     withCredentials: false
                 }
             );
@@ -737,14 +684,10 @@ export class DashApi {
         }
     }
 
-    public static async delugeGetStats(connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-    }): Promise<any> {
+    public static async delugeGetStats(itemId: string): Promise<any> {
         try {
             const res = await axios.get(`${BACKEND_URL}/api/deluge/stats`, {
-                params: connectionInfo,
+                params: { itemId },
                 withCredentials: false
             });
             return res.data;
@@ -754,14 +697,10 @@ export class DashApi {
         }
     }
 
-    public static async delugeGetTorrents(connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-    }): Promise<any[]> {
+    public static async delugeGetTorrents(itemId: string): Promise<any[]> {
         try {
             const res = await axios.get(`${BACKEND_URL}/api/deluge/torrents`, {
-                params: connectionInfo,
+                params: { itemId },
                 withCredentials: false
             });
             return res.data;
@@ -771,14 +710,10 @@ export class DashApi {
         }
     }
 
-    public static async delugeLogout(connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-    }): Promise<boolean> {
+    public static async delugeLogout(itemId: string): Promise<boolean> {
         try {
             await axios.post(`${BACKEND_URL}/api/deluge/logout`, {}, {
-                params: connectionInfo,
+                params: { itemId },
                 withCredentials: true
             });
             return true;
@@ -788,18 +723,12 @@ export class DashApi {
         }
     }
 
-    public static async delugeResumeTorrent(hash: string, connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-        username?: string;
-        password?: string;
-    }): Promise<boolean> {
+    public static async delugeResumeTorrent(hash: string, itemId: string): Promise<boolean> {
         try {
             await axios.post(`${BACKEND_URL}/api/deluge/torrents/resume`,
                 { hash },
                 {
-                    params: connectionInfo,
+                    params: { itemId },
                     withCredentials: true
                 }
             );
@@ -810,18 +739,12 @@ export class DashApi {
         }
     }
 
-    public static async delugePauseTorrent(hash: string, connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-        username?: string;
-        password?: string;
-    }): Promise<boolean> {
+    public static async delugePauseTorrent(hash: string, itemId: string): Promise<boolean> {
         try {
             await axios.post(`${BACKEND_URL}/api/deluge/torrents/pause`,
                 { hash },
                 {
-                    params: connectionInfo,
+                    params: { itemId },
                     withCredentials: true
                 }
             );
@@ -832,13 +755,7 @@ export class DashApi {
         }
     }
 
-    public static async delugeDeleteTorrent(hash: string, deleteFiles: boolean = false, connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-        username?: string;
-        password?: string;
-    }): Promise<boolean> {
+    public static async delugeDeleteTorrent(hash: string, deleteFiles: boolean = false, itemId: string): Promise<boolean> {
         try {
             await axios.post(`${BACKEND_URL}/api/deluge/torrents/delete`,
                 {
@@ -846,7 +763,7 @@ export class DashApi {
                     deleteFiles
                 },
                 {
-                    params: connectionInfo,
+                    params: { itemId },
                     withCredentials: true
                 }
             );
@@ -858,20 +775,13 @@ export class DashApi {
     }
 
     // Transmission methods
-    public static async transmissionLogin(credentials: {
-        username: string;
-        password: string;
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-    }): Promise<boolean> {
+    public static async transmissionLogin(itemId: string): Promise<boolean> {
         try {
-            const { host, port, ssl, username, password } = credentials;
             const response = await axios.post(
                 `${BACKEND_URL}/api/transmission/login`,
-                { username, password },
+                {},
                 {
-                    params: { host, port, ssl },
+                    params: { itemId },
                     withCredentials: false
                 }
             );
@@ -882,16 +792,10 @@ export class DashApi {
         }
     }
 
-    public static async transmissionGetStats(connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-        username?: string;
-        password?: string;
-    }): Promise<any> {
+    public static async transmissionGetStats(itemId: string): Promise<any> {
         try {
             const res = await axios.get(`${BACKEND_URL}/api/transmission/stats`, {
-                params: connectionInfo,
+                params: { itemId },
                 withCredentials: false
             });
             return res.data;
@@ -901,16 +805,10 @@ export class DashApi {
         }
     }
 
-    public static async transmissionGetTorrents(connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-        username?: string;
-        password?: string;
-    }): Promise<any[]> {
+    public static async transmissionGetTorrents(itemId: string): Promise<any[]> {
         try {
             const res = await axios.get(`${BACKEND_URL}/api/transmission/torrents`, {
-                params: connectionInfo,
+                params: { itemId },
                 withCredentials: false
             });
             return res.data;
@@ -920,14 +818,10 @@ export class DashApi {
         }
     }
 
-    public static async transmissionLogout(connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-    }): Promise<boolean> {
+    public static async transmissionLogout(itemId: string): Promise<boolean> {
         try {
             await axios.post(`${BACKEND_URL}/api/transmission/logout`, {}, {
-                params: connectionInfo,
+                params: { itemId },
                 withCredentials: true
             });
             return true;
@@ -937,19 +831,13 @@ export class DashApi {
         }
     }
 
-    public static async transmissionStartTorrent(id: string, connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-        username?: string;
-        password?: string;
-    }): Promise<boolean> {
+    public static async transmissionStartTorrent(id: string, itemId: string): Promise<boolean> {
         try {
             const response = await axios.post(
                 `${BACKEND_URL}/api/transmission/torrents/start`,
                 { ids: [id] },
                 {
-                    params: connectionInfo,
+                    params: { itemId },
                     withCredentials: true
                 }
             );
@@ -960,19 +848,13 @@ export class DashApi {
         }
     }
 
-    public static async transmissionStopTorrent(id: string, connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-        username?: string;
-        password?: string;
-    }): Promise<boolean> {
+    public static async transmissionStopTorrent(id: string, itemId: string): Promise<boolean> {
         try {
             const response = await axios.post(
                 `${BACKEND_URL}/api/transmission/torrents/stop`,
                 { ids: [id] },
                 {
-                    params: connectionInfo,
+                    params: { itemId },
                     withCredentials: true
                 }
             );
@@ -983,19 +865,13 @@ export class DashApi {
         }
     }
 
-    public static async transmissionDeleteTorrent(id: string, deleteFiles: boolean = false, connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-        username?: string;
-        password?: string;
-    }): Promise<boolean> {
+    public static async transmissionDeleteTorrent(id: string, deleteFiles: boolean = false, itemId: string): Promise<boolean> {
         try {
             const response = await axios.post(
                 `${BACKEND_URL}/api/transmission/torrents/delete`,
                 { ids: [id], deleteFiles },
                 {
-                    params: connectionInfo,
+                    params: { itemId },
                     withCredentials: true
                 }
             );
@@ -1006,47 +882,86 @@ export class DashApi {
         }
     }
 
-    // Pi-hole methods
-    public static async getPiholeStats(connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-        apiToken?: string;
-        password?: string;
-    }): Promise<any> {
+    // Helper method to determine which Pi-hole route to use based on config
+    private static async getPiholeRouteInfo(itemId: string): Promise<{ route: string; isV6: boolean }> {
         try {
-            const params: any = {};
+            // Get the config to determine authentication method
+            const configRes = await axios.get(`${BACKEND_URL}/api/config`, {
+                withCredentials: true
+            });
 
-            if (connectionInfo) {
-                if (connectionInfo.host) params.host = connectionInfo.host;
-                if (connectionInfo.port) params.port = connectionInfo.port;
-                if (connectionInfo.ssl !== undefined) params.ssl = connectionInfo.ssl;
+            const config = configRes.data;
 
-                // Only include credentials that are actually provided
-                if (connectionInfo.apiToken) params.apiToken = connectionInfo.apiToken;
-                if (connectionInfo.password) params.password = connectionInfo.password;
+            // Search in main desktop layout
+            let foundItem = config.layout?.desktop?.find((item: any) => item.id === itemId);
+            if (foundItem) {
+                return this.determineRouteFromItem(foundItem);
             }
 
-            // Validate that we have at least one authentication method
-            if (!params.apiToken && !params.password) {
-                throw new Error('No authentication credentials provided. Please add either an API token or password.');
+            // Search in main mobile layout
+            foundItem = config.layout?.mobile?.find((item: any) => item.id === itemId);
+            if (foundItem) {
+                return this.determineRouteFromItem(foundItem);
             }
 
-            // Choose the appropriate API endpoint based on the authentication method
-            let apiEndpoint = '/api/pihole/stats';
+            // Search in pages if they exist
+            if (config.pages) {
+                for (const page of config.pages) {
+                    // Search in page desktop layout
+                    foundItem = page.layout?.desktop?.find((item: any) => item.id === itemId);
+                    if (foundItem) {
+                        return this.determineRouteFromItem(foundItem);
+                    }
 
-            // If using password authentication, use the v6 endpoint
-            if (params.password && !params.apiToken) {
-                apiEndpoint = '/api/pihole/v6/stats';
+                    // Search in page mobile layout
+                    foundItem = page.layout?.mobile?.find((item: any) => item.id === itemId);
+                    if (foundItem) {
+                        return this.determineRouteFromItem(foundItem);
+                    }
+                }
             }
 
-            const res = await axios.get(`${BACKEND_URL}${apiEndpoint}`, {
-                params,
+            throw new Error('Item not found in configuration');
+        } catch (error) {
+            console.error('Error determining Pi-hole route:', error);
+            throw new Error('Failed to determine Pi-hole version from configuration');
+        }
+    }
+
+    // Helper method to determine route from item config
+    private static determineRouteFromItem(item: any): { route: string; isV6: boolean } {
+        const itemConfig = item.config || {};
+
+        // Determine route based on authentication method
+        // If password exists (with or without apiToken), use v6
+        // If only apiToken exists, use v5
+        const hasPassword = !!itemConfig.password;
+        const hasApiToken = !!itemConfig.apiToken;
+
+        if (hasPassword) {
+            return { route: 'pihole/v6', isV6: true };
+        } else if (hasApiToken) {
+            return { route: 'pihole', isV6: false };
+        } else {
+            throw new Error('No valid authentication method found (password for v6 or apiToken for v5)');
+        }
+    }
+
+    // Pi-hole methods
+    public static async getPiholeStats(itemId: string): Promise<any> {
+        try {
+            if (!itemId) {
+                throw new Error('Item ID is required for Pi-hole stats');
+            }
+
+            const { route } = await this.getPiholeRouteInfo(itemId);
+
+            const res = await axios.get(`${BACKEND_URL}/api/${route}/stats`, {
+                params: { itemId },
                 withCredentials: true
             });
 
             if (res.data.success) {
-                // Log the stats response for debugging
                 return res.data.data;
             } else {
                 if (res.data.decryptionError) {
@@ -1116,6 +1031,7 @@ export class DashApi {
 
     public static async encryptPiholeToken(apiToken: string): Promise<string> {
         try {
+            // API tokens are only used for v5, so always use the v5 route
             const res = await axios.post(`${BACKEND_URL}/api/pihole/encrypt-token`,
                 { apiToken },
                 { withCredentials: true }
@@ -1127,9 +1043,22 @@ export class DashApi {
         }
     }
 
-    public static async encryptPiholePassword(password: string): Promise<string> {
+    public static async encryptPiholePassword(password: string, itemId?: string): Promise<string> {
         try {
-            const res = await axios.post(`${BACKEND_URL}/api/pihole/encrypt-password`,
+            let route = 'pihole'; // Default to v5
+
+            // If itemId is provided, determine the correct route
+            if (itemId) {
+                try {
+                    const routeInfo = await this.getPiholeRouteInfo(itemId);
+                    route = routeInfo.route;
+                } catch (error) {
+                    // If we can't determine the route, default to v5 for backward compatibility
+                    console.warn('Could not determine Pi-hole route, defaulting to v5:', error);
+                }
+            }
+
+            const res = await axios.post(`${BACKEND_URL}/api/${route}/encrypt-password`,
                 { password },
                 { withCredentials: true }
             );
@@ -1140,36 +1069,21 @@ export class DashApi {
         }
     }
 
-    public static async disablePihole(connectionInfo: {
-        host: string;
-        port: string;
-        ssl: boolean;
-        apiToken?: string;
-        password?: string;
-    }, seconds?: number): Promise<boolean> {
+    public static async disablePihole(itemId: string, seconds?: number): Promise<boolean> {
         try {
-            const params: any = {
-                host: connectionInfo.host,
-                port: connectionInfo.port,
-                ssl: connectionInfo.ssl
-            };
+            if (!itemId) {
+                throw new Error('Item ID is required for Pi-hole disable');
+            }
 
-            if (connectionInfo.apiToken) params.apiToken = connectionInfo.apiToken;
-            if (connectionInfo.password) params.password = connectionInfo.password;
+            const { route } = await this.getPiholeRouteInfo(itemId);
+
+            const params: any = { itemId };
 
             if (seconds !== undefined && seconds !== null) {
                 params.seconds = seconds;
             }
 
-            // Choose the appropriate API endpoint based on the authentication method
-            let apiEndpoint = '/api/pihole/disable';
-
-            // If using password authentication, use the v6 endpoint
-            if (params.password && !params.apiToken) {
-                apiEndpoint = '/api/pihole/v6/disable';
-            }
-
-            const res = await axios.post(`${BACKEND_URL}${apiEndpoint}`, {}, {
+            const res = await axios.post(`${BACKEND_URL}/api/${route}/disable`, {}, {
                 params,
                 withCredentials: true
             });
@@ -1197,33 +1111,16 @@ export class DashApi {
         }
     }
 
-    public static async enablePihole(connectionInfo: {
-        host: string;
-        port: string;
-        ssl: boolean;
-        apiToken?: string;
-        password?: string;
-    }): Promise<boolean> {
+    public static async enablePihole(itemId: string): Promise<boolean> {
         try {
-            const params: any = {
-                host: connectionInfo.host,
-                port: connectionInfo.port,
-                ssl: connectionInfo.ssl
-            };
-
-            if (connectionInfo.apiToken) params.apiToken = connectionInfo.apiToken;
-            if (connectionInfo.password) params.password = connectionInfo.password;
-
-            // Choose the appropriate API endpoint based on the authentication method
-            let apiEndpoint = '/api/pihole/enable';
-
-            // If using password authentication, use the v6 endpoint
-            if (params.password && !params.apiToken) {
-                apiEndpoint = '/api/pihole/v6/enable';
+            if (!itemId) {
+                throw new Error('Item ID is required for Pi-hole enable');
             }
 
-            const res = await axios.post(`${BACKEND_URL}${apiEndpoint}`, {}, {
-                params,
+            const { route } = await this.getPiholeRouteInfo(itemId);
+
+            const res = await axios.post(`${BACKEND_URL}/api/${route}/enable`, {}, {
+                params: { itemId },
                 withCredentials: true
             });
 
@@ -1246,6 +1143,30 @@ export class DashApi {
             }
 
             console.error('Failed to enable Pi-hole:', error);
+            throw error;
+        }
+    }
+
+    public static async getPiholeBlockingStatus(itemId: string): Promise<any> {
+        try {
+            if (!itemId) {
+                throw new Error('Item ID is required for Pi-hole blocking status');
+            }
+
+            const { route } = await this.getPiholeRouteInfo(itemId);
+
+            const res = await axios.get(`${BACKEND_URL}/api/${route}/blocking-status`, {
+                params: { itemId },
+                withCredentials: true
+            });
+
+            if (res.data.success) {
+                return res.data.data;
+            } else {
+                throw new Error(res.data.error || 'Failed to get Pi-hole blocking status');
+            }
+        } catch (error: any) {
+            console.error('Pi-hole blocking status error:', error);
             throw error;
         }
     }

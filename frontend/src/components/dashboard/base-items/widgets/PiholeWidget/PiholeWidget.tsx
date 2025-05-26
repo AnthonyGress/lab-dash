@@ -1,5 +1,4 @@
 import { Box, Button, CircularProgress, Grid2 as Grid, Menu, MenuItem, Paper, TextField, Typography } from '@mui/material';
-import axios from 'axios';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FaGlobe, FaList, FaPercentage } from 'react-icons/fa';
 import { MdBlockFlipped, MdDns, MdPause, MdPlayArrow } from 'react-icons/md';
@@ -40,8 +39,8 @@ const initialStats: PiholeStats = {
     timer: null
 };
 
-export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
-    const { config } = props;
+export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }) => {
+    const { config, id } = props;
     const { editMode } = useAppContext();
 
     // Reference to track if this is the first render
@@ -142,93 +141,81 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
         }
 
         try {
-            // First check Pi-hole v6 blocking status if applicable
-            if (isPiholeV6 && piholeConfig.password) {
-                try {
-                    // Create the base URL for the backend API
-                    const backendUrl = `${BACKEND_URL}/api/pihole/v6/blocking-status`;
+            // First check Pi-hole blocking status (works for both v5 and v6)
+            try {
+                if (!id) {
+                    console.error('Widget ID is required for Pi-hole blocking status');
+                    return;
+                }
 
-                    // Make the request to our backend API for blocking status
-                    const response = await axios.get(backendUrl, {
-                        params: {
-                            host: piholeConfig.host,
-                            port: piholeConfig.port,
-                            ssl: piholeConfig.ssl,
-                            password: piholeConfig.password
-                        },
-                        timeout: 1000
-                    });
+                // Use DashApi method which automatically routes to correct endpoint
+                const blockingData = await DashApi.getPiholeBlockingStatus(id);
 
-                    if (response.data.success && response.data.data) {
-                        const blockingData = response.data.data;
+                // Update isBlocking state based on status
+                const newIsBlocking = blockingData.status === 'enabled';
 
-                        // Update isBlocking state based on status
-                        const newIsBlocking = blockingData.status === 'enabled';
+                // Only update when there's a change to avoid unnecessary renders
+                if (isBlocking !== newIsBlocking) {
+                    setIsBlocking(newIsBlocking);
+                }
 
-                        // Only update when there's a change to avoid unnecessary renders
-                        if (isBlocking !== newIsBlocking) {
-                            setIsBlocking(newIsBlocking);
-                        }
+                // If disabled with timer, set up the countdown
+                if (blockingData.status === 'disabled') {
+                    // Check if we have a timer or until value
+                    if (blockingData.timer && typeof blockingData.timer === 'number') {
+                        // Calculate end time from timer (seconds)
+                        const endTime = new Date();
+                        endTime.setSeconds(endTime.getSeconds() + blockingData.timer);
 
-                        // If disabled with timer, set up the countdown
-                        if (blockingData.status === 'disabled') {
-                            // Check if we have a timer or until value
-                            if (blockingData.timer && typeof blockingData.timer === 'number') {
-                                // Calculate end time from timer (seconds)
-                                const endTime = new Date();
-                                endTime.setSeconds(endTime.getSeconds() + blockingData.timer);
+                        // Check if this is a significant change from the current end time
+                        const shouldUpdateEndTime = !disableEndTime ||
+                            Math.abs(endTime.getTime() - disableEndTime.getTime()) > 2000;
 
-                                // Check if this is a significant change from the current end time
-                                const shouldUpdateEndTime = !disableEndTime ||
-                                    Math.abs(endTime.getTime() - disableEndTime.getTime()) > 2000;
+                        if (shouldUpdateEndTime) {
+                            setDisableEndTime(endTime);
 
-                                if (shouldUpdateEndTime) {
-                                    setDisableEndTime(endTime);
+                            // Immediately calculate remaining time for UI responsiveness
+                            const now = new Date();
+                            const diffMs = endTime.getTime() - now.getTime();
+                            const diffSec = Math.floor(diffMs / 1000);
+                            const minutes = Math.floor(diffSec / 60);
+                            const seconds = diffSec % 60;
+                            const newRemainingTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                            setRemainingTime(newRemainingTime);
 
-                                    // Immediately calculate remaining time for UI responsiveness
-                                    const now = new Date();
-                                    const diffMs = endTime.getTime() - now.getTime();
-                                    const diffSec = Math.floor(diffMs / 1000);
-                                    const minutes = Math.floor(diffSec / 60);
-                                    const seconds = diffSec % 60;
-                                    const newRemainingTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                                    setRemainingTime(newRemainingTime);
-
-                                    // Update stats
-                                    setStats(prevStats => ({
-                                        ...prevStats,
-                                        status: 'disabled',
-                                        timer: blockingData.timer
-                                    }));
-                                }
-                            } else {
-                                // No timer, must be indefinite
-                                setDisableEndTime(null);
-                                setRemainingTime('');
-                                setStats(prevStats => ({
-                                    ...prevStats,
-                                    status: 'disabled',
-                                    timer: null
-                                }));
-                            }
-                        } else {
-                            // Pi-hole is enabled, clear any end time
-                            setDisableEndTime(null);
-                            setRemainingTime('');
+                            // Update stats
                             setStats(prevStats => ({
                                 ...prevStats,
-                                status: 'enabled',
-                                timer: null
+                                status: 'disabled',
+                                timer: blockingData.timer
                             }));
                         }
+                    } else {
+                        // No timer, must be indefinite
+                        setDisableEndTime(null);
+                        setRemainingTime('');
+                        setStats(prevStats => ({
+                            ...prevStats,
+                            status: 'disabled',
+                            timer: null
+                        }));
                     }
-                } catch (statusError: any) {
-                    // Handle status check errors for v6
-                    if (statusError.response?.status === 400) {
-                        setAuthFailed(true);
-                        setError('Bad Request: Invalid configuration or authentication data');
-                        return; // Exit early to avoid the stats request
-                    }
+                } else {
+                    // Pi-hole is enabled, clear any end time
+                    setDisableEndTime(null);
+                    setRemainingTime('');
+                    setStats(prevStats => ({
+                        ...prevStats,
+                        status: 'enabled',
+                        timer: null
+                    }));
+                }
+            } catch (statusError: any) {
+                // Handle status check errors
+                if (statusError.response?.status === 400) {
+                    setAuthFailed(true);
+                    setError('Bad Request: Invalid configuration or authentication data');
+                    return; // Exit early to avoid the stats request
                 }
             }
 
@@ -238,7 +225,11 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 // Only set error to null if we're currently showing an error
                 if (error) setError(null);
 
-                const piholeStats = await DashApi.getPiholeStats(piholeConfig);
+                if (!id) {
+                    console.error('Widget ID is required for Pi-hole stats');
+                    return;
+                }
+                const piholeStats = await DashApi.getPiholeStats(id);
 
                 // Reset auth failed flag on successful fetch
                 setAuthFailed(false);
@@ -571,17 +562,12 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
         try {
             // Don't update UI state here - wait for API call to complete
 
+            if (!id) {
+                throw new Error('Widget ID is required for Pi-hole disable');
+            }
+
             // Call the backend API to disable blocking
-            const result = await DashApi.disablePihole(
-                {
-                    host: piholeConfig.host,
-                    port: piholeConfig.port,
-                    ssl: piholeConfig.ssl,
-                    apiToken: piholeConfig.apiToken,
-                    password: piholeConfig.password
-                },
-                seconds || undefined
-            );
+            const result = await DashApi.disablePihole(id, seconds || undefined);
 
             if (result) {
                 // Only update UI after successful API call
@@ -695,14 +681,12 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
         try {
             setIsLoading(true);
 
+            if (!id) {
+                throw new Error('Widget ID is required for Pi-hole enable');
+            }
+
             // Call API first, don't update UI state optimistically
-            await DashApi.enablePihole({
-                host: piholeConfig.host,
-                port: piholeConfig.port,
-                ssl: piholeConfig.ssl,
-                apiToken: piholeConfig.apiToken,
-                password: piholeConfig.password
-            });
+            await DashApi.enablePihole(id);
 
             // Only update UI after successful API call
             setIsBlocking(true);

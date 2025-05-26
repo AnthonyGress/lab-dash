@@ -2,6 +2,7 @@ import axios from 'axios';
 import { NextFunction, Request, Response, Router } from 'express';
 
 import { authenticateToken } from '../middleware/auth.middleware';
+import { getItemConnectionInfo } from '../utils/config-lookup';
 import { decrypt, encrypt, isEncrypted } from '../utils/crypto';
 
 export const transmissionRoute = Router();
@@ -20,10 +21,21 @@ const sessions: Record<string, SessionInfo> = {};
 // Transmission sessions typically last longer than qBittorrent
 const SESSION_LIFETIME = 60 * 60 * 1000; // 60 minutes in milliseconds
 
+// Helper function to validate and get itemId with better error message
+const validateItemId = (req: Request): string => {
+    const itemId = req.query.itemId as string;
+    if (!itemId) {
+        throw new Error('itemId parameter is required. Please ensure the widget is properly configured with an item ID.');
+    }
+    return itemId;
+};
+
 const getBaseUrl = (req: Request): string => {
-    const host = req.query.host as string || 'localhost';
-    const port = req.query.port as string || '9091';
-    const ssl = req.query.ssl === 'true';
+    const itemId = validateItemId(req);
+    const connectionInfo = getItemConnectionInfo(itemId);
+    const host = connectionInfo.host || 'localhost';
+    const port = connectionInfo.port || '9091';
+    const ssl = connectionInfo.ssl || false;
     const protocol = ssl ? 'https' : 'http';
     return `${protocol}://${host}:${port}/transmission/rpc`;
 };
@@ -36,11 +48,7 @@ async function getTransmissionSessionId(baseUrl: string, username?: string, pass
             'Authorization': `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`
         } : {};
 
-        console.log('Getting Transmission session ID:', {
-            baseUrl,
-            hasAuth: !!authHeader.Authorization,
-            username: username ? 'present' : 'missing'
-        });
+        console.log('Getting Transmission session ID');
 
         try {
             await axios.post(baseUrl, {
@@ -55,26 +63,18 @@ async function getTransmissionSessionId(baseUrl: string, username?: string, pass
             if (error.response?.status === 409) {
                 // This is expected - Transmission returns 409 with session ID
                 const sessionId = error.response.headers['x-transmission-session-id'];
-                console.log('Transmission session ID obtained:', sessionId ? 'success' : 'missing');
+                console.log('Transmission session ID obtained');
                 if (sessionId) {
                     return sessionId;
                 }
             } else {
-                console.error('Unexpected Transmission response:', {
-                    status: error.response?.status,
-                    statusText: error.response?.statusText,
-                    data: error.response?.data
-                });
+                console.error('Unexpected Transmission response:', error.response?.status);
             }
             throw error;
         }
         return null;
     } catch (error: any) {
-        console.error('Transmission session ID error:', {
-            message: error.message,
-            status: error.response?.status,
-            statusText: error.response?.statusText
-        });
+        console.error('Transmission session ID error:', error.message);
         return null;
     }
 }
@@ -99,20 +99,28 @@ async function authenticateTransmission(baseUrl: string, username?: string, pass
     }
 }
 
+// Function to get credentials from item config
+function getCredentials(req: Request): { username?: string; password?: string } {
+    const itemId = validateItemId(req);
+    const connectionInfo = getItemConnectionInfo(itemId);
+    return {
+        username: connectionInfo.username,
+        password: connectionInfo.password
+    };
+}
+
 // Function to ensure valid session
 async function ensureValidSession(req: Request): Promise<string | null> {
     const baseUrl = getBaseUrl(req);
     const sessionKey = req.user?.username || req.ip || 'default';
     const session = sessions[sessionKey];
+    const credentials = getCredentials(req);
 
     // If no session exists or session expired, create new one
     if (!session || session.expires < Date.now()) {
-        const username = req.query.username as string;
-        const password = req.query.password as string;
-
         // Treat empty strings as undefined for Transmission
-        const cleanUsername = username && username.trim() !== '' ? username : undefined;
-        const cleanPassword = password && password.trim() !== '' ? password : undefined;
+        const cleanUsername = credentials.username && credentials.username.trim() !== '' ? credentials.username : undefined;
+        const cleanPassword = credentials.password && credentials.password.trim() !== '' ? credentials.password : undefined;
 
         const sessionId = await authenticateTransmission(baseUrl, cleanUsername, cleanPassword);
         if (sessionId) {
@@ -146,13 +154,7 @@ async function makeTransmissionRequest(baseUrl: string, sessionId: string, metho
         'Authorization': `Basic ${Buffer.from(`${username}:${decryptedPassword}`).toString('base64')}`
     } : {};
 
-    console.log('Making Transmission RPC request:', {
-        method,
-        baseUrl,
-        hasSessionId: !!sessionId,
-        hasAuth: !!authHeader.Authorization,
-        username: username ? 'present' : 'missing'
-    });
+    console.log('Making Transmission RPC request:', method);
 
     const response = await axios.post(baseUrl, {
         method,
@@ -170,8 +172,13 @@ async function makeTransmissionRequest(baseUrl: string, sessionId: string, metho
 
 transmissionRoute.post('/login', async (req: Request, res: Response) => {
     try {
-        const { username, password } = req.body;
+        const itemId = validateItemId(req);
+
         const baseUrl = getBaseUrl(req);
+        const connectionInfo = getItemConnectionInfo(itemId);
+
+        const username = connectionInfo.username;
+        const password = connectionInfo.password;
 
         // For Transmission, credentials are optional
         let decryptedPassword = password;
@@ -258,17 +265,12 @@ transmissionRoute.get('/stats', async (req: Request, res: Response) => {
         }
 
         try {
-            // Use stored session credentials if available, otherwise fall back to query params
-            const username = session?.username || req.query.username as string;
-            const password = session?.password || req.query.password as string;
+            // Use stored session credentials if available, otherwise get from item config
+            const credentials = getCredentials(req);
+            const username = session?.username || credentials.username;
+            const password = session?.password || credentials.password;
 
-            console.log('Transmission stats request:', {
-                baseUrl,
-                sessionId: sessionId ? 'present' : 'missing',
-                username: username ? 'present' : 'missing',
-                password: password ? 'present' : 'missing',
-                hasSession: !!session
-            });
+            console.log('Transmission stats request');
 
             const response = await makeTransmissionRequest(
                 baseUrl,
@@ -321,17 +323,12 @@ transmissionRoute.get('/torrents', async (req: Request, res: Response) => {
         }
 
         try {
-            // Use stored session credentials if available, otherwise fall back to query params
-            const username = session?.username || req.query.username as string;
-            const password = session?.password || req.query.password as string;
+            // Use stored session credentials if available, otherwise get from item config
+            const credentials = getCredentials(req);
+            const username = session?.username || credentials.username;
+            const password = session?.password || credentials.password;
 
-            console.log('Transmission torrents request:', {
-                baseUrl,
-                sessionId: sessionId ? 'present' : 'missing',
-                username: username ? 'present' : 'missing',
-                password: password ? 'present' : 'missing',
-                hasSession: !!session
-            });
+            console.log('Transmission torrents request');
 
             const response = await makeTransmissionRequest(
                 baseUrl,
@@ -391,9 +388,10 @@ transmissionRoute.post('/torrents/start', authenticateToken, async (req: Request
             return;
         }
 
-        // Use stored session credentials if available, otherwise fall back to query params
-        const username = session?.username || req.query.username as string;
-        const password = session?.password || req.query.password as string;
+        // Use stored session credentials if available, otherwise get from item config
+        const credentials = getCredentials(req);
+        const username = session?.username || credentials.username;
+        const password = session?.password || credentials.password;
 
         const response = await makeTransmissionRequest(
             baseUrl,
@@ -437,9 +435,10 @@ transmissionRoute.post('/torrents/stop', authenticateToken, async (req: Request,
             return;
         }
 
-        // Use stored session credentials if available, otherwise fall back to query params
-        const username = session?.username || req.query.username as string;
-        const password = session?.password || req.query.password as string;
+        // Use stored session credentials if available, otherwise get from item config
+        const credentials = getCredentials(req);
+        const username = session?.username || credentials.username;
+        const password = session?.password || credentials.password;
 
         const response = await makeTransmissionRequest(
             baseUrl,
@@ -483,9 +482,10 @@ transmissionRoute.post('/torrents/delete', authenticateToken, async (req: Reques
             return;
         }
 
-        // Use stored session credentials if available, otherwise fall back to query params
-        const username = session?.username || req.query.username as string;
-        const password = session?.password || req.query.password as string;
+        // Use stored session credentials if available, otherwise get from item config
+        const credentials = getCredentials(req);
+        const username = session?.username || credentials.username;
+        const password = session?.password || credentials.password;
 
         const response = await makeTransmissionRequest(
             baseUrl,

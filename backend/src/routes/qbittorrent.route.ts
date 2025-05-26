@@ -3,6 +3,7 @@ import { NextFunction, Request, Response, Router } from 'express';
 import qs from 'querystring';
 
 import { authenticateToken } from '../middleware/auth.middleware';
+import { getItemConnectionInfo } from '../utils/config-lookup';
 import { decrypt, encrypt, isEncrypted } from '../utils/crypto';
 
 export const qbittorrentRoute = Router();
@@ -22,9 +23,16 @@ const sessions: Record<string, SessionInfo> = {};
 const SESSION_LIFETIME = 25 * 60 * 1000; // 25 minutes in milliseconds
 
 const getBaseUrl = (req: Request): string => {
-    const host = req.query.host as string || 'localhost';
-    const port = req.query.port as string || '8080';
-    const ssl = req.query.ssl === 'true';
+    const itemId = req.query.itemId as string;
+
+    if (!itemId) {
+        throw new Error('itemId parameter is required');
+    }
+
+    const connectionInfo = getItemConnectionInfo(itemId);
+    const host = connectionInfo.host || 'localhost';
+    const port = connectionInfo.port || '8080';
+    const ssl = connectionInfo.ssl || false;
     const protocol = ssl ? 'https' : 'http';
     return `${protocol}://${host}:${port}/api/v2`;
 };
@@ -62,27 +70,40 @@ async function authenticateQBittorrent(baseUrl: string, username: string, passwo
     }
 }
 
+// Function to get credentials from item config
+function getCredentials(req: Request): { username?: string; password?: string } {
+    const itemId = req.query.itemId as string;
+
+    if (!itemId) {
+        throw new Error('itemId parameter is required');
+    }
+
+    const connectionInfo = getItemConnectionInfo(itemId);
+    return {
+        username: connectionInfo.username,
+        password: connectionInfo.password
+    };
+}
+
 // Function to check and renew session if needed
 async function ensureValidSession(req: Request): Promise<string | null> {
     const baseUrl = getBaseUrl(req);
     const sessionId = req.user?.username || req.ip || 'default';
     const session = sessions[sessionId];
+    const credentials = getCredentials(req);
 
     // If no session exists, try to create one
     if (!session) {
         // If credentials provided, try to authenticate
-        if (req.query.username && req.query.password) {
-            const username = req.query.username as string;
-            const password = req.query.password as string;
-
-            const cookie = await authenticateQBittorrent(baseUrl, username, password);
+        if (credentials.username && credentials.password) {
+            const cookie = await authenticateQBittorrent(baseUrl, credentials.username, credentials.password);
             if (cookie) {
                 // Store session with expiration
                 sessions[sessionId] = {
                     cookie,
                     expires: Date.now() + SESSION_LIFETIME,
-                    username,
-                    password // Store encrypted password for renewal
+                    username: credentials.username,
+                    password: credentials.password // Store encrypted password for renewal
                 };
                 return cookie;
             }
@@ -108,19 +129,16 @@ async function ensureValidSession(req: Request): Promise<string | null> {
             }
         }
 
-        // If no stored credentials or renewal failed, try with query params
-        if (req.query.username && req.query.password) {
-            const username = req.query.username as string;
-            const password = req.query.password as string;
-
-            const cookie = await authenticateQBittorrent(baseUrl, username, password);
+        // If no stored credentials or renewal failed, try with current credentials
+        if (credentials.username && credentials.password) {
+            const cookie = await authenticateQBittorrent(baseUrl, credentials.username, credentials.password);
             if (cookie) {
                 // Store session with expiration
                 sessions[sessionId] = {
                     cookie,
                     expires: Date.now() + SESSION_LIFETIME,
-                    username,
-                    password
+                    username: credentials.username,
+                    password: credentials.password
                 };
                 return cookie;
             }
@@ -133,12 +151,21 @@ async function ensureValidSession(req: Request): Promise<string | null> {
 
 qbittorrentRoute.post('/login', async (req: Request, res: Response) => {
     try {
-        const { username } = req.body;
-        const { password } = req.body;
+        const itemId = req.query.itemId as string;
+
+        if (!itemId) {
+            res.status(400).json({ error: 'itemId parameter is required' });
+            return;
+        }
+
         const baseUrl = getBaseUrl(req);
+        const connectionInfo = getItemConnectionInfo(itemId);
+
+        const username = connectionInfo.username;
+        const password = connectionInfo.password;
 
         if (!username || !password) {
-            res.status(400).json({ error: 'Username and password are required' });
+            res.status(400).json({ error: 'Username and password must be configured for this item' });
             return;
         }
 

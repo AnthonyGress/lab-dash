@@ -41,7 +41,7 @@ export const SortableQBittorrent: React.FC<Props> = ({
             }}
         >
             <WidgetContainer editMode={editMode} id={id} onDelete={onDelete} onEdit={onEdit} onDuplicate={onDuplicate}>
-                <QBittorrentWidget config={config} />
+                <QBittorrentWidget config={config} id={id} />
             </WidgetContainer>
         </Grid2>
     );

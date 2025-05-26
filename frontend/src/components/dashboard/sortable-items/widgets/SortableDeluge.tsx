@@ -41,7 +41,7 @@ export const SortableDeluge: React.FC<Props> = ({
             }}
         >
             <WidgetContainer editMode={editMode} id={id} onDelete={onDelete} onEdit={onEdit} onDuplicate={onDuplicate}>
-                <DelugeWidget config={config} />
+                <DelugeWidget config={config} id={id} />
             </WidgetContainer>
         </Grid2>
     );
