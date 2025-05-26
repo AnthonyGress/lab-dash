@@ -33,6 +33,9 @@ export type NewItem = {
         temperatureUnit?: string;
         healthUrl?: string;
         healthCheckType?: string;
+        // Security flags for sensitive data
+        _hasApiToken?: boolean;
+        _hasPassword?: boolean;
         [key: string]: any;
     };
 }
@@ -96,6 +99,9 @@ export type DashboardItem = {
         temperatureUnit?: string;
         healthUrl?: string;
         healthCheckType?: string;
+        // Security flags for sensitive data
+        _hasApiToken?: boolean;
+        _hasPassword?: boolean;
         [key: string]: any;
     };
 };

@@ -882,9 +882,77 @@ export class DashApi {
         }
     }
 
+    // Helper method to determine route from config without fetching
+    public static getPiholeRouteFromConfig(itemId: string, config: any): { route: string; isV6: boolean } {
+
+        // Helper function to search for item in a layout array
+        const searchInLayout = (items: any[]): any => {
+            for (const item of items) {
+                // Direct match
+                if (item.id === itemId) {
+                    return item;
+                }
+
+                // Check if this is a dual widget and the itemId is for a position-specific widget
+                if (item.type === 'dual-widget' && itemId.startsWith(item.id + '-')) {
+                    const position = itemId.endsWith('-top') ? 'top' : 'bottom';
+                    const positionWidget = position === 'top' ? item.config?.topWidget : item.config?.bottomWidget;
+
+                    if (positionWidget?.type === 'pihole-widget') {
+                        // Return a synthetic item with the position-specific config
+                        return {
+                            id: itemId,
+                            type: 'pihole-widget',
+                            config: positionWidget.config
+                        };
+                    }
+                }
+
+                // Check group widgets
+                if (item.type === 'group-widget' && item.config?.items) {
+                    const groupItem = searchInLayout(item.config.items);
+                    if (groupItem) return groupItem;
+                }
+            }
+            return null;
+        };
+
+        // Search in main desktop layout
+        let foundItem = searchInLayout(config.layout?.desktop || []);
+        if (foundItem) {
+            return this.determineRouteFromItem(foundItem);
+        }
+
+        // Search in main mobile layout
+        foundItem = searchInLayout(config.layout?.mobile || []);
+        if (foundItem) {
+            return this.determineRouteFromItem(foundItem);
+        }
+
+        // Search in pages if they exist
+        if (config.pages) {
+            for (const page of config.pages) {
+                // Search in page desktop layout
+                foundItem = searchInLayout(page.layout?.desktop || []);
+                if (foundItem) {
+                    return this.determineRouteFromItem(foundItem);
+                }
+
+                // Search in page mobile layout
+                foundItem = searchInLayout(page.layout?.mobile || []);
+                if (foundItem) {
+                    return this.determineRouteFromItem(foundItem);
+                }
+            }
+        }
+
+        throw new Error('Item not found in configuration');
+    }
+
     // Helper method to determine which Pi-hole route to use based on config
     private static async getPiholeRouteInfo(itemId: string): Promise<{ route: string; isV6: boolean }> {
         try {
+
             // Get the config to determine authentication method
             const configRes = await axios.get(`${BACKEND_URL}/api/config`, {
                 withCredentials: true
@@ -892,14 +960,46 @@ export class DashApi {
 
             const config = configRes.data;
 
+            // Helper function to search for item in a layout array
+            const searchInLayout = (items: any[]): any => {
+                for (const item of items) {
+                    // Direct match
+                    if (item.id === itemId) {
+                        return item;
+                    }
+
+                    // Check if this is a dual widget and the itemId is for a position-specific widget
+                    if (item.type === 'dual-widget' && itemId.startsWith(item.id + '-')) {
+                        const position = itemId.endsWith('-top') ? 'top' : 'bottom';
+                        const positionWidget = position === 'top' ? item.config?.topWidget : item.config?.bottomWidget;
+
+                        if (positionWidget?.type === 'pihole-widget') {
+                            // Return a synthetic item with the position-specific config
+                            return {
+                                id: itemId,
+                                type: 'pihole-widget',
+                                config: positionWidget.config
+                            };
+                        }
+                    }
+
+                    // Check group widgets
+                    if (item.type === 'group-widget' && item.config?.items) {
+                        const groupItem = searchInLayout(item.config.items);
+                        if (groupItem) return groupItem;
+                    }
+                }
+                return null;
+            };
+
             // Search in main desktop layout
-            let foundItem = config.layout?.desktop?.find((item: any) => item.id === itemId);
+            let foundItem = searchInLayout(config.layout?.desktop || []);
             if (foundItem) {
                 return this.determineRouteFromItem(foundItem);
             }
 
             // Search in main mobile layout
-            foundItem = config.layout?.mobile?.find((item: any) => item.id === itemId);
+            foundItem = searchInLayout(config.layout?.mobile || []);
             if (foundItem) {
                 return this.determineRouteFromItem(foundItem);
             }
@@ -908,13 +1008,13 @@ export class DashApi {
             if (config.pages) {
                 for (const page of config.pages) {
                     // Search in page desktop layout
-                    foundItem = page.layout?.desktop?.find((item: any) => item.id === itemId);
+                    foundItem = searchInLayout(page.layout?.desktop || []);
                     if (foundItem) {
                         return this.determineRouteFromItem(foundItem);
                     }
 
                     // Search in page mobile layout
-                    foundItem = page.layout?.mobile?.find((item: any) => item.id === itemId);
+                    foundItem = searchInLayout(page.layout?.mobile || []);
                     if (foundItem) {
                         return this.determineRouteFromItem(foundItem);
                     }
@@ -932,11 +1032,11 @@ export class DashApi {
     private static determineRouteFromItem(item: any): { route: string; isV6: boolean } {
         const itemConfig = item.config || {};
 
-        // Determine route based on authentication method
-        // If password exists (with or without apiToken), use v6
-        // If only apiToken exists, use v5
-        const hasPassword = !!itemConfig.password;
-        const hasApiToken = !!itemConfig.apiToken;
+        // Determine route based on security flags (since actual credentials are not sent to frontend)
+        // If password flag exists (with or without apiToken flag), use v6
+        // If only apiToken flag exists, use v5
+        const hasPassword = !!itemConfig._hasPassword;
+        const hasApiToken = !!itemConfig._hasApiToken;
 
         if (hasPassword) {
             return { route: 'pihole/v6', isV6: true };
@@ -947,7 +1047,89 @@ export class DashApi {
         }
     }
 
-    // Pi-hole methods
+    // Pi-hole methods with config from context (preferred method)
+    public static async getPiholeStatsWithConfig(itemId: string, config: any): Promise<any> {
+        try {
+            if (!itemId) {
+                throw new Error('Item ID is required for Pi-hole stats');
+            }
+
+            const { route } = this.getPiholeRouteFromConfig(itemId, config);
+
+            const res = await axios.get(`${BACKEND_URL}/api/${route}/stats`, {
+                params: { itemId },
+                withCredentials: true
+            });
+
+            if (res.data.success) {
+                return res.data.data;
+            } else {
+                if (res.data.decryptionError) {
+                    throw new Error('Failed to decrypt Pi-hole authentication credentials');
+                }
+                throw new Error(res.data.error || 'Failed to get Pi-hole statistics');
+            }
+        } catch (error: any) {
+            // Check for custom error codes from our backend
+            if (error.response?.data?.code === 'PIHOLE_AUTH_ERROR') {
+                // Authentication error with Pi-hole - create a custom error
+                const piError = new Error(error.response.data.error || 'Pi-hole authentication failed');
+                // Attach the response to the error for the component to use
+                (piError as any).response = {
+                    status: 400,  // Use 400 instead of 401 to avoid global auth interceptor
+                    data: error.response.data
+                };
+                (piError as any).pihole = {
+                    requiresReauth: true
+                };
+                throw piError;
+            }
+
+            if (error.response?.data?.code === 'PIHOLE_API_ERROR') {
+                // API error with Pi-hole - create a custom error
+                const piError = new Error(error.response.data.error || 'Pi-hole API error');
+                (piError as any).response = {
+                    status: 400,
+                    data: error.response.data
+                };
+                (piError as any).pihole = {
+                    requiresReauth: error.response.data.requiresReauth || false
+                };
+                throw piError;
+            }
+
+            // If we get an explicit 401 from the server, throw with an authentication message
+            if (error.response?.status === 401) {
+                console.error('Pi-hole authentication failed:', error.response.data);
+                const errorMsg = error.response.data?.error || 'Authentication failed';
+                const err = new Error(errorMsg);
+                // Add response property so the component can check status code
+                (err as any).response = error.response;
+                throw err;
+            }
+
+            // Provide detailed error information for debugging
+            console.error('Pi-hole stats error:', {
+                message: error.message,
+                status: error.response?.status,
+                data: error.response?.data,
+                stack: error.stack
+            });
+
+            // Add more specific error messages for common issues
+            if (error.message?.includes('ECONNREFUSED')) {
+                throw new Error('Connection refused. Please check if Pi-hole is running at the specified host and port.');
+            } else if (error.message?.includes('timeout')) {
+                throw new Error('Connection timed out. Please check your network connection and Pi-hole configuration.');
+            } else if (error.message?.includes('Network Error')) {
+                throw new Error('Network error. Please check your network connection and Pi-hole configuration.');
+            }
+
+            throw error;
+        }
+    }
+
+    // Pi-hole methods (fallback - fetches config)
     public static async getPiholeStats(itemId: string): Promise<any> {
         try {
             if (!itemId) {
@@ -1069,6 +1251,48 @@ export class DashApi {
         }
     }
 
+    public static async disablePiholeWithConfig(itemId: string, config: any, seconds?: number): Promise<boolean> {
+        try {
+            if (!itemId) {
+                throw new Error('Item ID is required for Pi-hole disable');
+            }
+
+            const { route } = this.getPiholeRouteFromConfig(itemId, config);
+
+            const params: any = { itemId };
+
+            if (seconds !== undefined && seconds !== null) {
+                params.seconds = seconds;
+            }
+
+            const res = await axios.post(`${BACKEND_URL}/api/${route}/disable`, {}, {
+                params,
+                withCredentials: true
+            });
+
+            return res.data.success === true;
+        } catch (error: any) {
+            // Handle custom error codes from our backend
+            if (error.response?.data?.code) {
+                console.error(`Pi-hole disable error (${error.response.data.code}):`, error.response.data);
+
+                // Create a custom error that won't trigger global auth interceptors
+                const piError = new Error(error.response.data.error || 'Failed to disable Pi-hole');
+                (piError as any).response = {
+                    status: 400,  // Use 400 instead of 401 to avoid global auth interceptor
+                    data: error.response.data
+                };
+                (piError as any).pihole = {
+                    requiresReauth: error.response.data.requiresReauth || false
+                };
+                throw piError;
+            }
+
+            console.error('Failed to disable Pi-hole:', error);
+            throw error;
+        }
+    }
+
     public static async disablePihole(itemId: string, seconds?: number): Promise<boolean> {
         try {
             if (!itemId) {
@@ -1111,6 +1335,42 @@ export class DashApi {
         }
     }
 
+    public static async enablePiholeWithConfig(itemId: string, config: any): Promise<boolean> {
+        try {
+            if (!itemId) {
+                throw new Error('Item ID is required for Pi-hole enable');
+            }
+
+            const { route } = this.getPiholeRouteFromConfig(itemId, config);
+
+            const res = await axios.post(`${BACKEND_URL}/api/${route}/enable`, {}, {
+                params: { itemId },
+                withCredentials: true
+            });
+
+            return res.data.success === true;
+        } catch (error: any) {
+            // Handle custom error codes from our backend
+            if (error.response?.data?.code) {
+                console.error(`Pi-hole enable error (${error.response.data.code}):`, error.response.data);
+
+                // Create a custom error that won't trigger global auth interceptors
+                const piError = new Error(error.response.data.error || 'Failed to enable Pi-hole');
+                (piError as any).response = {
+                    status: 400,  // Use 400 instead of 401 to avoid global auth interceptor
+                    data: error.response.data
+                };
+                (piError as any).pihole = {
+                    requiresReauth: error.response.data.requiresReauth || false
+                };
+                throw piError;
+            }
+
+            console.error('Failed to enable Pi-hole:', error);
+            throw error;
+        }
+    }
+
     public static async enablePihole(itemId: string): Promise<boolean> {
         try {
             if (!itemId) {
@@ -1143,6 +1403,30 @@ export class DashApi {
             }
 
             console.error('Failed to enable Pi-hole:', error);
+            throw error;
+        }
+    }
+
+    public static async getPiholeBlockingStatusWithConfig(itemId: string, config: any): Promise<any> {
+        try {
+            if (!itemId) {
+                throw new Error('Item ID is required for Pi-hole blocking status');
+            }
+
+            const { route } = this.getPiholeRouteFromConfig(itemId, config);
+
+            const res = await axios.get(`${BACKEND_URL}/api/${route}/blocking-status`, {
+                params: { itemId },
+                withCredentials: true
+            });
+
+            if (res.data.success) {
+                return res.data.data;
+            } else {
+                throw new Error(res.data.error || 'Failed to get Pi-hole blocking status');
+            }
+        } catch (error: any) {
+            console.error('Pi-hole blocking status error:', error);
             throw error;
         }
     }

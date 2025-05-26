@@ -21,23 +21,55 @@ export const loadConfig = (): Config => {
 export const findItemById = (itemId: string): DashboardItem | null => {
     const config = loadConfig();
 
+    // Helper function to search for item in a layout array
+    const searchInLayout = (items: any[]): DashboardItem | null => {
+        for (const item of items) {
+            // Direct match
+            if (item.id === itemId) {
+                return item;
+            }
+
+            // Check if this is a dual widget and the itemId is for a position-specific widget
+            if (item.type === 'dual-widget' && itemId.startsWith(item.id + '-')) {
+                const position = itemId.endsWith('-top') ? 'top' : 'bottom';
+                const positionWidget = position === 'top' ? item.config?.topWidget : item.config?.bottomWidget;
+
+                if (positionWidget) {
+                    // Return a synthetic item with the position-specific config
+                    return {
+                        id: itemId,
+                        type: positionWidget.type,
+                        config: positionWidget.config
+                    } as DashboardItem;
+                }
+            }
+
+            // Check group widgets
+            if (item.type === 'group-widget' && item.config?.items) {
+                const groupItem = searchInLayout(item.config.items);
+                if (groupItem) return groupItem;
+            }
+        }
+        return null;
+    };
+
     // Search in main desktop layout
-    let foundItem = config.layout.desktop.find(item => item.id === itemId);
+    let foundItem = searchInLayout(config.layout.desktop);
     if (foundItem) return foundItem;
 
     // Search in main mobile layout
-    foundItem = config.layout.mobile.find(item => item.id === itemId);
+    foundItem = searchInLayout(config.layout.mobile);
     if (foundItem) return foundItem;
 
     // Search in pages if they exist
     if (config.pages) {
         for (const page of config.pages) {
             // Search in page desktop layout
-            foundItem = page.layout.desktop.find(item => item.id === itemId);
+            foundItem = searchInLayout(page.layout.desktop);
             if (foundItem) return foundItem;
 
             // Search in page mobile layout
-            foundItem = page.layout.mobile.find(item => item.id === itemId);
+            foundItem = searchInLayout(page.layout.mobile);
             if (foundItem) return foundItem;
         }
     }
@@ -47,6 +79,8 @@ export const findItemById = (itemId: string): DashboardItem | null => {
 
 /**
  * Extract connection information from an item's config
+ * This function works with the actual stored config (not the filtered frontend config)
+ * so it has access to the real password and apiToken values
  */
 export const getConnectionInfo = (item: DashboardItem) => {
     const config = item.config || {};
@@ -56,12 +90,15 @@ export const getConnectionInfo = (item: DashboardItem) => {
         port: config.port,
         ssl: config.ssl || false,
         username: config.username,
-        password: config.password,
-        apiToken: config.apiToken,
+        password: config.password, // This will be the actual password from stored config
+        apiToken: config.apiToken, // This will be the actual apiToken from stored config
         // For torrent clients
         clientType: config.clientType,
         // For other services
         displayName: config.displayName,
+        // Security flags (these may or may not be present depending on context)
+        _hasPassword: config._hasPassword,
+        _hasApiToken: config._hasApiToken,
         // Add other common config properties as needed
         ...config
     };

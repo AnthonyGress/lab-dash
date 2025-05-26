@@ -21,6 +21,7 @@ const WIDGET_OPTIONS = [
 
 interface DualWidgetConfigProps {
     formContext: UseFormReturn<FormValues>;
+    existingItem?: any;
 }
 
 // State wrapper for top and bottom widget configs
@@ -38,7 +39,7 @@ type PositionFormContext = Omit<UseFormReturn<FormValues>, 'register' | 'watch' 
     getValues: (name?: string) => any;
 };
 
-export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
+export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfigProps) => {
     const isMobile = useIsMobile();
     const initializedRef = useRef(false);
 
@@ -91,8 +92,9 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
         // This will prevent premature navigation between tabs
 
         // Initialize from existing item if editing
-        const existingItem = formContext.getValues();
-        const existingConfig = (existingItem as any).config || {};
+        const existingConfig = existingItem?.config || {};
+
+
 
         let topWidgetFields: Record<string, any> = {};
         let bottomWidgetFields: Record<string, any> = {};
@@ -138,20 +140,24 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
                     formContext.setValue('top_networkInterface', topConfig.networkInterface || '');
                 }
                 else if (topWidgetType === ITEM_TYPE.PIHOLE_WIDGET) {
+                    // Use masked values for sensitive fields if they exist
+                    const maskedApiToken = topConfig._hasApiToken ? '**********' : '';
+                    const maskedPassword = topConfig._hasPassword ? '**********' : '';
+
                     topWidgetFields = {
                         piholeHost: topConfig.host || '',
                         piholePort: topConfig.port || '',
                         piholeSsl: topConfig.ssl || false,
-                        piholeApiToken: topConfig.apiToken || '',
-                        piholePassword: topConfig.password || '',
+                        piholeApiToken: maskedApiToken,
+                        piholePassword: maskedPassword,
                         piholeName: topConfig.displayName || '',
                         showLabel: topConfig.showLabel !== undefined ? topConfig.showLabel : true
                     };
                     formContext.setValue('top_piholeHost', topConfig.host || '');
                     formContext.setValue('top_piholePort', topConfig.port || '');
                     formContext.setValue('top_piholeSsl', topConfig.ssl || false);
-                    formContext.setValue('top_piholeApiToken', topConfig.apiToken || '');
-                    formContext.setValue('top_piholePassword', topConfig.password || '');
+                    formContext.setValue('top_piholeApiToken', maskedApiToken);
+                    formContext.setValue('top_piholePassword', maskedPassword);
                     formContext.setValue('top_piholeName', topConfig.displayName || '');
                     formContext.setValue('top_showLabel', topConfig.showLabel !== undefined ? topConfig.showLabel : true);
                 }
@@ -220,20 +226,24 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
                     formContext.setValue('bottom_networkInterface', bottomConfig.networkInterface || '');
                 }
                 else if (bottomWidgetType === ITEM_TYPE.PIHOLE_WIDGET) {
+                    // Use masked values for sensitive fields if they exist
+                    const maskedApiToken = bottomConfig._hasApiToken ? '**********' : '';
+                    const maskedPassword = bottomConfig._hasPassword ? '**********' : '';
+
                     bottomWidgetFields = {
                         piholeHost: bottomConfig.host || '',
                         piholePort: bottomConfig.port || '',
                         piholeSsl: bottomConfig.ssl || false,
-                        piholeApiToken: bottomConfig.apiToken || '',
-                        piholePassword: bottomConfig.password || '',
+                        piholeApiToken: maskedApiToken,
+                        piholePassword: maskedPassword,
                         piholeName: bottomConfig.displayName || '',
                         showLabel: bottomConfig.showLabel !== undefined ? bottomConfig.showLabel : true
                     };
                     formContext.setValue('bottom_piholeHost', bottomConfig.host || '');
                     formContext.setValue('bottom_piholePort', bottomConfig.port || '');
                     formContext.setValue('bottom_piholeSsl', bottomConfig.ssl || false);
-                    formContext.setValue('bottom_piholeApiToken', bottomConfig.apiToken || '');
-                    formContext.setValue('bottom_piholePassword', bottomConfig.password || '');
+                    formContext.setValue('bottom_piholeApiToken', maskedApiToken);
+                    formContext.setValue('bottom_piholePassword', maskedPassword);
                     formContext.setValue('bottom_piholeName', bottomConfig.displayName || '');
                     formContext.setValue('bottom_showLabel', bottomConfig.showLabel !== undefined ? bottomConfig.showLabel : true);
                 }
@@ -254,7 +264,7 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
         setTimeout(() => {
             // Verification happens silently now
         }, 500);
-    }, []);
+    }, [existingItem]);
 
     // Apply saved fields to form
     const applyWidgetFieldsToForm = (position: 'top' | 'bottom', fields: Record<string, any>) => {
@@ -602,29 +612,30 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
     // Save final configurations when form is submitted
     useEffect(() => {
         const handleFormSubmit = () => {
+            // Capture widget types immediately before they can be lost
+            const topWidgetType = formContext.getValues('topWidgetType');
+            const bottomWidgetType = formContext.getValues('bottomWidgetType');
+
             // Grab the current page's state first
             const currentPosition = currentPage === 0 ? 'top' : 'bottom';
             captureFormValuesToState(currentPosition);
 
-            // Then ensure BOTH positions' form values are captured
-            setTimeout(() => {
-                // Ensure we capture both positions regardless of which page we're on
-                captureFormValuesToState('top');
-                captureFormValuesToState('bottom');
+            // Ensure we capture both positions regardless of which page we're on
+            captureFormValuesToState('top');
+            captureFormValuesToState('bottom');
 
-                // Build individual widget configs
-                const topWidget = buildWidgetConfig('top');
-                const bottomWidget = buildWidgetConfig('bottom');
+            // Build individual widget configs using captured types
+            const topWidget = topWidgetType ? buildWidgetConfigWithType('top', topWidgetType) : undefined;
+            const bottomWidget = bottomWidgetType ? buildWidgetConfigWithType('bottom', bottomWidgetType) : undefined;
 
-                // Create the final dual widget config
-                const dualWidgetConfig = {
-                    topWidget,
-                    bottomWidget
-                };
+            // Create the final dual widget config
+            const dualWidgetConfig = {
+                topWidget,
+                bottomWidget
+            };
 
-                // Set the config value for submission
-                (formContext as any).setValue('config', dualWidgetConfig);
-            }, 0);
+            // Set the config value for submission
+            (formContext as any).setValue('config', dualWidgetConfig);
         };
 
         // Add event listener to form submit
@@ -637,10 +648,27 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
         }
     }, [formContext, widgetState, currentPage]);
 
+    // Build widget config with explicit widget type (to avoid form reset issues)
+    const buildWidgetConfigWithType = (position: 'top' | 'bottom', widgetType: string) => {
+        if (!widgetType) {
+            return undefined;
+        }
+
+        return buildWidgetConfigInternal(position, widgetType);
+    };
+
     // Update buildWidgetConfig to not depend on active position state
     const buildWidgetConfig = (position: 'top' | 'bottom') => {
         const widgetType = formContext.getValues(`${position}WidgetType`);
-        if (!widgetType) return undefined;
+        if (!widgetType) {
+            return undefined;
+        }
+
+        return buildWidgetConfigInternal(position, widgetType);
+    };
+
+    // Internal function to build widget config with given type
+    const buildWidgetConfigInternal = (position: 'top' | 'bottom', widgetType: string) => {
 
         const fields = position === 'top' ?
             widgetState.topWidgetFields :
@@ -745,15 +773,57 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
             const displayName = formContext.getValues(getFieldName(position, 'piholeName'));
             const showLabel = formContext.getValues(getFieldName(position, 'showLabel'));
 
-            config = {
+
+
+            // Check if we have existing sensitive data from the original config
+            let hasExistingApiToken = false;
+            let hasExistingPassword = false;
+
+            // For dual widgets, we need to check the position-specific config
+            if (existingItem && existingItem.config) {
+                const dualConfig = existingItem.config;
+                const positionWidget = position === 'top' ? dualConfig.topWidget : dualConfig.bottomWidget;
+                if (positionWidget?.config) {
+                    hasExistingApiToken = !!positionWidget.config._hasApiToken;
+                    hasExistingPassword = !!positionWidget.config._hasPassword;
+                }
+            }
+
+            // Also check if the current form values are masked (indicating existing data)
+            if (apiToken === '**********') {
+                hasExistingApiToken = true;
+            }
+            if (password === '**********') {
+                hasExistingPassword = true;
+            }
+
+
+
+            // Base configuration
+            const configObj: any = {
                 host: host || '',
                 port: port || '',
                 ssl: ssl || false,
-                apiToken: apiToken || '',
-                password: password || '',
                 displayName: displayName || '',
                 showLabel: showLabel !== undefined ? showLabel : true
             };
+
+            // Only include apiToken if it's not the masked value
+            if (apiToken && apiToken !== '**********') {
+                configObj.apiToken = apiToken;
+            } else if (hasExistingApiToken) {
+                // If we have an existing API token but no new token provided, set the flag
+                configObj._hasApiToken = true;
+            }
+
+            // Only include password if it's not the masked value
+            if (password && password !== '**********') {
+                configObj.password = password;
+            } else if (hasExistingPassword) {
+                // If we have an existing password but no new password provided, set the flag
+                configObj._hasPassword = true;
+            }
+            config = configObj;
         }
 
         return {
@@ -1213,11 +1283,52 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
         const [password, setPassword] = useState('');
         const [formInitialized, setFormInitialized] = useState(false);
 
+        // Track if we have existing sensitive data (similar to regular PiholeWidgetConfig)
+        const [hasExistingApiToken, setHasExistingApiToken] = useState(false);
+        const [hasExistingPassword, setHasExistingPassword] = useState(false);
+
         // Field names for easier reference
         const hostField = getFieldName(position, 'piholeHost');
         const portField = getFieldName(position, 'piholePort');
         const apiTokenField = getFieldName(position, 'piholeApiToken');
         const passwordField = getFieldName(position, 'piholePassword');
+
+        // Initialize masked values for existing items (similar to regular PiholeWidgetConfig)
+        useEffect(() => {
+            if (existingItem?.config) {
+                const dualConfig = existingItem.config;
+                const positionWidget = position === 'top' ? dualConfig.topWidget : dualConfig.bottomWidget;
+
+                if (positionWidget?.config) {
+                    const config = positionWidget.config;
+
+                    // Check if existing item has sensitive data using security flags
+                    if (config._hasApiToken) {
+                        setHasExistingApiToken(true);
+                        // Set masked value in form if not already set
+                        const currentApiToken = formContext.getValues(apiTokenField);
+                        if (!currentApiToken) {
+                            formContext.setValue(apiTokenField, '**********');
+                            setApiToken('**********');
+                        } else {
+                            setApiToken(typeof currentApiToken === 'string' ? currentApiToken : '');
+                        }
+                    }
+
+                    if (config._hasPassword) {
+                        setHasExistingPassword(true);
+                        // Set masked value in form if not already set
+                        const currentPassword = formContext.getValues(passwordField);
+                        if (!currentPassword) {
+                            formContext.setValue(passwordField, '**********');
+                            setPassword('**********');
+                        } else {
+                            setPassword(typeof currentPassword === 'string' ? currentPassword : '');
+                        }
+                    }
+                }
+            }
+        }, [existingItem, position, apiTokenField, passwordField]);
 
         // Initialize the component with values from the form
         useEffect(() => {
@@ -1232,6 +1343,7 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
             // Convert to strings, handling any non-string values
             const hostStr = typeof initialHost === 'string' ? initialHost : '';
             const portStr = typeof initialPort === 'string' ? initialPort : '';
+            // For sensitive fields, use the values as they are (already masked from form initialization)
             const tokenStr = typeof initialApiToken === 'string' ? initialApiToken : '';
             const passwordStr = typeof initialPassword === 'string' ? initialPassword : '';
 
@@ -1240,14 +1352,15 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
             setPort(portStr);
 
             // Handle mutual exclusivity for token/password at initialization
-            if (tokenStr && passwordStr) {
-                // If both have values, prioritize the token
+            // Only clear if both are non-masked values
+            if (tokenStr && passwordStr && tokenStr !== '**********' && passwordStr !== '**********') {
+                // If both have non-masked values, prioritize the token
                 formContext.setValue(apiTokenField, tokenStr);
                 formContext.setValue(passwordField, '');
                 setApiToken(tokenStr);
                 setPassword('');
             } else {
-                // Otherwise use whatever values we have
+                // Otherwise use whatever values we have (including masked values)
                 setApiToken(tokenStr);
                 setPassword(passwordStr);
             }
@@ -1294,8 +1407,8 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
                 shouldDirty: true
             });
 
-            // If token has a value, clear password and its validation errors
-            if (newValue) {
+            // If token has a non-masked value, clear password and its validation errors
+            if (newValue && newValue !== '**********') {
                 setPassword('');
                 formContext.setValue(passwordField, '', {
                     shouldValidate: false,
@@ -1318,8 +1431,8 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
                 shouldDirty: true
             });
 
-            // If password has a value, clear token and its validation errors
-            if (newValue) {
+            // If password has a non-masked value, clear token and its validation errors
+            if (newValue && newValue !== '**********') {
                 setApiToken('');
                 formContext.setValue(apiTokenField, '', {
                     shouldValidate: false,
@@ -1439,15 +1552,16 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
                         variant='outlined'
                         fullWidth
                         autoComplete='off'
-                        required={!password}
-                        disabled={!!password}
-                        error={!apiToken && !password}
+                        required={!password && !hasExistingApiToken}
+                        disabled={Boolean(password && password !== '**********')}
+                        error={!apiToken && !password && !hasExistingApiToken && !hasExistingPassword}
                         value={apiToken}
                         onChange={handleApiTokenChange}
                         helperText={
-                            password ? 'Password already provided' :
-                                !apiToken && !password ? 'Enter API token or password below' :
-                                    'Enter the API token from Pi-hole Settings > API/Web interface'
+                            password && password !== '**********' ? 'Password already provided' :
+                                hasExistingApiToken && apiToken === '**********' ? 'Current API token is set (shown as ********). Clear field to remove or enter new token to replace.' :
+                                    !apiToken && !password && !hasExistingApiToken && !hasExistingPassword ? 'Enter API token or password below' :
+                                        'Enter the API token from Pi-hole Settings > API/Web interface'
                         }
                         sx={{
                             width: '100%',
@@ -1477,14 +1591,15 @@ export const DualWidgetConfig = ({ formContext }: DualWidgetConfigProps) => {
                         variant='outlined'
                         fullWidth
                         autoComplete='off'
-                        required={!apiToken}
-                        disabled={!!apiToken}
-                        error={!apiToken && !password}
+                        required={!apiToken && !hasExistingPassword}
+                        disabled={Boolean(apiToken && apiToken !== '**********')}
+                        error={!apiToken && !password && !hasExistingApiToken && !hasExistingPassword}
                         value={password}
                         onChange={handlePasswordChange}
                         helperText={
-                            apiToken ? 'API Token already provided' :
-                                !apiToken && !password ? 'Enter password or API token above' :
+                            apiToken && apiToken !== '**********' ? 'API Token already provided' :
+                                hasExistingPassword && password === '**********' &&
+                                    !apiToken && !password && !hasExistingApiToken && !hasExistingPassword ? 'Enter password or API token above' :
                                     'Enter your Pi-hole admin password'
                         }
                         sx={{

@@ -8,7 +8,7 @@ type DelugeWidgetConfig = {
     port?: string;
     ssl?: boolean;
     username?: string;
-    password?: string;
+    _hasPassword?: boolean; // Security flag instead of actual password
     refreshInterval?: number;
     maxDisplayedTorrents?: number;
     showLabel?: boolean;
@@ -27,7 +27,7 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig; id?: string }
         port: config?.port || '8112',
         ssl: config?.ssl || false,
         username: config?.username || '',
-        password: config?.password || ''
+        password: '' // Password is handled on backend, not sent to frontend
     });
 
     // Add a counter for login attempts and a maximum number of attempts
@@ -44,7 +44,7 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig; id?: string }
                 port: config.port || '8112',
                 ssl: config.ssl || false,
                 username: config.username || '',
-                password: config.password || ''
+                password: '' // Password is handled on backend, not sent to frontend
             };
 
             const credentialsChanged =
@@ -149,7 +149,7 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig; id?: string }
     // Auto-login when component mounts or credentials change
     useEffect(() => {
         if (
-            config?.password &&
+            config?._hasPassword &&
             !autoLoginAttemptedRef.current &&
             !isAuthenticated &&
             !loginAttemptFailed

@@ -22,7 +22,7 @@ type TransmissionWidgetConfig = {
     port?: string;
     ssl?: boolean;
     username?: string;
-    password?: string;
+    _hasPassword?: boolean; // Security flag instead of actual password
     refreshInterval?: number;
     maxDisplayedTorrents?: number;
     showLabel?: boolean;
@@ -41,7 +41,7 @@ export const TransmissionWidget = (props: { config?: TransmissionWidgetConfig; i
         port: config?.port || '9091',
         ssl: config?.ssl || false,
         username: config?.username || '',
-        password: config?.password || ''
+        password: '' // Password is handled on backend, not sent to frontend
     });
 
     // Add a counter for login attempts and a maximum number of attempts
@@ -56,7 +56,7 @@ export const TransmissionWidget = (props: { config?: TransmissionWidgetConfig; i
                 port: config.port || '9091',
                 ssl: config.ssl || false,
                 username: config.username || '',
-                password: config.password || ''
+                password: '' // Password is handled on backend, not sent to frontend
             });
             // Reset attempt counter and failed flag when credentials change
             loginAttemptsRef.current = 0;
@@ -68,8 +68,9 @@ export const TransmissionWidget = (props: { config?: TransmissionWidgetConfig; i
         setIsLoading(true);
         setAuthError('');
         try {
-            // If no username/password provided, skip login and go straight to authenticated state
-            if (!loginCredentials.username && !loginCredentials.password) {
+            // If no username and no password configured, skip login and go straight to authenticated state
+            // For Transmission, authentication is optional
+            if (!config?.username && !config?._hasPassword) {
                 setIsAuthenticated(true);
                 loginAttemptsRef.current = 0;
                 setLoginAttemptFailed(false);
@@ -186,7 +187,7 @@ export const TransmissionWidget = (props: { config?: TransmissionWidgetConfig; i
             const torrentsData = await DashApi.transmissionGetTorrents(id || '');
 
             // Check if an empty array was returned due to decryption error
-            if (Array.isArray(torrentsData) && torrentsData.length === 0 && loginCredentials.username && loginCredentials.password) {
+            if (Array.isArray(torrentsData) && torrentsData.length === 0 && loginCredentials.username && config?._hasPassword) {
                 // If we have credentials but get empty results, it could be a decryption error
                 // We'll handle this case by checking the auth status in the next stats fetch
                 setTorrents([]);

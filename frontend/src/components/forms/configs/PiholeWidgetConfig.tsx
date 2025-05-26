@@ -1,5 +1,5 @@
 import { Grid2 as Grid, Typography } from '@mui/material';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { CheckboxElement, TextFieldElement } from 'react-hook-form-mui';
 
@@ -9,10 +9,21 @@ import { FormValues } from '../AddEditForm';
 
 interface PiholeWidgetConfigProps {
     formContext: UseFormReturn<FormValues>;
+    existingItem?: any; // Pass existing item to check for security flags
 }
 
-export const PiholeWidgetConfig = ({ formContext }: PiholeWidgetConfigProps) => {
+const MASKED_VALUE = '**********'; // 10 asterisks for masked values
+
+export const PiholeWidgetConfig = ({ formContext, existingItem }: PiholeWidgetConfigProps) => {
     const isMobile = useIsMobile();
+
+    // Track if we're editing an existing item with sensitive data
+    const [hasExistingApiToken, setHasExistingApiToken] = useState(false);
+    const [hasExistingPassword, setHasExistingPassword] = useState(false);
+
+    // Track if user has modified the masked fields
+    const [apiTokenModified, setApiTokenModified] = useState(false);
+    const [passwordModified, setPasswordModified] = useState(false);
 
     const textFieldSx = {
         width: '100%',
@@ -26,12 +37,78 @@ export const PiholeWidgetConfig = ({ formContext }: PiholeWidgetConfigProps) => 
         },
     };
 
+    // Initialize masked values for existing items
+    useEffect(() => {
+        if (existingItem?.config) {
+            const config = existingItem.config;
+
+            // Check if existing item has sensitive data using security flags
+            if (config._hasApiToken) {
+                setHasExistingApiToken(true);
+                // Set masked value in form if not already set
+                if (!formContext.getValues('piholeApiToken')) {
+                    formContext.setValue('piholeApiToken', MASKED_VALUE);
+                }
+            }
+
+            if (config._hasPassword) {
+                setHasExistingPassword(true);
+                // Set masked value in form if not already set
+                if (!formContext.getValues('piholePassword')) {
+                    formContext.setValue('piholePassword', MASKED_VALUE);
+                }
+            }
+        }
+    }, [existingItem, formContext]);
+
+    // Handle API token changes
+    const handleApiTokenChange = (value: string) => {
+        if (hasExistingApiToken && value !== MASKED_VALUE) {
+            setApiTokenModified(true);
+        }
+
+        // Clear password if API token is being set
+        if (value && value !== MASKED_VALUE) {
+            formContext.setValue('piholePassword', '');
+            setPasswordModified(false);
+        }
+    };
+
+    // Handle password changes
+    const handlePasswordChange = (value: string) => {
+        if (hasExistingPassword && value !== MASKED_VALUE) {
+            setPasswordModified(true);
+        }
+
+        // Clear API token if password is being set
+        if (value && value !== MASKED_VALUE) {
+            formContext.setValue('piholeApiToken', '');
+            setApiTokenModified(false);
+        }
+    };
+
+    // Watch for form value changes
+    useEffect(() => {
+        const subscription = formContext.watch((value, { name }) => {
+            if (name === 'piholeApiToken') {
+                handleApiTokenChange(value.piholeApiToken || '');
+            } else if (name === 'piholePassword') {
+                handlePasswordChange(value.piholePassword || '');
+            }
+        });
+
+        return () => subscription.unsubscribe();
+    }, [formContext, hasExistingApiToken, hasExistingPassword]);
+
+    // Mutual exclusivity effect for new values
     useEffect(() => {
         const piholeApiToken = formContext.watch('piholeApiToken');
         const piholePassword = formContext.watch('piholePassword');
 
-        if (piholeApiToken && piholePassword) {
+        // Only enforce mutual exclusivity for non-masked values
+        if (piholeApiToken && piholeApiToken !== MASKED_VALUE && piholePassword && piholePassword !== MASKED_VALUE) {
             formContext.setValue('piholePassword', '');
+            setPasswordModified(false);
         }
     }, [formContext.watch('piholeApiToken')]);
 
@@ -39,10 +116,57 @@ export const PiholeWidgetConfig = ({ formContext }: PiholeWidgetConfigProps) => 
         const piholeApiToken = formContext.watch('piholeApiToken');
         const piholePassword = formContext.watch('piholePassword');
 
-        if (piholePassword && piholeApiToken) {
+        // Only enforce mutual exclusivity for non-masked values
+        if (piholePassword && piholePassword !== MASKED_VALUE && piholeApiToken && piholeApiToken !== MASKED_VALUE) {
             formContext.setValue('piholeApiToken', '');
+            setApiTokenModified(false);
         }
     }, [formContext.watch('piholePassword')]);
+
+    // Helper function to determine if field should be required
+    const isApiTokenRequired = () => {
+        const password = formContext.watch('piholePassword');
+        // API token is required only if there's no password AND no existing password (not masked)
+        // If password is masked, it means there's an existing password, so API token is not required
+        return !password && !hasExistingPassword;
+    };
+
+    const isPasswordRequired = () => {
+        const apiToken = formContext.watch('piholeApiToken');
+        // Password is required only if there's no API token AND no existing API token (not masked)
+        // If API token is masked, it means there's an existing API token, so password is not required
+        return !apiToken && !hasExistingApiToken;
+    };
+
+    // Helper function to determine if field should be disabled
+    const isApiTokenDisabled = () => {
+        const password = formContext.watch('piholePassword');
+        // API token is disabled if password has a real (non-masked) value
+        return Boolean(password && password !== MASKED_VALUE);
+    };
+
+    const isPasswordDisabled = () => {
+        const apiToken = formContext.watch('piholeApiToken');
+        // Password is disabled if API token has a real (non-masked) value
+        return Boolean(apiToken && apiToken !== MASKED_VALUE);
+    };
+
+    // Helper function to get helper text
+    const getApiTokenHelperText = () => {
+        const password = formContext.watch('piholePassword');
+        if (password && password !== MASKED_VALUE) {
+            return 'Password already provided';
+        }
+        return 'Enter the API token from Pi-hole Settings > API/Web interface';
+    };
+
+    const getPasswordHelperText = () => {
+        const apiToken = formContext.watch('piholeApiToken');
+        if (apiToken && apiToken !== MASKED_VALUE) {
+            return 'API Token already provided';
+        }
+        return 'Enter your Pi-hole admin password';
+    };
 
     return (
         <>
@@ -95,9 +219,9 @@ export const PiholeWidgetConfig = ({ formContext }: PiholeWidgetConfigProps) => 
                     variant='outlined'
                     fullWidth
                     autoComplete='off'
-                    required={!formContext.watch('piholePassword')}
-                    disabled={!!formContext.watch('piholePassword')}
-                    helperText={formContext.watch('piholePassword') ? 'Password already provided' : 'Enter the API token from Pi-hole Settings > API/Web interface'}
+                    required={isApiTokenRequired()}
+                    disabled={isApiTokenDisabled()}
+                    helperText={getApiTokenHelperText()}
                     sx={textFieldSx}
                     slotProps={{
                         inputLabel: { style: { color: theme.palette.text.primary } },
@@ -113,9 +237,9 @@ export const PiholeWidgetConfig = ({ formContext }: PiholeWidgetConfigProps) => 
                     variant='outlined'
                     fullWidth
                     autoComplete='off'
-                    required={!formContext.watch('piholeApiToken')}
-                    disabled={!!formContext.watch('piholeApiToken')}
-                    helperText={formContext.watch('piholeApiToken') ? 'API Token already provided' : 'Enter your Pi-hole admin password'}
+                    required={isPasswordRequired()}
+                    disabled={isPasswordDisabled()}
+                    helperText={getPasswordHelperText()}
                     sx={textFieldSx}
                     slotProps={{
                         inputLabel: { style: { color: theme.palette.text.primary } },

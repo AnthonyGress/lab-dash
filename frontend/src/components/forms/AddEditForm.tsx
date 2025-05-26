@@ -148,7 +148,7 @@ interface LocationOption {
 
 export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
     const { formState: { errors } } = useForm();
-    const { dashboardLayout, addItem, updateItem, addPage } = useAppContext();
+    const { dashboardLayout, addItem, updateItem, addPage, refreshDashboard } = useAppContext();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [customIconFile, setCustomIconFile] = useState<File | null>(null);
 
@@ -212,8 +212,9 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
         const piholeSsl = existingItem?.config?.piholeSsl !== undefined
             ? existingItem?.config?.piholeSsl
             : existingItem?.config?.ssl || false;
-        const piholeApiToken = existingItem?.config?.piholeApiToken || existingItem?.config?.apiToken || '';
-        const piholePassword = existingItem?.config?.password || '';
+        // Use masked values for sensitive data - actual values are never sent to frontend
+        const piholeApiToken = existingItem?.config?._hasApiToken ? '**********' : '';
+        const piholePassword = existingItem?.config?._hasPassword ? '**********' : '';
         const piholeName = existingItem?.config?.displayName || '';
         const healthUrl = existingItem?.config?.healthUrl || '';
 
@@ -277,7 +278,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                         : '8080'),
             tcSsl: existingItem?.config?.ssl || false,
             tcUsername: existingItem?.config?.username || '',
-            tcPassword: existingItem?.config?.password || '',
+            tcPassword: (existingItem?.type === ITEM_TYPE.TORRENT_CLIENT && existingItem?.id) ? '**********' : '',
             piholeHost: piholeHost,
             piholePort: piholePort,
             piholeSsl: piholeSsl,
@@ -359,8 +360,9 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                         formContext.setValue('top_piholeHost', topConfig.host || '');
                         formContext.setValue('top_piholePort', topConfig.port || '');
                         formContext.setValue('top_piholeSsl', topConfig.ssl !== undefined ? topConfig.ssl : false);
-                        formContext.setValue('top_piholeApiToken', topConfig.apiToken || '');
-                        formContext.setValue('top_piholePassword', topConfig.password || '');
+                        // Use masked values for sensitive data
+                        formContext.setValue('top_piholeApiToken', topConfig._hasApiToken ? '**********' : '');
+                        formContext.setValue('top_piholePassword', topConfig._hasPassword ? '**********' : '');
                         formContext.setValue('top_piholeName', topConfig.displayName || '');
                         formContext.setValue('top_showLabel', topConfig.showLabel !== undefined ? topConfig.showLabel : true);
                     }
@@ -407,8 +409,9 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                         formContext.setValue('bottom_piholeHost', bottomConfig.host || '');
                         formContext.setValue('bottom_piholePort', bottomConfig.port || '');
                         formContext.setValue('bottom_piholeSsl', bottomConfig.ssl !== undefined ? bottomConfig.ssl : false);
-                        formContext.setValue('bottom_piholeApiToken', bottomConfig.apiToken || '');
-                        formContext.setValue('bottom_piholePassword', bottomConfig.password || '');
+                        // Use masked values for sensitive data
+                        formContext.setValue('bottom_piholeApiToken', bottomConfig._hasApiToken ? '**********' : '');
+                        formContext.setValue('bottom_piholePassword', bottomConfig._hasPassword ? '**********' : '');
                         formContext.setValue('bottom_piholeName', bottomConfig.displayName || '');
                         formContext.setValue('bottom_showLabel', bottomConfig.showLabel !== undefined ? bottomConfig.showLabel : true);
                     }
@@ -520,56 +523,112 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                     (config as any).networkInterface = data.networkInterface;
                 }
             } else if (data.widgetType === ITEM_TYPE.PIHOLE_WIDGET) {
-                // Encrypt the API token if needed
-                let encryptedToken = data.piholeApiToken || '';
-                let encryptedPassword = data.piholePassword || '';
+                // Handle masked values - only encrypt if not masked
+                let encryptedToken = '';
+                let encryptedPassword = '';
+                let hasExistingApiToken = false;
+                let hasExistingPassword = false;
 
-                if (encryptedToken && !isEncrypted(encryptedToken)) {
-                    try {
-                        encryptedToken = await DashApi.encryptPiholeToken(encryptedToken);
-                    } catch (error) {
-                        console.error('Error encrypting Pi-hole API token:', error);
+                // Check if we're editing an existing item with sensitive data
+                if (existingItem?.config) {
+                    hasExistingApiToken = !!existingItem.config._hasApiToken;
+                    hasExistingPassword = !!existingItem.config._hasPassword;
+                }
+
+                // Only process API token if it's not the masked value
+                if (data.piholeApiToken && data.piholeApiToken !== '**********') {
+                    if (!isEncrypted(data.piholeApiToken)) {
+                        try {
+                            encryptedToken = await DashApi.encryptPiholeToken(data.piholeApiToken);
+                        } catch (error) {
+                            console.error('Error encrypting Pi-hole API token:', error);
+                        }
+                    } else {
+                        encryptedToken = data.piholeApiToken;
                     }
                 }
 
-                if (encryptedPassword && !isEncrypted(encryptedPassword)) {
-                    try {
-                        encryptedPassword = await DashApi.encryptPiholePassword(encryptedPassword);
-                    } catch (error) {
-                        console.error('Error encrypting Pi-hole password:', error);
+                // Only process password if it's not the masked value
+                if (data.piholePassword && data.piholePassword !== '**********') {
+                    if (!isEncrypted(data.piholePassword)) {
+                        try {
+                            encryptedPassword = await DashApi.encryptPiholePassword(data.piholePassword);
+                        } catch (error) {
+                            console.error('Error encrypting Pi-hole password:', error);
+                        }
+                    } else {
+                        encryptedPassword = data.piholePassword;
                     }
                 }
 
-                config = {
+                const baseConfig = {
                     host: data.piholeHost,
                     port: data.piholePort,
                     ssl: data.piholeSsl,
-                    apiToken: encryptedToken,
-                    password: encryptedPassword,
                     showLabel: data.showLabel,
                     displayName: data.piholeName || 'Pi-hole'
                 };
-            } else if (data.widgetType === ITEM_TYPE.TORRENT_CLIENT) {
-                // Encrypt password using backend API
-                let encryptedPassword = data.tcPassword || '';
 
-                if (encryptedPassword && !isEncrypted(encryptedPassword)) {
-                    try {
-                        encryptedPassword = await DashApi.encryptPassword(encryptedPassword);
-                    } catch (error) {
-                        console.error('Error encrypting password:', error);
+                // Include sensitive fields if they were actually changed (not masked)
+                if (encryptedToken) {
+                    config = { ...baseConfig, apiToken: encryptedToken };
+                } else if (hasExistingApiToken) {
+                    // If we have an existing API token but no new token provided, set the flag
+                    config = { ...baseConfig, _hasApiToken: true };
+                } else {
+                    config = baseConfig;
+                }
+
+                // Include password if it was actually changed (not masked)
+                if (encryptedPassword) {
+                    config = { ...config, password: encryptedPassword };
+                } else if (hasExistingPassword) {
+                    // If we have an existing password but no new password provided, set the flag
+                    config = { ...config, _hasPassword: true };
+                }
+            } else if (data.widgetType === ITEM_TYPE.TORRENT_CLIENT) {
+                // Handle masked password - only encrypt if not masked
+                let encryptedPassword = '';
+                let hasExistingPassword = false;
+
+                // Check if we're editing an existing item with a password
+                // Since existingItem may not have _hasPassword flag (filtered data),
+                // assume existing torrent client items have passwords
+                if (existingItem?.type === ITEM_TYPE.TORRENT_CLIENT && existingItem?.id) {
+                    hasExistingPassword = true;
+                }
+
+                // Only process password if it's not the masked value
+                if (data.tcPassword && data.tcPassword !== '**********') {
+                    if (!isEncrypted(data.tcPassword)) {
+                        try {
+                            encryptedPassword = await DashApi.encryptPassword(data.tcPassword);
+                        } catch (error) {
+                            console.error('Error encrypting password:', error);
+                        }
+                    } else {
+                        encryptedPassword = data.tcPassword;
                     }
                 }
 
-                config = {
+                const baseConfig = {
                     clientType: data.torrentClientType,
                     host: data.tcHost,
                     port: data.tcPort,
                     ssl: data.tcSsl,
                     username: data.tcUsername,
-                    password: encryptedPassword,
                     showLabel: data.showLabel
                 };
+
+                // Include password if it was actually changed (not masked)
+                if (encryptedPassword) {
+                    config = { ...baseConfig, password: encryptedPassword };
+                } else if (hasExistingPassword) {
+                    // If we have an existing password but no new password provided, set the flag
+                    config = { ...baseConfig, _hasPassword: true };
+                } else {
+                    config = baseConfig;
+                }
             } else if (data.widgetType === ITEM_TYPE.GROUP_WIDGET) {
                 // For group widget, use the exact maxItems value from the form
                 // This preserves the layout format (e.g., "6_2x3" or "6_3x2")
@@ -583,72 +642,81 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                     maxItems: maxItems  // Store the original string value to preserve layout information
                 };
             } else if (data.widgetType === ITEM_TYPE.DUAL_WIDGET) {
-                // Create a dual widget configuration with both top and bottom widget configs
-                // Ensure neither widget type is TorrentClient
-                if (data.topWidgetType === ITEM_TYPE.TORRENT_CLIENT ||
-                    data.bottomWidgetType === ITEM_TYPE.TORRENT_CLIENT) {
-                    console.error('TorrentClient widget is not supported in Dual Widget');
-                    // Replace TorrentClient with DateTimeWidget as a fallback
-                    if (data.topWidgetType === ITEM_TYPE.TORRENT_CLIENT) {
-                        data.topWidgetType = ITEM_TYPE.DATE_TIME_WIDGET;
+                // Check if DualWidgetConfig component has already built the config
+                const existingConfig = (formContext as any).getValues('config');
+
+                if (existingConfig && existingConfig.topWidget && existingConfig.bottomWidget) {
+                    // Use the config built by DualWidgetConfig component (preserves sensitive data flags)
+                    config = existingConfig;
+                } else {
+                    // Fallback to building config from form data (for backwards compatibility)
+
+                    // Ensure neither widget type is TorrentClient
+                    if (data.topWidgetType === ITEM_TYPE.TORRENT_CLIENT ||
+                        data.bottomWidgetType === ITEM_TYPE.TORRENT_CLIENT) {
+                        console.error('TorrentClient widget is not supported in Dual Widget');
+                        // Replace TorrentClient with DateTimeWidget as a fallback
+                        if (data.topWidgetType === ITEM_TYPE.TORRENT_CLIENT) {
+                            data.topWidgetType = ITEM_TYPE.DATE_TIME_WIDGET;
+                        }
+                        if (data.bottomWidgetType === ITEM_TYPE.TORRENT_CLIENT) {
+                            data.bottomWidgetType = ITEM_TYPE.DATE_TIME_WIDGET;
+                        }
                     }
-                    if (data.bottomWidgetType === ITEM_TYPE.TORRENT_CLIENT) {
-                        data.bottomWidgetType = ITEM_TYPE.DATE_TIME_WIDGET;
-                    }
+
+                    // Create custom data objects for top and bottom widgets with proper field mapping
+                    const topWidgetData = {
+                        ...data,
+                        // Map position-specific fields to standard fields for the createWidgetConfig function
+                        temperatureUnit: data.top_temperatureUnit,
+                        location: data.top_location,
+                        timezone: data.top_timezone,
+                        gauge1: data.top_gauge1,
+                        gauge2: data.top_gauge2,
+                        gauge3: data.top_gauge3,
+                        networkInterface: data.top_networkInterface,
+                        piholeHost: data.top_piholeHost,
+                        piholePort: data.top_piholePort,
+                        piholeSsl: data.top_piholeSsl,
+                        piholeApiToken: data.top_piholeApiToken,
+                        piholePassword: data.top_piholePassword,
+                        piholeName: data.top_piholeName,
+                        showLabel: data.top_showLabel
+                    };
+
+                    const bottomWidgetData = {
+                        ...data,
+                        // Map position-specific fields to standard fields for the createWidgetConfig function
+                        temperatureUnit: data.bottom_temperatureUnit,
+                        location: data.bottom_location,
+                        timezone: data.bottom_timezone,
+                        gauge1: data.bottom_gauge1,
+                        gauge2: data.bottom_gauge2,
+                        gauge3: data.bottom_gauge3,
+                        networkInterface: data.bottom_networkInterface,
+                        piholeHost: data.bottom_piholeHost,
+                        piholePort: data.bottom_piholePort,
+                        piholeSsl: data.bottom_piholeSsl,
+                        piholeApiToken: data.bottom_piholeApiToken,
+                        piholePassword: data.bottom_piholePassword,
+                        piholeName: data.bottom_piholeName,
+                        showLabel: data.bottom_showLabel
+                    };
+
+                    const topConfig = await createWidgetConfig(data.topWidgetType || '', topWidgetData);
+                    const bottomConfig = await createWidgetConfig(data.bottomWidgetType || '', bottomWidgetData);
+
+                    config = {
+                        topWidget: {
+                            type: data.topWidgetType,
+                            config: topConfig
+                        },
+                        bottomWidget: {
+                            type: data.bottomWidgetType,
+                            config: bottomConfig
+                        }
+                    };
                 }
-
-                // Create custom data objects for top and bottom widgets with proper field mapping
-                const topWidgetData = {
-                    ...data,
-                    // Map position-specific fields to standard fields for the createWidgetConfig function
-                    temperatureUnit: data.top_temperatureUnit,
-                    location: data.top_location,
-                    timezone: data.top_timezone,
-                    gauge1: data.top_gauge1,
-                    gauge2: data.top_gauge2,
-                    gauge3: data.top_gauge3,
-                    networkInterface: data.top_networkInterface,
-                    piholeHost: data.top_piholeHost,
-                    piholePort: data.top_piholePort,
-                    piholeSsl: data.top_piholeSsl,
-                    piholeApiToken: data.top_piholeApiToken,
-                    piholePassword: data.top_piholePassword,
-                    piholeName: data.top_piholeName,
-                    showLabel: data.top_showLabel
-                };
-
-                const bottomWidgetData = {
-                    ...data,
-                    // Map position-specific fields to standard fields for the createWidgetConfig function
-                    temperatureUnit: data.bottom_temperatureUnit,
-                    location: data.bottom_location,
-                    timezone: data.bottom_timezone,
-                    gauge1: data.bottom_gauge1,
-                    gauge2: data.bottom_gauge2,
-                    gauge3: data.bottom_gauge3,
-                    networkInterface: data.bottom_networkInterface,
-                    piholeHost: data.bottom_piholeHost,
-                    piholePort: data.bottom_piholePort,
-                    piholeSsl: data.bottom_piholeSsl,
-                    piholeApiToken: data.bottom_piholeApiToken,
-                    piholePassword: data.bottom_piholePassword,
-                    piholeName: data.bottom_piholeName,
-                    showLabel: data.bottom_showLabel
-                };
-
-                const topConfig = await createWidgetConfig(data.topWidgetType || '', topWidgetData);
-                const bottomConfig = await createWidgetConfig(data.bottomWidgetType || '', bottomWidgetData);
-
-                config = {
-                    topWidget: {
-                        type: data.topWidgetType,
-                        config: topConfig
-                    },
-                    bottomWidget: {
-                        type: data.bottomWidgetType,
-                        config: bottomConfig
-                    }
-                };
             }
         } else if (data.itemType === ITEM_TYPE.APP_SHORTCUT) {
             config = {};
@@ -749,6 +817,9 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                 await addItem(updatedItem);
             }
 
+            // Refresh the dashboard to ensure all widgets are updated with latest data
+            await refreshDashboard();
+
             console.log('Form submission complete, resetting form');
             formContext.reset();
             handleFormClose();
@@ -814,56 +885,111 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
 
             return config;
         } else if (widgetType === ITEM_TYPE.PIHOLE_WIDGET) {
-            // Encrypt the API token if needed
-            let encryptedToken = data.piholeApiToken || '';
-            let encryptedPassword = data.piholePassword || '';
+            // Handle masked values - only encrypt if not masked
+            let encryptedToken = '';
+            let encryptedPassword = '';
+            let hasExistingApiToken = false;
+            let hasExistingPassword = false;
 
-            if (encryptedToken && !isEncrypted(encryptedToken)) {
-                try {
-                    encryptedToken = await DashApi.encryptPiholeToken(encryptedToken);
-                } catch (error) {
-                    console.error('Error encrypting Pi-hole API token:', error);
+            // Check if we're editing an existing item with sensitive data
+            if (existingItem?.config) {
+                hasExistingApiToken = !!existingItem.config._hasApiToken;
+                hasExistingPassword = !!existingItem.config._hasPassword;
+            }
+
+            // Only process API token if it's not the masked value
+            if (data.piholeApiToken && data.piholeApiToken !== '**********') {
+                if (!isEncrypted(data.piholeApiToken)) {
+                    try {
+                        encryptedToken = await DashApi.encryptPiholeToken(data.piholeApiToken);
+                    } catch (error) {
+                        console.error('Error encrypting Pi-hole API token:', error);
+                    }
+                } else {
+                    encryptedToken = data.piholeApiToken;
                 }
             }
 
-            if (encryptedPassword && !isEncrypted(encryptedPassword)) {
-                try {
-                    encryptedPassword = await DashApi.encryptPiholePassword(encryptedPassword);
-                } catch (error) {
-                    console.error('Error encrypting Pi-hole password:', error);
+            // Only process password if it's not the masked value
+            if (data.piholePassword && data.piholePassword !== '**********') {
+                if (!isEncrypted(data.piholePassword)) {
+                    try {
+                        encryptedPassword = await DashApi.encryptPiholePassword(data.piholePassword);
+                    } catch (error) {
+                        console.error('Error encrypting Pi-hole password:', error);
+                    }
+                } else {
+                    encryptedPassword = data.piholePassword;
                 }
             }
 
-            return {
+            const baseConfig = {
                 host: data.piholeHost,
                 port: data.piholePort,
                 ssl: data.piholeSsl,
-                apiToken: encryptedToken,
-                password: encryptedPassword,
                 showLabel: data.showLabel,
                 displayName: data.piholeName || 'Pi-hole'
             };
-        } else if (widgetType === ITEM_TYPE.TORRENT_CLIENT) {
-            // Encrypt password using backend API
-            let encryptedPassword = data.tcPassword || '';
 
-            if (encryptedPassword && !isEncrypted(encryptedPassword)) {
-                try {
-                    encryptedPassword = await DashApi.encryptPassword(encryptedPassword);
-                } catch (error) {
-                    console.error('Error encrypting password:', error);
+            // Include sensitive fields if they were actually changed (not masked)
+            if (encryptedToken) {
+                return { ...baseConfig, apiToken: encryptedToken };
+            } else if (encryptedPassword) {
+                return { ...baseConfig, password: encryptedPassword };
+            } else {
+                // If no new sensitive data provided, include security flags for existing data
+                const config: any = { ...baseConfig };
+                if (hasExistingApiToken) {
+                    config._hasApiToken = true;
+                }
+                if (hasExistingPassword) {
+                    config._hasPassword = true;
+                }
+                return config;
+            }
+        } else if (widgetType === ITEM_TYPE.TORRENT_CLIENT) {
+            // Handle masked password - only encrypt if not masked
+            let encryptedPassword = '';
+            let hasExistingPassword = false;
+
+            // Check if we're editing an existing item with a password
+            // Since existingItem may not have _hasPassword flag (filtered data),
+            // assume existing torrent client items have passwords
+            if (existingItem?.type === ITEM_TYPE.TORRENT_CLIENT && existingItem?.id) {
+                hasExistingPassword = true;
+            }
+
+            // Only process password if it's not the masked value
+            if (data.tcPassword && data.tcPassword !== '**********') {
+                if (!isEncrypted(data.tcPassword)) {
+                    try {
+                        encryptedPassword = await DashApi.encryptPassword(data.tcPassword);
+                    } catch (error) {
+                        console.error('Error encrypting password:', error);
+                    }
+                } else {
+                    encryptedPassword = data.tcPassword;
                 }
             }
 
-            return {
+            const config: any = {
                 clientType: data.torrentClientType,
                 host: data.tcHost,
                 port: data.tcPort,
                 ssl: data.tcSsl,
                 username: data.tcUsername,
-                password: encryptedPassword,
                 showLabel: data.showLabel
             };
+
+            // Include password if it was actually changed (not masked)
+            if (encryptedPassword) {
+                config.password = encryptedPassword;
+            } else if (hasExistingPassword) {
+                // If we have an existing password but no new password provided, set the flag
+                config._hasPassword = true;
+            }
+
+            return config;
         }
 
         return {};
@@ -1093,7 +1219,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                             {/* Widget specific configurations */}
                             {selectedItemType === 'widget' && selectedWidgetType && (
                                 <>
-                                    <WidgetConfig formContext={formContext} widgetType={selectedWidgetType} />
+                                    <WidgetConfig formContext={formContext} widgetType={selectedWidgetType} existingItem={existingItem} />
 
                                     {/* Admin Only checkbox for widget types - keep this outside the WidgetConfig component */}
                                     <Grid>

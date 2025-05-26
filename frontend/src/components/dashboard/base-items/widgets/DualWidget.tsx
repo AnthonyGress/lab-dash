@@ -72,7 +72,10 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
                     dualWidgetPosition: position
                 }} />;
             case ITEM_TYPE.PIHOLE_WIDGET:
-                return <PiholeWidget config={widgetConfig.config} />;
+                return <PiholeWidget
+                    config={widgetConfig.config}
+                    id={id ? `${id}-${position}` : undefined}
+                />;
             default:
                 return (
                     <Box

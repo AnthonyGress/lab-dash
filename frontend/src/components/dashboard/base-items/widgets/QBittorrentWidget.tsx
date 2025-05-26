@@ -8,7 +8,7 @@ type QBittorrentWidgetConfig = {
     port?: string;
     ssl?: boolean;
     username?: string;
-    password?: string;
+    _hasPassword?: boolean; // Security flag instead of actual password
     refreshInterval?: number;
     maxDisplayedTorrents?: number;
     showLabel?: boolean;
@@ -27,7 +27,7 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig; id?
         port: config?.port || '8080',
         ssl: config?.ssl || false,
         username: config?.username || '',
-        password: config?.password || ''
+        password: '' // Password is handled on backend, not sent to frontend
     });
 
     // Add a counter for login attempts and a maximum number of attempts
@@ -42,7 +42,7 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig; id?
                 port: config.port || '8080',
                 ssl: config.ssl || false,
                 username: config.username || '',
-                password: config.password || ''
+                password: '' // Password is handled on backend, not sent to frontend
             });
             // Reset attempt counter and failed flag when credentials change
             loginAttemptsRef.current = 0;
@@ -147,7 +147,7 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig; id?
             const torrentsData = await DashApi.qbittorrentGetTorrents(id || '');
 
             // Check if an empty array was returned due to decryption error
-            if (Array.isArray(torrentsData) && torrentsData.length === 0 && loginCredentials.username && loginCredentials.password) {
+            if (Array.isArray(torrentsData) && torrentsData.length === 0 && loginCredentials.username && config?._hasPassword) {
                 // If we have credentials but get empty results, it could be a decryption error
                 // We'll handle this case by checking the auth status in the next stats fetch
                 setTorrents([]);
@@ -190,7 +190,7 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig; id?
 
     // Auto-login when username and password are available and not authenticated
     useEffect(() => {
-        if (config?.username && config?.password && !isAuthenticated && !loginAttemptFailed) {
+        if (config?.username && config?._hasPassword && !isAuthenticated && !loginAttemptFailed) {
             handleLogin();
         }
     }, [config, handleLogin, isAuthenticated, loginAttemptFailed]);

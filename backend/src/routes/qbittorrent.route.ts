@@ -43,12 +43,16 @@ async function authenticateQBittorrent(baseUrl: string, username: string, passwo
         // Handle encrypted password
         let decryptedPassword = password;
         if (isEncrypted(password)) {
+            console.log('qBittorrent password is encrypted, attempting to decrypt...');
             decryptedPassword = decrypt(password);
-            // Check if decryption failed
+            // Check if decryption failed (returns empty string)
             if (!decryptedPassword) {
-                console.warn('Failed to decrypt qBittorrent password for authentication');
+                console.error('qBittorrent password decryption failed');
                 return null;
             }
+            console.log('qBittorrent password decryption successful');
+        } else {
+            console.log('qBittorrent password is not encrypted');
         }
 
         const response = await axios.post(`${baseUrl}/auth/login`,
@@ -158,13 +162,18 @@ qbittorrentRoute.post('/login', async (req: Request, res: Response) => {
             return;
         }
 
-        const baseUrl = getBaseUrl(req);
         const connectionInfo = getItemConnectionInfo(itemId);
-
+        const baseUrl = getBaseUrl(req);
         const username = connectionInfo.username;
         const password = connectionInfo.password;
 
         if (!username || !password) {
+            console.error('qBittorrent authentication failed - missing credentials:', {
+                hasUsername: !!username,
+                hasPassword: !!password,
+                usernameLength: username?.length || 0,
+                passwordLength: password?.length || 0
+            });
             res.status(400).json({ error: 'Username and password must be configured for this item' });
             return;
         }
@@ -172,15 +181,21 @@ qbittorrentRoute.post('/login', async (req: Request, res: Response) => {
         // Handle encrypted password
         let decryptedPassword = password;
         if (isEncrypted(password)) {
+            console.log('qBittorrent password is encrypted, attempting to decrypt...');
             decryptedPassword = decrypt(password);
             // Check if decryption failed (returns empty string)
             if (!decryptedPassword) {
+                console.error('qBittorrent password decryption failed');
                 res.status(400).json({
                     error: 'Failed to decrypt password. It may have been encrypted with a different key. Please update your credentials.'
                 });
                 return;
             }
+            console.log('qBittorrent password decryption successful');
+        } else {
+            console.log('qBittorrent password is not encrypted');
         }
+
 
         const response = await axios.post(`${baseUrl}/auth/login`,
             qs.stringify({ username, password: decryptedPassword }),

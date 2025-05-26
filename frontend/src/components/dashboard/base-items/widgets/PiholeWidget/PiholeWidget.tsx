@@ -15,8 +15,8 @@ type PiholeWidgetConfig = {
     host?: string;
     port?: string;
     ssl?: boolean;
-    apiToken?: string;
-    password?: string;
+    _hasApiToken?: boolean;
+    _hasPassword?: boolean;
     showLabel?: boolean;
     displayName?: string;
 };
@@ -41,7 +41,7 @@ const initialStats: PiholeStats = {
 
 export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }) => {
     const { config, id } = props;
-    const { editMode } = useAppContext();
+    const { editMode, config: appConfig } = useAppContext();
 
     // Reference to track if this is the first render
     const isFirstRender = useRef(true);
@@ -50,7 +50,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
     const [isConfigured, setIsConfigured] = useState(() => {
         // Initialize with a proper check of the config
         if (config) {
-            return !!config.host && (!!config.apiToken || !!config.password);
+            return !!config.host && (!!config._hasApiToken || !!config._hasPassword);
         }
         return false;
     });
@@ -60,8 +60,8 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
         host: config?.host || 'pi.hole',
         port: config?.port || '80',
         ssl: config?.ssl || false,
-        apiToken: config?.apiToken || '',
-        password: config?.password || '',
+        _hasApiToken: config?._hasApiToken || false,
+        _hasPassword: config?._hasPassword || false,
         showLabel: config?.showLabel,
         displayName: config?.displayName || 'Pi-hole'
     });
@@ -98,7 +98,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
             isFirstRender.current = false;
 
             // Force configuration validation on mount
-            const isValid = !!piholeConfig.host && (!!piholeConfig.apiToken || !!piholeConfig.password);
+            const isValid = !!piholeConfig.host && (!!piholeConfig._hasApiToken || !!piholeConfig._hasPassword);
             if (isValid !== isConfigured) {
                 setIsConfigured(isValid);
             }
@@ -125,7 +125,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
     // Determine if we're using Pi-hole v6 based on authentication method
     useEffect(() => {
         // Using password-only auth indicates Pi-hole v6
-        const isV6 = !!piholeConfig.password && !piholeConfig.apiToken;
+        const isV6 = !!piholeConfig._hasPassword && !piholeConfig._hasApiToken;
         setIsPiholeV6(isV6);
     }, [piholeConfig]);
 
@@ -136,7 +136,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
 
         // Skip if not properly configured or authentication failed or existing error
         if (!isConfigured || !piholeConfig.host ||
-            (!piholeConfig.apiToken && !piholeConfig.password) || authFailed || error) {
+            (!piholeConfig._hasApiToken && !piholeConfig._hasPassword) || authFailed || error) {
             return;
         }
 
@@ -148,8 +148,10 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
                     return;
                 }
 
-                // Use DashApi method which automatically routes to correct endpoint
-                const blockingData = await DashApi.getPiholeBlockingStatus(id);
+                // Use DashApi method with config from context to avoid fetching config
+                const blockingData = appConfig
+                    ? await DashApi.getPiholeBlockingStatusWithConfig(id, appConfig)
+                    : await DashApi.getPiholeBlockingStatus(id);
 
                 // Update isBlocking state based on status
                 const newIsBlocking = blockingData.status === 'enabled';
@@ -229,7 +231,9 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
                     console.error('Widget ID is required for Pi-hole stats');
                     return;
                 }
-                const piholeStats = await DashApi.getPiholeStats(id);
+                const piholeStats = appConfig
+                    ? await DashApi.getPiholeStatsWithConfig(id, appConfig)
+                    : await DashApi.getPiholeStats(id);
 
                 // Reset auth failed flag on successful fetch
                 setAuthFailed(false);
@@ -401,14 +405,14 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
             host: config.host || 'pi.hole',
             port: config.port || '80',
             ssl: config.ssl || false,
-            apiToken: config.apiToken || '',
-            password: config.password || '',
+            _hasApiToken: config._hasApiToken || false,
+            _hasPassword: config._hasPassword || false,
             showLabel: config.showLabel,
             displayName: config.displayName || 'Pi-hole'
         };
 
         // Check if this is a valid configuration
-        const isValid = !!config.host && (!!config.apiToken || !!config.password);
+        const isValid = !!config.host && (!!config._hasApiToken || !!config._hasPassword);
 
         // If configured state doesn't match validity, update it
         if (isValid !== isConfigured) {
@@ -420,8 +424,8 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
             newConfig.host !== piholeConfig.host ||
             newConfig.port !== piholeConfig.port ||
             newConfig.ssl !== piholeConfig.ssl ||
-            newConfig.apiToken !== piholeConfig.apiToken ||
-            newConfig.password !== piholeConfig.password;
+            newConfig._hasApiToken !== piholeConfig._hasApiToken ||
+            newConfig._hasPassword !== piholeConfig._hasPassword;
 
         if (configChanged) {
             // Update config
@@ -554,7 +558,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
 
     // Handle disable blocking with timeout
     const handleDisableBlocking = async (seconds: number | null) => {
-        if (!isConfigured || (!piholeConfig.apiToken && !piholeConfig.password)) return;
+        if (!isConfigured || (!piholeConfig._hasApiToken && !piholeConfig._hasPassword)) return;
 
         setIsDisablingBlocking(true);
         setDisableMenuAnchor(null);
@@ -567,7 +571,9 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
             }
 
             // Call the backend API to disable blocking
-            const result = await DashApi.disablePihole(id, seconds || undefined);
+            const result = appConfig
+                ? await DashApi.disablePiholeWithConfig(id, appConfig, seconds || undefined)
+                : await DashApi.disablePihole(id, seconds || undefined);
 
             if (result) {
                 // Only update UI after successful API call
@@ -686,7 +692,11 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
             }
 
             // Call API first, don't update UI state optimistically
-            await DashApi.enablePihole(id);
+            if (appConfig) {
+                await DashApi.enablePiholeWithConfig(id, appConfig);
+            } else {
+                await DashApi.enablePihole(id);
+            }
 
             // Only update UI after successful API call
             setIsBlocking(true);
@@ -774,7 +784,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
         }
 
         // Recheck configuration
-        const isValid = !!piholeConfig.host && (!!piholeConfig.apiToken || !!piholeConfig.password);
+        const isValid = !!piholeConfig.host && (!!piholeConfig._hasApiToken || !!piholeConfig._hasPassword);
         setIsConfigured(isValid);
 
         // Reset stats to initial state
@@ -828,7 +838,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
         if (!baseUrl) return;
 
         // For v6, direct links won't work without authentication, so just open the main admin page
-        const isV6 = !!piholeConfig.password && !piholeConfig.apiToken;
+        const isV6 = !!piholeConfig._hasPassword && !piholeConfig._hasApiToken;
         if (isV6) {
             // For v6, just go to main admin page since direct links require authentication
             window.open(baseUrl, '_blank');
@@ -846,7 +856,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
         if (!baseUrl) return;
 
         // For v6, direct links won't work without authentication, so just open the main admin page
-        const isV6 = !!piholeConfig.password && !piholeConfig.apiToken;
+        const isV6 = !!piholeConfig._hasPassword && !piholeConfig._hasApiToken;
         if (isV6) {
             // For v6, just go to main admin page since direct links require authentication
             window.open(baseUrl, '_blank');
@@ -864,7 +874,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
         if (!baseUrl) return;
 
         // For v6, direct links won't work without authentication, so just open the main admin page
-        const isV6 = !!piholeConfig.password && !piholeConfig.apiToken;
+        const isV6 = !!piholeConfig._hasPassword && !piholeConfig._hasApiToken;
         if (isV6) {
             // For v6, just go to main admin page since direct links require authentication
             window.open(baseUrl, '_blank');
@@ -882,7 +892,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
         if (!baseUrl) return;
 
         // For v6, direct links won't work without authentication, so just open the main admin page
-        const isV6 = !!piholeConfig.password && !piholeConfig.apiToken;
+        const isV6 = !!piholeConfig._hasPassword && !piholeConfig._hasApiToken;
         if (isV6) {
             // For v6, just go to main admin page since direct links require authentication
             window.open(baseUrl, '_blank');
@@ -910,7 +920,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
                 </Typography>
                 <Typography variant='caption' align='center' sx={{ mt: 1, fontSize: '0.8rem' }}>
                     {authFailed ?
-                        `Using ${piholeConfig.apiToken ? 'API token' : 'password'} authentication` :
+                        `Using ${piholeConfig._hasApiToken ? 'API token' : 'password'} authentication` :
                         'Check your Pi-hole configuration and network connection'}
                 </Typography>
                 <Button

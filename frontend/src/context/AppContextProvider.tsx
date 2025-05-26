@@ -396,12 +396,15 @@ export const AppContextProvider = ({ children }: Props) => {
     };
 
     const saveLayout = async (items: DashboardItem[]) => {
-
-        const existingLayout = await DashApi.getConfig();
+        // Use existing config state instead of fetching again
+        if (!config) {
+            console.error('No config available for saving layout');
+            return;
+        }
 
         // If we're on a specific page, save to that page
         if (currentPageId) {
-            const updatedPages = existingLayout.pages?.map(page => {
+            const updatedPages = config.pages?.map(page => {
                 if (page.id === currentPageId) {
                     return {
                         ...page,
@@ -420,12 +423,11 @@ export const AppContextProvider = ({ children }: Props) => {
         // Otherwise save to main dashboard
         let updatedLayout: DashboardLayout;
 
-        if (existingLayout.layout.mobile.length > 3) {
-
+        if (config.layout.mobile.length > 3) {
             // has no prev mobile layout, duplicate desktop
             updatedLayout = isMobile
-                ? { layout: { ...existingLayout.layout, mobile: items } }
-                : { layout: { ...existingLayout.layout, desktop: items } };
+                ? { layout: { ...config.layout, mobile: items } }
+                : { layout: { ...config.layout, desktop: items } };
         } else {
             updatedLayout = { layout: { desktop: items, mobile: items } };
         }
@@ -435,8 +437,8 @@ export const AppContextProvider = ({ children }: Props) => {
 
     const refreshDashboard = async () => {
         try {
-            const savedLayout = await getLayout();
-            setConfig(await DashApi.getConfig());
+            // getLayout() already calls getConfig() and setConfig(), so we don't need to call it again
+            await getLayout();
         } catch (error) {
             console.error('Failed to refresh dashboard:', error);
         }
@@ -459,12 +461,15 @@ export const AppContextProvider = ({ children }: Props) => {
         setDashboardLayout((prevItems) => [...prevItems, newItem]);
 
         try {
-            // Get the current configuration
-            const currentConfig = await DashApi.getConfig();
+            // Use existing config state instead of fetching again
+            if (!config) {
+                console.error('No config available for adding item');
+                return;
+            }
 
             // If we're on a specific page, add to that page
             if (currentPageId) {
-                const updatedPages = currentConfig.pages?.map(page => {
+                const updatedPages = config.pages?.map(page => {
                     if (page.id === currentPageId) {
                         return {
                             ...page,
@@ -484,8 +489,8 @@ export const AppContextProvider = ({ children }: Props) => {
             // Otherwise add to main dashboard
             const updatedLayout = {
                 layout: {
-                    desktop: [...currentConfig.layout.desktop, newItem],
-                    mobile: [...currentConfig.layout.mobile, newItem]
+                    desktop: [...config.layout.desktop, newItem],
+                    mobile: [...config.layout.mobile, newItem]
                 }
             };
 
@@ -499,63 +504,64 @@ export const AppContextProvider = ({ children }: Props) => {
     const updateItem = (id: string, updatedData: Partial<NewItem>) => {
 
         try {
-            // Get current config first to ensure we have both layouts
-            DashApi.getConfig().then(currentConfig => {
-                // If we're on a specific page, update that page
-                if (currentPageId) {
-                    const updatedPages = currentConfig.pages?.map(page => {
-                        if (page.id === currentPageId) {
-                            const desktopLayout = page.layout.desktop.map(item =>
-                                item.id === id ? { ...item, ...updatedData } : item
-                            );
-                            const mobileLayout = page.layout.mobile.map(item =>
-                                item.id === id ? { ...item, ...updatedData } : item
-                            );
+            // Use existing config state instead of fetching again
+            if (!config) {
+                console.error('No config available for updating item');
+                return;
+            }
 
-                            // Update local dashboard layout for immediate UI update
-                            setDashboardLayout(isMobile ? mobileLayout : desktopLayout);
+            // If we're on a specific page, update that page
+            if (currentPageId) {
+                const updatedPages = config.pages?.map(page => {
+                    if (page.id === currentPageId) {
+                        const desktopLayout = page.layout.desktop.map(item =>
+                            item.id === id ? { ...item, ...updatedData } : item
+                        );
+                        const mobileLayout = page.layout.mobile.map(item =>
+                            item.id === id ? { ...item, ...updatedData } : item
+                        );
 
-                            return {
-                                ...page,
-                                layout: {
-                                    desktop: desktopLayout,
-                                    mobile: mobileLayout
-                                }
-                            };
-                        }
-                        return page;
-                    }) || [];
+                        // Update local dashboard layout for immediate UI update
+                        setDashboardLayout(isMobile ? mobileLayout : desktopLayout);
 
-                    DashApi.saveConfig({ pages: updatedPages })
-                        .catch(error => console.error('Error saving updated page layouts:', error));
-                    return;
-                }
-
-                // Otherwise update main dashboard
-                const desktopLayout = currentConfig.layout.desktop.map(item =>
-                    item.id === id ? { ...item, ...updatedData } : item
-                );
-
-                const mobileLayout = currentConfig.layout.mobile.map(item =>
-                    item.id === id ? { ...item, ...updatedData } : item
-                );
-
-                // Update local dashboard layout for immediate UI update
-                setDashboardLayout(isMobile ? mobileLayout : desktopLayout);
-
-                // Save both updated layouts to the server
-                const updatedConfig = {
-                    layout: {
-                        desktop: desktopLayout,
-                        mobile: mobileLayout
+                        return {
+                            ...page,
+                            layout: {
+                                desktop: desktopLayout,
+                                mobile: mobileLayout
+                            }
+                        };
                     }
-                };
+                    return page;
+                }) || [];
 
-                DashApi.saveConfig(updatedConfig)
-                    .catch(error => console.error('Error saving updated layouts:', error));
-            }).catch(error => {
-                console.error('Error fetching config for item update:', error);
-            });
+                DashApi.saveConfig({ pages: updatedPages })
+                    .catch(error => console.error('Error saving updated page layouts:', error));
+                return;
+            }
+
+            // Otherwise update main dashboard
+            const desktopLayout = config.layout.desktop.map(item =>
+                item.id === id ? { ...item, ...updatedData } : item
+            );
+
+            const mobileLayout = config.layout.mobile.map(item =>
+                item.id === id ? { ...item, ...updatedData } : item
+            );
+
+            // Update local dashboard layout for immediate UI update
+            setDashboardLayout(isMobile ? mobileLayout : desktopLayout);
+
+            // Save both updated layouts to the server
+            const updatedConfig = {
+                layout: {
+                    desktop: desktopLayout,
+                    mobile: mobileLayout
+                }
+            };
+
+            DashApi.saveConfig(updatedConfig)
+                .catch(error => console.error('Error saving updated layouts:', error));
         } catch (error) {
             console.error('Failed to update item:', error);
         }
@@ -564,14 +570,17 @@ export const AppContextProvider = ({ children }: Props) => {
     // Helper function to save layout changes to the server
     const saveLayoutToServer = async (items: DashboardItem[]) => {
         try {
-            // Get the current configuration
-            const currentConfig = await DashApi.getConfig();
+            // Use existing config state instead of fetching again
+            if (!config) {
+                console.error('No config available for saving layout to server');
+                return;
+            }
 
             // For layout rearrangements, only update the current device's layout
             const updatedLayout = {
                 layout: {
-                    desktop: isMobile ? currentConfig.layout.desktop : items,
-                    mobile: isMobile ? items : currentConfig.layout.mobile
+                    desktop: isMobile ? config.layout.desktop : items,
+                    mobile: isMobile ? items : config.layout.mobile
                 }
             };
 
@@ -636,8 +645,13 @@ export const AppContextProvider = ({ children }: Props) => {
         };
 
         try {
-            const currentConfig = await DashApi.getConfig();
-            const updatedPages = [...(currentConfig.pages || []), newPage];
+            // Use existing config state instead of fetching again
+            if (!config) {
+                console.error('No config available for adding page');
+                return;
+            }
+
+            const updatedPages = [...(config.pages || []), newPage];
 
             await DashApi.saveConfig({ pages: updatedPages });
             setPages(updatedPages);
@@ -658,8 +672,14 @@ export const AppContextProvider = ({ children }: Props) => {
             text: 'This action cannot be undone. All items on this page will be permanently deleted.',
             confirmAction: async () => {
                 try {
-                    const currentConfig = await DashApi.getConfig();
-                    const updatedPages = (currentConfig.pages || []).filter(page => page.id !== pageId);
+                    // Use existing config state instead of fetching again
+                    if (!config) {
+                        console.error('No config available for deleting page');
+                        PopupManager.failure('Failed to delete page. Please try again.');
+                        return;
+                    }
+
+                    const updatedPages = (config.pages || []).filter(page => page.id !== pageId);
 
                     await DashApi.saveConfig({ pages: updatedPages });
                     setPages(updatedPages);
@@ -832,28 +852,8 @@ export const AppContextProvider = ({ children }: Props) => {
                 return filtered;
             });
 
-            // Refresh the entire config to ensure consistency
-            const refreshedConfig = await DashApi.getConfig();
-            setConfig(refreshedConfig);
-            setPages(refreshedConfig.pages || []);
-
-            // Update the dashboard layout with the refreshed config
-            // This ensures that if we're on the target page, we see the moved item
-            const loadLayoutForCurrentPage = () => {
-                if (currentPageId && refreshedConfig.pages) {
-                    const currentPage = refreshedConfig.pages.find(page => page.id === currentPageId);
-                    if (currentPage) {
-                        const selectedLayout = isMobile ? currentPage.layout.mobile : currentPage.layout.desktop;
-                        setDashboardLayout(selectedLayout || []);
-                        return;
-                    }
-                }
-                // Load main dashboard layout
-                const selectedLayout = isMobile ? refreshedConfig.layout.mobile : refreshedConfig.layout.desktop;
-                setDashboardLayout(selectedLayout || []);
-            };
-
-            loadLayoutForCurrentPage();
+            // Use getLayout() which already fetches config and updates state
+            await getLayout();
 
             const { ToastManager } = await import('../components/toast/ToastManager');
             const targetName = targetPageId === null ? 'Home' : pages.find(p => p.id === targetPageId)?.name || 'Unknown Page';
