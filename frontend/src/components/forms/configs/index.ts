@@ -7,3 +7,4 @@ export { WidgetConfig } from './WidgetConfig';
 export { AppShortcutConfig } from './AppShortcutConfig';
 export { DateTimeWidgetConfig } from './DateTimeWidgetConfig';
 export { GroupWidgetConfig } from './GroupWidgetConfig';
+export { PlaceholderConfig } from './PlaceholderConfig';

@@ -138,6 +138,7 @@ const SortableGroupItem: React.FC<SortableGroupItemProps> = ({
         >
             <WidgetContainer
                 editMode={isEditing}
+                id={item.id}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onDuplicate={handleDuplicate}
@@ -578,6 +579,7 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
     return (
         <WidgetContainer
             editMode={isEditing}
+            id={id}
             onEdit={onEdit}
             onDelete={onRemove}
             onDuplicate={onDuplicate}

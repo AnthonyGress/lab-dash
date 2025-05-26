@@ -32,7 +32,7 @@ export const SortablePihole: React.FC<Props> = ({ id, editMode, isOverlay = fals
                 visibility: isDragging ? 'hidden' : 'visible'
             }}
         >
-            <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit} onDuplicate={onDuplicate}>
+            <WidgetContainer editMode={editMode} id={id} onDelete={onDelete} onEdit={onEdit} onDuplicate={onDuplicate}>
                 <PiholeWidget config={config} />
             </WidgetContainer>
         </Grid2>

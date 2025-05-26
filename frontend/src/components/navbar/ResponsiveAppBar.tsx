@@ -22,10 +22,10 @@ import { getAppVersion } from '../../utils/version';
 import { AddEditForm } from '../forms/AddEditForm';
 import { Logo } from '../Logo';
 import { CenteredModal } from '../modals/CenteredModal';
-import { PopupManager } from '../modals/PopupManager';
 import { UpdateModal } from '../modals/UpdateModal';
 import { VersionModal } from '../modals/VersionModal';
 import { GlobalSearch } from '../search/GlobalSearch';
+import { ToastManager } from '../toast/ToastManager';
 
 const DrawerHeader = styled('div')(() => ({
     display: 'flex',
@@ -61,7 +61,11 @@ export const ResponsiveAppBar = ({ children }: Props) => {
         updateAvailable,
         latestVersion,
         recentlyUpdated,
-        handleVersionViewed
+        handleVersionViewed,
+        pages,
+        currentPageId,
+        switchToPage,
+        deletePage
     } = useAppContext();
 
     const location = useLocation();
@@ -130,10 +134,10 @@ export const ResponsiveAppBar = ({ children }: Props) => {
             // Navigate to home page
             navigate('/');
             handleCloseDrawer();
-            PopupManager.success('Logged out');
+            ToastManager.success('Logged out');
         } catch (error) {
             console.error('Logout error:', error);
-            PopupManager.failure('Logout error');
+            ToastManager.error('Logout error');
         }
     };
 
@@ -151,6 +155,11 @@ export const ResponsiveAppBar = ({ children }: Props) => {
     const handleOpenVersionModal = () => {
         setOpenVersionModal(true);
         handleCloseDrawer();
+    };
+
+    // Helper function to convert page name to URL slug
+    const pageNameToSlug = (pageName: string): string => {
+        return pageName.toLowerCase().replace(/\s+/g, '-');
     };
 
     return (
@@ -300,21 +309,27 @@ export const ResponsiveAppBar = ({ children }: Props) => {
 
                                     {/* Main Navigation */}
                                     <List>
-                                        <NavLink to='/' style={{ width: '100%', color: 'white' }} onClick={handleCloseDrawer}>
-                                            <ListItem disablePadding>
-                                                <ListItemButton>
-                                                    <ListItemIcon>
-                                                        {<FaHouse style={{ color: theme.palette.text.primary, fontSize: 22 }}/> }
-                                                    </ListItemIcon>
-                                                    <ListItemText primary={'Home'} />
-                                                </ListItemButton>
-                                            </ListItem>
-                                        </NavLink>
+                                        <ListItem disablePadding>
+                                            <ListItemButton
+                                                onClick={() => {
+                                                    navigate('/');
+                                                    handleCloseDrawer();
+                                                }}
+                                                sx={{
+                                                    backgroundColor: (currentPageId === null || currentPageId === '') ? 'rgba(255, 255, 255, 0.1)' : 'transparent'
+                                                }}
+                                            >
+                                                <ListItemIcon>
+                                                    {<FaHouse style={{ color: theme.palette.text.primary, fontSize: 22 }}/> }
+                                                </ListItemIcon>
+                                                <ListItemText primary={'Home'} />
+                                            </ListItemButton>
+                                        </ListItem>
+
                                         {isLoggedIn && isAdmin && (
                                             <ListItem disablePadding>
                                                 <ListItemButton onClick={() => {
                                                     setEditMode(true);
-                                                    if (currentPath !== '/') navigate('/');
                                                     handleCloseDrawer();
                                                 }}>
                                                     <ListItemIcon>
@@ -335,6 +350,41 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                     </ListItemButton>
                                                 </ListItem>
                                             </NavLink>
+                                        )}
+
+                                        {/* Pages Section - Below Settings with Divider */}
+                                        {pages.length > 0 && (
+                                            <>
+                                                <Divider sx={{ my: 1 }} />
+                                                {pages.map((page) => (
+                                                    <ListItem key={page.id} disablePadding>
+                                                        <ListItemButton
+                                                            onClick={() => {
+                                                                const slug = pageNameToSlug(page.name);
+                                                                navigate(`/${slug}`);
+                                                                handleCloseDrawer();
+                                                            }}
+                                                            sx={{
+                                                                backgroundColor: currentPageId === page.id ? 'rgba(255, 255, 255, 0.1)' : 'transparent'
+                                                            }}
+                                                        >
+                                                            <ListItemText primary={page.name} />
+                                                            {isLoggedIn && isAdmin && editMode && (
+                                                                <IconButton
+                                                                    size='small'
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        deletePage(page.id);
+                                                                    }}
+                                                                    sx={{ ml: 1 }}
+                                                                >
+                                                                    <CloseIcon style={{ fontSize: 22, color: 'white' }} />
+                                                                </IconButton>
+                                                            )}
+                                                        </ListItemButton>
+                                                    </ListItem>
+                                                ))}
+                                            </>
                                         )}
                                     </List>
 

@@ -32,7 +32,7 @@ export const BlankWidget: React.FC<Props> = ({ id, label, editMode, isOverlay = 
                 visibility: isDragging ? 'hidden' : 'visible',
             }}
         >
-            <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit} onDuplicate={onDuplicate} placeholder rowPlaceholder={row}>
+            <WidgetContainer editMode={editMode} id={id} onDelete={onDelete} onEdit={onEdit} onDuplicate={onDuplicate} placeholder rowPlaceholder={row}>
                 <Typography variant='h6' textAlign='center'>
                     {/* {label} */}
                 </Typography>

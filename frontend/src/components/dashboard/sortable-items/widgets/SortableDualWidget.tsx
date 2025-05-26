@@ -53,6 +53,7 @@ export const SortableDualWidget: React.FC<Props> = ({
             <DualWidget
                 config={config}
                 editMode={editMode}
+                id={id}
                 onDelete={onDelete}
                 onEdit={onEdit}
                 onDuplicate={onDuplicate}

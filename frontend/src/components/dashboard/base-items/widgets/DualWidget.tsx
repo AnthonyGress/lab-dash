@@ -23,6 +23,7 @@ export interface DualWidgetProps {
         };
     };
     editMode?: boolean;
+    id?: string;
     onEdit?: () => void;
     onDelete?: () => void;
     onDuplicate?: () => void;
@@ -32,6 +33,7 @@ export interface DualWidgetProps {
 export const DualWidget: React.FC<DualWidgetProps> = ({
     config,
     editMode = false,
+    id,
     onEdit,
     onDelete,
     onDuplicate,
@@ -110,6 +112,7 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
     return (
         <DualWidgetContainer
             editMode={editMode}
+            id={id}
             onEdit={onEdit}
             onDelete={onDelete}
             onDuplicate={onDuplicate}

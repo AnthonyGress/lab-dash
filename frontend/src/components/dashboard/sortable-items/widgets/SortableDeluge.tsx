@@ -40,7 +40,7 @@ export const SortableDeluge: React.FC<Props> = ({
                 visibility: isDragging ? 'hidden' : 'visible',
             }}
         >
-            <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit} onDuplicate={onDuplicate}>
+            <WidgetContainer editMode={editMode} id={id} onDelete={onDelete} onEdit={onEdit} onDuplicate={onDuplicate}>
                 <DelugeWidget config={config} />
             </WidgetContainer>
         </Grid2>

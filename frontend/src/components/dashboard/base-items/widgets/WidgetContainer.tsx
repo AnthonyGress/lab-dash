@@ -8,6 +8,7 @@ import { COLORS } from '../../../../theme/styles';
 type Props = {
     children: React.ReactNode;
     editMode: boolean;
+    id?: string;
     onEdit?: () => void
     onDelete?: () => void;
     onDuplicate?: () => void;
@@ -25,6 +26,7 @@ type Props = {
 export const WidgetContainer: React.FC<Props> = ({
     children,
     editMode,
+    id,
     onEdit,
     onDelete,
     onDuplicate,
@@ -75,7 +77,7 @@ export const WidgetContainer: React.FC<Props> = ({
             }}
             data-preview={isPreview ? 'true' : 'false'}
         >
-            {!isPreview && <EditMenu editMode={editMode} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} />}
+            {!isPreview && <EditMenu editMode={editMode} itemId={id} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} />}
             {children}
             {!isPreview && <StatusIndicator url={url} healthCheckType={healthCheckType} />}
         </Card>

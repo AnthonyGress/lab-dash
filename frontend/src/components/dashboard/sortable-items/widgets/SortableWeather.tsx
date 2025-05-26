@@ -35,7 +35,7 @@ export const SortableWeatherWidget: React.FC<Props> = ({ id, editMode, isOverlay
                 visibility: isDragging ? 'hidden' : 'visible'
             }}
         >
-            <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit} onDuplicate={onDuplicate}>
+            <WidgetContainer editMode={editMode} id={id} onDelete={onDelete} onEdit={onEdit} onDuplicate={onDuplicate}>
                 <WeatherWidget config={config} />
             </WidgetContainer>
         </Grid2>

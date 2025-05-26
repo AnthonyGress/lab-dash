@@ -1,6 +1,6 @@
 import { createContext, Dispatch, SetStateAction } from 'react';
 
-import { Config, DashboardItem, NewItem } from '../types';
+import { Config, DashboardItem, NewItem, Page } from '../types';
 
 export interface IAppContext {
     dashboardLayout: DashboardItem[];
@@ -13,6 +13,15 @@ export interface IAppContext {
     setEditMode: Dispatch<SetStateAction<boolean>>;
     config: Config | undefined;
     updateConfig: (partialConfig: Partial<Config>) => Promise<void>;
+    // Page management
+    currentPageId: string | null;
+    setCurrentPageId: Dispatch<SetStateAction<string | null>>;
+    pages: Page[];
+    addPage: (name: string) => Promise<void>;
+    deletePage: (pageId: string) => Promise<void>;
+    switchToPage: (pageId: string) => Promise<void>;
+    pageNameToSlug: (pageName: string) => string;
+    moveItemToPage: (itemId: string, targetPageId: string | null) => Promise<void>;
     // Authentication & setup states
     isLoggedIn: boolean;
     setIsLoggedIn: Dispatch<SetStateAction<boolean>>;

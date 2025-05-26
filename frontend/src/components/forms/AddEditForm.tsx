@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { CheckboxElement, FormContainer, SelectElement, TextFieldElement } from 'react-hook-form-mui';
 
-import { AppShortcutConfig, WidgetConfig } from './configs';
+import { AppShortcutConfig, PlaceholderConfig, WidgetConfig } from './configs';
 import { IconSearch } from './IconSearch';
 import { DashApi } from '../../api/dash-api';
 import { useAppContext } from '../../context/useAppContext';
@@ -23,9 +23,8 @@ type Props = {
 const ITEM_TYPE_OPTIONS = [
     { id: ITEM_TYPE.APP_SHORTCUT, label: 'Shortcut' },
     { id: 'widget', label: 'Widget' },
-    { id: ITEM_TYPE.BLANK_APP, label: 'Placeholder Shortcut' },
-    { id: ITEM_TYPE.BLANK_WIDGET, label: 'Placeholder Widget' },
-    { id: ITEM_TYPE.BLANK_ROW, label: 'Placeholder Row' },
+    { id: ITEM_TYPE.PAGE, label: 'Page' },
+    { id: ITEM_TYPE.PLACEHOLDER, label: 'Placeholder' },
 ];
 
 const WIDGET_OPTIONS = [
@@ -58,6 +57,7 @@ const TORRENT_CLIENT_OPTIONS = [
 
 export type FormValues = {
     shortcutName?: string;
+    pageName?: string;
     itemType: string;
     url?: string;
     healthUrl?: string;
@@ -65,6 +65,7 @@ export type FormValues = {
     icon?: { path: string; name: string; source?: string } | null;
     showLabel?: boolean;
     widgetType?: string;
+    placeholderSize?: string;
     // Weather widget
     temperatureUnit?: string;
     location?: { name: string; latitude: number; longitude: number } | null;
@@ -146,7 +147,7 @@ interface LocationOption {
 
 export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
     const { formState: { errors } } = useForm();
-    const { dashboardLayout, addItem, updateItem } = useAppContext();
+    const { dashboardLayout, addItem, updateItem, addPage } = useAppContext();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [customIconFile, setCustomIconFile] = useState<File | null>(null);
 
@@ -169,9 +170,17 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                existingItem?.type === ITEM_TYPE.DUAL_WIDGET ||
                                existingItem?.type === ITEM_TYPE.GROUP_WIDGET
             ? 'widget'
-            : (existingItem?.type === ITEM_TYPE.BLANK_WIDGET || existingItem?.type === ITEM_TYPE.BLANK_ROW)
-                ? existingItem?.type
+            : (existingItem?.type === ITEM_TYPE.BLANK_WIDGET ||
+               existingItem?.type === ITEM_TYPE.BLANK_ROW ||
+               existingItem?.type === ITEM_TYPE.BLANK_APP)
+                ? ITEM_TYPE.PLACEHOLDER
                 : existingItem?.type || '';
+
+        // Determine placeholder size from existing item type
+        const initialPlaceholderSize = existingItem?.type === ITEM_TYPE.BLANK_APP ? 'app'
+            : existingItem?.type === ITEM_TYPE.BLANK_WIDGET ? 'widget'
+                : existingItem?.type === ITEM_TYPE.BLANK_ROW ? 'row'
+                    : 'app'; // default
 
         const initialWidgetType = existingItem?.type === ITEM_TYPE.WEATHER_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.DATE_TIME_WIDGET ||
@@ -246,6 +255,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                 }
                 : null,
             widgetType: initialWidgetType,
+            placeholderSize: initialPlaceholderSize,
             torrentClientType: existingItem?.config?.clientType || TORRENT_CLIENT_TYPE.QBITTORRENT,
             temperatureUnit: temperatureUnit,
             timezone: existingItem?.config?.timezone || '',
@@ -454,6 +464,20 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
 
     const handleSubmit = async (data: FormValues) => {
         console.log('Form submitted with data:', data);
+
+        // Handle page creation
+        if (data.itemType === ITEM_TYPE.PAGE) {
+            if (data.pageName) {
+                try {
+                    await addPage(data.pageName);
+                    handleFormClose();
+                } catch (error) {
+                    console.error('Error creating page:', error);
+                }
+            }
+            return;
+        }
+
         let iconData = data.icon;
 
         if (customIconFile && data.icon?.source === 'custom-pending') {
@@ -656,6 +680,27 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             ? (data.url || '#')
             : data.url; // Allow URL to be undefined when health URL is provided but no URL is set
 
+        // Determine the actual item type based on form data
+        let actualItemType = data.itemType;
+        if (data.itemType === 'widget' && data.widgetType) {
+            actualItemType = data.widgetType;
+        } else if (data.itemType === ITEM_TYPE.PLACEHOLDER && data.placeholderSize) {
+            // Map placeholder size to legacy types for backward compatibility
+            switch (data.placeholderSize) {
+            case 'app':
+                actualItemType = ITEM_TYPE.BLANK_APP;
+                break;
+            case 'widget':
+                actualItemType = ITEM_TYPE.BLANK_WIDGET;
+                break;
+            case 'row':
+                actualItemType = ITEM_TYPE.BLANK_ROW;
+                break;
+            default:
+                actualItemType = ITEM_TYPE.BLANK_APP;
+            }
+        }
+
         const updatedItem: NewItem = {
             label: data.shortcutName || '',
             icon: iconData ? {
@@ -664,7 +709,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                 source: iconData.source
             } : undefined,
             url,
-            type: data.itemType === 'widget' && data.widgetType ? data.widgetType : data.itemType,
+            type: actualItemType,
             showLabel: data.showLabel,
             config: config,
             adminOnly: data.adminOnly
@@ -826,6 +871,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             showLabel: false,
             icon: null,
             widgetType: '',
+            placeholderSize: 'app',
             torrentClientType: TORRENT_CLIENT_TYPE.QBITTORRENT,
             temperatureUnit: 'fahrenheit',
             timezone: '',
@@ -987,6 +1033,50 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                 </Grid>
                             )}
 
+                            {selectedItemType === ITEM_TYPE.PAGE && (
+                                <Grid>
+                                    <TextFieldElement
+                                        label='Page Name'
+                                        name='pageName'
+                                        required
+                                        fullWidth
+                                        sx={{
+                                            '& .MuiOutlinedInput-root': {
+                                                '& fieldset': {
+                                                    borderColor: 'text.primary',
+                                                },
+                                                '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                                '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
+                                            },
+                                            width: '100%',
+                                            minWidth: isMobile ? '65vw' : '20vw'
+                                        }}
+                                        slotProps={{
+                                            inputLabel: { style: { color: theme.palette.text.primary } }
+                                        }}
+                                        rules={{
+                                            required: 'Page name is required',
+                                            validate: (value: string) => {
+                                                if (!value) return 'Page name is required';
+
+                                                // Check if it's only alphanumeric characters
+                                                const alphanumericRegex = /^[a-zA-Z0-9]+$/;
+                                                if (!alphanumericRegex.test(value)) {
+                                                    return 'Page name can only contain letters and numbers';
+                                                }
+
+                                                // Check if it's the word "settings" (case-insensitive)
+                                                if (value.toLowerCase() === 'settings') {
+                                                    return 'Page name cannot be "settings"';
+                                                }
+
+                                                return true;
+                                            }
+                                        }}
+                                    />
+                                </Grid>
+                            )}
+
                             {/* Widget specific configurations */}
                             {selectedItemType === 'widget' && selectedWidgetType && (
                                 <>
@@ -1016,6 +1106,10 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
 
                             {selectedItemType === ITEM_TYPE.APP_SHORTCUT && (
                                 <AppShortcutConfig formContext={formContext} onCustomIconSelect={handleCustomIconSelect} />
+                            )}
+
+                            {selectedItemType === ITEM_TYPE.PLACEHOLDER && (
+                                <PlaceholderConfig formContext={formContext} />
                             )}
 
                             {(selectedItemType === ITEM_TYPE.BLANK_WIDGET || selectedItemType === ITEM_TYPE.BLANK_ROW || selectedItemType === ITEM_TYPE.BLANK_APP) && (

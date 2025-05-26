@@ -31,7 +31,7 @@ export const BlankAppShortcut: React.FC<Props> = ({ id, editMode, isOverlay = fa
                 visibility: isDragging ? 'hidden' : 'visible',
             }}
         >
-            <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit} onDuplicate={onDuplicate} appShortcut placeholder>
+            <WidgetContainer editMode={editMode} id={id} onDelete={onDelete} onEdit={onEdit} onDuplicate={onDuplicate} appShortcut placeholder>
                 {/* <AppShortcut url={url} name={name} iconName={iconName} /> */}
                 <Box sx={{ width: { xs: '45%', sm: '40%', md: '55%', lg: '50%', xl: '35%' } }} />
             </WidgetContainer>

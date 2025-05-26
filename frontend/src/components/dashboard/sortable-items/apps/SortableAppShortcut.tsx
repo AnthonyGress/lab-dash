@@ -75,6 +75,7 @@ export const SortableAppShortcut: React.FC<Props> = ({
         >
             <WidgetContainer
                 editMode={editMode}
+                id={id}
                 onDelete={onDelete}
                 onEdit={onEdit}
                 onDuplicate={onDuplicate}

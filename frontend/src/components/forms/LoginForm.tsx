@@ -4,7 +4,7 @@ import { FaLock, FaUser } from 'react-icons/fa6';
 import { useNavigate } from 'react-router-dom';
 
 import { DashApi } from '../../api/dash-api';
-import { PopupManager } from '../../components/modals/PopupManager';
+import { ToastManager } from '../../components/toast/ToastManager';
 import { useAppContext } from '../../context/useAppContext';
 import { styles } from '../../theme/styles';
 import { theme } from '../../theme/theme';
@@ -40,13 +40,12 @@ export const LoginForm = () => {
             // Set logged in status last to trigger any dependent effects
             setIsLoggedIn(true);
 
-            // Use a timeout to ensure state updates have propagated before navigation
-            PopupManager.success('Logged in', () => {
-                setTimeout(() => navigate('/'), 100);
-            });
+            // Show success toast and navigate to home page
+            ToastManager.success('Login successful!');
+            navigate('/');
         } catch (error: any) {
             // Show error message
-            PopupManager.failure(error.message || 'Login failed');
+            ToastManager.error(error.message || 'Login failed');
         }
     };
 

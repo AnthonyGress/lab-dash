@@ -7,9 +7,12 @@ export enum ITEM_TYPE {
     DUAL_WIDGET = 'dual-widget',
     GROUP_WIDGET = 'group-widget',
     APP_SHORTCUT = 'app-shortcut',
+    PLACEHOLDER = 'placeholder',
+    // Legacy placeholder types - keeping for backward compatibility
     BLANK_APP = 'blank-app',
     BLANK_WIDGET = 'blank-widget',
-    BLANK_ROW = 'blank-row'
+    BLANK_ROW = 'blank-row',
+    PAGE = 'page'
 }
 
 export enum TORRENT_CLIENT_TYPE {
@@ -45,11 +48,21 @@ export type SearchProvider = {
     url: string;
 }
 
+export type Page = {
+    id: string;
+    name: string;
+    layout: {
+        desktop: DashboardItem[];
+        mobile: DashboardItem[];
+    };
+}
+
 export type Config = {
     layout: {
         desktop: DashboardItem[];
         mobile: DashboardItem[];
     },
+    pages?: Page[];
     title?: string;
     backgroundImage?: string;
     search?: boolean;

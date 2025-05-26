@@ -391,12 +391,19 @@ export const DashboardGrid: React.FC = () => {
     };
 
     const handleDelete = (id: string) => {
+        const itemToDelete = dashboardLayout.find(item => item.id === id);
+        const itemName = itemToDelete?.label || 'Item';
+
         const options: ConfirmationOptions = {
             title: 'Delete Item?',
-            confirmAction: () => {
+            confirmAction: async () => {
                 const updatedLayout = dashboardLayout.filter((item) => item.id !== id);
                 setDashboardLayout(updatedLayout);
                 saveLayout(updatedLayout);
+
+                // Show success toast
+                const { ToastManager } = await import('../toast/ToastManager');
+                ToastManager.success(`${itemName} deleted successfully`);
             }
         };
 

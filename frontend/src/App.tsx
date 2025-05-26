@@ -2,7 +2,7 @@ import './theme/App.css';
 import { GlobalStyles } from '@mui/material';
 import { Box, Paper } from '@mui/material';
 import { useEffect } from 'react';
-import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 
 import { DashApi } from './api/dash-api';
 import { SetupForm } from './components/forms/SetupForm';
@@ -92,17 +92,16 @@ export const App = () => {
     return (
         <>
             {globalStyles}
-            <Router>
-                <ScrollToTop />
-                <Routes>
-                    <Route element={<WithNav />}>
-                        <Route path='/' element={isFirstTimeSetup && !setupComplete ? <SetupPage /> : <DashboardPage />}/>
-                        <Route path='/settings' element={<SettingsPage />}/>
-                        <Route path='/login' element={<LoginPage />}/>
-                        <Route path='/signup' element={<LoginPage />}/>
-                    </Route>
-                </Routes>
-            </Router>
+            <ScrollToTop />
+            <Routes>
+                <Route element={<WithNav />}>
+                    <Route path='/' element={isFirstTimeSetup && !setupComplete ? <SetupPage /> : <DashboardPage />}/>
+                    <Route path='/:pageName' element={isFirstTimeSetup && !setupComplete ? <SetupPage /> : <DashboardPage />}/>
+                    <Route path='/settings' element={<SettingsPage />}/>
+                    <Route path='/login' element={<LoginPage />}/>
+                    <Route path='/signup' element={<LoginPage />}/>
+                </Route>
+            </Routes>
         </>
     );
 };
