@@ -343,11 +343,13 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
         }
 
         // Check if an app shortcut is being dragged over the group
-        const isAppShortcut = active?.data?.current?.type === 'app-shortcut';
+        const isAppShortcut = active?.data?.current?.type === 'app-shortcut' || active?.data?.current?.type === 'blank-app';
         const isDirectlyOverGroup = over && (
             over.id === id ||
             over.id === `group-droppable-${id}` ||
-            (typeof over.id === 'string' && over.id.includes(`group-droppable-item-${id}`))
+            over.id === `group-widget-droppable-${id}` ||
+            (typeof over.id === 'string' && over.id.includes(`group-droppable-item-${id}`)) ||
+            (over.data?.current?.groupId === id)
         );
 
         if (isDirectlyOverGroup && isAppShortcut && items.length < MAX_ITEMS) {
@@ -540,12 +542,14 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
         const isDirectlyOverThis = over && (
             over.id === id ||
             over.id === `group-droppable-${id}` ||
-            (typeof over.id === 'string' && over.id.includes(`group-droppable-item-${id}`))
+            over.id === `group-widget-droppable-${id}` ||
+            (typeof over.id === 'string' && over.id.includes(`group-droppable-item-${id}`)) ||
+            (over.data?.current?.groupId === id)
         );
 
         if (isDirectlyOverThis) {
-            const isAppShortcut = active?.data?.current?.type === 'app-shortcut';
-            if (isAppShortcut) {
+            const isAppShortcut = active?.data?.current?.type === 'app-shortcut' || active?.data?.current?.type === 'blank-app';
+            if (isAppShortcut && items.length < MAX_ITEMS) {
                 setIsCurrentDropTarget(true);
             } else {
                 setIsCurrentDropTarget(false);
@@ -598,8 +602,9 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                         gap: 0.5,
                         p: 1.5,
                         pt: 0.5,
-                        transition: 'background-color 0.3s ease',
-                        backgroundColor: 'transparent',
+                        transition: 'background-color 0.3s ease, border 0.3s ease',
+                        backgroundColor: isCurrentDropTarget ? 'rgba(76, 175, 80, 0.1)' : 'transparent',
+                        borderRadius: '8px',
                         overflow: 'hidden',
                         height: layout === '2x3' || layout === '3x2' ? DUAL_WIDGET_CONTAINER_HEIGHT.sm : STANDARD_WIDGET_HEIGHT.sm,
                         maxHeight: layout === '2x3' || layout === '3x2' ? DUAL_WIDGET_CONTAINER_HEIGHT.sm : STANDARD_WIDGET_HEIGHT.sm

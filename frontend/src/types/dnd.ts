@@ -14,7 +14,7 @@ export interface DndDataForGroupItem {
 }
 
 export interface DndDataForGroupWidget {
-    type: 'group-widget-small';
+    type: 'group-widget';
     accepts: string[];
     canDrop: boolean;
 }

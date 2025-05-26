@@ -42,46 +42,114 @@ const dispatchDndKitEvent = (name: string, detail: Record<string, any>): void =>
 
 // Enhanced collision detection that prioritizes drop zones
 const customCollisionDetection = (args: any) => {
-    // First, check if there are any group containers in the droppable elements
-    const groups = args.droppableContainers.filter(
-        (container: any) => container.data.current?.type === 'group-widget-small' ||
-                    container.id.toString().includes('group-droppable')
-    );
-
     const isAppShortcutType =
         args.active.data.current?.type === ITEM_TYPE.APP_SHORTCUT ||
         args.active.data.current?.type === ITEM_TYPE.BLANK_APP;
 
-    // If the active item is an app shortcut and we have group containers,
-    // use a more accurate detection for groups with a higher threshold
-    if (isAppShortcutType && groups.length > 0) {
-        // Use rectIntersection with a higher threshold for app-to-group drops
-        // This makes it require more precision when dropping onto a group
-        const intersections = groups.map((container: any) => {
-            const activeRect = args.active.rect.current;
+    // If the active item is an app shortcut, use expanded collision detection for ALL containers
+    if (isAppShortcutType) {
+
+        // Check ALL containers, not just groups, and apply generous detection to group-like containers
+        const allIntersections = args.droppableContainers.map((container: any) => {
+            const activeRect = args.active.rect.current.translated || args.active.rect.current.initial;
             const containerRect = container.rect.current;
 
             if (!activeRect || !containerRect) {
                 return { id: container.id, value: 0 };
             }
 
-            // Calculate the intersection area
-            const intersectionArea = getIntersectionArea(activeRect, containerRect);
 
-            // Calculate how much of the active element is over the container
-            const coverage = intersectionArea / (activeRect.width * activeRect.height);
 
-            // Only consider it a match if at least 40% of the dragged item is over the container
-            return {
-                id: container.id,
-                value: coverage > 0.4 ? coverage : 0
-            };
+            // Try to get valid coordinates from different possible properties
+            const activeX = activeRect.x ?? activeRect.left ?? 0;
+            const activeY = activeRect.y ?? activeRect.top ?? 0;
+            const activeWidth = activeRect.width ?? 0;
+            const activeHeight = activeRect.height ?? 0;
+
+            const containerX = containerRect.x ?? containerRect.left ?? 0;
+            const containerY = containerRect.y ?? containerRect.top ?? 0;
+            const containerWidth = containerRect.width ?? 0;
+            const containerHeight = containerRect.height ?? 0;
+
+            // Skip if we still don't have valid coordinates
+            if (activeX === 0 && activeY === 0 && activeWidth === 0 && activeHeight === 0) {
+                return { id: container.id, value: 0 };
+            }
+
+            // Check if this is a group-related container
+            const isGroupContainer =
+                container.data.current?.type === 'group-widget' ||
+                container.data.current?.type === 'group-container' ||
+                container.data.current?.type === 'group-widget-container' ||
+                container.id.toString().includes('group-droppable') ||
+                container.data.current?.groupId;
+
+            if (isGroupContainer) {
+                // Calculate the center point of the dragged item using normalized coordinates
+                const activeCenterX = activeX + activeWidth / 2;
+                const activeCenterY = activeY + activeHeight / 2;
+
+                // Expand the container rect by 10px on all sides for precise targeting
+                const expandedRect = {
+                    x: containerX - 10,
+                    y: containerY - 10,
+                    width: containerWidth + 20,
+                    height: containerHeight + 20
+                };
+
+                // Check if the center point is within the expanded bounds
+                const centerInBounds =
+                    activeCenterX >= expandedRect.x &&
+                    activeCenterX <= expandedRect.x + expandedRect.width &&
+                    activeCenterY >= expandedRect.y &&
+                    activeCenterY <= expandedRect.y + expandedRect.height;
+
+                // Create normalized rect objects for intersection calculation
+                const normalizedActiveRect = {
+                    x: activeX,
+                    y: activeY,
+                    width: activeWidth,
+                    height: activeHeight
+                };
+
+                // Also calculate intersection area as a fallback
+                const intersectionArea = getIntersectionArea(normalizedActiveRect, expandedRect);
+                const coverage = intersectionArea / (activeWidth * activeHeight);
+
+                // Use center point detection OR higher threshold overlap
+                const hasValidDrop = centerInBounds || coverage > 0.3;
+
+                return {
+                    id: container.id,
+                    value: hasValidDrop ? (centerInBounds ? 1.0 : coverage) : 0
+                };
+            } else {
+                // For non-group containers, use standard collision detection
+                const normalizedActiveRect = {
+                    x: activeX,
+                    y: activeY,
+                    width: activeWidth,
+                    height: activeHeight
+                };
+                const normalizedContainerRect = {
+                    x: containerX,
+                    y: containerY,
+                    width: containerWidth,
+                    height: containerHeight
+                };
+                const intersectionArea = getIntersectionArea(normalizedActiveRect, normalizedContainerRect);
+                const coverage = intersectionArea / (activeWidth * activeHeight);
+                return {
+                    id: container.id,
+                    value: coverage > 0.5 ? coverage : 0 // Standard threshold for non-groups
+                };
+            }
         }).filter((intersection: any) => intersection.value > 0);
 
-        if (intersections.length > 0) {
+        if (allIntersections.length > 0) {
             // Sort by highest intersection value (most precise overlap)
-            intersections.sort((a: any, b: any) => b.value - a.value);
-            return [{ id: intersections[0].id }];
+            allIntersections.sort((a: any, b: any) => b.value - a.value);
+            return [{ id: allIntersections[0].id }];
         }
     }
 
@@ -95,13 +163,6 @@ function getIntersectionArea(rect1: any, rect2: any) {
     const yOverlap = Math.max(0, Math.min(rect1.y + rect1.height, rect2.y + rect2.height) - Math.max(rect1.y, rect2.y));
     return xOverlap * yOverlap;
 }
-
-// Function to generate a unique ID
-const generateUniqueId = () => {
-    const timestamp = Date.now().toString(36);
-    const randomStr = Math.random().toString(36).substring(2, 8);
-    return `item-${timestamp}${randomStr}`;
-};
 
 export const DashboardGrid: React.FC = () => {
     const [activeId, setActiveId] = useState<string | null>(null);
@@ -236,9 +297,11 @@ export const DashboardGrid: React.FC = () => {
         const isAppShortcut = active.data.current?.type === ITEM_TYPE.APP_SHORTCUT;
         const isGroupItem = active.data.current?.type === 'group-item';
         const isGroupContainer =
-            over.data.current?.type === 'group-widget-small' ||
+            over.data.current?.type === 'group-widget' ||
             over.data.current?.type === 'group-container' ||
-            (typeof over.id === 'string' && over.id.includes('group-droppable'));
+            over.data.current?.type === 'group-widget-container' ||
+            (typeof over.id === 'string' && over.id.includes('group-droppable')) ||
+            (over.data.current?.groupId && typeof over.data.current.groupId === 'string');
 
         if (active && over) {
             // Handle group item dragging to dashboard

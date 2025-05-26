@@ -1,3 +1,4 @@
+import { useDroppable } from '@dnd-kit/core';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Grid2 } from '@mui/material';
@@ -430,6 +431,7 @@ export const SortableGroupWidget: React.FC<Props> = ({
             const isOverThisGroup =
                 over?.id === id ||
                 over?.id === `group-droppable-${id}` ||
+                over?.id === `group-widget-droppable-${id}` ||
                 (typeof over?.id === 'string' && over?.id.includes(`group-droppable-item-${id}`)) ||
                 (over?.data?.current?.groupId === id);
 
@@ -486,6 +488,7 @@ export const SortableGroupWidget: React.FC<Props> = ({
             const isForThisGroup =
                 over?.id === id ||
                 overId === `group-droppable-${id}` ||
+                overId === `group-widget-droppable-${id}` ||
                 overId.includes(`group-droppable-item-${id}`) ||
                 (over?.data?.current?.groupId === id);
 
@@ -533,6 +536,7 @@ export const SortableGroupWidget: React.FC<Props> = ({
             const isOverThisGroup =
                 over?.id === id ||
                 overId === `group-droppable-${id}` ||
+                overId === `group-widget-droppable-${id}` ||
                 overId.includes(`group-droppable-item-${id}`) ||
                 (over?.data?.current?.groupId === id);
 
@@ -582,6 +586,16 @@ export const SortableGroupWidget: React.FC<Props> = ({
         };
     }, [id, dashboardLayout, addAppShortcutToGroup, isOver, notifyGroupItemDrag, itemBeingDraggedOut, draggingOutStarted, isCurrentDropTarget]);
 
+    // Additional droppable for the entire widget area to expand hitbox
+    const { setNodeRef: setDroppableRef, isOver: isDroppableOver } = useDroppable({
+        id: `group-widget-droppable-${id}`,
+        data: {
+            type: 'group-widget-container',
+            groupId: id,
+            accepts: 'app-shortcut'
+        }
+    });
+
     // Directly listen for drag moves to detect dragging out of group
     const {
         attributes,
@@ -593,12 +607,28 @@ export const SortableGroupWidget: React.FC<Props> = ({
     } = useSortable({
         id,
         data: {
-            type: 'group-widget-small',
+            type: 'group-widget',
             accepts: ['app-shortcut'],
             canDrop: true,
             groupId: id
         }
     });
+
+    useEffect(() => {
+        const disableScroll = (event: TouchEvent) => {
+            event.preventDefault();
+        };
+
+        if (isDragging) {
+            document.addEventListener('touchmove', disableScroll, { passive: false });
+        } else {
+            document.removeEventListener('touchmove', disableScroll);
+        }
+
+        return () => {
+            document.removeEventListener('touchmove', disableScroll);
+        };
+    }, [isDragging]);
 
     // Handle editing a specific item in the group
     const handleItemEdit = useCallback((itemId: string) => {
@@ -835,6 +865,7 @@ export const SortableGroupWidget: React.FC<Props> = ({
                 ref={(node) => {
                     groupWidgetRef.current = node;
                     setNodeRef(node);
+                    setDroppableRef(node);
                 }}
                 {...attributes}
                 {...listeners}
@@ -843,8 +874,8 @@ export const SortableGroupWidget: React.FC<Props> = ({
                     opacity: isDragging ? 0.5 : 1,
                     visibility: isDragging ? 'hidden' : 'visible',
                     position: 'relative',
-                    backgroundColor: 'transparent',
-                    transition: isDragging ? 'none' : 'background-color 0.3s ease, transform 0.2s',
+                    backgroundColor: isDroppableOver || isCurrentDropTarget ? 'rgba(76, 175, 80, 0.1)' : 'transparent',
+                    transition: isDragging ? 'none' : 'background-color 0.3s ease, transform 0.2s, border 0.3s ease',
                     transitionProperty: isDragging ? 'none' : 'all',
                     transitionDuration: isDragging ? '0ms' : '250ms',
                     borderRadius: '8px',
@@ -864,7 +895,7 @@ export const SortableGroupWidget: React.FC<Props> = ({
                         }
                     })
                 }}
-                data-type='group-widget-small'
+                data-type='group-widget'
                 data-widget-id={id}
                 data-accepts='app-shortcut'
                 data-id={id}
