@@ -27,6 +27,9 @@ export const AppContextProvider = ({ children }: Props) => {
     const [currentPageId, setCurrentPageId] = useState<string | null>(null);
     const [pages, setPages] = useState<Page[]>([]);
 
+    // Track if we're in the middle of a move operation to prevent race conditions
+    const [isMoveInProgress, setIsMoveInProgress] = useState<boolean>(false);
+
     // Authentication & setup states
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
     const [username, setUsername] = useState<string | null>(null);
@@ -114,6 +117,9 @@ export const AppContextProvider = ({ children }: Props) => {
             // Only handle URL changes after config is loaded
             if (!config || !pages.length || isFirstTimeSetup === null) return;
 
+            // Don't override layout if we're in the middle of a move operation
+            if (isMoveInProgress) return;
+
             const pathname = location.pathname;
 
             if (pathname === '/') {
@@ -144,10 +150,13 @@ export const AppContextProvider = ({ children }: Props) => {
         };
 
         handleURLChange();
-    }, [location.pathname, config, pages, currentPageId, isFirstTimeSetup, isMobile, navigate]);
+    }, [location.pathname, config, pages, currentPageId, isFirstTimeSetup, isMobile, navigate, isMoveInProgress]);
 
     // Handle dashboard state based on login status
     useEffect(() => {
+        // Don't override layout if we're in the middle of a move operation
+        if (isMoveInProgress) return;
+
         if (!isLoggedIn) {
             // Ensure admin status is reset
             setIsAdmin(false);
@@ -192,7 +201,7 @@ export const AppContextProvider = ({ children }: Props) => {
 
             loadLayoutForCurrentPage();
         }
-    }, [isLoggedIn, currentPageId, config, isMobile]);
+    }, [isLoggedIn, currentPageId, config, isMobile, isMoveInProgress]);
 
     // Check for updates on initial load and every 6 hours
     useEffect(() => {
@@ -358,6 +367,11 @@ export const AppContextProvider = ({ children }: Props) => {
             // Set pages from config
             if (res.pages) {
                 setPages(res.pages);
+            }
+
+            // Don't update layout if we're in the middle of a move operation
+            if (isMoveInProgress) {
+                return [];
             }
 
             // Use provided pageId or fall back to currentPageId
@@ -676,6 +690,9 @@ export const AppContextProvider = ({ children }: Props) => {
         try {
             console.log(`Moving item ${itemId} from page ${currentPageId} to page ${targetPageId}`);
 
+            // Set move in progress flag to prevent race conditions with URL changes
+            setIsMoveInProgress(true);
+
             // Get fresh config from server
             const serverConfig = await DashApi.getConfig();
             console.log('Server config:', serverConfig);
@@ -820,14 +837,55 @@ export const AppContextProvider = ({ children }: Props) => {
             setConfig(refreshedConfig);
             setPages(refreshedConfig.pages || []);
 
+            // Update the dashboard layout with the refreshed config
+            // This ensures that if we're on the target page, we see the moved item
+            const loadLayoutForCurrentPage = () => {
+                if (currentPageId && refreshedConfig.pages) {
+                    const currentPage = refreshedConfig.pages.find(page => page.id === currentPageId);
+                    if (currentPage) {
+                        const selectedLayout = isMobile ? currentPage.layout.mobile : currentPage.layout.desktop;
+                        setDashboardLayout(selectedLayout || []);
+                        return;
+                    }
+                }
+                // Load main dashboard layout
+                const selectedLayout = isMobile ? refreshedConfig.layout.mobile : refreshedConfig.layout.desktop;
+                setDashboardLayout(selectedLayout || []);
+            };
+
+            loadLayoutForCurrentPage();
+
             const { ToastManager } = await import('../components/toast/ToastManager');
             const targetName = targetPageId === null ? 'Home' : pages.find(p => p.id === targetPageId)?.name || 'Unknown Page';
-            ToastManager.success(`Item moved to ${targetName}`);
+            const itemName = itemToMove?.label || itemToMove?.type || 'Item';
+
+            // Create navigation action for the toast
+            const navigationAction = {
+                label: targetPageId === null ? 'Go to Home' : `Go to ${targetName}`,
+                onClick: () => {
+                    if (targetPageId === null) {
+                        // Navigate to home
+                        navigate('/');
+                    } else {
+                        // Find the page and navigate to its URL
+                        const targetPage = pages.find(p => p.id === targetPageId);
+                        if (targetPage) {
+                            const slug = pageNameToSlug(targetPage.name);
+                            navigate(`/${slug}`);
+                        }
+                    }
+                }
+            };
+
+            ToastManager.success(`${itemName} moved to page - ${targetName}`, 5000, navigationAction);
 
         } catch (error) {
             console.error('Failed to move item:', error);
             const { ToastManager } = await import('../components/toast/ToastManager');
             ToastManager.error('Failed to move item. Please try again.');
+        } finally {
+            // Clear move in progress flag
+            setIsMoveInProgress(false);
         }
     };
 

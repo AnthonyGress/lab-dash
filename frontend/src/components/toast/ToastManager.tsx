@@ -1,18 +1,24 @@
-import { Alert, AlertColor, Slide, SlideProps, Snackbar } from '@mui/material';
+import { Alert, AlertColor, Button, Slide, SlideProps, Snackbar } from '@mui/material';
 import React, { createContext, ReactNode, useContext, useState } from 'react';
 
 import { theme } from '../../theme/theme';
+
+export interface ToastAction {
+    label: string;
+    onClick: () => void;
+}
 
 interface Toast {
     id: string;
     message: string;
     type: AlertColor;
     duration?: number;
+    action?: ToastAction;
 }
 
 interface ToastContextType {
-    showToast: (message: string, type: AlertColor, duration?: number) => void;
-    success: (message: string, duration?: number) => void;
+    showToast: (message: string, type: AlertColor, duration?: number, action?: ToastAction) => void;
+    success: (message: string, duration?: number, action?: ToastAction) => void;
     error: (message: string, duration?: number) => void;
     info: (message: string, duration?: number) => void;
 }
@@ -30,9 +36,9 @@ interface ToastProviderProps {
 export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
     const [toasts, setToasts] = useState<Toast[]>([]);
 
-    const showToast = (message: string, type: AlertColor, duration: number = 3000) => {
+    const showToast = (message: string, type: AlertColor, duration: number = 3000, action?: ToastAction) => {
         const id = Date.now().toString();
-        const newToast: Toast = { id, message, type, duration };
+        const newToast: Toast = { id, message, type, duration, action };
 
         setToasts(prev => [...prev, newToast]);
 
@@ -42,8 +48,8 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
         }, duration);
     };
 
-    const success = (message: string, duration?: number) => {
-        showToast(message, 'success', duration);
+    const success = (message: string, duration?: number, action?: ToastAction) => {
+        showToast(message, 'success', duration, action);
     };
 
     const error = (message: string, duration?: number) => {
@@ -85,14 +91,43 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
                         onClose={() => handleClose(toast.id)}
                         severity={toast.type}
                         variant='filled'
+                        action={toast.action ? (
+                            <Button
+                                color='inherit'
+                                size='small'
+                                onClick={() => {
+                                    toast.action!.onClick();
+                                    handleClose(toast.id);
+                                }}
+                                sx={{
+                                    color: 'white',
+                                    fontWeight: 600,
+                                    textTransform: 'none',
+                                    fontSize: '0.85rem',
+                                    padding: '6px 12px',
+                                    minWidth: 'auto',
+                                    borderRadius: '4px',
+                                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                                    '&:hover': {
+                                        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                                        borderColor: 'rgba(255, 255, 255, 0.5)'
+                                    }
+                                }}
+                            >
+                                {toast.action.label}
+                            </Button>
+                        ) : undefined}
                         sx={{
                             minWidth: '300px',
                             fontSize: '0.95rem',
                             fontWeight: 500,
                             boxShadow: theme.shadows[6],
                             opacity: 0.9,
+                            alignItems: 'center',
                             '& .MuiAlert-icon': {
-                                fontSize: '1.2rem'
+                                fontSize: '1.2rem',
+                                alignItems: 'center',
+                                display: 'flex'
                             },
                             '& .MuiAlert-action': {
                                 paddingTop: 0,
@@ -143,9 +178,9 @@ export class ToastManager {
         ToastManager.instance = instance;
     }
 
-    public static success(message: string, duration?: number): void {
+    public static success(message: string, duration?: number, action?: ToastAction): void {
         if (ToastManager.instance) {
-            ToastManager.instance.success(message, duration);
+            ToastManager.instance.success(message, duration, action);
         } else {
             console.warn('ToastManager not initialized. Make sure ToastProvider is wrapped around your app.');
         }

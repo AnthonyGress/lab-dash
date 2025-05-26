@@ -701,8 +701,16 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             }
         }
 
+        // Generate label for torrent client widgets if not provided
+        let itemLabel = data.shortcutName || '';
+        if (actualItemType === ITEM_TYPE.TORRENT_CLIENT && !itemLabel) {
+            const clientType = data.torrentClientType || TORRENT_CLIENT_TYPE.QBITTORRENT;
+            const clientName = clientType === TORRENT_CLIENT_TYPE.DELUGE ? 'Deluge' : 'qBittorrent';
+            itemLabel = `${clientName} Client`;
+        }
+
         const updatedItem: NewItem = {
-            label: data.shortcutName || '',
+            label: itemLabel,
             icon: iconData ? {
                 path: iconData.path,
                 name: iconData.name,
