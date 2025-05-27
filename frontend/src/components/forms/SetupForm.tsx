@@ -29,6 +29,11 @@ export const SetupForm: React.FC<SetupFormProps> = ({ onSuccess }) => {
         // Mark setup as complete and save initial items to the layout
         await updateConfig({
             isSetupComplete: true,
+            search: true,
+            searchProvider: {
+                name: 'Google',
+                url: 'https://www.google.com/search?q={query}'
+            },
             layout: {
                 desktop: initialItems,
                 mobile: initialItems

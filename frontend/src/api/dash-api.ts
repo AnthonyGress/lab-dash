@@ -420,6 +420,32 @@ export class DashApi {
         }
     }
 
+    // Uploads management methods
+    public static async getUploadedImages(): Promise<any[]> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/uploads/images`, {
+                withCredentials: true
+            });
+            return res.data?.images || [];
+        } catch (error) {
+            console.error('Error fetching uploaded images:', error);
+            return [];
+        }
+    }
+
+    public static async deleteUploadedImage(imagePath: string): Promise<boolean> {
+        try {
+            const res = await axios.delete(`${BACKEND_URL}/api/uploads/images`, {
+                data: { imagePath },
+                withCredentials: true
+            });
+            return res.status === StatusCodes.OK;
+        } catch (error) {
+            console.error('Error deleting uploaded image:', error);
+            return false;
+        }
+    }
+
     // Check if any users exist (for first-time setup)
     public static async checkIfUsersExist(): Promise<boolean> {
         try {

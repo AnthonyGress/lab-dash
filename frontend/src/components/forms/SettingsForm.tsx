@@ -1,17 +1,17 @@
 import CloseIcon from '@mui/icons-material/Close';
-import { Box, Button, MenuItem, Tab, Tabs, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material';
+import { Box, Button, Tab, Tabs, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material';
 import { SyntheticEvent, useEffect, useState } from 'react';
 import { CheckboxElement, FormContainer, SelectElement, TextFieldElement, useForm } from 'react-hook-form-mui';
 import { FaCog } from 'react-icons/fa';
-import { FaClockRotateLeft, FaDatabase, FaImage } from 'react-icons/fa6';
+import { FaClockRotateLeft, FaImage, FaTrashCan } from 'react-icons/fa6';
 import { useNavigate } from 'react-router-dom';
 
 import { FileInput } from './FileInput';
 import { DashApi } from '../../api/dash-api';
+import { BACKEND_URL } from '../../constants/constants';
 import { useAppContext } from '../../context/useAppContext';
 import { COLORS } from '../../theme/styles';
 import { Config, SearchProvider } from '../../types';
-import { getAppVersion } from '../../utils/version';
 import { PopupManager } from '../modals/PopupManager';
 
 // Predefined search providers
@@ -66,6 +66,128 @@ function a11yProps(index: number) {
     };
 }
 
+// Separate component for image preview to handle state properly
+const ImagePreviewCard = ({ image, onDelete, formatFileSize }: {
+    image: any;
+    onDelete: () => void;
+    formatFileSize: (bytes: number) => string;
+}) => {
+    const [imageError, setImageError] = useState(false);
+
+    return (
+        <Box
+            sx={{
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: 1,
+                pt: 1,
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                transition: 'transform 0.2s ease-in-out',
+                '&:hover': {
+                    transform: 'scale(1.02)',
+                    borderColor: 'primary.main'
+                }
+            }}
+        >
+            {/* Image Preview */}
+            <Box sx={{
+                width: '100%',
+                height: '120px',
+                position: 'relative',
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: imageError ? 'rgba(255, 255, 255, 0.1)' : 'transparent'
+            }}>
+                {imageError ? (
+                    <Typography variant='caption' sx={{
+                        color: 'rgba(255, 255, 255, 0.5)',
+                        fontSize: '12px'
+                    }}>
+                        Preview unavailable
+                    </Typography>
+                ) : (
+                    <img
+                        src={`${BACKEND_URL}${image.path}`}
+                        alt={image.name}
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'contain',
+                            objectPosition: 'center'
+                        }}
+                        onError={() => setImageError(true)}
+                    />
+                )}
+            </Box>
+
+            {/* Image Info */}
+            <Box sx={{ p: 1, display: 'flex', flexDirection: 'column', gap: 0.5, flexGrow: 1 }}>
+                <Typography variant='caption' sx={{
+                    fontWeight: 'bold',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    fontSize: '0.75rem',
+                    mb: 0.5
+                }}>
+                    {image.name}
+                </Typography>
+
+                {/* Two-column layout for details */}
+                <Box sx={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: 0.5,
+                    fontSize: '0.7rem'
+                }}>
+                    <Typography variant='caption' sx={{ fontSize: '0.7rem' }}>
+                        Size:
+                    </Typography>
+                    <Typography variant='caption' sx={{ fontSize: '0.7rem' }}>
+                        {formatFileSize(image.size)}
+                    </Typography>
+
+                    <Typography variant='caption' sx={{ fontSize: '0.7rem' }}>
+                        Uploaded:
+                    </Typography>
+                    <Typography variant='caption' sx={{ fontSize: '0.7rem' }}>
+                        {new Date(image.uploadDate).toLocaleDateString()}
+                    </Typography>
+
+                    <Typography variant='caption' sx={{ fontSize: '0.7rem' }}>
+                        Type:
+                    </Typography>
+                    <Typography variant='caption' sx={{
+                        fontSize: '0.7rem',
+                        textTransform: 'capitalize'
+                    }}>
+                        {image.type.replace('-', ' ')}
+                    </Typography>
+                </Box>
+
+                <Button
+                    variant='contained'
+                    color='error'
+                    size='small'
+                    startIcon={<FaTrashCan style={{ fontSize: '0.8rem' }} />}
+                    onClick={onDelete}
+                    sx={{
+                        mt: 1,
+                        fontSize: '0.7rem',
+                        py: 0.5,
+                        minHeight: 'unset'
+                    }}
+                >
+                    Delete
+                </Button>
+            </Box>
+        </Box>
+    );
+};
+
 export const SettingsForm = () => {
     const [isCustomProvider, setIsCustomProvider] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
@@ -74,6 +196,8 @@ export const SettingsForm = () => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const navigate = useNavigate();
+    const [uploadedImages, setUploadedImages] = useState<any[]>([]);
+    const [loadingImages, setLoadingImages] = useState(false);
     // Add custom styling for menu items
     useEffect(() => {
         // Create a style element
@@ -324,7 +448,14 @@ export const SettingsForm = () => {
             }
 
             if (Object.keys(updatedConfig).length > 0) {
+                const hasBackgroundImage = data.backgroundFile instanceof File;
+
                 await updateConfig(updatedConfig); // Update only the provided fields
+
+                // If a background image was uploaded, refresh the uploaded images list
+                if (hasBackgroundImage) {
+                    await loadUploadedImages();
+                }
 
                 // Show success message
                 PopupManager.success('Settings updated successfully!');
@@ -386,6 +517,69 @@ export const SettingsForm = () => {
         });
     };
 
+    // Load uploaded images
+    const loadUploadedImages = async () => {
+        setLoadingImages(true);
+        try {
+            const images = await DashApi.getUploadedImages();
+            setUploadedImages(images);
+        } catch (error) {
+            console.error('Error loading uploaded images:', error);
+            PopupManager.failure('Failed to load uploaded images');
+        } finally {
+            setLoadingImages(false);
+        }
+    };
+
+    // Delete uploaded image
+    const deleteUploadedImage = async (imagePath: string, imageName: string, imageType: string) => {
+        PopupManager.deleteConfirmation({
+            title: 'Delete Image',
+            text: `Are you sure you want to delete "${imageName}"? This action cannot be undone.`,
+            confirmAction: async () => {
+                try {
+                    const success = await DashApi.deleteUploadedImage(imagePath);
+                    if (success) {
+                        // If a background image is deleted, reset config to default
+                        if (imageType === 'background') {
+                            try {
+                                await updateConfig({ backgroundImage: '' });
+                                PopupManager.success('Background image deleted and reset to default');
+                            } catch (configError) {
+                                console.error('Error resetting background config:', configError);
+                                PopupManager.success('Image deleted successfully, but failed to reset background config');
+                            }
+                        } else {
+                            PopupManager.success('Image deleted successfully');
+                        }
+                        await loadUploadedImages(); // Refresh the list
+                    } else {
+                        PopupManager.failure('Failed to delete image');
+                    }
+                } catch (error) {
+                    console.error('Error deleting image:', error);
+                    PopupManager.failure('Failed to delete image');
+                }
+            }
+        });
+    };
+
+    // Format file size for display
+    const formatFileSize = (bytes: number): string => {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
+
+    // Load images when component mounts or when appearance tab is selected
+    useEffect(() => {
+        if (tabValue === 1) { // Appearance tab
+            loadUploadedImages();
+        }
+    }, [tabValue]);
+
     return (
         <FormContainer onSuccess={handleSubmit} formContext={formContext}>
             <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
@@ -409,7 +603,7 @@ export const SettingsForm = () => {
                 <Box sx={{
                     display: 'flex',
                     flexDirection: { xs: 'column', md: 'row' },
-                    height: { xs: 'auto', md: '550px' },
+                    height: { xs: 'auto', md: '550px', lg: '700px' },
                     width: '100%',
                     overflow: 'hidden' // Ensure the container doesn't grow
                 }}>
@@ -668,6 +862,39 @@ export const SettingsForm = () => {
                                 <Button variant='contained' onClick={resetBackground} color='error'>
                                         Reset Background
                                 </Button>
+                            </Box>
+
+                            {/* Image Management Section */}
+                            <Box sx={{ mt: 4 }}>
+                                <Typography variant='h6' sx={{ mb: 2 }}>Uploaded Images</Typography>
+
+                                {loadingImages ? (
+                                    <Typography>Loading images...</Typography>
+                                ) : uploadedImages.length === 0 ? (
+                                    <Typography variant='body2' sx={{ fontStyle: 'italic' }}>
+                                        No uploaded images found.
+                                    </Typography>
+                                ) : (
+                                    <Box sx={{
+                                        display: 'grid',
+                                        gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                                        gap: 2,
+                                        maxHeight: '400px',
+                                        overflow: 'auto',
+                                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                                        borderRadius: 1,
+                                        p: 2
+                                    }}>
+                                        {uploadedImages.map((image, index) => (
+                                            <ImagePreviewCard
+                                                key={index}
+                                                image={image}
+                                                onDelete={() => deleteUploadedImage(image.path, image.name, image.type)}
+                                                formatFileSize={formatFileSize}
+                                            />
+                                        ))}
+                                    </Box>
+                                )}
                             </Box>
                         </Box>
                     </TabPanel>
