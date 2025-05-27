@@ -28,16 +28,17 @@ uploadsRoute.get('/images', authenticateToken, (req: Request, res: Response) => 
 
                 // Only include image files
                 if (/\.(jpg|jpeg|png|gif|webp|svg)$/i.test(file)) {
-                    // Extract display name by removing timestamp suffix
+                    // Extract display name by removing timestamp suffix but keeping extension
+                    const fileExtension = path.extname(file);
                     const filenameWithoutExt = path.parse(file).name;
                     const nameParts = filenameWithoutExt.split('-');
 
-                    let displayName = filenameWithoutExt;
+                    let displayNameWithoutExt = filenameWithoutExt;
 
                     // Check if the last part is a timestamp (all digits)
                     if (nameParts.length > 1 && /^\d+$/.test(nameParts[nameParts.length - 1])) {
                         // Remove the timestamp part and join the rest
-                        displayName = nameParts.slice(0, -1).join('-');
+                        displayNameWithoutExt = nameParts.slice(0, -1).join('-');
                     }
 
                     // Apply the same sanitization as in app-shortcut route
@@ -45,7 +46,7 @@ uploadsRoute.get('/images', authenticateToken, (req: Request, res: Response) => 
                         return fileName.trim();
                     };
 
-                    displayName = sanitizeFileName(displayName);
+                    const displayName = sanitizeFileName(displayNameWithoutExt) + fileExtension;
 
                     images.push({
                         name: displayName,

@@ -14,6 +14,7 @@ import { useAppContext } from '../../context/useAppContext';
 import { COLORS } from '../../theme/styles';
 import { Config, SearchProvider } from '../../types';
 import { PopupManager } from '../modals/PopupManager';
+import { ToastManager } from '../toast/ToastManager';
 
 // Predefined search providers
 const SEARCH_PROVIDERS = [
@@ -574,13 +575,13 @@ export const SettingsForm = () => {
                         if (imageType === 'background') {
                             try {
                                 await updateConfig({ backgroundImage: '' });
-                                PopupManager.success('Background image deleted and reset to default');
+                                ToastManager.success('Background image deleted and reset to default');
                             } catch (configError) {
                                 console.error('Error resetting background config:', configError);
-                                PopupManager.success('Image deleted successfully, but failed to reset background config');
+                                ToastManager.success('Image deleted successfully, but failed to reset background config');
                             }
                         } else {
-                            PopupManager.success('Image deleted successfully');
+                            ToastManager.success(`${imageName} deleted successfully`);
                         }
                         await loadUploadedImages(); // Refresh the list
                     } else {

@@ -9,11 +9,9 @@ import { authenticateToken } from '../middleware/auth.middleware';
 export const appShortcutRoute = Router();
 
 const sanitizeFileName = (fileName: string): string => {
-    const nameWithoutExt = fileName.replace(/\.[^/.]+$/, '');
-
-    // Replace special characters and normalize spaces
-    return nameWithoutExt
-        .replace(/[^\w\s-]/g, '')
+    // Replace special characters and normalize spaces, but keep the extension
+    return fileName
+        .replace(/[^\w\s.-]/g, '')
         .replace(/[\s_-]+/g, ' ')
         .trim();
 };
@@ -50,7 +48,7 @@ appShortcutRoute.post('/upload', upload.single('file'), (req: Request, res: Resp
         return;
     }
 
-    // Sanitize the file name for display
+    // Sanitize the file name for display (keeping extension)
     const sanitizedName = sanitizeFileName(req.file.originalname);
 
     console.log('File uploaded successfully:', {
@@ -117,7 +115,8 @@ appShortcutRoute.get('/custom-icons', (req: Request, res: Response) => {
 
         // Map files to icon objects
         const icons = files.map(file => {
-            // Get the file name without extension
+            // Get the file name without extension and the extension separately
+            const fileExtension = path.extname(file);
             const filenameWithoutExt = path.parse(file).name;
 
             // Extract the original name part (everything before the timestamp)
@@ -126,16 +125,16 @@ appShortcutRoute.get('/custom-icons', (req: Request, res: Response) => {
 
             // If the filename has our expected format with a timestamp suffix,
             // remove the timestamp; otherwise keep the full name
-            let displayName = filenameWithoutExt;
+            let displayNameWithoutExt = filenameWithoutExt;
 
             // Check if the last part is a timestamp (all digits)
             if (nameParts.length > 1 && /^\d+$/.test(nameParts[nameParts.length - 1])) {
                 // Remove the timestamp part and join the rest
-                displayName = nameParts.slice(0, -1).join('-');
+                displayNameWithoutExt = nameParts.slice(0, -1).join('-');
             }
 
-            // Ensure the display name is sanitized
-            displayName = sanitizeFileName(displayName);
+            // Ensure the display name is sanitized and add back the extension
+            const displayName = sanitizeFileName(displayNameWithoutExt + fileExtension);
 
             // Create the icon object
             return {
