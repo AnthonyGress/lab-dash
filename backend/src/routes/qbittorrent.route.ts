@@ -43,16 +43,12 @@ async function authenticateQBittorrent(baseUrl: string, username: string, passwo
         // Handle encrypted password
         let decryptedPassword = password;
         if (isEncrypted(password)) {
-            console.log('qBittorrent password is encrypted, attempting to decrypt...');
             decryptedPassword = decrypt(password);
             // Check if decryption failed (returns empty string)
             if (!decryptedPassword) {
                 console.error('qBittorrent password decryption failed');
                 return null;
             }
-            console.log('qBittorrent password decryption successful');
-        } else {
-            console.log('qBittorrent password is not encrypted');
         }
 
         const response = await axios.post(`${baseUrl}/auth/login`,
@@ -117,7 +113,7 @@ async function ensureValidSession(req: Request): Promise<string | null> {
 
     // If session exists but may be expired
     if (session.expires < Date.now() + 60000) { // Renew if less than 1 minute left
-        console.log('qBittorrent session close to expiration, renewing...');
+        console.log('qBittorrent session renewing...');
 
         // Try to use stored credentials for renewal
         if (session.username && session.password) {
@@ -154,6 +150,7 @@ async function ensureValidSession(req: Request): Promise<string | null> {
 }
 
 qbittorrentRoute.post('/login', async (req: Request, res: Response) => {
+    console.log('qBittorrent login request');
     try {
         const itemId = req.query.itemId as string;
 
@@ -181,7 +178,6 @@ qbittorrentRoute.post('/login', async (req: Request, res: Response) => {
         // Handle encrypted password
         let decryptedPassword = password;
         if (isEncrypted(password)) {
-            console.log('qBittorrent password is encrypted, attempting to decrypt...');
             decryptedPassword = decrypt(password);
             // Check if decryption failed (returns empty string)
             if (!decryptedPassword) {
@@ -191,9 +187,6 @@ qbittorrentRoute.post('/login', async (req: Request, res: Response) => {
                 });
                 return;
             }
-            console.log('qBittorrent password decryption successful');
-        } else {
-            console.log('qBittorrent password is not encrypted');
         }
 
 
@@ -251,6 +244,7 @@ qbittorrentRoute.post('/encrypt-password', authenticateToken, async (req: Reques
 
 // Get current download stats
 qbittorrentRoute.get('/stats', async (req: Request, res: Response) => {
+    console.log('qBittorrent stats request');
     try {
         const baseUrl = getBaseUrl(req);
 
@@ -259,7 +253,6 @@ qbittorrentRoute.get('/stats', async (req: Request, res: Response) => {
 
         if (!cookie) {
             // If not authenticated and couldn't auto-login, provide basic response with empty/zero values
-            console.log(`No valid qBittorrent session for ${baseUrl}, returning empty stats`);
             const stats = {
                 dl_info_speed: 0,
                 up_info_speed: 0,
@@ -308,7 +301,7 @@ qbittorrentRoute.get('/stats', async (req: Request, res: Response) => {
         } catch (apiErr: any) {
             // If we get a 403 (Forbidden), the session has likely expired
             if (apiErr.response?.status === 403) {
-                console.log('qBittorrent session expired, attempting to renew');
+                console.log('qBittorrent session expired, renewing...');
                 // Clear the invalid session
                 const sessionId = req.user?.username || req.ip || 'default';
                 if (sessions[sessionId]) {
@@ -324,7 +317,7 @@ qbittorrentRoute.get('/stats', async (req: Request, res: Response) => {
                             );
 
                             if (newCookie) {
-                                console.log('Successfully renewed qBittorrent session');
+                                console.log('qBittorrent session renewed successfully');
                                 // Update session with new cookie
                                 sessions[sessionId] = {
                                     ...sessionInfo,
@@ -373,7 +366,7 @@ qbittorrentRoute.get('/stats', async (req: Request, res: Response) => {
                     }
 
                     // If renewal failed or no credentials, delete the session
-                    console.log('Session renewal failed, deleting session');
+                    console.log('qBittorrent session renewal failed');
                     delete sessions[sessionId];
                 }
 
@@ -397,7 +390,7 @@ qbittorrentRoute.get('/stats', async (req: Request, res: Response) => {
 
             // Check for connection errors
             if (apiErr.code === 'ECONNREFUSED' || apiErr.code === 'ETIMEDOUT' || apiErr.code === 'ECONNABORTED') {
-                console.log(`service is offline ${baseUrl}`);
+                console.log(`qBittorrent service offline: ${baseUrl}`);
             }
 
             throw apiErr; // Re-throw for the outer catch
@@ -412,6 +405,7 @@ qbittorrentRoute.get('/stats', async (req: Request, res: Response) => {
 
 // Get list of all torrents
 qbittorrentRoute.get('/torrents', async (req: Request, res: Response) => {
+    console.log('qBittorrent torrents request');
     try {
         const baseUrl = getBaseUrl(req);
         // Get or create a valid session

@@ -11,7 +11,8 @@
     "docker:build:multi": "docker buildx build --platform linux/amd64,linux/arm64 . -t ghcr.io/anthonygress/lab-dash:latest",
     "docker:run": "docker run --platform=linux/amd64 -p 2022:80 -p 5000:5000 ghcr.io/anthonygress/lab-dash:latest",
     "docker:run:dev": "docker run -p 2022:2022 ghcr.io/anthonygress/lab-dash:latest",
-    "clean": "rimraf node_modules package-lock.json frontend/node_modules frontend/package-lock.json backend/node_modules backend/package-lock.json"
+    "clean": "rimraf node_modules package-lock.json frontend/node_modules frontend/package-lock.json backend/node_modules backend/package-lock.json",
+    "lint": "concurrently \"cd frontend && npm run lint\" \"cd backend && npm run lint\""
   },
   "keywords": [],
   "author": "",

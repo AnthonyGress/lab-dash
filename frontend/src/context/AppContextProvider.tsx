@@ -501,7 +501,7 @@ export const AppContextProvider = ({ children }: Props) => {
         }
     };
 
-    const updateItem = (id: string, updatedData: Partial<NewItem>) => {
+    const updateItem = async (id: string, updatedData: Partial<NewItem>) => {
 
         try {
             // Use existing config state instead of fetching again
@@ -535,8 +535,7 @@ export const AppContextProvider = ({ children }: Props) => {
                     return page;
                 }) || [];
 
-                DashApi.saveConfig({ pages: updatedPages })
-                    .catch(error => console.error('Error saving updated page layouts:', error));
+                await DashApi.saveConfig({ pages: updatedPages });
                 return;
             }
 
@@ -560,8 +559,7 @@ export const AppContextProvider = ({ children }: Props) => {
                 }
             };
 
-            DashApi.saveConfig(updatedConfig)
-                .catch(error => console.error('Error saving updated layouts:', error));
+            await DashApi.saveConfig(updatedConfig);
         } catch (error) {
             console.error('Failed to update item:', error);
         }

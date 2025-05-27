@@ -48,7 +48,7 @@ async function getTransmissionSessionId(baseUrl: string, username?: string, pass
             'Authorization': `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`
         } : {};
 
-        console.log('Getting Transmission session ID');
+
 
         try {
             await axios.post(baseUrl, {
@@ -63,7 +63,7 @@ async function getTransmissionSessionId(baseUrl: string, username?: string, pass
             if (error.response?.status === 409) {
                 // This is expected - Transmission returns 409 with session ID
                 const sessionId = error.response.headers['x-transmission-session-id'];
-                console.log('Transmission session ID obtained');
+
                 if (sessionId) {
                     return sessionId;
                 }
@@ -87,7 +87,7 @@ async function authenticateTransmission(baseUrl: string, username?: string, pass
         if (password && isEncrypted(password)) {
             decryptedPassword = decrypt(password);
             if (!decryptedPassword) {
-                console.warn('Failed to decrypt Transmission password for authentication');
+                console.error('Transmission password decryption failed');
                 return null;
             }
         }
@@ -145,7 +145,7 @@ async function makeTransmissionRequest(baseUrl: string, sessionId: string, metho
     if (password && isEncrypted(password)) {
         decryptedPassword = decrypt(password);
         if (!decryptedPassword) {
-            console.warn('Failed to decrypt Transmission password for RPC request');
+            console.error('Transmission password decryption failed');
             decryptedPassword = undefined;
         }
     }
@@ -154,7 +154,7 @@ async function makeTransmissionRequest(baseUrl: string, sessionId: string, metho
         'Authorization': `Basic ${Buffer.from(`${username}:${decryptedPassword}`).toString('base64')}`
     } : {};
 
-    console.log('Making Transmission RPC request:', method);
+
 
     const response = await axios.post(baseUrl, {
         method,
@@ -171,6 +171,7 @@ async function makeTransmissionRequest(baseUrl: string, sessionId: string, metho
 }
 
 transmissionRoute.post('/login', async (req: Request, res: Response) => {
+    console.log('Transmission login request');
     try {
         const itemId = validateItemId(req);
 
@@ -241,6 +242,7 @@ transmissionRoute.post('/encrypt-password', authenticateToken, async (req: Reque
 
 // Get current download stats
 transmissionRoute.get('/stats', async (req: Request, res: Response) => {
+    console.log('Transmission stats request');
     try {
         const baseUrl = getBaseUrl(req);
         const sessionKey = req.user?.username || req.ip || 'default';
@@ -270,7 +272,7 @@ transmissionRoute.get('/stats', async (req: Request, res: Response) => {
             const username = session?.username || credentials.username;
             const password = session?.password || credentials.password;
 
-            console.log('Transmission stats request');
+
 
             const response = await makeTransmissionRequest(
                 baseUrl,
@@ -311,6 +313,7 @@ transmissionRoute.get('/stats', async (req: Request, res: Response) => {
 
 // Get list of all torrents
 transmissionRoute.get('/torrents', async (req: Request, res: Response) => {
+    console.log('Transmission torrents request');
     try {
         const baseUrl = getBaseUrl(req);
         const sessionKey = req.user?.username || req.ip || 'default';
@@ -328,7 +331,7 @@ transmissionRoute.get('/torrents', async (req: Request, res: Response) => {
             const username = session?.username || credentials.username;
             const password = session?.password || credentials.password;
 
-            console.log('Transmission torrents request');
+
 
             const response = await makeTransmissionRequest(
                 baseUrl,

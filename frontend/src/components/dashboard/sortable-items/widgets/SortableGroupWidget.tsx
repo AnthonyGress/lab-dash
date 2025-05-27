@@ -135,7 +135,7 @@ export const SortableGroupWidget: React.FC<Props> = ({
     }, [config]);
 
     // Function to update a group item after it has been edited
-    const updateGroupItem = useCallback((itemId: string, updatedItem: DashboardItem) => {
+    const updateGroupItem = useCallback(async (itemId: string, updatedItem: DashboardItem) => {
         if (!config?.items) return;
 
         // Create an updated GroupItem from the updated DashboardItem
@@ -167,7 +167,7 @@ export const SortableGroupWidget: React.FC<Props> = ({
 
         // Update the group widget with the updated items
         if (updateItem) {
-            updateItem(id, {
+            await updateItem(id, {
                 config: {
                     ...config,
                     items: updatedItems

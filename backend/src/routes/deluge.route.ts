@@ -179,6 +179,7 @@ process.on('SIGINT', async () => {
 });
 
 delugeRoute.post('/login', async (req: Request, res: Response) => {
+    console.log('Deluge login request');
     try {
         const itemId = validateItemId(req);
 
@@ -204,22 +205,18 @@ delugeRoute.post('/login', async (req: Request, res: Response) => {
 
         // Handle encrypted password
         if (isEncrypted(password)) {
-            console.log('Deluge password is encrypted, attempting to decrypt...');
             password = decrypt(password);
             // Check if decryption failed (returns empty string)
             if (!password) {
-                console.error('Password decryption failed for Deluge login');
+                console.error('Deluge password decryption failed');
                 res.status(400).json({
                     error: 'Failed to decrypt password. It may have been encrypted with a different key. Please update your credentials.'
                 });
                 return;
             }
-            console.log('Deluge password decryption successful');
-        } else {
-            console.log('Deluge password is not encrypted');
         }
 
-        console.log(`Attempting Deluge login at ${baseUrl} with password length: ${password.length}`);
+        console.log('Deluge login attempt');
         const response = await axios.post(`${baseUrl}`,
             {
                 method: 'auth.login',
@@ -268,7 +265,7 @@ delugeRoute.post('/login', async (req: Request, res: Response) => {
 delugeRoute.get('/stats', async (req: Request, res: Response) => {
     try {
         const baseUrl = getBaseUrl(req);
-        console.log(`Deluge stats request for ${baseUrl}`);
+        console.log('Deluge stats request');
 
         // Use IP address as identifier for non-authenticated users
         const sessionId = req.user?.username || req.ip || 'default';
@@ -303,15 +300,14 @@ delugeRoute.get('/stats', async (req: Request, res: Response) => {
                     return;
                 }
 
-                console.log(`Attempting to login to Deluge at ${host}:${port} (SSL: ${ssl})`);
+                console.log('Deluge auto-login attempt');
 
                 // Handle encrypted password
                 if (isEncrypted(password)) {
-                    console.log('Deluge password is encrypted, attempting to decrypt...');
                     password = decrypt(password);
                     // Check if decryption failed (returns empty string)
                     if (!password) {
-                        console.log('Failed to decrypt Deluge password');
+                        console.error('Deluge password decryption failed');
                         // Return basic stats instead of failing
                         const stats = {
                             dl_info_speed: 0,
@@ -330,7 +326,6 @@ delugeRoute.get('/stats', async (req: Request, res: Response) => {
                         res.status(200).json(stats);
                         return;
                     }
-                    console.log('Deluge password decryption successful');
                 }
 
                 // Attempt to login with provided credentials
@@ -358,27 +353,26 @@ delugeRoute.get('/stats', async (req: Request, res: Response) => {
                             port,
                             ssl
                         };
-                        console.log('Deluge login successful, cookie stored');
+                        console.log('Deluge auto-login successful');
                     } else {
                         console.log('Deluge login failed: Invalid credentials or response format');
                     }
                 } catch (connErr: any) {
                     if (connErr.code === 'ECONNREFUSED' || connErr.code === 'ETIMEDOUT' || connErr.code === 'ECONNABORTED') {
-                        console.log(`Deluge is offline ${baseUrl} - Connection error: ${connErr.code}`);
+                        console.log(`Deluge service offline: ${baseUrl}`);
                     } else {
-                        console.error('Deluge login error:', connErr.message);
+                        console.error('Deluge auto-login error:', connErr.message);
                     }
                     // Continue without cookie - will return default stats
                 }
             } catch (loginErr: any) {
-                console.error('Deluge login attempt failed:', loginErr.message);
+                console.error('Deluge auto-login failed:', loginErr.message);
                 // Continue without cookie - will return default stats
             }
         }
 
         if (!cookie) {
             // If not authenticated and couldn't auto-login, provide basic response with empty/zero values
-            console.log(`No valid Deluge session for ${baseUrl}, returning empty stats`);
             const stats = {
                 dl_info_speed: 0,
                 up_info_speed: 0,
@@ -488,7 +482,7 @@ delugeRoute.get('/stats', async (req: Request, res: Response) => {
         } catch (apiErr: any) {
             console.error('Deluge stats API error:', apiErr.message);
             if (apiErr.code === 'ECONNREFUSED' || apiErr.code === 'ETIMEDOUT' || apiErr.code === 'ECONNABORTED') {
-                console.log(`Deluge is offline ${baseUrl}`);
+                console.log(`Deluge service offline: ${baseUrl}`);
             }
             res.status(apiErr.response?.status || 500).json({
                 error: apiErr.response?.data || 'Failed to get Deluge stats'
@@ -504,6 +498,7 @@ delugeRoute.get('/stats', async (req: Request, res: Response) => {
 
 // Get list of all torrents
 delugeRoute.get('/torrents', async (req: Request, res: Response) => {
+    console.log('Deluge torrents request');
     try {
         const baseUrl = getBaseUrl(req);
         // Use IP address as identifier for non-authenticated users
@@ -528,7 +523,6 @@ delugeRoute.get('/torrents', async (req: Request, res: Response) => {
 
                 // Handle encrypted password
                 if (isEncrypted(password)) {
-                    console.log('Deluge password is encrypted, attempting to decrypt...');
                     password = decrypt(password);
                     // Check if decryption failed (returns empty string)
                     if (!password) {
@@ -536,7 +530,6 @@ delugeRoute.get('/torrents', async (req: Request, res: Response) => {
                         res.status(200).json([]);
                         return;
                     }
-                    console.log('Deluge password decryption successful');
                 }
 
                 // Attempt to login with provided credentials
@@ -678,7 +671,6 @@ delugeRoute.post('/torrents/resume', authenticateToken, async (req: Request, res
 
                 // Handle encrypted password
                 if (isEncrypted(password)) {
-                    console.log('Deluge password is encrypted, attempting to decrypt...');
                     password = decrypt(password);
                     // Check if decryption failed (returns empty string)
                     if (!password) {
@@ -687,7 +679,6 @@ delugeRoute.post('/torrents/resume', authenticateToken, async (req: Request, res
                         });
                         return;
                     }
-                    console.log('Deluge password decryption successful');
                 }
 
                 // Attempt to login with provided credentials
@@ -780,7 +771,6 @@ delugeRoute.post('/torrents/pause', authenticateToken, async (req: Request, res:
 
                 // Handle encrypted password
                 if (isEncrypted(password)) {
-                    console.log('Deluge password is encrypted, attempting to decrypt...');
                     password = decrypt(password);
                     // Check if decryption failed (returns empty string)
                     if (!password) {
@@ -789,7 +779,6 @@ delugeRoute.post('/torrents/pause', authenticateToken, async (req: Request, res:
                         });
                         return;
                     }
-                    console.log('Deluge password decryption successful');
                 }
 
                 // Attempt to login with provided credentials
@@ -882,7 +871,6 @@ delugeRoute.post('/torrents/delete', authenticateToken, async (req: Request, res
 
                 // Handle encrypted password
                 if (isEncrypted(password)) {
-                    console.log('Deluge password is encrypted, attempting to decrypt...');
                     password = decrypt(password);
                     // Check if decryption failed (returns empty string)
                     if (!password) {
@@ -891,7 +879,6 @@ delugeRoute.post('/torrents/delete', authenticateToken, async (req: Request, res
                         });
                         return;
                     }
-                    console.log('Deluge password decryption successful');
                 }
 
                 // Attempt to login with provided credentials

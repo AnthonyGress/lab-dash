@@ -811,7 +811,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                     onSubmit(updated as DashboardItem);
                 } else {
                     // Otherwise update normally
-                    updateItem(existingItem.id, updatedItem);
+                    await updateItem(existingItem.id, updatedItem);
                 }
             } else {
                 await addItem(updatedItem);
