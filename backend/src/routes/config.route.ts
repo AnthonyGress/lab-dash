@@ -7,6 +7,7 @@ import path from 'path';
 
 import {  authenticateToken, requireAdmin } from '../middleware/auth.middleware';
 import { Config } from '../types';
+
 export const configRoute = Router();
 
 const CONFIG_FILE = path.join(__dirname, '../config/config.json');
@@ -77,98 +78,32 @@ const filterAdminOnlyItems = (config: any): any => {
 
     return filteredConfig;
 };
-
-// Helper function to ensure security flags are present for backwards compatibility
-const ensureSecurityFlags = (config: any): any => {
-    const processItems = (items: any[]) => {
-        return items.map(item => {
-            if (item.config) {
-                const newConfig = { ...item.config };
-
-                // Handle Pi-hole widget sensitive data
-                if (newConfig.apiToken && !newConfig._hasApiToken) {
-                    newConfig._hasApiToken = true;
-                }
-                if (newConfig.password && !newConfig._hasPassword) {
-                    newConfig._hasPassword = true;
-                }
-
-                // Handle torrent client sensitive data
-                if (item.type === 'torrent-client' && newConfig.password && !newConfig._hasPassword) {
-                    newConfig._hasPassword = true;
-                }
-
-                // Handle dual widget sensitive data
-                if (item.type === 'dual-widget') {
-                    if (newConfig.topWidget?.config) {
-                        if (newConfig.topWidget.config.apiToken && !newConfig.topWidget.config._hasApiToken) {
-                            newConfig.topWidget.config._hasApiToken = true;
-                        }
-                        if (newConfig.topWidget.config.password && !newConfig.topWidget.config._hasPassword) {
-                            newConfig.topWidget.config._hasPassword = true;
-                        }
-                    }
-                    if (newConfig.bottomWidget?.config) {
-                        if (newConfig.bottomWidget.config.apiToken && !newConfig.bottomWidget.config._hasApiToken) {
-                            newConfig.bottomWidget.config._hasApiToken = true;
-                        }
-                        if (newConfig.bottomWidget.config.password && !newConfig.bottomWidget.config._hasPassword) {
-                            newConfig.bottomWidget.config._hasPassword = true;
-                        }
-                    }
-                }
-
-                // Handle group widget items
-                if (item.type === 'group-widget' && newConfig.items) {
-                    newConfig.items = processItems(newConfig.items);
-                }
-
-                return { ...item, config: newConfig };
-            }
-            return item;
-        });
-    };
-
-    const updatedConfig = { ...config };
-
-    // Process desktop and mobile layouts
-    if (updatedConfig.layout) {
-        if (updatedConfig.layout.desktop) {
-            updatedConfig.layout.desktop = processItems(updatedConfig.layout.desktop);
-        }
-        if (updatedConfig.layout.mobile) {
-            updatedConfig.layout.mobile = processItems(updatedConfig.layout.mobile);
-        }
-    }
-
-    // Process pages
-    if (updatedConfig.pages) {
-        updatedConfig.pages = updatedConfig.pages.map((page: any) => ({
-            ...page,
-            layout: {
-                desktop: page.layout.desktop ? processItems(page.layout.desktop) : [],
-                mobile: page.layout.mobile ? processItems(page.layout.mobile) : []
-            }
-        }));
-    }
-
-    return updatedConfig;
-};
-
 const loadConfig = () => {
     if (fsSync.existsSync(CONFIG_FILE)) {
-        const config = JSON.parse(fsSync.readFileSync(CONFIG_FILE, 'utf-8'));
+        try {
+            const fileContent = fsSync.readFileSync(CONFIG_FILE, 'utf-8');
+            if (!fileContent.trim()) {
+                console.error('Config file is empty, returning default config');
+                return { layout: { desktop: [], mobile: [] } };
+            }
+            const config = JSON.parse(fileContent);
+            return config;
+        } catch (error) {
+            console.error('Error parsing config file:', error);
+            console.error('Config file content length:', fsSync.readFileSync(CONFIG_FILE, 'utf-8').length);
 
-        // Ensure security flags are present for backwards compatibility
-        const configWithFlags = ensureSecurityFlags(config);
+            // Try to read the first and last 100 characters to help debug
+            try {
+                const content = fsSync.readFileSync(CONFIG_FILE, 'utf-8');
+                console.error('First 100 chars:', content.substring(0, 100));
+                console.error('Last 100 chars:', content.substring(Math.max(0, content.length - 100)));
+            } catch (readError) {
+                console.error('Could not read config file for debugging:', readError);
+            }
 
-        // If flags were added, save the updated config
-        if (JSON.stringify(config) !== JSON.stringify(configWithFlags)) {
-            console.log('Adding missing security flags for backwards compatibility');
-            fsSync.writeFileSync(CONFIG_FILE, JSON.stringify(configWithFlags, null, 2), 'utf-8');
+            // Return default config if parsing fails
+            return { layout: { desktop: [], mobile: [] } };
         }
-
-        return configWithFlags;
     }
     return { layout: { desktop: [], mobile: [] } };
 };
@@ -179,63 +114,56 @@ const filterSensitiveData = (config: any): any => {
 
     const processItems = (items: any[]) => {
         return items.map(item => {
-            if (item.config) {
-                const newConfig = { ...item.config };
+            if (!item.config) return item;
 
-                // Handle Pi-hole widget sensitive data
-                if (newConfig.apiToken) {
-                    newConfig._hasApiToken = true;
-                    delete newConfig.apiToken;
-                }
-                if (newConfig.password) {
-                    newConfig._hasPassword = true;
-                    delete newConfig.password;
-                }
+            const newConfig = { ...item.config };
 
-                // Handle torrent client sensitive data
-                if (item.type === 'torrent-client') {
-                    if (newConfig.password) {
-                        newConfig._hasPassword = true;
-                        delete newConfig.password;
-                    }
-                    // Always preserve _hasPassword flag if it exists (for backwards compatibility)
-                    if (newConfig._hasPassword !== undefined) {
-                        newConfig._hasPassword = true;
-                    }
-                }
-
-                // Handle dual widget sensitive data
-                if (item.type === 'dual-widget') {
-                    if (newConfig.topWidget?.config) {
-                        if (newConfig.topWidget.config.apiToken) {
-                            newConfig.topWidget.config._hasApiToken = true;
-                            delete newConfig.topWidget.config.apiToken;
-                        }
-                        if (newConfig.topWidget.config.password) {
-                            newConfig.topWidget.config._hasPassword = true;
-                            delete newConfig.topWidget.config.password;
-                        }
-                    }
-                    if (newConfig.bottomWidget?.config) {
-                        if (newConfig.bottomWidget.config.apiToken) {
-                            newConfig.bottomWidget.config._hasApiToken = true;
-                            delete newConfig.bottomWidget.config.apiToken;
-                        }
-                        if (newConfig.bottomWidget.config.password) {
-                            newConfig.bottomWidget.config._hasPassword = true;
-                            delete newConfig.bottomWidget.config.password;
-                        }
-                    }
-                }
-
-                // Handle group widget items
-                if (item.type === 'group-widget' && newConfig.items) {
-                    newConfig.items = processItems(newConfig.items);
-                }
-
-                return { ...item, config: newConfig };
+            // Handle Pi-hole widget sensitive data
+            if (newConfig.apiToken) {
+                newConfig._hasApiToken = true;
+                delete newConfig.apiToken;
             }
-            return item;
+            if (newConfig.password) {
+                newConfig._hasPassword = true;
+                delete newConfig.password;
+            }
+
+            // Handle torrent client sensitive data
+            if (item.type === 'torrent-client' && newConfig.password) {
+                newConfig._hasPassword = true;
+                delete newConfig.password;
+            }
+
+            // Handle dual widget sensitive data
+            if (item.type === 'dual-widget') {
+                if (newConfig.topWidget?.config) {
+                    if (newConfig.topWidget.config.apiToken) {
+                        newConfig.topWidget.config._hasApiToken = true;
+                        delete newConfig.topWidget.config.apiToken;
+                    }
+                    if (newConfig.topWidget.config.password) {
+                        newConfig.topWidget.config._hasPassword = true;
+                        delete newConfig.topWidget.config.password;
+                    }
+                }
+                if (newConfig.bottomWidget?.config) {
+                    if (newConfig.bottomWidget.config.apiToken) {
+                        newConfig.bottomWidget.config._hasApiToken = true;
+                        delete newConfig.bottomWidget.config.apiToken;
+                    }
+                    if (newConfig.bottomWidget.config.password) {
+                        newConfig.bottomWidget.config._hasPassword = true;
+                        delete newConfig.bottomWidget.config.password;
+                    }
+                }
+            }
+
+            // Handle group widget items (recursively)
+            if (item.type === 'group-widget' && newConfig.items) {
+                newConfig.items = processItems(newConfig.items);
+            }
+
+            return { ...item, config: newConfig };
         });
     };
 
@@ -263,283 +191,178 @@ const filterSensitiveData = (config: any): any => {
     return filteredConfig;
 };
 
-// Helper function to merge sensitive data back when saving config
-const mergeSensitiveData = (newConfig: any, existingConfig: any): any => {
-    const mergedConfig = JSON.parse(JSON.stringify(newConfig)); // Deep clone
+// Helper function to restore sensitive data when saving config
+const restoreSensitiveData = (newConfig: any, existingConfig: any): any => {
+    const restoredConfig = JSON.parse(JSON.stringify(newConfig)); // Deep clone
 
-    // Helper function to find an item by ID across all layouts in the existing config
-    const findItemById = (itemId: string): any => {
-        // Search in main desktop layout
-        let foundItem = existingConfig.layout?.desktop?.find((item: any) => item.id === itemId);
-        if (foundItem) return foundItem;
+    // Create a global map of all existing items by ID for cross-location lookups
+    const createGlobalItemMap = (config: any): Map<string, any> => {
+        const globalMap = new Map();
 
-        // Search in main mobile layout
-        foundItem = existingConfig.layout?.mobile?.find((item: any) => item.id === itemId);
-        if (foundItem) return foundItem;
+        // Helper to add items from a layout to the global map
+        const addItemsToMap = (items: any[]) => {
+            items.forEach(item => {
+                globalMap.set(item.id, item);
 
-        // Search in pages if they exist
-        if (existingConfig.pages) {
-            for (const page of existingConfig.pages) {
-                // Search in page desktop layout
-                foundItem = page.layout?.desktop?.find((item: any) => item.id === itemId);
-                if (foundItem) return foundItem;
+                // Also add group widget items
+                if (item.type === 'group-widget' && item.config?.items) {
+                    item.config.items.forEach((groupItem: any) => {
+                        globalMap.set(groupItem.id, groupItem);
+                    });
+                }
+            });
+        };
 
-                // Search in page mobile layout
-                foundItem = page.layout?.mobile?.find((item: any) => item.id === itemId);
-                if (foundItem) return foundItem;
+        // Add items from main dashboard
+        if (config.layout?.desktop) addItemsToMap(config.layout.desktop);
+        if (config.layout?.mobile) addItemsToMap(config.layout.mobile);
+
+        // Add items from all pages
+        if (config.pages) {
+            config.pages.forEach((page: any) => {
+                if (page.layout?.desktop) addItemsToMap(page.layout.desktop);
+                if (page.layout?.mobile) addItemsToMap(page.layout.mobile);
+            });
+        }
+
+        return globalMap;
+    };
+
+    const globalExistingItemsMap = createGlobalItemMap(existingConfig);
+
+    const restoreItemSensitiveData = (newItem: any, existingItem: any): any => {
+        if (!newItem.config || !existingItem.config) return newItem;
+
+        const restoredItemConfig = { ...newItem.config };
+
+        // Handle group widget items (recursively)
+        if (newItem.type === 'group-widget' && restoredItemConfig.items && existingItem.config.items) {
+            restoredItemConfig.items = restoreItemsArray(restoredItemConfig.items, existingItem.config.items);
+        }
+
+        // Restore Pi-hole sensitive data if flags indicate existing data should be preserved
+        if (newItem.config._hasApiToken && !newItem.config.apiToken && existingItem.config.apiToken) {
+            restoredItemConfig.apiToken = existingItem.config.apiToken;
+        }
+        if (newItem.config._hasPassword && !newItem.config.password && existingItem.config.password) {
+            restoredItemConfig.password = existingItem.config.password;
+        }
+
+        // Handle torrent client sensitive data
+        if (newItem.type === 'torrent-client') {
+            if (newItem.config._hasPassword && !newItem.config.password && existingItem.config.password) {
+                restoredItemConfig.password = existingItem.config.password;
             }
         }
 
-        return null;
+        // Handle dual widget sensitive data
+        if (newItem.type === 'dual-widget') {
+            if (restoredItemConfig.topWidget?.config && existingItem.config.topWidget?.config) {
+                if (restoredItemConfig.topWidget.config._hasApiToken && !restoredItemConfig.topWidget.config.apiToken && existingItem.config.topWidget.config.apiToken) {
+                    restoredItemConfig.topWidget.config.apiToken = existingItem.config.topWidget.config.apiToken;
+                }
+                if (restoredItemConfig.topWidget.config._hasPassword && !restoredItemConfig.topWidget.config.password && existingItem.config.topWidget.config.password) {
+                    restoredItemConfig.topWidget.config.password = existingItem.config.topWidget.config.password;
+                }
+            }
+            if (restoredItemConfig.bottomWidget?.config && existingItem.config.bottomWidget?.config) {
+                if (restoredItemConfig.bottomWidget.config._hasApiToken && !restoredItemConfig.bottomWidget.config.apiToken && existingItem.config.bottomWidget.config.apiToken) {
+                    restoredItemConfig.bottomWidget.config.apiToken = existingItem.config.bottomWidget.config.apiToken;
+                }
+                if (restoredItemConfig.bottomWidget.config._hasPassword && !restoredItemConfig.bottomWidget.config.password && existingItem.config.bottomWidget.config.password) {
+                    restoredItemConfig.bottomWidget.config.password = existingItem.config.bottomWidget.config.password;
+                }
+            }
+        }
+
+        // Clean up security flags (they're only for communication, not storage)
+        delete restoredItemConfig._hasApiToken;
+        delete restoredItemConfig._hasPassword;
+        if (restoredItemConfig.topWidget?.config) {
+            delete restoredItemConfig.topWidget.config._hasApiToken;
+            delete restoredItemConfig.topWidget.config._hasPassword;
+        }
+        if (restoredItemConfig.bottomWidget?.config) {
+            delete restoredItemConfig.bottomWidget.config._hasApiToken;
+            delete restoredItemConfig.bottomWidget.config._hasPassword;
+        }
+
+        return { ...newItem, config: restoredItemConfig };
     };
 
-    const mergeItems = (newItems: any[], existingItems: any[]) => {
-        const result: any[] = [];
-        const newItemsMap = new Map(newItems.map(item => [item.id, item]));
+    const restoreItemsArray = (newItems: any[], existingItems: any[]): any[] => {
         const existingItemsMap = new Map(existingItems.map(item => [item.id, item]));
-        const processedIds = new Set<string>();
 
-        // Check if this is a reorder operation (all existing items are present in new items)
-        const existingIds = new Set(existingItems.map(item => item.id));
-        const newIds = new Set(newItems.map(item => item.id));
-        const isReorderOperation = existingIds.size === newIds.size &&
-            [...existingIds].every(id => newIds.has(id));
+        return newItems.map(newItem => {
+            // First try to find the item in the local existing items (for normal updates)
+            let existingItem = existingItemsMap.get(newItem.id);
 
-        if (isReorderOperation) {
-            // For reorder operations, respect the new order from frontend
-            for (const newItem of newItems) {
-                const existingItem = existingItemsMap.get(newItem.id);
-                processedIds.add(newItem.id);
-
-                if (existingItem?.config && newItem.config) {
-                    const mergedItemConfig = { ...newItem.config };
-
-                    // Restore Pi-hole sensitive data if not being updated
-                    if (newItem.config._hasApiToken && !newItem.config.apiToken && existingItem.config.apiToken) {
-                        mergedItemConfig.apiToken = existingItem.config.apiToken;
-                    }
-                    if (newItem.config._hasPassword && !newItem.config.password && existingItem.config.password) {
-                        mergedItemConfig.password = existingItem.config.password;
-                    }
-
-                    // Handle torrent client sensitive data
-                    if (newItem.type === 'torrent-client') {
-                        // Restore password if not being updated
-                        if (newItem.config._hasPassword && !newItem.config.password && existingItem.config.password) {
-                            mergedItemConfig.password = existingItem.config.password;
-                        }
-                        // Always preserve _hasPassword flag if existing item has a password
-                        if (existingItem.config.password || existingItem.config._hasPassword) {
-                            mergedItemConfig._hasPassword = true;
-                        }
-                    }
-
-                    // Handle dual widget sensitive data
-                    if (newItem.type === 'dual-widget') {
-                        if (mergedItemConfig.topWidget?.config && existingItem.config.topWidget?.config) {
-                            if (mergedItemConfig.topWidget.config._hasApiToken && !mergedItemConfig.topWidget.config.apiToken && existingItem.config.topWidget.config.apiToken) {
-                                mergedItemConfig.topWidget.config.apiToken = existingItem.config.topWidget.config.apiToken;
-                            }
-                            if (mergedItemConfig.topWidget.config._hasPassword && !mergedItemConfig.topWidget.config.password && existingItem.config.topWidget.config.password) {
-                                mergedItemConfig.topWidget.config.password = existingItem.config.topWidget.config.password;
-                            }
-                        }
-                        if (mergedItemConfig.bottomWidget?.config && existingItem.config.bottomWidget?.config) {
-                            if (mergedItemConfig.bottomWidget.config._hasApiToken && !mergedItemConfig.bottomWidget.config.apiToken && existingItem.config.bottomWidget.config.apiToken) {
-                                mergedItemConfig.bottomWidget.config.apiToken = existingItem.config.bottomWidget.config.apiToken;
-                            }
-                            if (mergedItemConfig.bottomWidget.config._hasPassword && !mergedItemConfig.bottomWidget.config.password && existingItem.config.bottomWidget.config.password) {
-                                mergedItemConfig.bottomWidget.config.password = existingItem.config.bottomWidget.config.password;
-                            }
-                        }
-                    }
-
-                    // Handle group widget items
-                    if (newItem.type === 'group-widget' && existingItem.config.items) {
-                        // If the new item has items, merge them; otherwise, preserve existing items
-                        if (mergedItemConfig.items && mergedItemConfig.items.length > 0) {
-                            mergedItemConfig.items = mergeItems(mergedItemConfig.items, existingItem.config.items);
-                        } else {
-                            // If new item has no items or empty array, preserve existing items
-                            mergedItemConfig.items = existingItem.config.items;
-                        }
-                    }
-
-                    // Clean up flags (but preserve torrent client flags)
-                    if (newItem.type !== 'torrent-client') {
-                        delete mergedItemConfig._hasApiToken;
-                        delete mergedItemConfig._hasPassword;
-                    }
-                    // For torrent clients, never delete security flags - they should always be preserved
-                    if (mergedItemConfig.topWidget?.config) {
-                        delete mergedItemConfig.topWidget.config._hasApiToken;
-                        delete mergedItemConfig.topWidget.config._hasPassword;
-                    }
-                    if (mergedItemConfig.bottomWidget?.config) {
-                        delete mergedItemConfig.bottomWidget.config._hasApiToken;
-                        delete mergedItemConfig.bottomWidget.config._hasPassword;
-                    }
-
-                    result.push({ ...newItem, config: mergedItemConfig });
-                } else {
-                    result.push(newItem);
-                }
-            }
-        } else {
-            // For non-reorder operations, preserve existing order and add new items
-            // First, preserve all existing items in their original order
-            // Update them with new data if available, otherwise keep as-is
-            for (const existingItem of existingItems) {
-                const newItem = newItemsMap.get(existingItem.id);
-
-                if (newItem) {
-                    // This item exists in both old and new - merge sensitive data
-                    processedIds.add(existingItem.id);
-
-                    if (existingItem?.config && newItem.config) {
-                        const mergedItemConfig = { ...newItem.config };
-
-                        // Restore Pi-hole sensitive data if not being updated
-                        if (newItem.config._hasApiToken && !newItem.config.apiToken && existingItem.config.apiToken) {
-                            mergedItemConfig.apiToken = existingItem.config.apiToken;
-                        }
-                        if (newItem.config._hasPassword && !newItem.config.password && existingItem.config.password) {
-                            mergedItemConfig.password = existingItem.config.password;
-                        }
-
-                        // Handle torrent client sensitive data
-                        if (newItem.type === 'torrent-client') {
-                            // Restore password if not being updated
-                            if (newItem.config._hasPassword && !newItem.config.password && existingItem.config.password) {
-                                mergedItemConfig.password = existingItem.config.password;
-                            }
-                            // Always preserve _hasPassword flag if existing item has a password
-                            if (existingItem.config.password || existingItem.config._hasPassword) {
-                                mergedItemConfig._hasPassword = true;
-                            }
-                        }
-
-                        // Handle dual widget sensitive data
-                        if (newItem.type === 'dual-widget') {
-                            if (mergedItemConfig.topWidget?.config && existingItem.config.topWidget?.config) {
-                                if (mergedItemConfig.topWidget.config._hasApiToken && !mergedItemConfig.topWidget.config.apiToken && existingItem.config.topWidget.config.apiToken) {
-                                    mergedItemConfig.topWidget.config.apiToken = existingItem.config.topWidget.config.apiToken;
-                                }
-                                if (mergedItemConfig.topWidget.config._hasPassword && !mergedItemConfig.topWidget.config.password && existingItem.config.topWidget.config.password) {
-                                    mergedItemConfig.topWidget.config.password = existingItem.config.topWidget.config.password;
-                                }
-                            }
-                            if (mergedItemConfig.bottomWidget?.config && existingItem.config.bottomWidget?.config) {
-                                if (mergedItemConfig.bottomWidget.config._hasApiToken && !mergedItemConfig.bottomWidget.config.apiToken && existingItem.config.bottomWidget.config.apiToken) {
-                                    mergedItemConfig.bottomWidget.config.apiToken = existingItem.config.bottomWidget.config.apiToken;
-                                }
-                                if (mergedItemConfig.bottomWidget.config._hasPassword && !mergedItemConfig.bottomWidget.config.password && existingItem.config.bottomWidget.config.password) {
-                                    mergedItemConfig.bottomWidget.config.password = existingItem.config.bottomWidget.config.password;
-                                }
-                            }
-                        }
-
-                        // Handle group widget items
-                        if (newItem.type === 'group-widget' && existingItem.config.items) {
-                            // If the new item has items, merge them; otherwise, preserve existing items
-                            if (mergedItemConfig.items && mergedItemConfig.items.length > 0) {
-                                mergedItemConfig.items = mergeItems(mergedItemConfig.items, existingItem.config.items);
-                            } else {
-                                // If new item has no items or empty array, preserve existing items
-                                mergedItemConfig.items = existingItem.config.items;
-                            }
-                        }
-
-                        // Clean up flags (but preserve torrent client flags)
-                        if (newItem.type !== 'torrent-client') {
-                            delete mergedItemConfig._hasApiToken;
-                            delete mergedItemConfig._hasPassword;
-                        }
-                        // For torrent clients, never delete security flags - they should always be preserved
-                        if (mergedItemConfig.topWidget?.config) {
-                            delete mergedItemConfig.topWidget.config._hasApiToken;
-                            delete mergedItemConfig.topWidget.config._hasPassword;
-                        }
-                        if (mergedItemConfig.bottomWidget?.config) {
-                            delete mergedItemConfig.bottomWidget.config._hasApiToken;
-                            delete mergedItemConfig.bottomWidget.config._hasPassword;
-                        }
-
-                        result.push({ ...newItem, config: mergedItemConfig });
-                    } else {
-                        result.push(newItem);
-                    }
-                }
-                // Note: Removed the else clause that was adding back deleted items
-                // If an item exists in old but not in new, it means it was deleted - don't add it back
+            // If not found locally, try the global map (for item moves)
+            if (!existingItem) {
+                existingItem = globalExistingItemsMap.get(newItem.id);
             }
 
-            // Then, add any truly new items to the end
-            for (const newItem of newItems) {
-                if (!processedIds.has(newItem.id)) {
-                    // This is a new item - check if it exists anywhere else in the config
-                    const foundAnywhere = findItemById(newItem.id);
-                    if (!foundAnywhere) {
-                        // Truly new item - add to the end
-                        result.push(newItem);
-                    }
-                }
-            }
-        }
-
-        return result;
+            return existingItem ? restoreItemSensitiveData(newItem, existingItem) : newItem;
+        });
     };
 
-    // Merge desktop and mobile layouts
-    if (mergedConfig.layout && existingConfig.layout) {
-        if (mergedConfig.layout.desktop && existingConfig.layout.desktop) {
-            mergedConfig.layout.desktop = mergeItems(mergedConfig.layout.desktop, existingConfig.layout.desktop);
+    // Restore desktop and mobile layouts
+    if (restoredConfig.layout && existingConfig.layout) {
+        if (restoredConfig.layout.desktop && existingConfig.layout.desktop) {
+            restoredConfig.layout.desktop = restoreItemsArray(restoredConfig.layout.desktop, existingConfig.layout.desktop);
         }
-        if (mergedConfig.layout.mobile && existingConfig.layout.mobile) {
-            mergedConfig.layout.mobile = mergeItems(mergedConfig.layout.mobile, existingConfig.layout.mobile);
+        if (restoredConfig.layout.mobile && existingConfig.layout.mobile) {
+            restoredConfig.layout.mobile = restoreItemsArray(restoredConfig.layout.mobile, existingConfig.layout.mobile);
         }
     }
 
-    // Merge pages
-    if (mergedConfig.pages && existingConfig.pages) {
-        mergedConfig.pages = mergedConfig.pages.map((newPage: any) => {
-            const existingPage = existingConfig.pages.find((page: any) => page.id === newPage.id);
-            if (existingPage?.layout) {
-                return {
-                    ...newPage,
-                    layout: {
-                        desktop: newPage.layout.desktop && existingPage.layout.desktop ?
-                            mergeItems(newPage.layout.desktop, existingPage.layout.desktop) :
-                            newPage.layout.desktop || [],
-                        mobile: newPage.layout.mobile && existingPage.layout.mobile ?
-                            mergeItems(newPage.layout.mobile, existingPage.layout.mobile) :
-                            newPage.layout.mobile || []
-                    }
-                };
-            }
-            return newPage;
+    // Restore pages
+    if (restoredConfig.pages && existingConfig.pages) {
+        const existingPagesMap = new Map(existingConfig.pages.map((page: any) => [page.id, page]));
+
+        restoredConfig.pages = restoredConfig.pages.map((newPage: any) => {
+            const existingPage = existingPagesMap.get(newPage.id) as any;
+            if (!existingPage || !existingPage.layout) return newPage;
+            if (!newPage.layout) return newPage;
+
+            const newPageWithLayout = newPage as any;
+            const existingPageWithLayout = existingPage as any;
+
+            return {
+                ...newPage,
+                layout: {
+                    desktop: (newPageWithLayout.layout.desktop && existingPageWithLayout.layout.desktop) ?
+                        restoreItemsArray(newPageWithLayout.layout.desktop, existingPageWithLayout.layout.desktop) :
+                        (newPageWithLayout.layout.desktop || []),
+                    mobile: (newPageWithLayout.layout.mobile && existingPageWithLayout.layout.mobile) ?
+                        restoreItemsArray(newPageWithLayout.layout.mobile, existingPageWithLayout.layout.mobile) :
+                        (newPageWithLayout.layout.mobile || [])
+                }
+            };
         });
     }
 
-    return mergedConfig;
+    return restoredConfig;
 };
 
-// GET - Retrieve the saved layout JSON from disk (public access)
+// GET - Return the config file with sensitive data filtered and admin-only items filtered based on user role
 configRoute.get('/', async (req: Request, res: Response): Promise<void> => {
     try {
         const config = loadConfig();
+
+        // Filter sensitive data (passwords/tokens) and add security flags
         let filteredConfig = filterSensitiveData(config);
 
-        // If user is not an admin, filter out admin-only items
+        // Filter admin-only items if user is not admin
         if (!isUserAdmin(req)) {
             filteredConfig = filterAdminOnlyItems(filteredConfig);
         }
 
-        console.log('loading layout');
         res.status(StatusCodes.OK).json(filteredConfig);
     } catch (error) {
+        console.error('Error loading config:', error);
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-            message: 'Error reading config file',
+            message: 'Error loading config file',
             error: (error as Error).message
         });
     }
@@ -568,28 +391,37 @@ configRoute.get('/export', [authenticateToken, requireAdmin], async (_req: Reque
 // POST - Save the incoming JSON layout to disk (admin only)
 configRoute.post('/', [authenticateToken, requireAdmin], async (req: Request, res: Response): Promise<void> => {
     try {
-        const updates = req.body; // Get all key-value pairs from the request
-        const existingConfig: Config = loadConfig(); // Load current config
+        const updates = req.body;
+        const existingConfig: Config = loadConfig();
 
-        // Merge sensitive data back from existing config
-        const mergedUpdates = mergeSensitiveData(updates, existingConfig);
+        // Restore sensitive data from existing config before saving
+        const configToSave = restoreSensitiveData(updates, existingConfig);
 
-        // Apply updates dynamically
-        Object.keys(mergedUpdates).forEach((key) => {
-            if (mergedUpdates[key] !== undefined) {
-                (existingConfig as any)[key] = mergedUpdates[key]; // Update the key dynamically
+        // Apply updates to existing config
+        Object.keys(configToSave).forEach((key) => {
+            if (configToSave[key] !== undefined) {
+                (existingConfig as any)[key] = configToSave[key];
             }
         });
 
-        // Ensure security flags are present after merge (for any items that might have been missed)
-        const configWithFlags = ensureSecurityFlags(existingConfig);
+        // Ensure the config has all required properties
+        if (!existingConfig.layout) {
+            existingConfig.layout = { desktop: [], mobile: [] };
+        }
+        if (!existingConfig.pages) {
+            existingConfig.pages = [];
+        }
 
-        // Save the updated config to file
-        await fs.writeFile(CONFIG_FILE, JSON.stringify(configWithFlags, null, 2), 'utf-8');
+        // Save the updated config to file (with sensitive data preserved)
+        await fs.writeFile(CONFIG_FILE, JSON.stringify(existingConfig, null, 2), 'utf-8');
 
-        // Return filtered config to frontend
-        const filteredConfig = filterSensitiveData(configWithFlags);
-        res.status(StatusCodes.OK).json({ message: 'Config saved successfully', updatedConfig: filteredConfig });
+        // Return filtered config to frontend (without sensitive data)
+        const filteredConfig = filterSensitiveData(existingConfig);
+
+        res.status(StatusCodes.OK).json({
+            message: 'Config saved successfully',
+            updatedConfig: filteredConfig
+        });
     } catch (error) {
         console.error('Error saving config:', error);
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({

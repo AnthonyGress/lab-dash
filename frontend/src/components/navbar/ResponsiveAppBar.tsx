@@ -108,7 +108,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
 
     const handleLogin = () => {
         handleMenuClose();
-        navigate('/login');
+        navigate('/login', { state: { from: location.pathname } });
     };
 
     const handleLogout = async () => {
@@ -500,16 +500,14 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                             </>
                                         ) : (
                                             // Login Button for Non-Logged in Users
-                                            <NavLink to='/login' style={{ width: '100%', color: 'white' }} onClick={() => {handleCloseDrawer(); setEditMode(false);}}>
-                                                <ListItem disablePadding>
-                                                    <ListItemButton>
-                                                        <ListItemIcon>
-                                                            <FaUser style={{ color: theme.palette.text.primary, fontSize: 22 }}/>
-                                                        </ListItemIcon>
-                                                        <ListItemText primary={'Login'} />
-                                                    </ListItemButton>
-                                                </ListItem>
-                                            </NavLink>
+                                            <ListItem disablePadding>
+                                                <ListItemButton onClick={() => {handleCloseDrawer(); setEditMode(false); handleLogin();}}>
+                                                    <ListItemIcon>
+                                                        <FaUser style={{ color: theme.palette.text.primary, fontSize: 22 }}/>
+                                                    </ListItemIcon>
+                                                    <ListItemText primary={'Login'} />
+                                                </ListItemButton>
+                                            </ListItem>
                                         )}
                                     </List>
                                 </Box>

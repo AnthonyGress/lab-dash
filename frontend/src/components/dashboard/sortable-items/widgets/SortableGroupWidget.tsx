@@ -57,7 +57,7 @@ export const SortableGroupWidget: React.FC<Props> = ({
     onDuplicate,
     isOverlay = false
 }) => {
-    const { updateItem, dashboardLayout, setDashboardLayout, saveLayout } = useAppContext();
+    const { updateItem, dashboardLayout, setDashboardLayout, saveLayout, refreshDashboard } = useAppContext();
     const groupWidgetRef = useRef<HTMLDivElement | null>(null);
     const [isOver, setIsOver] = useState<boolean>(false);
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -104,6 +104,7 @@ export const SortableGroupWidget: React.FC<Props> = ({
             label: foundItem.name,
             url: foundItem.url,
             showLabel: true,
+            adminOnly: foundItem.adminOnly || false,
             icon: {
                 path: foundItem.icon || '',
                 name: foundItem.name
@@ -136,14 +137,15 @@ export const SortableGroupWidget: React.FC<Props> = ({
 
     // Function to update a group item after it has been edited
     const updateGroupItem = useCallback(async (itemId: string, updatedItem: DashboardItem) => {
-        if (!config?.items) return;
+        if (!config?.items || !dashboardLayout) return;
 
         // Create an updated GroupItem from the updated DashboardItem
         const updatedGroupItem: GroupItem = {
             id: itemId,
             name: updatedItem.label,
             url: updatedItem.url?.toString() || '#',
-            icon: updatedItem.icon?.path || ''
+            icon: updatedItem.icon?.path || '',
+            adminOnly: updatedItem.adminOnly || false
         };
 
         // Add WoL properties if they exist
@@ -165,16 +167,38 @@ export const SortableGroupWidget: React.FC<Props> = ({
             item.id === itemId ? updatedGroupItem : item
         );
 
-        // Update the group widget with the updated items
-        if (updateItem) {
-            await updateItem(id, {
-                config: {
-                    ...config,
-                    items: updatedItems
-                }
-            });
+        // Find the group widget in the dashboard layout
+        const groupIndex = dashboardLayout.findIndex(item => item.id === id);
+        if (groupIndex === -1) {
+            console.error('Could not find group widget in dashboard layout');
+            return;
         }
-    }, [config, id, updateItem]);
+
+        // Create updated dashboard layout
+        const updatedLayout = [...dashboardLayout];
+        const updatedGroupWidget = { ...updatedLayout[groupIndex] };
+
+        if (!updatedGroupWidget.config) {
+            updatedGroupWidget.config = {};
+        }
+
+        updatedGroupWidget.config = {
+            ...updatedGroupWidget.config,
+            items: updatedItems
+        };
+
+        updatedLayout[groupIndex] = updatedGroupWidget;
+
+        // Update the dashboard layout immediately for UI responsiveness
+        setDashboardLayout(updatedLayout);
+
+        // Save the updated layout to the server
+        try {
+            await saveLayout(updatedLayout);
+        } catch (error) {
+            console.error('Error saving group item update:', error);
+        }
+    }, [config, id, dashboardLayout, setDashboardLayout, saveLayout]);
 
     // Function to notify about dragging a group item
     const notifyGroupItemDrag = useCallback((isDragging: boolean, itemId?: string) => {
@@ -195,7 +219,7 @@ export const SortableGroupWidget: React.FC<Props> = ({
     }, [notifyGroupItemDrag]);
 
     // Handle when an item is dragged out of the group
-    const handleItemDragOut = useCallback((itemId: string) => {
+    const handleItemDragOut = useCallback(async (itemId: string) => {
         if (!dashboardLayout || !config || !config.items) return;
 
         // Notify that we're dragging out
@@ -255,10 +279,10 @@ export const SortableGroupWidget: React.FC<Props> = ({
             return;
         }
 
-        // Create updated dashboard layout
+        // Create updated dashboard layout with both the updated group and the new app shortcut
         const updatedLayout = [...dashboardLayout];
 
-        // Update the group widget with the new items
+        // Update the group widget with the reduced items
         const updatedGroupWidget = { ...updatedLayout[groupIndex] };
         if (!updatedGroupWidget.config) {
             updatedGroupWidget.config = {};
@@ -274,17 +298,24 @@ export const SortableGroupWidget: React.FC<Props> = ({
         // Insert the app shortcut at index+1 of the group in the dashboard layout
         updatedLayout.splice(groupIndex + 1, 0, newAppShortcut);
 
-        // Update the dashboard layout
+        // Update the dashboard layout immediately for UI responsiveness
         setDashboardLayout(updatedLayout);
 
-        // Save to server
-        saveLayout(updatedLayout);
+        try {
+            // Save the updated layout to server (this includes both the updated group and new item)
+            await saveLayout(updatedLayout);
+
+            // Refresh the dashboard to ensure config state is updated
+            await refreshDashboard();
+        } catch (error) {
+            console.error('Error saving layout after drag out:', error);
+        }
 
         // Reset the state
         setItemBeingDraggedOut(null);
 
         // We'll let the DashboardGrid's drag end handler clear the backdrop
-    }, [dashboardLayout, config, id, setDashboardLayout, saveLayout, notifyGroupItemDrag]);
+    }, [dashboardLayout, config, id, setDashboardLayout, saveLayout, refreshDashboard, notifyGroupItemDrag]);
 
     // Add an app shortcut to the group
     const addAppShortcutToGroup = useCallback((shortcutItem: DashboardItem) => {
@@ -321,7 +352,8 @@ export const SortableGroupWidget: React.FC<Props> = ({
             id: newItemId, // Use the new ID here
             name: shortcutItem.label || (isPlaceholder ? 'Placeholder' : 'App'),
             url: isPlaceholder ? '#' : (shortcutItem.url?.toString() || '#'),
-            icon: shortcutItem.icon?.path || ''
+            icon: shortcutItem.icon?.path || '',
+            adminOnly: shortcutItem.adminOnly || false
         };
 
         // Add any additional properties
@@ -632,10 +664,20 @@ export const SortableGroupWidget: React.FC<Props> = ({
 
     // Handle editing a specific item in the group
     const handleItemEdit = useCallback((itemId: string) => {
+        // First, check if the item is actually still in the group
+        if (!config?.items) return;
+
+        const foundItem = config.items.find(item => item.id === itemId);
+        if (!foundItem) {
+            // Item is not in the group anymore (likely moved out), don't handle the edit
+            console.log('Item not found in group, ignoring edit request for:', itemId);
+            return;
+        }
+
         // Set the selected item id and open the edit modal
         setSelectedItemId(itemId);
         setOpenEditItemModal(true);
-    }, []);
+    }, [config]);
 
     // Handle closing the edit modal
     const handleCloseEditModal = useCallback(() => {

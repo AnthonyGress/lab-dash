@@ -1,7 +1,7 @@
 import { Box, Button, InputAdornment, Typography } from '@mui/material';
 import { FormContainer, TextFieldElement, useForm } from 'react-hook-form-mui';
 import { FaLock, FaUser } from 'react-icons/fa6';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { DashApi } from '../../api/dash-api';
 import { ToastManager } from '../../components/toast/ToastManager';
@@ -16,6 +16,7 @@ type FormValues = {
 
 export const LoginForm = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { setIsLoggedIn, setUsername, setIsAdmin, refreshDashboard } = useAppContext();
 
     const formContext = useForm<FormValues>({
@@ -43,9 +44,12 @@ export const LoginForm = () => {
             // Refresh dashboard to load admin-only items if user is admin
             await refreshDashboard();
 
-            // Show success toast and navigate to home page
+            // Show success toast and navigate back to previous page or home
             ToastManager.success('Login successful!');
-            navigate('/');
+
+            // Get the previous location from navigation state, default to home
+            const from = (location.state as any)?.from || '/';
+            navigate(from, { replace: true });
         } catch (error: any) {
             // Show error message
             ToastManager.error(error.message || 'Login failed');

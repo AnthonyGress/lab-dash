@@ -176,8 +176,22 @@ const customCollisionDetection = (args: any) => {
         });
     }
 
-    // Fall back to standard detection for other cases
-    return closestCorners(args);
+    // For all other widget types (non-app-shortcuts, non-group-widgets)
+    // Filter out group-internal containers to ensure proper collision with group widgets
+    const filteredContainers = args.droppableContainers.filter((container: any) => {
+        const containerId = container.id.toString();
+        // Exclude group-internal droppable containers that shouldn't interfere with widget reordering
+        return !containerId.includes('group-droppable') &&
+               !containerId.includes('group-widget-droppable') &&
+               container.data.current?.type !== 'group-container' &&
+               container.data.current?.type !== 'group-widget-container';
+    });
+
+    // Use closestCorners with filtered containers for better collision detection
+    return closestCorners({
+        ...args,
+        droppableContainers: filteredContainers
+    });
 };
 
 // Helper function to calculate intersection area between two rectangles

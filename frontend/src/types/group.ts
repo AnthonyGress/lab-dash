@@ -9,5 +9,6 @@ export interface GroupItem {
     port?: number;
     healthUrl?: string;
     healthCheckType?: string;
+    adminOnly?: boolean;
     [key: string]: any;
 }

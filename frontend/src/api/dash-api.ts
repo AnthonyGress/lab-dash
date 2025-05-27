@@ -225,14 +225,17 @@ export class DashApi {
         }
     }
 
-    public static async saveConfig(config: Partial<Config>): Promise<void> {
+    public static async saveConfig(config: Partial<Config>): Promise<Config | null> {
         try {
             // Explicitly set withCredentials for this request
             // Clone and stringify-parse the config to ensure proper serialization of complex objects
             const preparedConfig = JSON.parse(JSON.stringify(config));
-            await axios.post(`${BACKEND_URL}/api/config`, preparedConfig, {
+            const response = await axios.post(`${BACKEND_URL}/api/config`, preparedConfig, {
                 withCredentials: true
             });
+
+            // Return the updated config from the backend response
+            return response.data.updatedConfig || null;
         } catch (error) {
             console.error('Failed to save layout:', error);
             throw error; // Rethrow to allow handling in the UI

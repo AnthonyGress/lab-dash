@@ -77,7 +77,7 @@ export const App = () => {
                     background: backgroundImage,
                     backgroundSize: 'cover',
                     backgroundRepeat: 'no-repeat',
-                    backgroundPosition: 'center',
+                    backgroundPosition: 'center center',
                     // backgroundAttachment: 'scroll',
                     imageRendering: 'crispEdges',
                     '&.MuiModal-open': {

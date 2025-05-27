@@ -795,27 +795,31 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
 
         try {
             if (existingItem) {
-                // Check if this is an item in a group widget
-                const isGroupItem = existingItem.type === ITEM_TYPE.APP_SHORTCUT &&
-                                   dashboardLayout.findIndex(item => item.id === existingItem.id) === -1;
-
-                // If this is an item in a group, call onSubmit with the updated item
-                if (isGroupItem && onSubmit) {
+                // If onSubmit prop is provided, we're editing within a group context
+                // This is more reliable than trying to detect group items by their absence from dashboardLayout
+                if (onSubmit) {
+                    // This is an item being edited within a group widget
                     const updated = {
                         ...existingItem,
                         ...updatedItem
                     };
                     onSubmit(updated as DashboardItem);
+
+                    // Don't call refreshDashboard() for group items as it can cause duplication
+                    // The group widget's updateGroupItem function handles the state updates properly
                 } else {
-                    // Otherwise update normally
+                    // This is a regular dashboard item
                     await updateItem(existingItem.id, updatedItem);
+
+                    // Refresh the dashboard to ensure all widgets are updated with latest data
+                    await refreshDashboard();
                 }
             } else {
                 await addItem(updatedItem);
-            }
 
-            // Refresh the dashboard to ensure all widgets are updated with latest data
-            await refreshDashboard();
+                // Refresh the dashboard to ensure all widgets are updated with latest data
+                await refreshDashboard();
+            }
 
             console.log('Form submission complete, resetting form');
             formContext.reset();

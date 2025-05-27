@@ -471,15 +471,22 @@ export const AppContextProvider = ({ children }: Props) => {
         setDashboardLayout((prevItems) => [...prevItems, newItem]);
 
         try {
-            // Use existing config state instead of fetching again
-            if (!config) {
-                console.error('No config available for adding item');
+            // Refresh config state to ensure we have the latest state including any recent group changes
+            const freshConfig = await DashApi.getConfig();
+            if (!freshConfig) {
+                console.error('Failed to get fresh config for adding item');
                 return;
+            }
+
+            // Update config state with fresh data
+            setConfig(freshConfig);
+            if (freshConfig.pages) {
+                setPages(freshConfig.pages);
             }
 
             // If we're on a specific page, add to that page
             if (currentPageId) {
-                const updatedPages = config.pages?.map(page => {
+                const updatedPages = freshConfig.pages?.map(page => {
                     if (page.id === currentPageId) {
                         return {
                             ...page,
@@ -497,10 +504,11 @@ export const AppContextProvider = ({ children }: Props) => {
             }
 
             // Otherwise add to main dashboard
+            // Use fresh config layout and add the new item
             const updatedLayout = {
                 layout: {
-                    desktop: [...config.layout.desktop, newItem],
-                    mobile: [...config.layout.mobile, newItem]
+                    desktop: [...freshConfig.layout.desktop, newItem],
+                    mobile: [...freshConfig.layout.mobile, newItem]
                 }
             };
 
@@ -546,6 +554,15 @@ export const AppContextProvider = ({ children }: Props) => {
                 }) || [];
 
                 await DashApi.saveConfig({ pages: updatedPages });
+
+                // Update the config state with the new pages data
+                setConfig(prevConfig => ({
+                    ...prevConfig!,
+                    pages: updatedPages
+                }));
+
+                // Update pages state as well
+                setPages(updatedPages);
                 return;
             }
 
@@ -562,14 +579,23 @@ export const AppContextProvider = ({ children }: Props) => {
             setDashboardLayout(isMobile ? mobileLayout : desktopLayout);
 
             // Save both updated layouts to the server
-            const updatedConfig = {
+            const updatedConfigData = {
                 layout: {
                     desktop: desktopLayout,
                     mobile: mobileLayout
                 }
             };
 
-            await DashApi.saveConfig(updatedConfig);
+            await DashApi.saveConfig(updatedConfigData);
+
+            // Update the config state with the new layout data
+            setConfig(prevConfig => ({
+                ...prevConfig!,
+                layout: {
+                    desktop: desktopLayout,
+                    mobile: mobileLayout
+                }
+            }));
         } catch (error) {
             console.error('Failed to update item:', error);
         }
@@ -765,7 +791,7 @@ export const AppContextProvider = ({ children }: Props) => {
                                 icon: { path: foundGroupItem.icon, name: foundGroupItem.name },
                                 type: 'app-shortcut' as any,
                                 showLabel: true,
-                                adminOnly: false,
+                                adminOnly: foundGroupItem.adminOnly || false,
                                 config: {}
                             };
 
@@ -840,6 +866,42 @@ export const AppContextProvider = ({ children }: Props) => {
 
             // Create a deep copy of the item to move
             const itemCopy = JSON.parse(JSON.stringify(itemToMove));
+
+            // Ensure security flags are preserved for sensitive data restoration
+            if (itemCopy.config) {
+                // Check if the item has security flags and preserve them
+                if (itemToMove.config?._hasApiToken) {
+                    itemCopy.config._hasApiToken = true;
+                }
+                if (itemToMove.config?._hasPassword) {
+                    itemCopy.config._hasPassword = true;
+                }
+
+                // Handle dual widget security flags
+                if (itemToMove.type === 'dual-widget') {
+                    if (itemToMove.config?.topWidget?.config?._hasApiToken) {
+                        if (!itemCopy.config.topWidget) itemCopy.config.topWidget = {};
+                        if (!itemCopy.config.topWidget.config) itemCopy.config.topWidget.config = {};
+                        itemCopy.config.topWidget.config._hasApiToken = true;
+                    }
+                    if (itemToMove.config?.topWidget?.config?._hasPassword) {
+                        if (!itemCopy.config.topWidget) itemCopy.config.topWidget = {};
+                        if (!itemCopy.config.topWidget.config) itemCopy.config.topWidget.config = {};
+                        itemCopy.config.topWidget.config._hasPassword = true;
+                    }
+                    if (itemToMove.config?.bottomWidget?.config?._hasApiToken) {
+                        if (!itemCopy.config.bottomWidget) itemCopy.config.bottomWidget = {};
+                        if (!itemCopy.config.bottomWidget.config) itemCopy.config.bottomWidget.config = {};
+                        itemCopy.config.bottomWidget.config._hasApiToken = true;
+                    }
+                    if (itemToMove.config?.bottomWidget?.config?._hasPassword) {
+                        if (!itemCopy.config.bottomWidget) itemCopy.config.bottomWidget = {};
+                        if (!itemCopy.config.bottomWidget.config) itemCopy.config.bottomWidget.config = {};
+                        itemCopy.config.bottomWidget.config._hasPassword = true;
+                    }
+                }
+            }
+
             console.log('Item copy created:', itemCopy);
 
             // Prepare the update payload
