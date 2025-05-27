@@ -37,28 +37,33 @@ const getBaseUrl = (req: Request): string => {
     const port = connectionInfo.port || '9091';
     const ssl = connectionInfo.ssl || false;
     const protocol = ssl ? 'https' : 'http';
-    return `${protocol}://${host}:${port}/transmission/rpc`;
+    const baseUrl = `${protocol}://${host}:${port}/transmission/rpc`;
+
+    return baseUrl;
 };
 
 // Function to get session ID from Transmission
 async function getTransmissionSessionId(baseUrl: string, username?: string, password?: string): Promise<string | null> {
     try {
+        console.log('Attempting to connect to Transmission at:', baseUrl);
+
         // First request to get session ID (will return 409 with X-Transmission-Session-Id header)
         const authHeader = username && password ? {
             'Authorization': `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`
         } : {};
 
-
-
         try {
-            await axios.post(baseUrl, {
+            const response = await axios.post(baseUrl, {
                 method: 'session-get'
             }, {
                 headers: {
                     'Content-Type': 'application/json',
                     ...authHeader
-                }
+                },
+                timeout: 10000 // 10 second timeout
             });
+
+            console.log('Unexpected success response from Transmission:', response.status);
         } catch (error: any) {
             if (error.response?.status === 409) {
                 // This is expected - Transmission returns 409 with session ID
@@ -68,13 +73,27 @@ async function getTransmissionSessionId(baseUrl: string, username?: string, pass
                     return sessionId;
                 }
             } else {
-                console.error('Unexpected Transmission response:', error.response?.status);
+                console.error('Unexpected Transmission response:', {
+                    status: error.response?.status,
+                    statusText: error.response?.statusText,
+                    data: error.response?.data,
+                    message: error.message,
+                    code: error.code
+                });
             }
             throw error;
         }
         return null;
     } catch (error: any) {
-        console.error('Transmission session ID error:', error.message);
+        console.error('Transmission session ID error:', {
+            message: error.message,
+            code: error.code,
+            response: error.response ? {
+                status: error.response.status,
+                statusText: error.response.statusText,
+                data: error.response.data
+            } : 'No response object'
+        });
         return null;
     }
 }
@@ -289,7 +308,15 @@ transmissionRoute.get('/stats', async (req: Request, res: Response) => {
                 throw new Error('Failed to get session stats');
             }
         } catch (error: any) {
-            console.error('Transmission stats API error:', error.message);
+            console.error('Transmission stats API error:', {
+                message: error.message,
+                code: error.code,
+                response: error.response ? {
+                    status: error.response.status,
+                    statusText: error.response.statusText,
+                    data: error.response.data
+                } : 'No response object'
+            });
             // Return empty stats on error
             res.status(200).json({
                 downloadSpeed: 0,
@@ -360,7 +387,15 @@ transmissionRoute.get('/torrents', async (req: Request, res: Response) => {
                 res.status(200).json([]);
             }
         } catch (error: any) {
-            console.error('Transmission torrents API error:', error.message);
+            console.error('Transmission torrents API error:', {
+                message: error.message,
+                code: error.code,
+                response: error.response ? {
+                    status: error.response.status,
+                    statusText: error.response.statusText,
+                    data: error.response.data
+                } : 'No response object'
+            });
             res.status(200).json([]);
         }
     } catch (error: any) {

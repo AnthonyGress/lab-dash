@@ -46,18 +46,14 @@ export const TorrentClientWidgetConfig = ({ formContext, existingItem }: Torrent
         // Check if the form already has a masked password value (set by AddEditForm)
         // This is more reliable than checking existingItem since existingItem is filtered
         const currentPassword = formContext.getValues('tcPassword');
-        console.log('TorrentClientWidgetConfig: Current form password value:', currentPassword);
 
         if (currentPassword === MASKED_VALUE) {
-            console.log('TorrentClientWidgetConfig: Found masked password in form, setting hasExistingPassword to true');
             setHasExistingPassword(true);
         } else if (existingItem?.config) {
             // Fallback: check existingItem config for security flag (though it may not be present in filtered data)
             const config = existingItem.config;
-            console.log('TorrentClientWidgetConfig: Config has _hasPassword:', config._hasPassword);
 
             if (config._hasPassword) {
-                console.log('TorrentClientWidgetConfig: Setting hasExistingPassword to true from config flag');
                 setHasExistingPassword(true);
 
                 // Ensure the masked value is set if not already present
@@ -65,18 +61,9 @@ export const TorrentClientWidgetConfig = ({ formContext, existingItem }: Torrent
                     console.log('TorrentClientWidgetConfig: Setting masked password');
                     formContext.setValue('tcPassword', MASKED_VALUE, { shouldValidate: false });
                 }
-            } else {
-                console.log('TorrentClientWidgetConfig: No existing password found');
             }
-        } else {
-            console.log('TorrentClientWidgetConfig: No existing item config found');
         }
     }, [existingItem?.config?._hasPassword, existingItem?.id, formContext]);
-
-    // Debug effect to track hasExistingPassword changes
-    useEffect(() => {
-        console.log('TorrentClientWidgetConfig: hasExistingPassword changed to:', hasExistingPassword);
-    }, [hasExistingPassword]);
 
     useEffect(() => {
         if (watchedTorrentClientType) {
@@ -104,18 +91,14 @@ export const TorrentClientWidgetConfig = ({ formContext, existingItem }: Torrent
 
             // If user clears the masked value, mark it as intentionally cleared
             if (currentPassword === '' && !userClearedPassword) {
-                console.log('TorrentClientWidgetConfig: User cleared password field');
                 setUserClearedPassword(true);
             }
             // If user enters a new value after clearing, reset the flag
             else if (currentPassword && currentPassword !== MASKED_VALUE && userClearedPassword) {
-                console.log('TorrentClientWidgetConfig: User entered new password');
                 setUserClearedPassword(false);
             }
         }
     }, [formContext.watch('tcPassword'), hasExistingPassword, userClearedPassword]);
-
-
 
     return (
         <>
