@@ -344,20 +344,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                 </ListItemButton>
                                             </ListItem>
                                         )}
-                                        {isLoggedIn && isAdmin && (
-                                            <NavLink to='/settings' style={{ width: '100%', color: 'white' }} onClick={() => {handleCloseDrawer(); setEditMode(false);}}>
-                                                <ListItem disablePadding>
-                                                    <ListItemButton>
-                                                        <ListItemIcon>
-                                                            {<FaGear style={{ color: theme.palette.text.primary, fontSize: 22 }}/> }
-                                                        </ListItemIcon>
-                                                        <ListItemText primary={'Settings'} />
-                                                    </ListItemButton>
-                                                </ListItem>
-                                            </NavLink>
-                                        )}
-
-                                        {/* Pages Section - Below Settings with Divider */}
+                                        {/* Pages Section */}
                                         {pages.length > 0 && (
                                             <>
                                                 <Divider sx={{ my: 1 }} />
@@ -396,9 +383,21 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                     {/* Spacer to push account info to bottom */}
                                     <Box sx={{ flexGrow: 1 }} />
 
-                                    {/* Account Info at Bottom */}
+                                    {/* Bottom */}
                                     <List sx={{ mt: 'auto', mb: 1 }}>
                                         <Divider />
+                                        {isLoggedIn && isAdmin && (
+                                            <NavLink to='/settings' style={{ width: '100%', color: 'white' }} onClick={() => {handleCloseDrawer(); setEditMode(false);}}>
+                                                <ListItem disablePadding>
+                                                    <ListItemButton>
+                                                        <ListItemIcon>
+                                                            {<FaGear style={{ color: theme.palette.text.primary, fontSize: 22 }}/> }
+                                                        </ListItemIcon>
+                                                        <ListItemText primary={'Settings'} />
+                                                    </ListItemButton>
+                                                </ListItem>
+                                            </NavLink>
+                                        )}
 
                                         {/* Update Available Item */}
                                         {updateAvailable && (
@@ -435,10 +434,10 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                             variant='dot'
                                                             overlap='circular'
                                                         >
-                                                            <FaInfoCircle style={{ color: theme.palette.text.primary, fontSize: 22, marginLeft: '-4px' }} />
+                                                            <FaInfoCircle style={{ color: theme.palette.text.primary, fontSize: 22 }} />
                                                         </Badge>
                                                     ) : (
-                                                        <FaInfoCircle style={{ color: theme.palette.text.primary, fontSize: 22, marginLeft: '-4px' }} />
+                                                        <FaInfoCircle style={{ color: theme.palette.text.primary, fontSize: 22 }} />
                                                     )}
                                                 </ListItemIcon>
                                                 <ListItemText
@@ -462,9 +461,6 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                 {/* User Info */}
                                                 <ListItem
                                                     disablePadding
-                                                    sx={{
-                                                        mt: 1
-                                                    }}
                                                 >
                                                     <ListItemButton onClick={handleProfile}>
                                                         <ListItemIcon>
@@ -474,7 +470,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                                     height: 26,
                                                                     bgcolor: 'primary.main',
                                                                     fontSize: 18,
-                                                                    ml: '-4px'
+                                                                    ml: '-1px'
                                                                 }}
                                                             >
                                                                 {username ? username.charAt(0).toUpperCase() : <FaUser style={{ fontSize: 16 }} />}
