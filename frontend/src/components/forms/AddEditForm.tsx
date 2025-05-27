@@ -1,17 +1,15 @@
-import ClearIcon from '@mui/icons-material/Clear';
-import { Autocomplete, Box, Button, FormControlLabel, Grid2 as Grid, Radio, RadioGroup, TextField, Typography, useMediaQuery } from '@mui/material';
+import { Box, Button, Grid2 as Grid, useMediaQuery } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { CheckboxElement, FormContainer, SelectElement, TextFieldElement } from 'react-hook-form-mui';
+import { useNavigate } from 'react-router-dom';
 
 import { AppShortcutConfig, PlaceholderConfig, WidgetConfig } from './configs';
-import { IconSearch } from './IconSearch';
 import { DashApi } from '../../api/dash-api';
 import { useAppContext } from '../../context/useAppContext';
-import { useIsMobile } from '../../hooks/useIsMobile';
 import { COLORS, styles } from '../../theme/styles';
 import { theme } from '../../theme/theme';
-import { DashboardItem, Icon, ITEM_TYPE, NewItem, TORRENT_CLIENT_TYPE } from '../../types';
+import { DashboardItem, ITEM_TYPE, NewItem, Page, TORRENT_CLIENT_TYPE } from '../../types';
 import { isEncrypted } from '../../utils/utils';
 
 type Props = {
@@ -23,8 +21,8 @@ type Props = {
 const ITEM_TYPE_OPTIONS = [
     { id: ITEM_TYPE.APP_SHORTCUT, label: 'Shortcut' },
     { id: 'widget', label: 'Widget' },
-    { id: ITEM_TYPE.PAGE, label: 'Page' },
     { id: ITEM_TYPE.PLACEHOLDER, label: 'Placeholder' },
+    { id: ITEM_TYPE.PAGE, label: 'Page' },
 ];
 
 const WIDGET_OPTIONS = [
@@ -34,26 +32,7 @@ const WIDGET_OPTIONS = [
     { id: ITEM_TYPE.PIHOLE_WIDGET, label: 'Pi-hole' },
     { id: ITEM_TYPE.TORRENT_CLIENT, label: 'Torrent Client' },
     { id: ITEM_TYPE.DUAL_WIDGET, label: 'Dual Widget' },
-    { id: ITEM_TYPE.GROUP_WIDGET, label: 'Group Widget' }
-];
-
-const TEMPERATURE_UNIT_OPTIONS = [
-    { id: 'fahrenheit', label: 'Fahrenheit (°F)' },
-    { id: 'celsius', label: 'Celsius (°C)' }
-];
-
-const SYSTEM_MONITOR_GAUGE_OPTIONS = [
-    { id: 'cpu', label: 'CPU Usage' },
-    { id: 'temp', label: 'CPU Temperature' },
-    { id: 'ram', label: 'RAM Usage' },
-    { id: 'network', label: 'Network' },
-    { id: 'none', label: 'None' }
-];
-
-const TORRENT_CLIENT_OPTIONS = [
-    { id: TORRENT_CLIENT_TYPE.QBITTORRENT, label: 'qBittorrent' },
-    { id: TORRENT_CLIENT_TYPE.DELUGE, label: 'Deluge' },
-    { id: TORRENT_CLIENT_TYPE.TRANSMISSION, label: 'Transmission' }
+    { id: ITEM_TYPE.GROUP_WIDGET, label: 'Group' }
 ];
 
 export type FormValues = {
@@ -148,8 +127,9 @@ interface LocationOption {
 
 export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
     const { formState: { errors } } = useForm();
-    const { dashboardLayout, addItem, updateItem, addPage, refreshDashboard } = useAppContext();
+    const { dashboardLayout, addItem, updateItem, addPage, refreshDashboard, pageNameToSlug, pages } = useAppContext();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const navigate = useNavigate();
     const [customIconFile, setCustomIconFile] = useState<File | null>(null);
 
     // Removed location-related state, now handled in WeatherWidgetConfig
@@ -475,10 +455,23 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
         if (data.itemType === ITEM_TYPE.PAGE) {
             if (data.pageName) {
                 try {
-                    await addPage(data.pageName);
+                    const newPageId = await addPage(data.pageName);
                     handleFormClose();
+
+                    if (newPageId) {
+                        // Wait a brief moment for state to update, then navigate to the newly created page
+                        setTimeout(() => {
+                            const pageSlug = pageNameToSlug(data.pageName!);
+                            navigate(`/${pageSlug}`);
+                        }, 100);
+                    }
                 } catch (error) {
                     console.error('Error creating page:', error);
+                    // Set form error for the pageName field
+                    formContext.setError('pageName', {
+                        type: 'manual',
+                        message: error instanceof Error ? error.message : 'Failed to create page'
+                    });
                 }
             }
             return;
@@ -1190,6 +1183,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                             width: '100%',
                                             minWidth: isMobile ? '65vw' : '20vw'
                                         }}
+                                        helperText='Pages are added to the navigation menu'
                                         slotProps={{
                                             inputLabel: { style: { color: theme.palette.text.primary } }
                                         }}
@@ -1207,6 +1201,15 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                                 // Check if it's the word "settings" (case-insensitive)
                                                 if (value.toLowerCase() === 'settings') {
                                                     return 'Page name cannot be "settings"';
+                                                }
+
+                                                // Check for duplicate page names (case-insensitive)
+                                                const existingPages = pages || [];
+                                                const isDuplicate = existingPages.some((page: Page) =>
+                                                    page.name.toLowerCase() === value.toLowerCase()
+                                                );
+                                                if (isDuplicate) {
+                                                    return `A page named "${value}" already exists. Please choose a different name.`;
                                                 }
 
                                                 return true;

@@ -632,29 +632,49 @@ export const AppContextProvider = ({ children }: Props) => {
     };
 
     // Page management functions
-    const addPage = async (name: string) => {
-        const newPage: Page = {
-            id: `page-${shortid.generate()}`,
-            name,
-            layout: {
-                desktop: [],
-                mobile: []
-            }
-        };
-
+    const addPage = async (name: string): Promise<string | null> => {
         try {
             // Use existing config state instead of fetching again
             if (!config) {
                 console.error('No config available for adding page');
-                return;
+                return null;
             }
 
-            const updatedPages = [...(config.pages || []), newPage];
+            // Check for duplicate page names (case-insensitive)
+            const existingPages = config.pages || [];
+            const isDuplicate = existingPages.some(page =>
+                page.name.toLowerCase() === name.toLowerCase()
+            );
+
+            if (isDuplicate) {
+                console.error('Page name already exists:', name);
+                throw new Error(`A page named "${name}" already exists. Please choose a different name.`);
+            }
+
+            const newPage: Page = {
+                id: `page-${shortid.generate()}`,
+                name,
+                layout: {
+                    desktop: [],
+                    mobile: []
+                }
+            };
+
+            const updatedPages = [...existingPages, newPage];
 
             await DashApi.saveConfig({ pages: updatedPages });
+
+            // Update both pages state and config state to ensure consistency
             setPages(updatedPages);
+            setConfig(prevConfig => ({
+                ...prevConfig!,
+                pages: updatedPages
+            }));
+
+            return newPage.id;
         } catch (error) {
             console.error('Failed to add page:', error);
+            throw error; // Re-throw to let the caller handle the error
         }
     };
 
@@ -715,21 +735,89 @@ export const AppContextProvider = ({ children }: Props) => {
             const serverConfig = await DashApi.getConfig();
             console.log('Server config:', serverConfig);
 
+            // Helper function to search for item in a layout array (including within group widgets)
+            const searchInLayout = (items: any[]): { item: DashboardItem | null, parentGroupId?: string } => {
+                for (const item of items) {
+                    // Direct match
+                    if (item.id === itemId) {
+                        return { item };
+                    }
+
+                    // Check group widgets
+                    if (item.type === 'group-widget' && item.config?.items) {
+                        const foundGroupItem = item.config.items.find((groupItem: any) => groupItem.id === itemId);
+                        if (foundGroupItem) {
+                            // Convert group item to dashboard item format
+                            const dashboardItem: DashboardItem = {
+                                id: foundGroupItem.id,
+                                label: foundGroupItem.name,
+                                url: foundGroupItem.url,
+                                icon: { path: foundGroupItem.icon, name: foundGroupItem.name },
+                                type: 'app-shortcut' as any,
+                                showLabel: true,
+                                adminOnly: false,
+                                config: {}
+                            };
+
+                            // Add WoL properties if they exist
+                            if (foundGroupItem.isWol) {
+                                dashboardItem.config = {
+                                    ...dashboardItem.config,
+                                    isWol: foundGroupItem.isWol,
+                                    macAddress: foundGroupItem.macAddress,
+                                    broadcastAddress: foundGroupItem.broadcastAddress,
+                                    port: foundGroupItem.port
+                                };
+                            }
+
+                            // Add health check properties if they exist
+                            if (foundGroupItem.healthUrl) {
+                                dashboardItem.config = {
+                                    ...dashboardItem.config,
+                                    healthUrl: foundGroupItem.healthUrl,
+                                    healthCheckType: foundGroupItem.healthCheckType
+                                };
+                            }
+
+                            return { item: dashboardItem, parentGroupId: item.id };
+                        }
+                    }
+                }
+                return { item: null };
+            };
+
             // Find the item in the current layout
             let itemToMove: DashboardItem | null = null;
+            let parentGroupId: string | undefined = undefined;
 
             // Check if item is in main dashboard
             if (currentPageId === null) {
-                itemToMove = serverConfig.layout.desktop.find(item => item.id === itemId) ||
-                           serverConfig.layout.mobile.find(item => item.id === itemId) || null;
-                console.log('Found item in main dashboard:', itemToMove);
+                const desktopResult = searchInLayout(serverConfig.layout.desktop);
+                const mobileResult = searchInLayout(serverConfig.layout.mobile);
+
+                if (desktopResult.item) {
+                    itemToMove = desktopResult.item;
+                    parentGroupId = desktopResult.parentGroupId;
+                } else if (mobileResult.item) {
+                    itemToMove = mobileResult.item;
+                    parentGroupId = mobileResult.parentGroupId;
+                }
+                console.log('Found item in main dashboard:', itemToMove, 'Parent group:', parentGroupId);
             } else {
                 // Check if item is in current page
                 const currentPage = serverConfig.pages?.find(page => page.id === currentPageId);
                 if (currentPage) {
-                    itemToMove = currentPage.layout.desktop.find(item => item.id === itemId) ||
-                               currentPage.layout.mobile.find(item => item.id === itemId) || null;
-                    console.log('Found item in current page:', itemToMove);
+                    const desktopResult = searchInLayout(currentPage.layout.desktop);
+                    const mobileResult = searchInLayout(currentPage.layout.mobile);
+
+                    if (desktopResult.item) {
+                        itemToMove = desktopResult.item;
+                        parentGroupId = desktopResult.parentGroupId;
+                    } else if (mobileResult.item) {
+                        itemToMove = mobileResult.item;
+                        parentGroupId = mobileResult.parentGroupId;
+                    }
+                    console.log('Found item in current page:', itemToMove, 'Parent group:', parentGroupId);
                 }
             }
 
@@ -747,11 +835,34 @@ export const AppContextProvider = ({ children }: Props) => {
             // Prepare the update payload
             let updatePayload: any = {};
 
+            // Helper function to remove item from layout (including from within group widgets)
+            const removeItemFromLayout = (items: any[]): any[] => {
+                return items.map(item => {
+                    // If this is the item to remove and it's not in a group
+                    if (item.id === itemId && !parentGroupId) {
+                        return null; // Mark for removal
+                    }
+
+                    // If this is a group widget and we need to remove an item from it
+                    if (item.type === 'group-widget' && item.id === parentGroupId && item.config?.items) {
+                        return {
+                            ...item,
+                            config: {
+                                ...item.config,
+                                items: item.config.items.filter((groupItem: any) => groupItem.id !== itemId)
+                            }
+                        };
+                    }
+
+                    return item;
+                }).filter(item => item !== null); // Remove null items
+            };
+
             // Remove item from source and add to target
             if (currentPageId === null) {
                 // Moving from main dashboard
-                const updatedDesktop = serverConfig.layout.desktop.filter((item: any) => item.id !== itemId);
-                const updatedMobile = serverConfig.layout.mobile.filter((item: any) => item.id !== itemId);
+                const updatedDesktop = removeItemFromLayout(serverConfig.layout.desktop);
+                const updatedMobile = removeItemFromLayout(serverConfig.layout.mobile);
 
                 if (targetPageId === null) {
                     // Moving within main dashboard (shouldn't happen, but handle it)
@@ -791,8 +902,8 @@ export const AppContextProvider = ({ children }: Props) => {
                             return {
                                 ...page,
                                 layout: {
-                                    desktop: page.layout.desktop.filter((item: any) => item.id !== itemId),
-                                    mobile: page.layout.mobile.filter((item: any) => item.id !== itemId)
+                                    desktop: removeItemFromLayout(page.layout.desktop),
+                                    mobile: removeItemFromLayout(page.layout.mobile)
                                 }
                             };
                         }
@@ -814,8 +925,8 @@ export const AppContextProvider = ({ children }: Props) => {
                             return {
                                 ...page,
                                 layout: {
-                                    desktop: page.layout.desktop.filter((item: any) => item.id !== itemId),
-                                    mobile: page.layout.mobile.filter((item: any) => item.id !== itemId)
+                                    desktop: removeItemFromLayout(page.layout.desktop),
+                                    mobile: removeItemFromLayout(page.layout.mobile)
                                 }
                             };
                         } else if (page.id === targetPageId) {
@@ -859,7 +970,7 @@ export const AppContextProvider = ({ children }: Props) => {
 
             // Create navigation action for the toast
             const navigationAction = {
-                label: targetPageId === null ? 'Go to Home' : `Go to ${targetName}`,
+                label: targetPageId === null ? 'Open Home' : `Open ${targetName}`,
                 onClick: () => {
                     if (targetPageId === null) {
                         // Navigate to home

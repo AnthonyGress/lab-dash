@@ -71,10 +71,10 @@ export const SearchBar = ({
         if (!newValue) return;
 
         if (typeof newValue === 'string') {
-            window.open(getSearchUrl(newValue), '_blank');
+            window.open(getSearchUrl(newValue), '_blank', 'noopener,noreferrer');
         } else {
             if (newValue.url) {
-                window.open(newValue.url, '_blank');
+                window.open(newValue.url, '_blank', 'noopener,noreferrer');
             }
         }
 

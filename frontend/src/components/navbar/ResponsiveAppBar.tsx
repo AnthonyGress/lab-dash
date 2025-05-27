@@ -175,13 +175,18 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                     <Toolbar disableGutters sx={{ justifyContent: 'space-between', width: '100%' }}>
                         <Link to='/'>
                             {/* Desktop */}
-                            <Box sx={{ width: { xs: '100%', md: '300px', lg: '350px' }, ...styles.center, overflow: 'hidden' }}>
+                            <Box sx={{
+                                width: { xs: 'auto', md: '300px', lg: '350px' },
+                                flex: { xs: '0 1 auto', md: 'none' },
+                                ...styles.center,
+                                overflow: 'hidden',
+                                minWidth: 0
+                            }}>
                                 <Logo sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }}/>
                                 <Typography
                                     variant='h5'
                                     noWrap
                                     sx={{
-                                        mr: 2,
                                         flexGrow: 1,
                                         display: { xs: 'none', md: 'block' },
                                         fontFamily: 'Earth Orbiter',
@@ -189,7 +194,6 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                         color: 'inherit',
                                         textDecoration: 'none',
                                         minWidth: '120px',
-                                        maxWidth: { md: '250px', lg: '300px' },
                                         textAlign: 'left',
                                         whiteSpace: 'nowrap',
                                         overflow: 'hidden',
@@ -203,11 +207,11 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                 <Logo sx={{ display: { xs: 'flex', md: 'none' }, ml: 2, mr: 2 }} />
                                 <Typography
                                     variant='h5'
-                                    noWrap
                                     sx={{
                                         mr: 2,
                                         flexGrow: 0,
-                                        display: { xs: 'flex', md: 'none' },
+                                        flexShrink: 1,
+                                        display: { xs: 'block', md: 'none' },
                                         fontFamily: 'Earth Orbiter',
                                         letterSpacing: '.1rem',
                                         color: 'inherit',
@@ -215,7 +219,8 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                         whiteSpace: 'nowrap',
                                         overflow: 'hidden',
                                         textOverflow: 'ellipsis',
-                                        maxWidth: '150px'
+                                        maxWidth: 'calc(100vw - 200px)',
+                                        minWidth: 0
                                     }}
                                     key={`app-title-mobile-${config?.title}-${nanoid()}`}
                                 >
@@ -223,7 +228,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                 </Typography>
                             </Box>
                         </Link>
-                        { currentPath === '/' && config?.search &&
+                        { !currentPath.includes('/settings') && config?.search &&
                             <Box sx={{ width: '100%', display: { xs: 'none', md: 'flex' }, justifyContent: 'center', flexGrow: 1 }}>
                                 <GlobalSearch />
                             </Box>
@@ -550,7 +555,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                             <Button variant='contained' onClick={handleSave}  sx={{ backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT, color: 'black', borderRadius: '999px', height: '1.7rem', width: '4.5rem' }}>Done</Button>
                         </Box>
                         :
-                        currentPath === '/' && config?.search && <Box position='absolute' sx={{ top: { xs: '49px', sm: '58px' }, zIndex: 99, display: { xs: 'flex', md: 'none' }, justifyContent: 'center', width: '100%' }} mt={.5}>
+                        !currentPath.includes('/settings') && config?.search && <Box position='absolute' sx={{ top: { xs: '49px', sm: '58px' }, zIndex: 99, display: { xs: 'flex', md: 'none' }, justifyContent: 'center', width: '100%' }} mt={.5}>
                             <GlobalSearch />
                         </Box>
                 }

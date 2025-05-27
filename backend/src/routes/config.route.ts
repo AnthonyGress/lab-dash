@@ -199,9 +199,42 @@ const filterSensitiveData = (config: any): any => {
 const mergeSensitiveData = (newConfig: any, existingConfig: any): any => {
     const mergedConfig = JSON.parse(JSON.stringify(newConfig)); // Deep clone
 
+    // Helper function to find an item by ID across all layouts in the existing config
+    const findItemById = (itemId: string): any => {
+        // Search in main desktop layout
+        let foundItem = existingConfig.layout?.desktop?.find((item: any) => item.id === itemId);
+        if (foundItem) return foundItem;
+
+        // Search in main mobile layout
+        foundItem = existingConfig.layout?.mobile?.find((item: any) => item.id === itemId);
+        if (foundItem) return foundItem;
+
+        // Search in pages if they exist
+        if (existingConfig.pages) {
+            for (const page of existingConfig.pages) {
+                // Search in page desktop layout
+                foundItem = page.layout?.desktop?.find((item: any) => item.id === itemId);
+                if (foundItem) return foundItem;
+
+                // Search in page mobile layout
+                foundItem = page.layout?.mobile?.find((item: any) => item.id === itemId);
+                if (foundItem) return foundItem;
+            }
+        }
+
+        return null;
+    };
+
     const mergeItems = (newItems: any[], existingItems: any[]) => {
         return newItems.map(newItem => {
-            const existingItem = existingItems.find(item => item.id === newItem.id);
+            // First try to find in the same layout array (for normal updates)
+            let existingItem = existingItems.find(item => item.id === newItem.id);
+
+            // If not found in same layout, search across all layouts (for moved items)
+            if (!existingItem) {
+                existingItem = findItemById(newItem.id);
+            }
+
             if (existingItem?.config && newItem.config) {
                 const mergedItemConfig = { ...newItem.config };
 

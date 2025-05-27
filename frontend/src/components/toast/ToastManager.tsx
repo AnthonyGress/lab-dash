@@ -1,4 +1,4 @@
-import { Alert, AlertColor, Button, Slide, SlideProps, Snackbar } from '@mui/material';
+import { Alert, AlertColor, Button, Slide, SlideProps, Snackbar, useMediaQuery } from '@mui/material';
 import React, { createContext, ReactNode, useContext, useState } from 'react';
 
 import { theme } from '../../theme/theme';
@@ -35,6 +35,7 @@ interface ToastProviderProps {
 
 export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
     const [toasts, setToasts] = useState<Toast[]>([]);
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     const showToast = (message: string, type: AlertColor, duration: number = 3000, action?: ToastAction) => {
         const id = Date.now().toString();
@@ -85,6 +86,14 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
                     sx={{
                         top: `${80 + (index * 60)}px !important`, // Stack toasts vertically with moderate spacing
                         zIndex: theme.zIndex.snackbar + 1000, // Ensure it's above everything
+                        width: isMobile ? '90vw' : '600px',
+                        maxWidth: isMobile ? '90vw' : '600px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        '& .MuiSnackbarContent-root': {
+                            width: '100%',
+                            maxWidth: '100%'
+                        }
                     }}
                 >
                     <Alert
@@ -118,11 +127,12 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
                             </Button>
                         ) : undefined}
                         sx={{
-                            minWidth: '300px',
+                            width: '100%',
+                            maxWidth: '100%',
                             fontSize: '0.95rem',
                             fontWeight: 500,
                             boxShadow: theme.shadows[6],
-                            opacity: 0.9,
+                            opacity: 1,
                             alignItems: 'center',
                             '& .MuiAlert-icon': {
                                 fontSize: '1.2rem',
@@ -141,15 +151,15 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
                             },
                             // Custom muted colors
                             '&.MuiAlert-filledSuccess': {
-                                backgroundColor: 'rgba(62, 139, 64, 0.8)', // Muted green
+                                backgroundColor: 'rgba(62, 139, 64, 1)', // Muted green
                                 color: '#ffffff'
                             },
                             '&.MuiAlert-filledError': {
-                                backgroundColor: 'rgba(213, 57, 45, 0.8)', // Muted red
+                                backgroundColor: 'rgba(213, 57, 45, 1)', // Muted red
                                 color: '#ffffff'
                             },
                             '&.MuiAlert-filledInfo': {
-                                backgroundColor: 'rgba(32, 137, 222, 0.8)', // Muted blue
+                                backgroundColor: 'rgba(32, 137, 222, 1)', // Muted blue
                                 color: '#ffffff'
                             }
                         }}
