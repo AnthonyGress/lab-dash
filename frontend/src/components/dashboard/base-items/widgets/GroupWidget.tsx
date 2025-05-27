@@ -128,7 +128,6 @@ const SortableGroupItem: React.FC<SortableGroupItemProps> = ({
                 transition,
                 opacity: isDragging ? 0.5 : 1,
                 position: 'relative',
-                m: 0.5, // Add margin for spacing
                 touchAction: 'none', // Ensure touch events are captured properly on mobile
             }}
             data-item-id={item.id}
@@ -237,6 +236,7 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
             // 2x3 grid layout (6 items in 3 rows of 2 items each)
             return {
                 width: '45%',  // Wider items, 2 per row
+                maxWidth: '200px', // Max width for larger screens
                 rows: 3,
                 cols: 2,
                 height: DUAL_WIDGET_CONTAINER_HEIGHT,
@@ -247,6 +247,7 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
             // 3x2 grid layout (6 items in 2 rows of 3 items each)
             return {
                 width: '30%',  // Narrower items, 3 per row
+                maxWidth: '150px', // Max width for larger screens
                 rows: 2,
                 cols: 3,
                 height: DUAL_WIDGET_CONTAINER_HEIGHT,
@@ -257,6 +258,7 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
             // Default 3x1 layout (3 items in one row)
             return {
                 width: '30%',
+                maxWidth: '150px', // Max width for larger screens
                 rows: 1,
                 cols: 3,
                 height: STANDARD_WIDGET_HEIGHT,  // Using standard widget height for 3x1 layout
@@ -639,27 +641,32 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                     )}
 
                     {/* Group Items Container */}
-                    <Grid sx={{
-                        flex: 1,
-                        display: 'flex',
-                        flexDirection: 'row',
-                        flexWrap: 'wrap',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        gap: 0.5,
-                        overflowY: 'hidden',
-                        overflowX: 'hidden',
-                        pb: 0.5,
-                        size: { xs: 4 }
-                    }}>
+                    <Grid
+                        container
+                        spacing={{ lg: 3 }}
+                        sx={{
+                            flex: 1,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            overflowY: 'hidden',
+                            overflowX: 'hidden',
+                            p:{ lg: 2 },
+                            m: 0 // Reset margin since spacing handles gaps
+                        }}
+                    >
                         <SortableContext items={visibleItems.map(item => item.id)}>
                             {visibleItems.map((item) => (
-                                <Box
-                                    width={gridSettings.width}
+                                <Grid
                                     key={item.id}
+                                    size={{
+                                        xs: layout === '2x3' ? 6 : 4, // 6 for 2 items per row, 4 for 3 items per row
+                                        sm: layout === '2x3' ? 6 : 4,
+                                        md: layout === '2x3' ? 6 : 4
+                                    }}
                                     sx={{
                                         display: 'flex',
-                                        justifyContent: 'center'
+                                        justifyContent: 'center',
+                                        maxWidth: gridSettings.maxWidth
                                     }}
                                 >
                                     <SortableGroupItem
@@ -688,18 +695,22 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                                         }}
                                         itemSize={gridSettings.itemSize}
                                     />
-                                </Box>
+                                </Grid>
                             ))}
                         </SortableContext>
 
                         {/* Add Button */}
                         {visibleItems.length < MAX_ITEMS && isEditing && (
-                            <Box
-                                width={gridSettings.width}
+                            <Grid
+                                size={{
+                                    xs: layout === '2x3' ? 6 : 4, // Match the item sizing
+                                    sm: layout === '2x3' ? 6 : 4,
+                                    md: layout === '2x3' ? 6 : 4
+                                }}
                                 sx={{
                                     display: 'flex',
                                     justifyContent: 'center',
-                                    m: 0.5
+                                    maxWidth: gridSettings.maxWidth
                                 }}
                             >
                                 <Grid
@@ -722,7 +733,7 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                                 >
                                     <AddIcon fontSize='medium' />
                                 </Grid>
-                            </Box>
+                            </Grid>
                         )}
                     </Grid>
                 </Box>
