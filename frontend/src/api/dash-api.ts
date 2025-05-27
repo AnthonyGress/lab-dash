@@ -420,6 +420,34 @@ export class DashApi {
         }
     }
 
+    public static async uploadAppIconsBatch(files: File[]): Promise<Icon[]> {
+        try {
+            const formData = new FormData();
+            files.forEach(file => {
+                formData.append('files', file);
+            });
+
+            const res = await axios({
+                method: 'POST',
+                url: `${BACKEND_URL}/api/app-shortcut/upload-batch`,
+                data: formData,
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                },
+                withCredentials: true
+            });
+
+            return res.data.icons.map((icon: any) => ({
+                name: icon.name,
+                path: icon.filePath,
+                source: 'custom'
+            }));
+        } catch (error) {
+            console.error('Failed to upload app icons:', error);
+            return [];
+        }
+    }
+
     // Uploads management methods
     public static async getUploadedImages(): Promise<any[]> {
         try {

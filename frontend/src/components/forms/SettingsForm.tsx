@@ -7,6 +7,7 @@ import { FaClockRotateLeft, FaImage, FaTrashCan } from 'react-icons/fa6';
 import { useNavigate } from 'react-router-dom';
 
 import { FileInput } from './FileInput';
+import { MultiFileInput } from './MultiFileInput';
 import { DashApi } from '../../api/dash-api';
 import { BACKEND_URL } from '../../constants/constants';
 import { useAppContext } from '../../context/useAppContext';
@@ -30,6 +31,7 @@ type FormValues = {
     searchProviderId: string;
     searchProvider?: SearchProvider;
     configFile?: File | null;
+    appIconFiles?: File[] | null;
 }
 
 interface TabPanelProps {
@@ -47,11 +49,11 @@ function TabPanel(props: TabPanelProps) {
             hidden={value !== index}
             id={`vertical-tabpanel-${index}`}
             aria-labelledby={`vertical-tab-${index}`}
-            style={{ width: '100%', height: '100%', overflow: 'auto' }}
+            style={{ width: '100%' }}
             {...other}
         >
             {value === index && (
-                <Box sx={{ p: 3, height: '100%' }}>
+                <Box sx={{ p: 3 }}>
                     {children}
                 </Box>
             )}
@@ -93,7 +95,7 @@ const ImagePreviewCard = ({ image, onDelete, formatFileSize }: {
             {/* Image Preview */}
             <Box sx={{
                 width: '100%',
-                height: '120px',
+                height: '100px',
                 position: 'relative',
                 overflow: 'hidden',
                 display: 'flex',
@@ -264,7 +266,8 @@ export const SettingsForm = () => {
                         ? SEARCH_PROVIDERS.find(p => p.id === initialProviderId)?.url || ''
                         : ''
             },
-            configFile: null
+            configFile: null,
+            appIconFiles: null
         }
     });
 
@@ -275,6 +278,7 @@ export const SettingsForm = () => {
     const searchProviderName = formContext.watch('searchProvider.name', '');
     const searchProviderUrl = formContext.watch('searchProvider.url', '');
     const configFile = formContext.watch('configFile', null);
+    const appIconFiles = formContext.watch('appIconFiles', null);
 
     // Initialize custom provider flag properly on component mount
     useEffect(() => {
@@ -316,6 +320,9 @@ export const SettingsForm = () => {
             // Background image change
             if (backgroundFile) return true;
 
+            // App icon files change
+            if (appIconFiles && appIconFiles.length > 0) return true;
+
             // Search enabled change
             if (searchEnabled !== (config?.search || false)) return true;
 
@@ -354,6 +361,7 @@ export const SettingsForm = () => {
     }, [
         title,
         backgroundFile,
+        appIconFiles,
         searchEnabled,
         searchProviderId,
         searchProviderName,
@@ -447,6 +455,25 @@ export const SettingsForm = () => {
                 }
             }
 
+            // Handle app icon uploads
+            if (data.appIconFiles && data.appIconFiles.length > 0) {
+                try {
+                    const uploadedIcons = await DashApi.uploadAppIconsBatch(data.appIconFiles);
+                    if (uploadedIcons.length > 0) {
+                        PopupManager.success(`${uploadedIcons.length} app icon(s) uploaded successfully!`);
+                        // Reset the app icon files field
+                        formContext.resetField('appIconFiles');
+                        // Refresh uploaded images list
+                        await loadUploadedImages();
+                    } else {
+                        PopupManager.failure('Failed to upload app icons. Please try again.');
+                    }
+                } catch (error) {
+                    PopupManager.failure('Failed to upload app icons. Please try again.');
+                    console.error('Error uploading app icons:', error);
+                }
+            }
+
             if (Object.keys(updatedConfig).length > 0) {
                 const hasBackgroundImage = data.backgroundFile instanceof File;
 
@@ -457,8 +484,10 @@ export const SettingsForm = () => {
                     await loadUploadedImages();
                 }
 
-                // Show success message
-                PopupManager.success('Settings updated successfully!');
+                // Show success message (only if no app icons were uploaded, to avoid duplicate messages)
+                if (!data.appIconFiles || data.appIconFiles.length === 0) {
+                    PopupManager.success('Settings updated successfully!');
+                }
                 // Refresh the form with new config values (optional)
                 const refreshedConfig = await DashApi.getConfig();
 
@@ -485,7 +514,8 @@ export const SettingsForm = () => {
                     searchProvider: {
                         name: refreshedConfig?.searchProvider?.name || '',
                         url: refreshedConfig?.searchProvider?.url || ''
-                    }
+                    },
+                    appIconFiles: null
                 });
             }
         } catch (error) {
@@ -589,7 +619,7 @@ export const SettingsForm = () => {
                         <Button
                             variant='contained'
                             type='submit'
-                            disabled={!hasChanges && !configFile}
+                            disabled={!hasChanges && !configFile && (!appIconFiles || appIconFiles.length === 0)}
                             sx={{
                                 '&.Mui-disabled': {
                                     color: 'rgba(255, 255, 255, 0.5)'
@@ -603,9 +633,8 @@ export const SettingsForm = () => {
                 <Box sx={{
                     display: 'flex',
                     flexDirection: { xs: 'column', md: 'row' },
-                    height: { xs: 'auto', md: '550px', lg: '700px' },
-                    width: '100%',
-                    overflow: 'hidden' // Ensure the container doesn't grow
+                    minHeight: { xs: 'auto', md: '550px', lg: '700px' },
+                    width: '100%'
                 }}>
                     <Tabs
                         orientation={isMobile ? 'horizontal' : 'vertical'}
@@ -623,7 +652,6 @@ export const SettingsForm = () => {
                                 md: 'none'
                             },
                             minWidth: { xs: '100%', md: '160px' },
-                            height: { xs: 'auto', md: '100%' },
                             mb: { xs: 2, md: 0 },
                             '& .MuiTab-root': {
                                 alignItems: 'center',
@@ -648,9 +676,7 @@ export const SettingsForm = () => {
                         <Box sx={{
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: 3,
-                            height: '100%',
-                            overflow: 'auto' // Add scroll to inner content
+                            gap: 3
                         }}>
                             <Typography variant='h6'>General Settings</Typography>
 
@@ -814,9 +840,7 @@ export const SettingsForm = () => {
                         <Box sx={{
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: 3,
-                            height: '100%',
-                            overflow: 'auto'
+                            gap: 3
                         }}>
                             <Typography variant='h6'>Appearance Settings</Typography>
 
@@ -853,6 +877,34 @@ export const SettingsForm = () => {
                                     )}
                                 </Box>
 
+                                <Typography variant='body1' sx={{
+                                    alignSelf: 'center',
+                                    fontSize: { xs: '0.875rem', sm: '1rem' }
+                                }}>Upload App Icons</Typography>
+                                <Box sx={{ position: 'relative' }}>
+                                    <MultiFileInput
+                                        name='appIconFiles'
+                                        maxFiles={20}
+                                        sx={{ width: '95%' }}
+                                    />
+                                    {appIconFiles && appIconFiles.length > 0 && (
+                                        <Tooltip title='Clear'>
+                                            <CloseIcon
+                                                onClick={() => formContext.resetField('appIconFiles')}
+                                                sx={{
+                                                    position: 'absolute',
+                                                    right: '10px',
+                                                    top: '50%',
+                                                    transform: 'translateY(-50%)',
+                                                    cursor: 'pointer',
+                                                    fontSize: 22,
+                                                    color: 'rgba(255, 255, 255, 0.7)',
+                                                }}
+                                            />
+                                        </Tooltip>
+                                    )}
+                                </Box>
+
                             </Box>
                             <Box sx={{
                                 gridColumn: { xs: '1', sm: '1 / -1' },
@@ -865,7 +917,7 @@ export const SettingsForm = () => {
                             </Box>
 
                             {/* Image Management Section */}
-                            <Box sx={{ mt: 4 }}>
+                            <Box>
                                 <Typography variant='h6' sx={{ mb: 2 }}>Uploaded Images</Typography>
 
                                 {loadingImages ? (
@@ -879,8 +931,6 @@ export const SettingsForm = () => {
                                         display: 'grid',
                                         gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
                                         gap: 2,
-                                        maxHeight: '400px',
-                                        overflow: 'auto',
                                         border: '1px solid rgba(255, 255, 255, 0.12)',
                                         borderRadius: 1,
                                         p: 2
@@ -903,9 +953,7 @@ export const SettingsForm = () => {
                         <Box sx={{
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: 3,
-                            height: '100%',
-                            overflow: 'auto'
+                            gap: 3
                         }}>
                             <Typography variant='h6'>Backup Settings</Typography>
 

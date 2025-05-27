@@ -4,6 +4,7 @@ import multer from 'multer';
 import path from 'path';
 
 import { UPLOAD_DIRECTORY } from '../constants/constants';
+import { authenticateToken } from '../middleware/auth.middleware';
 
 export const appShortcutRoute = Router();
 
@@ -42,7 +43,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// Upload app icon
+// Upload app icon (single file)
 appShortcutRoute.post('/upload', upload.single('file'), (req: Request, res: Response) => {
     if (!req.file) {
         res.status(400).json({ message: 'No file uploaded' });
@@ -64,6 +65,38 @@ appShortcutRoute.post('/upload', upload.single('file'), (req: Request, res: Resp
         filePath: `/uploads/app-icons/${req.file.filename}`,
         name: sanitizedName, // Use sanitized name
         source: 'custom'
+    });
+});
+
+// Upload multiple app icons (batch upload)
+appShortcutRoute.post('/upload-batch', authenticateToken, upload.array('files', 20), (req: Request, res: Response) => {
+    const files = req.files as Express.Multer.File[];
+
+    if (!files || files.length === 0) {
+        res.status(400).json({ message: 'No files uploaded' });
+        return;
+    }
+
+    const uploadedIcons = files.map(file => {
+        const sanitizedName = sanitizeFileName(file.originalname);
+
+        console.log('File uploaded successfully:', {
+            originalName: file.originalname,
+            sanitizedName,
+            filename: file.filename,
+            path: file.path
+        });
+
+        return {
+            name: sanitizedName,
+            filePath: `/uploads/app-icons/${file.filename}`,
+            source: 'custom'
+        };
+    });
+
+    res.status(200).json({
+        message: `${uploadedIcons.length} app icon(s) uploaded successfully`,
+        icons: uploadedIcons
     });
 });
 
