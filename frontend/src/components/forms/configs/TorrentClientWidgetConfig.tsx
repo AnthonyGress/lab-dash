@@ -24,8 +24,11 @@ const MASKED_VALUE = '**********'; // 10 asterisks for masked values
 
 export const TorrentClientWidgetConfig = ({ formContext, existingItem }: TorrentClientWidgetConfigProps) => {
     const isMobile = useIsMobile();
+
+    // Watch the torrent client type directly from the form
+    const watchedTorrentClientType = formContext.watch('torrentClientType');
     const [torrentClientType, setTorrentClientType] = useState<string>(
-        formContext.getValues('torrentClientType') || TORRENT_CLIENT_TYPE.QBITTORRENT
+        watchedTorrentClientType || formContext.getValues('torrentClientType') || TORRENT_CLIENT_TYPE.QBITTORRENT
     );
 
     // Track if we're editing an existing item with sensitive data
@@ -36,8 +39,6 @@ export const TorrentClientWidgetConfig = ({ formContext, existingItem }: Torrent
 
     // Initialize masked values for existing items
     useEffect(() => {
-        console.log('TorrentClientWidgetConfig: Initializing with existingItem:', existingItem);
-
         // Reset state when existingItem changes
         setHasExistingPassword(false);
         setUserClearedPassword(false);
@@ -78,7 +79,6 @@ export const TorrentClientWidgetConfig = ({ formContext, existingItem }: Torrent
     }, [hasExistingPassword]);
 
     useEffect(() => {
-        const watchedTorrentClientType = formContext.watch('torrentClientType');
         if (watchedTorrentClientType) {
             setTorrentClientType(watchedTorrentClientType);
 
@@ -87,8 +87,15 @@ export const TorrentClientWidgetConfig = ({ formContext, existingItem }: Torrent
                 : watchedTorrentClientType === TORRENT_CLIENT_TYPE.TRANSMISSION ? '9091'
                     : '8080';
             formContext.setValue('tcPort', defaultPort);
+
+            // Clear validation errors for username and password when switching to Transmission
+            if (watchedTorrentClientType === TORRENT_CLIENT_TYPE.TRANSMISSION) {
+                formContext.clearErrors('tcUsername');
+                formContext.clearErrors('tcPassword');
+                formContext.trigger(['tcUsername', 'tcPassword']);
+            }
         }
-    }, [formContext.watch('torrentClientType'), formContext]);
+    }, [watchedTorrentClientType, formContext]);
 
     // Watch for password field changes to track user intent
     useEffect(() => {
@@ -214,7 +221,10 @@ export const TorrentClientWidgetConfig = ({ formContext, existingItem }: Torrent
                         variant='outlined'
                         fullWidth
                         autoComplete='off'
-                        required={torrentClientType !== TORRENT_CLIENT_TYPE.TRANSMISSION}
+                        required={watchedTorrentClientType !== TORRENT_CLIENT_TYPE.TRANSMISSION}
+                        rules={{
+                            required: watchedTorrentClientType !== TORRENT_CLIENT_TYPE.TRANSMISSION ? 'Username is required' : false
+                        }}
                         sx={{
                             width: '100%',
                             '& .MuiOutlinedInput-root': {
@@ -239,7 +249,10 @@ export const TorrentClientWidgetConfig = ({ formContext, existingItem }: Torrent
                     variant='outlined'
                     fullWidth
                     autoComplete='off'
-                    required={torrentClientType !== TORRENT_CLIENT_TYPE.TRANSMISSION && !hasExistingPassword && !userClearedPassword}
+                    required={watchedTorrentClientType !== TORRENT_CLIENT_TYPE.TRANSMISSION && !hasExistingPassword && !userClearedPassword}
+                    rules={{
+                        required: (watchedTorrentClientType !== TORRENT_CLIENT_TYPE.TRANSMISSION && !hasExistingPassword && !userClearedPassword) ? 'Password is required' : false
+                    }}
                     sx={{
                         width: '100%',
                         '& .MuiOutlinedInput-root': {

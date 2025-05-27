@@ -17,7 +17,7 @@ type Props = {
 
 export const AppContextProvider = ({ children }: Props) => {
     const [config, setConfig] = useState<Config>();
-    const [dashboardLayout, setDashboardLayout] = useState<DashboardItem[]>(initialItems);
+    const [dashboardLayout, setDashboardLayout] = useState<DashboardItem[]>([]);
     const [editMode, setEditMode] = useState(false);
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const navigate = useNavigate();
@@ -179,8 +179,8 @@ export const AppContextProvider = ({ children }: Props) => {
 
                 loadLayoutForCurrentPage();
             } else {
-                // If no config is loaded yet, show initial items as fallback
-                setDashboardLayout(initialItems);
+                // If no config is loaded yet, show empty layout while loading
+                setDashboardLayout([]);
             }
         } else if (config !== undefined && isLoggedIn) {
             // When user logs in, load the dashboard for the current page

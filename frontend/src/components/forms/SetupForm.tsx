@@ -5,6 +5,7 @@ import { FaLock, FaUser } from 'react-icons/fa6';
 
 import { DashApi } from '../../api/dash-api';
 import { PopupManager } from '../../components/modals/PopupManager';
+import { initialItems } from '../../constants/constants';
 import { useAppContext } from '../../context/useAppContext';
 import { styles } from '../../theme/styles';
 import { theme } from '../../theme/theme';
@@ -25,8 +26,14 @@ export const SetupForm: React.FC<SetupFormProps> = ({ onSuccess }) => {
     const { updateConfig } = useAppContext();
 
     const handleSetupComplete = async () => {
-        // Mark setup as complete in the configuration
-        await updateConfig({ isSetupComplete: true });
+        // Mark setup as complete and save initial items to the layout
+        await updateConfig({
+            isSetupComplete: true,
+            layout: {
+                desktop: initialItems,
+                mobile: initialItems
+            }
+        });
         onSuccess();
     };
 

@@ -604,14 +604,18 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                     }
                 }
 
-                const baseConfig = {
+                const baseConfig: any = {
                     clientType: data.torrentClientType,
                     host: data.tcHost,
                     port: data.tcPort,
                     ssl: data.tcSsl,
-                    username: data.tcUsername,
                     showLabel: data.showLabel
                 };
+
+                // Only include username if it's provided or if it's required for the client type
+                if (data.tcUsername || data.torrentClientType !== TORRENT_CLIENT_TYPE.TRANSMISSION) {
+                    baseConfig.username = data.tcUsername || '';
+                }
 
                 // Include password if it was actually changed (not masked)
                 if (encryptedPassword) {
@@ -970,9 +974,13 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                 host: data.tcHost,
                 port: data.tcPort,
                 ssl: data.tcSsl,
-                username: data.tcUsername,
                 showLabel: data.showLabel
             };
+
+            // Only include username if it's provided or if it's required for the client type
+            if (data.tcUsername || data.torrentClientType !== TORRENT_CLIENT_TYPE.TRANSMISSION) {
+                config.username = data.tcUsername || '';
+            }
 
             // Include password if it was actually changed (not masked)
             if (encryptedPassword) {

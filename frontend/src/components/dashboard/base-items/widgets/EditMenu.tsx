@@ -1,6 +1,8 @@
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { IconButton, Menu, MenuItem } from '@mui/material';
 import React, { useState } from 'react';
+import { FaHome } from 'react-icons/fa';
+import { FaArrowRight, FaCopy, FaFile, FaHouse, FaPenToSquare, FaTrash, FaTrashCan } from 'react-icons/fa6';
 
 import { useAppContext } from '../../../../context/useAppContext';
 
@@ -83,8 +85,12 @@ export const EditMenu: React.FC<EditMenuProps> = ({ editMode, itemId, onEdit, on
                     onClick={() => { handleMenuClose(); onEdit?.(); }}
                     sx={{
                         py: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1
                     }}
                 >
+                    <FaPenToSquare size={14} />
                     Edit
                 </MenuItem>
                 {onDuplicate && (
@@ -92,8 +98,12 @@ export const EditMenu: React.FC<EditMenuProps> = ({ editMode, itemId, onEdit, on
                         onClick={() => { handleMenuClose(); onDuplicate(); }}
                         sx={{
                             py: 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1
                         }}
                     >
+                        <FaCopy size={14} />
                         Duplicate
                     </MenuItem>
                 )}
@@ -102,8 +112,12 @@ export const EditMenu: React.FC<EditMenuProps> = ({ editMode, itemId, onEdit, on
                         onClick={handleMoveMenuOpen}
                         sx={{
                             py: 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1
                         }}
                     >
+                        <FaArrowRight size={14} />
                         Move to page
                     </MenuItem>
                 )}
@@ -111,8 +125,12 @@ export const EditMenu: React.FC<EditMenuProps> = ({ editMode, itemId, onEdit, on
                     onClick={() => { handleMenuClose(); onDelete?.(); }}
                     sx={{
                         py: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1
                     }}
                 >
+                    <FaTrashCan size={14} />
                     Delete
                 </MenuItem>
             </Menu>
@@ -143,8 +161,14 @@ export const EditMenu: React.FC<EditMenuProps> = ({ editMode, itemId, onEdit, on
                 {currentPageId !== null && (
                     <MenuItem
                         onClick={() => handleMoveToPage(null)}
-                        sx={{ py: 1 }}
+                        sx={{
+                            py: 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1
+                        }}
                     >
+                        <FaHouse size={14} />
                         Home
                     </MenuItem>
                 )}
@@ -156,8 +180,14 @@ export const EditMenu: React.FC<EditMenuProps> = ({ editMode, itemId, onEdit, on
                         <MenuItem
                             key={page.id}
                             onClick={() => handleMoveToPage(page.id)}
-                            sx={{ py: 1 }}
+                            sx={{
+                                py: 1,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1
+                            }}
                         >
+                            <FaFile size={14} />
                             {page.name}
                         </MenuItem>
                     ))
