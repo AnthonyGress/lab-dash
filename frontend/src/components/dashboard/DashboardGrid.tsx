@@ -47,6 +47,8 @@ const customCollisionDetection = (args: any) => {
         args.active.data.current?.type === ITEM_TYPE.APP_SHORTCUT ||
         args.active.data.current?.type === ITEM_TYPE.BLANK_APP;
 
+    const isGroupWidgetType = args.active.data.current?.type === 'group-widget';
+
     // If the active item is an app shortcut, use expanded collision detection for ALL containers
     if (isAppShortcutType) {
 
@@ -152,6 +154,26 @@ const customCollisionDetection = (args: any) => {
             allIntersections.sort((a: any, b: any) => b.value - a.value);
             return [{ id: allIntersections[0].id }];
         }
+    }
+
+    // For group widgets being dragged, use closestCenter for better reordering
+    // but exclude group-internal droppable containers to prevent interference
+    if (isGroupWidgetType) {
+        // Filter out group-internal containers that shouldn't be targets for group reordering
+        const filteredContainers = args.droppableContainers.filter((container: any) => {
+            const containerId = container.id.toString();
+            // Exclude group-internal droppable containers
+            return !containerId.includes('group-droppable') &&
+                   !containerId.includes('group-widget-droppable') &&
+                   container.data.current?.type !== 'group-container' &&
+                   container.data.current?.type !== 'group-widget-container';
+        });
+
+        // Use closestCenter with filtered containers for group widget reordering
+        return closestCenter({
+            ...args,
+            droppableContainers: filteredContainers
+        });
     }
 
     // Fall back to standard detection for other cases
