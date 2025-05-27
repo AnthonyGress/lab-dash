@@ -16,7 +16,7 @@ type FormValues = {
 
 export const LoginForm = () => {
     const navigate = useNavigate();
-    const { setIsLoggedIn, setUsername, setIsAdmin } = useAppContext();
+    const { setIsLoggedIn, setUsername, setIsAdmin, refreshDashboard } = useAppContext();
 
     const formContext = useForm<FormValues>({
         defaultValues: {
@@ -39,6 +39,9 @@ export const LoginForm = () => {
 
             // Set logged in status last to trigger any dependent effects
             setIsLoggedIn(true);
+
+            // Refresh dashboard to load admin-only items if user is admin
+            await refreshDashboard();
 
             // Show success toast and navigate to home page
             ToastManager.success('Login successful!');

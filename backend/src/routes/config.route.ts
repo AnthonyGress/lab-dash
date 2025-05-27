@@ -2,6 +2,7 @@ import { Request, Response, Router } from 'express';
 import fsSync from 'fs';
 import fs from 'fs/promises';
 import StatusCodes from 'http-status-codes';
+import jwt from 'jsonwebtoken';
 import path from 'path';
 
 import {  authenticateToken, requireAdmin } from '../middleware/auth.middleware';
@@ -9,6 +10,73 @@ import { Config } from '../types';
 export const configRoute = Router();
 
 const CONFIG_FILE = path.join(__dirname, '../config/config.json');
+const JWT_SECRET = process.env.SECRET || '@jZCgtn^qg8So*^^6A2M';
+
+// Helper function to check if user is authenticated and is admin
+const isUserAdmin = (req: Request): boolean => {
+    try {
+        // Check for token in cookies first
+        const tokenFromCookie = req.cookies?.access_token;
+        // Then check Authorization header
+        const authHeader = req.headers.authorization;
+        const tokenFromHeader = authHeader && authHeader.split(' ')[1];
+
+        const token = tokenFromCookie || tokenFromHeader;
+
+        if (!token) {
+            return false;
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET) as any;
+        return decoded && decoded.role === 'admin';
+    } catch (error) {
+        return false;
+    }
+};
+
+// Helper function to filter admin-only items from config
+const filterAdminOnlyItems = (config: any): any => {
+    const filteredConfig = JSON.parse(JSON.stringify(config)); // Deep clone
+
+    const filterItems = (items: any[]) => {
+        return items.filter(item => {
+            // Remove admin-only items
+            if (item.adminOnly === true) {
+                return false;
+            }
+
+            // Handle group widget items recursively
+            if (item.type === 'group-widget' && item.config?.items) {
+                item.config.items = filterItems(item.config.items);
+            }
+
+            return true;
+        });
+    };
+
+    // Filter desktop and mobile layouts
+    if (filteredConfig.layout) {
+        if (filteredConfig.layout.desktop) {
+            filteredConfig.layout.desktop = filterItems(filteredConfig.layout.desktop);
+        }
+        if (filteredConfig.layout.mobile) {
+            filteredConfig.layout.mobile = filterItems(filteredConfig.layout.mobile);
+        }
+    }
+
+    // Filter pages
+    if (filteredConfig.pages) {
+        filteredConfig.pages = filteredConfig.pages.map((page: any) => ({
+            ...page,
+            layout: {
+                desktop: page.layout.desktop ? filterItems(page.layout.desktop) : [],
+                mobile: page.layout.mobile ? filterItems(page.layout.mobile) : []
+            }
+        }));
+    }
+
+    return filteredConfig;
+};
 
 // Helper function to ensure security flags are present for backwards compatibility
 const ensureSecurityFlags = (config: any): any => {
@@ -345,10 +413,16 @@ const mergeSensitiveData = (newConfig: any, existingConfig: any): any => {
 };
 
 // GET - Retrieve the saved layout JSON from disk (public access)
-configRoute.get('/', async (_req: Request, res: Response): Promise<void> => {
+configRoute.get('/', async (req: Request, res: Response): Promise<void> => {
     try {
         const config = loadConfig();
-        const filteredConfig = filterSensitiveData(config);
+        let filteredConfig = filterSensitiveData(config);
+
+        // If user is not an admin, filter out admin-only items
+        if (!isUserAdmin(req)) {
+            filteredConfig = filterAdminOnlyItems(filteredConfig);
+        }
+
         console.log('loading layout');
         res.status(StatusCodes.OK).json(filteredConfig);
     } catch (error) {

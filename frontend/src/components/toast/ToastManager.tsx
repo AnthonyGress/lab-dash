@@ -84,7 +84,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
                     TransitionComponent={SlideTransition}
                     anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
                     sx={{
-                        top: `${80 + (index * 60)}px !important`, // Stack toasts vertically with moderate spacing
+                        top: `${68 + (index * 60)}px !important`, // Stack toasts vertically with moderate spacing
                         zIndex: theme.zIndex.snackbar + 1000, // Ensure it's above everything
                         width: isMobile ? '90vw' : '600px',
                         maxWidth: isMobile ? '90vw' : '600px',

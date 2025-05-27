@@ -336,6 +336,16 @@ export const AppContextProvider = ({ children }: Props) => {
                 setUsername(storedUsername);
                 setIsAdmin(refreshResult.isAdmin || false);
                 setIsLoggedIn(true);
+
+                // Refresh dashboard to load admin-only items if user is admin
+                // Use a small delay to ensure state updates have completed
+                setTimeout(async () => {
+                    try {
+                        await getLayout();
+                    } catch (error) {
+                        console.error('Failed to refresh dashboard after token refresh:', error);
+                    }
+                }, 100);
             } else {
                 // If refresh failed, user is not logged in
                 setIsLoggedIn(false);
