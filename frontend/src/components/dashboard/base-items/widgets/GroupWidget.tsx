@@ -641,32 +641,29 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                     )}
 
                     {/* Group Items Container */}
-                    <Grid
-                        container
-                        spacing={{ lg: 3 }}
+                    <Box
                         sx={{
                             flex: 1,
-                            justifyContent: 'center',
+                            display: 'grid',
+                            gridTemplateColumns: layout === '2x3' ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', // Explicit grid columns
+                            gap: 1, // 8px gap between items
+                            justifyItems: 'center',
                             alignItems: 'center',
                             overflowY: 'hidden',
                             overflowX: 'hidden',
-                            p:{ lg: 2 },
-                            m: 0 // Reset margin since spacing handles gaps
+                            p: { lg: 2 },
+                            m: 0
                         }}
                     >
                         <SortableContext items={visibleItems.map(item => item.id)}>
                             {visibleItems.map((item) => (
-                                <Grid
+                                <Box
                                     key={item.id}
-                                    size={{
-                                        xs: layout === '2x3' ? 6 : 4, // 6 for 2 items per row, 4 for 3 items per row
-                                        sm: layout === '2x3' ? 6 : 4,
-                                        md: layout === '2x3' ? 6 : 4
-                                    }}
                                     sx={{
                                         display: 'flex',
                                         justifyContent: 'center',
-                                        maxWidth: gridSettings.maxWidth
+                                        maxWidth: gridSettings.maxWidth,
+                                        width: '100%'
                                     }}
                                 >
                                     <SortableGroupItem
@@ -695,25 +692,21 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                                         }}
                                         itemSize={gridSettings.itemSize}
                                     />
-                                </Grid>
+                                </Box>
                             ))}
                         </SortableContext>
 
                         {/* Add Button */}
                         {visibleItems.length < MAX_ITEMS && isEditing && (
-                            <Grid
-                                size={{
-                                    xs: layout === '2x3' ? 6 : 4, // Match the item sizing
-                                    sm: layout === '2x3' ? 6 : 4,
-                                    md: layout === '2x3' ? 6 : 4
-                                }}
+                            <Box
                                 sx={{
                                     display: 'flex',
                                     justifyContent: 'center',
-                                    maxWidth: gridSettings.maxWidth
+                                    maxWidth: gridSettings.maxWidth,
+                                    width: '100%'
                                 }}
                             >
-                                <Grid
+                                <Box
                                     sx={{
                                         height: getItemHeight(),
                                         width: '100%',
@@ -732,10 +725,10 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                                     title='Edit group to add items'
                                 >
                                     <AddIcon fontSize='medium' />
-                                </Grid>
-                            </Grid>
+                                </Box>
+                            </Box>
                         )}
-                    </Grid>
+                    </Box>
                 </Box>
             </DndContext>
         </WidgetContainer>
