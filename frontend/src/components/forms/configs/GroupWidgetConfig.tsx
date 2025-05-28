@@ -22,7 +22,7 @@ export const GroupWidgetConfig = ({ formContext }: GroupWidgetConfigProps) => {
             <Grid>
                 <TextFieldElement
                     name='shortcutName'
-                    label='Group Title'
+                    label='Group Name'
                     required
                     fullWidth
                     rules={{

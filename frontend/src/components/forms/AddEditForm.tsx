@@ -406,19 +406,6 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
         }
     }, [existingItem, formContext]);
 
-    // Helper function to check if a type is a widget type
-    function isWidgetType(type?: string): boolean {
-        if (!type) return false;
-        return [
-            ITEM_TYPE.WEATHER_WIDGET,
-            ITEM_TYPE.DATE_TIME_WIDGET,
-            ITEM_TYPE.SYSTEM_MONITOR_WIDGET,
-            ITEM_TYPE.TORRENT_CLIENT,
-            ITEM_TYPE.PIHOLE_WIDGET,
-            ITEM_TYPE.DUAL_WIDGET
-        ].includes(type as ITEM_TYPE);
-    }
-
     const selectedItemType = formContext.watch('itemType');
     const selectedWidgetType = formContext.watch('widgetType');
 
@@ -441,6 +428,13 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             }
         }
     }, [selectedItemType, selectedWidgetType, formContext, existingItem]);
+
+    // Automatically set shortcutName to "Group" for new group widgets
+    useEffect(() => {
+        if (!existingItem && selectedItemType === 'widget' && selectedWidgetType === ITEM_TYPE.GROUP_WIDGET) {
+            formContext.setValue('shortcutName', 'Group');
+        }
+    }, [selectedItemType, selectedWidgetType, existingItem, formContext]);
 
     // Removed location search and update useEffects, now handled in WeatherWidgetConfig
 
@@ -633,7 +627,6 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                 console.log('Setting maxItems in GROUP_WIDGET_SMALL:', maxItems);
 
                 config = {
-                    title: data.shortcutName,
                     items: existingItem?.config?.items || [],  // Preserve existing items when updating
                     showLabel: data.showLabel,
                     maxItems: maxItems  // Store the original string value to preserve layout information
