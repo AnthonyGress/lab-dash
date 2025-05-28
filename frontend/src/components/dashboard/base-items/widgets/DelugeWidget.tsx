@@ -79,7 +79,6 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig; id?: string }
                 throw new Error('Widget ID is required but not provided');
             }
             const success = await DashApi.delugeLogin(id);
-            console.log('Deluge login result:', success);
             setIsAuthenticated(success);
 
             if (!success) {
@@ -105,7 +104,6 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig; id?: string }
                     }, 2000);
                 }
             } else {
-                console.log('Login successful');
                 // Reset counter on success
                 loginAttemptsRef.current = 0;
                 setLoginAttemptFailed(false);

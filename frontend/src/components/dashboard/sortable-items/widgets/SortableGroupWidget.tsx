@@ -25,8 +25,6 @@ import GroupWidget from '../../base-items/widgets/GroupWidget';
  * - This prevents duplicate key issues when items are moved between contexts
  */
 
-// Use shortid for generating unique IDs
-
 export interface GroupWidgetConfig {
   items?: GroupItem[];
   temperatureUnit?: string;

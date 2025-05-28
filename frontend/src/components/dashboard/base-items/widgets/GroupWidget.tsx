@@ -1,22 +1,15 @@
-import { DndContext, DragEndEvent, DragOverEvent, DragStartEvent, PointerSensor, useDraggable, useDroppable, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, DragOverEvent, DragStartEvent, PointerSensor, useDroppable, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import AddIcon from '@mui/icons-material/Add';
-import { Box, Grid2 as Grid, IconButton, Typography } from '@mui/material';
+import { Box, Grid2 as Grid, Typography } from '@mui/material';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import shortid from 'shortid';
 
-import { EditMenu } from './EditMenu';
-import { StatusIndicator } from './StatusIndicator';
 import { WidgetContainer } from './WidgetContainer';
 import { DUAL_WIDGET_CONTAINER_HEIGHT, STANDARD_WIDGET_HEIGHT } from '../../../../constants/widget-dimensions';
-import { DashboardItem, Icon, ITEM_TYPE } from '../../../../types';
 import { GroupItem } from '../../../../types/group';
-import { getIconPath } from '../../../../utils/utils';
-import { ConfirmationOptions, PopupManager } from '../../../modals/PopupManager';
 import { AppShortcut } from '../apps/AppShortcut';
-
-// Use shortid for generating unique IDs
 
 interface GroupWidgetProps {
     id: string;

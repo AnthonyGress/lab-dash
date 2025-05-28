@@ -762,14 +762,11 @@ export const AppContextProvider = ({ children }: Props) => {
     // Function to move an item from one page to another
     const moveItemToPage = async (itemId: string, targetPageId: string | null) => {
         try {
-            console.log(`Moving item ${itemId} from page ${currentPageId} to page ${targetPageId}`);
-
             // Set move in progress flag to prevent race conditions with URL changes
             setIsMoveInProgress(true);
 
             // Get fresh config from server
             const serverConfig = await DashApi.getConfig();
-            console.log('Server config:', serverConfig);
 
             // Helper function to search for item in a layout array (including within group widgets)
             const searchInLayout = (items: any[]): { item: DashboardItem | null, parentGroupId?: string } => {
@@ -838,7 +835,6 @@ export const AppContextProvider = ({ children }: Props) => {
                     itemToMove = mobileResult.item;
                     parentGroupId = mobileResult.parentGroupId;
                 }
-                console.log('Found item in main dashboard:', itemToMove, 'Parent group:', parentGroupId);
             } else {
                 // Check if item is in current page
                 const currentPage = serverConfig.pages?.find(page => page.id === currentPageId);
@@ -853,7 +849,6 @@ export const AppContextProvider = ({ children }: Props) => {
                         itemToMove = mobileResult.item;
                         parentGroupId = mobileResult.parentGroupId;
                     }
-                    console.log('Found item in current page:', itemToMove, 'Parent group:', parentGroupId);
                 }
             }
 
@@ -901,8 +896,6 @@ export const AppContextProvider = ({ children }: Props) => {
                     }
                 }
             }
-
-            console.log('Item copy created:', itemCopy);
 
             // Prepare the update payload
             let updatePayload: any = {};
@@ -1020,16 +1013,12 @@ export const AppContextProvider = ({ children }: Props) => {
                 }
             }
 
-            console.log('Update payload:', updatePayload);
-
             // Save the updated config
             await DashApi.saveConfig(updatePayload);
-            console.log('Config saved successfully');
 
             // Update local state immediately - remove from current view
             setDashboardLayout(prevLayout => {
                 const filtered = prevLayout.filter(item => item.id !== itemId);
-                console.log('Updated local dashboard layout:', filtered);
                 return filtered;
             });
 
