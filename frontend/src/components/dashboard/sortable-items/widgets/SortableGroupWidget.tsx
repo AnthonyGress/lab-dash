@@ -420,6 +420,9 @@ export const SortableGroupWidget: React.FC<Props> = ({
         if (maxItemsStr === '6_2x3' || maxItemsStr === '6_3x2' || maxItemsStr === '6') {
             return 6;
         }
+        if (maxItemsStr === '8_4x2') {
+            return 8;
+        }
         return parseInt(maxItemsStr, 10) || 3;
     }, [getMaxItems]);
 
@@ -842,6 +845,7 @@ export const SortableGroupWidget: React.FC<Props> = ({
         const maxItemsStr = String(config.maxItems);
         if (maxItemsStr === '6_2x3') return '2x3';
         if (maxItemsStr === '6_3x2' || maxItemsStr === '6') return '3x2';
+        if (maxItemsStr === '8_4x2') return '4x2';
         return '3x1';
     }, [config]);
 
@@ -849,8 +853,8 @@ export const SortableGroupWidget: React.FC<Props> = ({
 
     // Define fixed height values directly based on layout
     const getWidgetHeight = useCallback(() => {
-        if (layout === '2x3' || layout === '3x2') {
-            // 6-item layouts use dual widget height
+        if (layout === '2x3' || layout === '3x2' || layout === '4x2') {
+            // 6-item and 8-item layouts use dual widget height
             return {
                 xs: DUAL_WIDGET_CONTAINER_HEIGHT.xs,
                 sm: DUAL_WIDGET_CONTAINER_HEIGHT.sm,

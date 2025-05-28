@@ -12,7 +12,8 @@ interface GroupWidgetConfigProps {
 const MAX_ITEMS_OPTIONS = [
     { id: '3', label: '3 Items (3x1)' },
     { id: '6_2x3', label: '6 Items (2x3)' },
-    { id: '6_3x2', label: '6 Items (3x2)' }
+    { id: '6_3x2', label: '6 Items (3x2)' },
+    { id: '8_4x2', label: '8 Items (4x2)' }
 ];
 
 export const GroupWidgetConfig = ({ formContext }: GroupWidgetConfigProps) => {

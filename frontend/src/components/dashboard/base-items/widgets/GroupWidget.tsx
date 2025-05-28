@@ -220,6 +220,11 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                 maxItems: 6,
                 layout: '3x2'
             };
+        } else if (maxItemsStr === '8_4x2') {
+            return {
+                maxItems: 8,
+                layout: '4x2'
+            };
         } else {
             // Default 3x1 layout (3 items in one row)
             return {
@@ -250,6 +255,17 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                 maxWidth: '150px', // Max width for larger screens
                 rows: 2,
                 cols: 3,
+                height: DUAL_WIDGET_CONTAINER_HEIGHT,
+                itemSize: 'small' as const,
+                titleHeight: '2rem'
+            };
+        } else if (layout === '4x2') {
+            // 4x2 grid layout (8 items in 2 rows of 4 items each)
+            return {
+                width: '22%', // Even narrower items, 4 per row
+                maxWidth: '120px', // Max width for larger screens
+                rows: 2,
+                cols: 4,
                 height: DUAL_WIDGET_CONTAINER_HEIGHT,
                 itemSize: 'small' as const,
                 titleHeight: '2rem'
@@ -586,7 +602,7 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
             onDelete={onRemove}
             onDuplicate={onDuplicate}
             isHighlighted={isHighlighted}
-            customHeight={layout === '2x3' || layout === '3x2' ? DUAL_WIDGET_CONTAINER_HEIGHT : STANDARD_WIDGET_HEIGHT}
+            customHeight={layout === '2x3' || layout === '3x2' || layout === '4x2' ? DUAL_WIDGET_CONTAINER_HEIGHT : STANDARD_WIDGET_HEIGHT}
         >
             <DndContext
                 onDragStart={handleDragStart}
@@ -610,8 +626,8 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                         backgroundColor: isCurrentDropTarget ? 'rgba(76, 175, 80, 0.1)' : 'transparent',
                         borderRadius: '8px',
                         overflow: 'hidden',
-                        height: layout === '2x3' || layout === '3x2' ? DUAL_WIDGET_CONTAINER_HEIGHT.sm : STANDARD_WIDGET_HEIGHT.sm,
-                        maxHeight: layout === '2x3' || layout === '3x2' ? DUAL_WIDGET_CONTAINER_HEIGHT.sm : STANDARD_WIDGET_HEIGHT.sm
+                        height: layout === '2x3' || layout === '3x2' || layout === '4x2' ? DUAL_WIDGET_CONTAINER_HEIGHT.sm : STANDARD_WIDGET_HEIGHT.sm,
+                        maxHeight: layout === '2x3' || layout === '3x2' || layout === '4x2' ? DUAL_WIDGET_CONTAINER_HEIGHT.sm : STANDARD_WIDGET_HEIGHT.sm
                     }}
                     data-type='group-container'
                     data-id={id}
@@ -645,7 +661,7 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                         sx={{
                             flex: 1,
                             display: 'grid',
-                            gridTemplateColumns: layout === '2x3' ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', // Explicit grid columns
+                            gridTemplateColumns: layout === '2x3' ? 'repeat(2, 1fr)' : layout === '4x2' ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)', // Explicit grid columns
                             gap: 1, // 8px gap between items
                             justifyItems: 'center',
                             alignItems: 'center',
