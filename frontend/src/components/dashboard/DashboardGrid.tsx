@@ -598,6 +598,7 @@ export const DashboardGrid: React.FC = () => {
                 key={item.id}
                 id={item.id}
                 editMode={editMode}
+                label={item.label}
                 config={item.config}
                 onDelete={() => handleDelete(item.id)}
                 onEdit={() => handleEdit(item)}
@@ -765,6 +766,7 @@ export const DashboardGrid: React.FC = () => {
                                         return <SortableGroupWidget
                                             key={item.id}
                                             id={item.id}
+                                            label={item.label}
                                             editMode={editMode}
                                             config={item.config}
                                             isOverlay

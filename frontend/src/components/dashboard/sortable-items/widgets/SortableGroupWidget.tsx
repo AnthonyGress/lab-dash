@@ -27,8 +27,7 @@ import GroupWidget from '../../base-items/widgets/GroupWidget';
 
 // Use shortid for generating unique IDs
 
-export interface GroupWidgetSmallConfig {
-  title?: string;
+export interface GroupWidgetConfig {
   items?: GroupItem[];
   temperatureUnit?: string;
   healthUrl?: string;
@@ -40,7 +39,8 @@ export interface GroupWidgetSmallConfig {
 
 interface Props {
   id: string;
-  config?: GroupWidgetSmallConfig;
+  label: string;
+  config?: GroupWidgetConfig;
   editMode: boolean;
   onDelete?: () => void;
   onEdit?: () => void;
@@ -50,6 +50,7 @@ interface Props {
 
 export const SortableGroupWidget: React.FC<Props> = ({
     id,
+    label,
     config,
     editMode,
     onDelete,
@@ -887,7 +888,7 @@ export const SortableGroupWidget: React.FC<Props> = ({
             >
                 <GroupWidget
                     id={id}
-                    name={config?.title || 'Group'}
+                    name={label}
                     items={config?.items || []}
                     onItemsChange={handleItemsChange}
                     onRemove={onDelete}
@@ -949,7 +950,7 @@ export const SortableGroupWidget: React.FC<Props> = ({
                 <div style={{ width: '100%', height: '100%' }}>
                     <GroupWidget
                         id={id}
-                        name={config?.title || 'Group'}
+                        name={label}
                         items={config?.items || []}
                         onItemsChange={handleItemsChange}
                         onRemove={onDelete}
