@@ -668,7 +668,7 @@ export const AppContextProvider = ({ children }: Props) => {
     };
 
     // Page management functions
-    const addPage = async (name: string): Promise<string | null> => {
+    const addPage = async (name: string, adminOnly?: boolean): Promise<string | null> => {
         try {
             // Use existing config state instead of fetching again
             if (!config) {
@@ -690,6 +690,7 @@ export const AppContextProvider = ({ children }: Props) => {
             const newPage: Page = {
                 id: `page-${shortid.generate()}`,
                 name,
+                adminOnly,
                 layout: {
                     desktop: [],
                     mobile: []

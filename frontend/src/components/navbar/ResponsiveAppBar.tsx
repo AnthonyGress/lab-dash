@@ -11,13 +11,14 @@ import Typography from '@mui/material/Typography';
 import { nanoid } from 'nanoid';
 import React, { useEffect, useState } from 'react';
 import { FaEdit, FaInfoCircle, FaSync } from 'react-icons/fa';
-import { FaArrowRightFromBracket, FaGear, FaHouse, FaUser } from 'react-icons/fa6';
+import { FaArrowRightFromBracket, FaGear, FaHouse, FaTrashCan, FaUser } from 'react-icons/fa6';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 
 import { DashApi } from '../../api/dash-api';
 import { useAppContext } from '../../context/useAppContext';
 import { COLORS, styles } from '../../theme/styles';
 import { theme } from '../../theme/theme';
+import { ITEM_TYPE } from '../../types';
 import { getAppVersion } from '../../utils/version';
 import { AddEditForm } from '../forms/AddEditForm';
 import { Logo } from '../Logo';
@@ -42,6 +43,8 @@ type Props = {
 export const ResponsiveAppBar = ({ children }: Props) => {
     const [openDrawer, setOpenDrawer] = useState(false);
     const [openAddModal, setOpenAddModal] = useState(false);
+    const [openEditPageModal, setOpenEditPageModal] = useState(false);
+    const [selectedPageForEdit, setSelectedPageForEdit] = useState<any>(null);
     const [openUpdateModal, setOpenUpdateModal] = useState(false);
     const [openVersionModal, setOpenVersionModal] = useState(false);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -52,6 +55,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
         editMode,
         setEditMode,
         config,
+        updateConfig,
         isLoggedIn,
         username,
         setIsLoggedIn,
@@ -73,6 +77,15 @@ export const ResponsiveAppBar = ({ children }: Props) => {
     const currentPath = location.pathname;
 
     const handleClose = () => setOpenAddModal(false);
+    const handleCloseEditPage = () => {
+        setOpenEditPageModal(false);
+        setSelectedPageForEdit(null);
+    };
+    const handleOpenEditPage = (page: any) => {
+        setSelectedPageForEdit(page);
+        setOpenEditPageModal(true);
+        handleCloseDrawer();
+    };
     const handleCloseUpdateModal = () => setOpenUpdateModal(false);
     const handleCloseVersionModal = async () => {
         setOpenVersionModal(false);
@@ -155,6 +168,35 @@ export const ResponsiveAppBar = ({ children }: Props) => {
     const handleOpenVersionModal = () => {
         setOpenVersionModal(true);
         handleCloseDrawer();
+    };
+
+    const handlePageUpdate = async (updatedItem: any) => {
+        if (!selectedPageForEdit || !config) return;
+
+        try {
+            // Get the new page name and adminOnly from the form data
+            const newPageName = updatedItem.label;
+            const newAdminOnly = updatedItem.adminOnly;
+
+            // Update the page in the config
+            const updatedPages = pages.map(page =>
+                page.id === selectedPageForEdit.id
+                    ? { ...page, name: newPageName, adminOnly: newAdminOnly }
+                    : page
+            );
+
+            // Update the config with the new pages array
+            await updateConfig({ pages: updatedPages });
+
+            // Refresh the dashboard to reflect changes
+            await refreshDashboard();
+
+            handleCloseEditPage();
+            ToastManager.success('Page updated successfully');
+        } catch (error) {
+            console.error('Error updating page:', error);
+            ToastManager.error('Failed to update page');
+        }
     };
 
     // Helper function to convert page name to URL slug
@@ -362,16 +404,28 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                         >
                                                             <ListItemText primary={page.name} />
                                                             {isLoggedIn && isAdmin && editMode && (
-                                                                <IconButton
-                                                                    size='small'
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        deletePage(page.id);
-                                                                    }}
-                                                                    sx={{ ml: 1 }}
-                                                                >
-                                                                    <CloseIcon style={{ fontSize: 22, color: 'white' }} />
-                                                                </IconButton>
+                                                                <>
+                                                                    <IconButton
+                                                                        size='small'
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleOpenEditPage(page);
+                                                                        }}
+                                                                        sx={{ ml: 1 }}
+                                                                    >
+                                                                        <FaEdit style={{ fontSize: 18, color: 'white' }} />
+                                                                    </IconButton>
+                                                                    <IconButton
+                                                                        size='small'
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            deletePage(page.id);
+                                                                        }}
+                                                                        sx={{ ml: 1 }}
+                                                                    >
+                                                                        <FaTrashCan style={{ fontSize: 18, color: 'white' }} />
+                                                                    </IconButton>
+                                                                </>
                                                             )}
                                                         </ListItemButton>
                                                     </ListItem>
@@ -517,6 +571,21 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                 </Container>
                 <CenteredModal open={openAddModal} handleClose={handleClose} title='Add Item'>
                     <AddEditForm handleClose={handleClose}/>
+                </CenteredModal>
+                <CenteredModal open={openEditPageModal} handleClose={handleCloseEditPage} title='Edit Page'>
+                    <AddEditForm
+                        handleClose={handleCloseEditPage}
+                        existingItem={selectedPageForEdit ? {
+                            id: selectedPageForEdit.id,
+                            type: ITEM_TYPE.PAGE,
+                            label: selectedPageForEdit.name,
+                            url: '',
+                            icon: undefined,
+                            config: {},
+                            adminOnly: selectedPageForEdit.adminOnly || false
+                        } : null}
+                        onSubmit={handlePageUpdate}
+                    />
                 </CenteredModal>
                 {/* Update Modal - Replaced with component */}
                 <UpdateModal

@@ -55,6 +55,7 @@ export type SearchProvider = {
 export type Page = {
     id: string;
     name: string;
+    adminOnly?: boolean;
     layout: {
         desktop: DashboardItem[];
         mobile: DashboardItem[];

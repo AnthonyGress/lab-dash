@@ -17,7 +17,7 @@ export interface IAppContext {
     currentPageId: string | null;
     setCurrentPageId: Dispatch<SetStateAction<string | null>>;
     pages: Page[];
-    addPage: (name: string) => Promise<string | null>;
+    addPage: (name: string, adminOnly?: boolean) => Promise<string | null>;
     deletePage: (pageId: string) => Promise<void>;
     switchToPage: (pageId: string) => Promise<void>;
     pageNameToSlug: (pageName: string) => string;

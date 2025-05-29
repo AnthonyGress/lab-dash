@@ -67,13 +67,15 @@ const filterAdminOnlyItems = (config: any): any => {
 
     // Filter pages
     if (filteredConfig.pages) {
-        filteredConfig.pages = filteredConfig.pages.map((page: any) => ({
-            ...page,
-            layout: {
-                desktop: page.layout.desktop ? filterItems(page.layout.desktop) : [],
-                mobile: page.layout.mobile ? filterItems(page.layout.mobile) : []
-            }
-        }));
+        filteredConfig.pages = filteredConfig.pages
+            .filter((page: any) => !page.adminOnly) // Filter out admin-only pages
+            .map((page: any) => ({
+                ...page,
+                layout: {
+                    desktop: page.layout.desktop ? filterItems(page.layout.desktop) : [],
+                    mobile: page.layout.mobile ? filterItems(page.layout.mobile) : []
+                }
+            }));
     }
 
     return filteredConfig;

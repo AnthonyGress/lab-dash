@@ -18,6 +18,7 @@ export enum ITEM_TYPE {
 export type Page = {
     id: string;
     name: string;
+    adminOnly?: boolean;
     layout: {
         desktop: DashboardItem[];
         mobile: DashboardItem[];

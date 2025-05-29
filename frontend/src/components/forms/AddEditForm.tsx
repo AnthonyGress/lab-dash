@@ -226,6 +226,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
         // Reset the form with the existing item data
         formContext.reset({
             shortcutName: existingItem?.label || '',
+            pageName: existingItem?.type === ITEM_TYPE.PAGE ? existingItem?.label || '' : '',
             itemType: initialItemType,
             url: existingItem?.url || '',
             showLabel: initialShowLabel,
@@ -445,26 +446,38 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
     const handleSubmit = async (data: FormValues) => {
         console.log('Form submitted with data:', data);
 
-        // Handle page creation
+        // Handle page creation/editing
         if (data.itemType === ITEM_TYPE.PAGE) {
             if (data.pageName) {
                 try {
-                    const newPageId = await addPage(data.pageName);
-                    handleFormClose();
+                    if (existingItem && onSubmit) {
+                        // This is editing an existing page
+                        const updatedPageItem = {
+                            ...existingItem,
+                            label: data.pageName,
+                            adminOnly: data.adminOnly
+                        };
+                        onSubmit(updatedPageItem as DashboardItem);
+                        handleFormClose();
+                    } else {
+                        // This is creating a new page
+                        const newPageId = await addPage(data.pageName, data.adminOnly);
+                        handleFormClose();
 
-                    if (newPageId) {
-                        // Wait a brief moment for state to update, then navigate to the newly created page
-                        setTimeout(() => {
-                            const pageSlug = pageNameToSlug(data.pageName!);
-                            navigate(`/${pageSlug}`);
-                        }, 100);
+                        if (newPageId) {
+                            // Wait a brief moment for state to update, then navigate to the newly created page
+                            setTimeout(() => {
+                                const pageSlug = pageNameToSlug(data.pageName!);
+                                navigate(`/${pageSlug}`);
+                            }, 100);
+                        }
                     }
                 } catch (error) {
-                    console.error('Error creating page:', error);
+                    console.error('Error with page operation:', error);
                     // Set form error for the pageName field
                     formContext.setError('pageName', {
                         type: 'manual',
-                        message: error instanceof Error ? error.message : 'Failed to create page'
+                        message: error instanceof Error ? error.message : 'Failed to save page'
                     });
                 }
             }
@@ -1003,6 +1016,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
         // Reset form values to empty/default values
         formContext.reset({
             shortcutName: '',
+            pageName: '',
             itemType: '',
             url: '',
             showLabel: false,
@@ -1211,13 +1225,34 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                                 // Check for duplicate page names (case-insensitive)
                                                 const existingPages = pages || [];
                                                 const isDuplicate = existingPages.some((page: Page) =>
-                                                    page.name.toLowerCase() === value.toLowerCase()
+                                                    page.name.toLowerCase() === value.toLowerCase() &&
+                                                    page.id !== existingItem?.id
                                                 );
                                                 if (isDuplicate) {
                                                     return `A page named "${value}" already exists. Please choose a different name.`;
                                                 }
 
                                                 return true;
+                                            }
+                                        }}
+                                    />
+                                </Grid>
+                            )}
+
+                            {selectedItemType === ITEM_TYPE.PAGE && (
+                                <Grid>
+                                    <CheckboxElement
+                                        label='Admin Only'
+                                        name='adminOnly'
+                                        checked={formContext.watch('adminOnly')}
+                                        sx={{
+                                            ml: 1,
+                                            color: 'white',
+                                            '& .MuiSvgIcon-root': { fontSize: 30 },
+                                            '& .MuiFormHelperText-root': {
+                                                marginLeft: 1,
+                                                fontSize: '0.75rem',
+                                                color: 'rgba(255, 255, 255, 0.7)'
                                             }
                                         }}
                                     />
