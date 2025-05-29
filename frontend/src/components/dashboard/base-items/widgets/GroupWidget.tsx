@@ -3,7 +3,7 @@ import { arrayMove, SortableContext, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import AddIcon from '@mui/icons-material/Add';
 import { Box, Grid2 as Grid, Typography } from '@mui/material';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import shortid from 'shortid';
 
 import { WidgetContainer } from './WidgetContainer';
@@ -179,6 +179,9 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
     const [activeId, setActiveId] = useState<string | null>(null);
     const [isDraggingOut, setIsDraggingOut] = useState(false);
     const [isCurrentDropTarget, setIsCurrentDropTarget] = useState(false);
+
+    // Add a ref to prevent duplicate execution
+    const duplicationInProgress = useRef<Set<string>>(new Set());
 
     // Detect mobile devices
     const isMobile = useMemo(() => {
@@ -418,43 +421,6 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
         setIsCurrentDropTarget(false);
     };
 
-    // Handle item duplicate
-    const handleItemDuplicate = useCallback((itemId: string) => {
-        // Find the item in the group
-        const itemToDuplicate = items.find(item => item.id === itemId);
-        if (!itemToDuplicate) {
-            console.error('Could not find item to duplicate');
-            return;
-        }
-
-        // Create duplicated item with new ID
-        const duplicatedItem: GroupItem = {
-            ...JSON.parse(JSON.stringify(itemToDuplicate)), // Deep clone
-            id: shortid.generate() // New unique ID
-        };
-
-        // Check if we've reached maximum capacity
-        if (items.length >= MAX_ITEMS) {
-            // Instead of showing error, pass the duplicated item to parent for adding to dashboard
-            if (onItemDuplicate) {
-                onItemDuplicate(duplicatedItem);
-            }
-            return;
-        }
-
-        // Find the index of the original item
-        const originalIndex = items.findIndex(item => item.id === itemId);
-
-        // Insert the duplicate after the original
-        const updatedItems = [...items];
-        updatedItems.splice(originalIndex + 1, 0, duplicatedItem);
-
-        // Update the group's items
-        if (onItemsChange) {
-            onItemsChange(updatedItems);
-        }
-    }, [items, MAX_ITEMS, onItemsChange, onItemDuplicate]);
-
     // Handle item edit - Convert group item to dashboard item for edit form
     const handleItemEdit = useCallback((itemId: string) => {
         // Find the item in the group
@@ -593,7 +559,7 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
             id={id}
             onEdit={onEdit}
             onDelete={onRemove}
-            onDuplicate={onDuplicate}
+            onDuplicate={undefined}
             isHighlighted={isHighlighted}
             customHeight={layout === '2x3' || layout === '3x2' || layout === '4x2' ? DUAL_WIDGET_CONTAINER_HEIGHT : STANDARD_WIDGET_HEIGHT}
         >
@@ -682,10 +648,26 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                                         onEdit={handleItemEdit}
                                         onDelete={handleItemDelete}
                                         onDuplicate={() => {
-                                            // Create a duplicate with a new ID
+                                            // Prevent double execution
+                                            const duplicateKey = `${id}-${item.id}`;
+                                            if (duplicationInProgress.current.has(duplicateKey)) {
+                                                console.log('Duplication already in progress, ignoring');
+                                                return;
+                                            }
+
+                                            duplicationInProgress.current.add(duplicateKey);
+
+                                            // Clear the flag after a short delay to allow the operation to complete
+                                            setTimeout(() => {
+                                                duplicationInProgress.current.delete(duplicateKey);
+                                            }, 1000);
+
+                                            // Create a duplicate with a new ID using timestamp for uniqueness
+                                            const groupItemId = `group-${shortid.generate()}-${Date.now()}`;
+
                                             const duplicatedItem: GroupItem = {
                                                 ...JSON.parse(JSON.stringify(item)), // Deep clone
-                                                id: shortid.generate() // New unique ID
+                                                id: groupItemId // Extra-unique ID for group items
                                             };
 
                                             // Check if group is at capacity
@@ -695,8 +677,15 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                                                     onItemDuplicate(duplicatedItem);
                                                 }
                                             } else {
-                                                // Add within the group
-                                                handleItemDuplicate(item.id);
+                                                // Add within the group directly - bypass any external handlers
+                                                const originalIndex = items.findIndex(groupItem => groupItem.id === item.id);
+                                                const updatedItems = [...items];
+                                                updatedItems.splice(originalIndex + 1, 0, duplicatedItem);
+
+                                                // Use React's functional state update to ensure we have the latest state
+                                                if (onItemsChange) {
+                                                    onItemsChange(updatedItems);
+                                                }
                                             }
                                         }}
                                         itemSize={gridSettings.itemSize}

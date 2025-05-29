@@ -56,7 +56,7 @@ export const SortableGroupWidget: React.FC<Props> = ({
     onDuplicate,
     isOverlay = false
 }) => {
-    const { updateItem, dashboardLayout, setDashboardLayout, saveLayout, refreshDashboard } = useAppContext();
+    const { dashboardLayout, setDashboardLayout, saveLayout, refreshDashboard } = useAppContext();
     const groupWidgetRef = useRef<HTMLDivElement | null>(null);
     const [isOver, setIsOver] = useState<boolean>(false);
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -74,16 +74,30 @@ export const SortableGroupWidget: React.FC<Props> = ({
     }, [config]);
 
     // Handle item changes (reordering within the group)
-    const handleItemsChange = useCallback((newItems: GroupItem[]) => {
-        if (config && updateItem) {
-            updateItem(id, {
-                config: {
-                    ...config,
-                    items: newItems
-                }
-            });
-        }
-    }, [id, config, updateItem]);
+    const handleItemsChange = useCallback(async (newItems: GroupItem[]) => {
+        if (!config) return;
+
+        // Update the group widget config directly using saveLayout instead of updateItem
+        // to avoid triggering any unexpected state changes
+        const updatedLayout = dashboardLayout.map(layoutItem => {
+            if (layoutItem.id === id) {
+                return {
+                    ...layoutItem,
+                    config: {
+                        ...layoutItem.config,
+                        items: newItems
+                    }
+                };
+            }
+            return layoutItem;
+        });
+
+        // Save directly to avoid any intermediate state changes
+        await saveLayout(updatedLayout);
+
+        // Update local state to reflect the change
+        setDashboardLayout(updatedLayout);
+    }, [id, config, dashboardLayout, saveLayout, setDashboardLayout]);
 
     // Get a group item as a dashboard item for editing
     const getItemAsDashboardItem = useCallback((itemId: string): DashboardItem | null => {
@@ -136,7 +150,7 @@ export const SortableGroupWidget: React.FC<Props> = ({
 
     // Function to update a group item after it has been edited
     const updateGroupItem = useCallback(async (itemId: string, updatedItem: DashboardItem) => {
-        if (!config?.items || !dashboardLayout) return;
+        if (!config?.items) return;
 
         // Create an updated GroupItem from the updated DashboardItem
         const updatedGroupItem: GroupItem = {
@@ -166,38 +180,27 @@ export const SortableGroupWidget: React.FC<Props> = ({
             item.id === itemId ? updatedGroupItem : item
         );
 
-        // Find the group widget in the dashboard layout
-        const groupIndex = dashboardLayout.findIndex(item => item.id === id);
-        if (groupIndex === -1) {
-            console.error('Could not find group widget in dashboard layout');
-            return;
-        }
+        // Update the group widget config directly using saveLayout instead of updateItem
+        // to avoid triggering any unexpected state changes
+        const updatedLayout = dashboardLayout.map(layoutItem => {
+            if (layoutItem.id === id) {
+                return {
+                    ...layoutItem,
+                    config: {
+                        ...layoutItem.config,
+                        items: updatedItems
+                    }
+                };
+            }
+            return layoutItem;
+        });
 
-        // Create updated dashboard layout
-        const updatedLayout = [...dashboardLayout];
-        const updatedGroupWidget = { ...updatedLayout[groupIndex] };
+        // Save directly to avoid any intermediate state changes
+        await saveLayout(updatedLayout);
 
-        if (!updatedGroupWidget.config) {
-            updatedGroupWidget.config = {};
-        }
-
-        updatedGroupWidget.config = {
-            ...updatedGroupWidget.config,
-            items: updatedItems
-        };
-
-        updatedLayout[groupIndex] = updatedGroupWidget;
-
-        // Update the dashboard layout immediately for UI responsiveness
+        // Update local state to reflect the change
         setDashboardLayout(updatedLayout);
-
-        // Save the updated layout to the server
-        try {
-            await saveLayout(updatedLayout);
-        } catch (error) {
-            console.error('Error saving group item update:', error);
-        }
-    }, [config, id, dashboardLayout, setDashboardLayout, saveLayout]);
+    }, [config, id, dashboardLayout, saveLayout, setDashboardLayout]);
 
     // Function to notify about dragging a group item
     const notifyGroupItemDrag = useCallback((isDragging: boolean, itemId?: string) => {
@@ -304,8 +307,7 @@ export const SortableGroupWidget: React.FC<Props> = ({
             // Save the updated layout to server (this includes both the updated group and new item)
             await saveLayout(updatedLayout);
 
-            // Refresh the dashboard to ensure config state is updated
-            await refreshDashboard();
+            // No need to refresh dashboard - saveLayout should be sufficient
         } catch (error) {
             console.error('Error saving layout after drag out:', error);
         }
@@ -314,7 +316,7 @@ export const SortableGroupWidget: React.FC<Props> = ({
         setItemBeingDraggedOut(null);
 
         // We'll let the DashboardGrid's drag end handler clear the backdrop
-    }, [dashboardLayout, config, id, setDashboardLayout, saveLayout, refreshDashboard, notifyGroupItemDrag]);
+    }, [dashboardLayout, config, id, setDashboardLayout, saveLayout, notifyGroupItemDrag]);
 
     // Add an app shortcut to the group
     const addAppShortcutToGroup = useCallback((shortcutItem: DashboardItem) => {
@@ -377,6 +379,12 @@ export const SortableGroupWidget: React.FC<Props> = ({
 
         // Remove the app shortcut from the dashboard layout
         const updatedLayout = dashboardLayout.filter(item => item.id !== shortcutItem.id);
+
+        // Check if the item was actually removed to avoid processing duplicate events
+        if (updatedLayout.length === dashboardLayout.length) {
+            console.log('Item not found in dashboard layout, may have already been processed');
+            return;
+        }
 
         // Find the group widget in the updated layout
         const groupIndex = updatedLayout.findIndex(item => item.id === id);
@@ -579,7 +587,8 @@ export const SortableGroupWidget: React.FC<Props> = ({
                 active?.data?.current?.type === ITEM_TYPE.BLANK_APP;
 
             // Only process actual drops directly on this group, not just near it
-            if (isOverThisGroup && isAppShortcutType) {
+            // But ONLY if this wasn't already handled by the app-to-group event
+            if (isOverThisGroup && isAppShortcutType && !action) {
                 // Find the app shortcut in the dashboard layout
                 const shortcutIndex = dashboardLayout.findIndex(item => item.id === active.id);
                 if (shortcutIndex !== -1) {
@@ -708,129 +717,105 @@ export const SortableGroupWidget: React.FC<Props> = ({
             return;
         }
 
+        console.log(`[SortableGroupWidget] Deleting group item with ID: ${itemId}`);
+        console.log('[SortableGroupWidget] Current dashboard layout IDs:', dashboardLayout.map(item => item.id));
+
         const options: ConfirmationOptions = {
             title: `Delete ${foundItem.name}?`,
-            confirmAction: () => {
-                // Remove the item from the group's items
+            confirmAction: async () => {
+                // Remove the item from the group's items only
                 const updatedItems = config.items?.filter(item => item.id !== itemId) || [];
 
-                // Update the group widget config
-                if (updateItem) {
-                    updateItem(id, {
-                        config: {
-                            ...config,
-                            items: updatedItems
-                        }
-                    });
-                }
+                console.log('[SortableGroupWidget] Group items after deletion:', updatedItems.map(item => item.id));
+
+                // Update the group widget config directly using saveLayout instead of updateItem
+                // to avoid triggering any unexpected state changes
+                const updatedLayout = dashboardLayout.map(layoutItem => {
+                    if (layoutItem.id === id) {
+                        return {
+                            ...layoutItem,
+                            config: {
+                                ...layoutItem.config,
+                                items: updatedItems
+                            }
+                        };
+                    }
+                    return layoutItem;
+                });
+
+                // Save directly to avoid any intermediate state changes
+                await saveLayout(updatedLayout);
+
+                // Update local state to reflect the change
+                setDashboardLayout(updatedLayout);
+
+                console.log('[SortableGroupWidget] Dashboard layout should remain unchanged');
             }
         };
 
         PopupManager.deleteConfirmation(options);
-    }, [config, id, updateItem]);
+    }, [config, id, dashboardLayout, saveLayout, setDashboardLayout]);
 
-    // Handle item duplication - can accept either item ID or GroupItem object
-    const handleItemDuplicate = useCallback((itemOrId: string | GroupItem) => {
-        // Determine whether we received an ID or a GroupItem
-        const isItemObject = typeof itemOrId !== 'string';
-        const itemId = isItemObject ? (itemOrId as GroupItem).id : itemOrId;
-
+    // Handle item duplication - only handles adding to dashboard when group is full
+    const handleItemDuplicate = useCallback((groupItem: GroupItem) => {
         if (!config?.items) return;
 
-        // Get max items value
-        const maxItems = getMaxItemsAsNumber();
+        // Generate a highly unique ID to prevent any collisions
+        const dashboardItemId = `dash-${shortid.generate()}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-        // If we received a GroupItem directly, we're adding to dashboard
-        if (isItemObject) {
-            const groupItem = itemOrId as GroupItem;
-
-            // Convert the group item to a dashboard item
-            const newDashboardItem: DashboardItem = {
-                id: shortid.generate(), // Generate a new unique ID
-                type: ITEM_TYPE.APP_SHORTCUT,
-                label: groupItem.name,
-                url: groupItem.url,
-                showLabel: true,
-                icon: {
-                    path: groupItem.icon || '',
-                    name: groupItem.name
-                },
-                config: {}
-            };
-
-            // Add WoL properties if they exist
-            if (groupItem.isWol) {
-                newDashboardItem.config = {
-                    ...newDashboardItem.config,
-                    isWol: groupItem.isWol,
-                    macAddress: groupItem.macAddress,
-                    broadcastAddress: groupItem.broadcastAddress,
-                    port: groupItem.port
-                };
-            }
-
-            // Add health check properties if they exist
-            if (groupItem.healthUrl) {
-                newDashboardItem.config = {
-                    ...newDashboardItem.config,
-                    healthUrl: groupItem.healthUrl,
-                    healthCheckType: groupItem.healthCheckType
-                };
-            }
-
-            // Find the group widget in the dashboard layout
-            const groupIndex = dashboardLayout.findIndex(layoutItem => layoutItem.id === id);
-            if (groupIndex === -1) {
-                console.error('Could not find group widget in dashboard layout');
-                return;
-            }
-
-            // Create updated dashboard layout
-            const updatedLayout = [...dashboardLayout];
-
-            // Add the new item after the group
-            updatedLayout.splice(groupIndex + 1, 0, newDashboardItem);
-
-            // Update the dashboard layout
-            setDashboardLayout(updatedLayout);
-
-            // Save to server
-            saveLayout(updatedLayout);
-
-            return;
-        }
-
-        // Otherwise, we're duplicating within the group
-        // Find the item in the group by ID
-        const itemToDuplicate = config.items.find(i => i.id === itemId);
-        if (!itemToDuplicate) {
-            console.error('Could not find item to duplicate');
-            return;
-        }
-
-        // Create duplicated item with new ID
-        const duplicatedItem: GroupItem = {
-            ...JSON.parse(JSON.stringify(itemToDuplicate)), // Deep clone
-            id: shortid.generate() // New unique ID
+        // Convert the group item to a dashboard item
+        const newDashboardItem: DashboardItem = {
+            id: dashboardItemId,
+            type: ITEM_TYPE.APP_SHORTCUT,
+            label: groupItem.name,
+            url: groupItem.url,
+            showLabel: true,
+            icon: {
+                path: groupItem.icon || '',
+                name: groupItem.name
+            },
+            config: {}
         };
 
-        // Find the index of the original item
-        const originalIndex = config.items.findIndex(i => i.id === itemId);
-
-        // Insert the duplicate after the original
-        const updatedItems = [...config.items];
-        updatedItems.splice(originalIndex + 1, 0, duplicatedItem);
-
-        // Update the group widget with the new items
-        if (updateItem) {
-            updateItem(id, {
-                config: {
-                    ...config,
-                    items: updatedItems
-                }
-            });
+        // Add WoL properties if they exist
+        if (groupItem.isWol) {
+            newDashboardItem.config = {
+                ...newDashboardItem.config,
+                isWol: groupItem.isWol,
+                macAddress: groupItem.macAddress,
+                broadcastAddress: groupItem.broadcastAddress,
+                port: groupItem.port
+            };
         }
-    }, [config, id, updateItem, getMaxItemsAsNumber, dashboardLayout, setDashboardLayout, saveLayout]);
+
+        // Add health check properties if they exist
+        if (groupItem.healthUrl) {
+            newDashboardItem.config = {
+                ...newDashboardItem.config,
+                healthUrl: groupItem.healthUrl,
+                healthCheckType: groupItem.healthCheckType
+            };
+        }
+
+        // Find the group widget in the dashboard layout
+        const groupIndex = dashboardLayout.findIndex(layoutItem => layoutItem.id === id);
+        if (groupIndex === -1) {
+            console.error('Could not find group widget in dashboard layout');
+            return;
+        }
+
+        // Add the new item after the group using functional update
+        setDashboardLayout(prevLayout => {
+            const newLayout = [...prevLayout];
+            newLayout.splice(groupIndex + 1, 0, newDashboardItem);
+            return newLayout;
+        });
+
+        // Save to server
+        const updatedLayout = [...dashboardLayout];
+        updatedLayout.splice(groupIndex + 1, 0, newDashboardItem);
+        saveLayout(updatedLayout);
+    }, [config, id, dashboardLayout, setDashboardLayout, saveLayout]);
 
     // Get selected dashboard item for editing
     const selectedDashboardItem = selectedItemId
