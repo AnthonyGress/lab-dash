@@ -11,21 +11,22 @@ import Typography from '@mui/material/Typography';
 import { nanoid } from 'nanoid';
 import React, { useEffect, useState } from 'react';
 import { FaEdit, FaInfoCircle, FaSync } from 'react-icons/fa';
-import { FaArrowRightFromBracket, FaGear, FaHouse, FaUser } from 'react-icons/fa6';
+import { FaArrowRightFromBracket, FaGear, FaHouse, FaTrashCan, FaUser } from 'react-icons/fa6';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 
 import { DashApi } from '../../api/dash-api';
 import { useAppContext } from '../../context/useAppContext';
 import { COLORS, styles } from '../../theme/styles';
 import { theme } from '../../theme/theme';
+import { ITEM_TYPE } from '../../types';
 import { getAppVersion } from '../../utils/version';
 import { AddEditForm } from '../forms/AddEditForm';
 import { Logo } from '../Logo';
 import { CenteredModal } from '../modals/CenteredModal';
-import { PopupManager } from '../modals/PopupManager';
 import { UpdateModal } from '../modals/UpdateModal';
 import { VersionModal } from '../modals/VersionModal';
 import { GlobalSearch } from '../search/GlobalSearch';
+import { ToastManager } from '../toast/ToastManager';
 
 const DrawerHeader = styled('div')(() => ({
     display: 'flex',
@@ -42,6 +43,8 @@ type Props = {
 export const ResponsiveAppBar = ({ children }: Props) => {
     const [openDrawer, setOpenDrawer] = useState(false);
     const [openAddModal, setOpenAddModal] = useState(false);
+    const [openEditPageModal, setOpenEditPageModal] = useState(false);
+    const [selectedPageForEdit, setSelectedPageForEdit] = useState<any>(null);
     const [openUpdateModal, setOpenUpdateModal] = useState(false);
     const [openVersionModal, setOpenVersionModal] = useState(false);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -52,6 +55,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
         editMode,
         setEditMode,
         config,
+        updateConfig,
         isLoggedIn,
         username,
         setIsLoggedIn,
@@ -61,7 +65,11 @@ export const ResponsiveAppBar = ({ children }: Props) => {
         updateAvailable,
         latestVersion,
         recentlyUpdated,
-        handleVersionViewed
+        handleVersionViewed,
+        pages,
+        currentPageId,
+        switchToPage,
+        deletePage
     } = useAppContext();
 
     const location = useLocation();
@@ -69,6 +77,15 @@ export const ResponsiveAppBar = ({ children }: Props) => {
     const currentPath = location.pathname;
 
     const handleClose = () => setOpenAddModal(false);
+    const handleCloseEditPage = () => {
+        setOpenEditPageModal(false);
+        setSelectedPageForEdit(null);
+    };
+    const handleOpenEditPage = (page: any) => {
+        setSelectedPageForEdit(page);
+        setOpenEditPageModal(true);
+        handleCloseDrawer();
+    };
     const handleCloseUpdateModal = () => setOpenUpdateModal(false);
     const handleCloseVersionModal = async () => {
         setOpenVersionModal(false);
@@ -104,7 +121,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
 
     const handleLogin = () => {
         handleMenuClose();
-        navigate('/login');
+        navigate('/login', { state: { from: location.pathname } });
     };
 
     const handleLogout = async () => {
@@ -130,10 +147,10 @@ export const ResponsiveAppBar = ({ children }: Props) => {
             // Navigate to home page
             navigate('/');
             handleCloseDrawer();
-            PopupManager.success('Logged out');
+            ToastManager.success('Logged out');
         } catch (error) {
             console.error('Logout error:', error);
-            PopupManager.failure('Logout error');
+            ToastManager.error('Logout error');
         }
     };
 
@@ -153,6 +170,40 @@ export const ResponsiveAppBar = ({ children }: Props) => {
         handleCloseDrawer();
     };
 
+    const handlePageUpdate = async (updatedItem: any) => {
+        if (!selectedPageForEdit || !config) return;
+
+        try {
+            // Get the new page name and adminOnly from the form data
+            const newPageName = updatedItem.label;
+            const newAdminOnly = updatedItem.adminOnly;
+
+            // Update the page in the config
+            const updatedPages = pages.map(page =>
+                page.id === selectedPageForEdit.id
+                    ? { ...page, name: newPageName, adminOnly: newAdminOnly }
+                    : page
+            );
+
+            // Update the config with the new pages array
+            await updateConfig({ pages: updatedPages });
+
+            // Refresh the dashboard to reflect changes
+            await refreshDashboard();
+
+            handleCloseEditPage();
+            ToastManager.success('Page updated successfully');
+        } catch (error) {
+            console.error('Error updating page:', error);
+            ToastManager.error('Failed to update page');
+        }
+    };
+
+    // Helper function to convert page name to URL slug
+    const pageNameToSlug = (pageName: string): string => {
+        return pageName.toLowerCase().replace(/\s+/g, '-');
+    };
+
     return (
         <>
             <AppBar position='fixed' sx={{
@@ -166,13 +217,18 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                     <Toolbar disableGutters sx={{ justifyContent: 'space-between', width: '100%' }}>
                         <Link to='/'>
                             {/* Desktop */}
-                            <Box sx={{ width: { xs: '100%', md: '300px', lg: '350px' }, ...styles.center, overflow: 'hidden' }}>
+                            <Box sx={{
+                                width: { xs: 'auto', md: '300px', lg: '350px' },
+                                flex: { xs: '0 1 auto', md: 'none' },
+                                ...styles.center,
+                                overflow: 'hidden',
+                                minWidth: 0
+                            }}>
                                 <Logo sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }}/>
                                 <Typography
                                     variant='h5'
                                     noWrap
                                     sx={{
-                                        mr: 2,
                                         flexGrow: 1,
                                         display: { xs: 'none', md: 'block' },
                                         fontFamily: 'Earth Orbiter',
@@ -180,7 +236,6 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                         color: 'inherit',
                                         textDecoration: 'none',
                                         minWidth: '120px',
-                                        maxWidth: { md: '250px', lg: '300px' },
                                         textAlign: 'left',
                                         whiteSpace: 'nowrap',
                                         overflow: 'hidden',
@@ -194,11 +249,11 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                 <Logo sx={{ display: { xs: 'flex', md: 'none' }, ml: 2, mr: 2 }} />
                                 <Typography
                                     variant='h5'
-                                    noWrap
                                     sx={{
                                         mr: 2,
                                         flexGrow: 0,
-                                        display: { xs: 'flex', md: 'none' },
+                                        flexShrink: 1,
+                                        display: { xs: 'block', md: 'none' },
                                         fontFamily: 'Earth Orbiter',
                                         letterSpacing: '.1rem',
                                         color: 'inherit',
@@ -206,7 +261,8 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                         whiteSpace: 'nowrap',
                                         overflow: 'hidden',
                                         textOverflow: 'ellipsis',
-                                        maxWidth: '150px'
+                                        maxWidth: 'calc(100vw - 200px)',
+                                        minWidth: 0
                                     }}
                                     key={`app-title-mobile-${config?.title}-${nanoid()}`}
                                 >
@@ -214,7 +270,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                 </Typography>
                             </Box>
                         </Link>
-                        { currentPath === '/' && config?.search &&
+                        { !currentPath.includes('/settings') && config?.search &&
                             <Box sx={{ width: '100%', display: { xs: 'none', md: 'flex' }, justifyContent: 'center', flexGrow: 1 }}>
                                 <GlobalSearch />
                             </Box>
@@ -300,21 +356,27 @@ export const ResponsiveAppBar = ({ children }: Props) => {
 
                                     {/* Main Navigation */}
                                     <List>
-                                        <NavLink to='/' style={{ width: '100%', color: 'white' }} onClick={handleCloseDrawer}>
-                                            <ListItem disablePadding>
-                                                <ListItemButton>
-                                                    <ListItemIcon>
-                                                        {<FaHouse style={{ color: theme.palette.text.primary, fontSize: 22 }}/> }
-                                                    </ListItemIcon>
-                                                    <ListItemText primary={'Home'} />
-                                                </ListItemButton>
-                                            </ListItem>
-                                        </NavLink>
+                                        <ListItem disablePadding>
+                                            <ListItemButton
+                                                onClick={() => {
+                                                    navigate('/');
+                                                    handleCloseDrawer();
+                                                }}
+                                                sx={{
+                                                    backgroundColor: (currentPageId === null || currentPageId === '') ? 'rgba(255, 255, 255, 0.1)' : 'transparent'
+                                                }}
+                                            >
+                                                <ListItemIcon>
+                                                    {<FaHouse style={{ color: theme.palette.text.primary, fontSize: 22 }}/> }
+                                                </ListItemIcon>
+                                                <ListItemText primary={'Home'} />
+                                            </ListItemButton>
+                                        </ListItem>
+
                                         {isLoggedIn && isAdmin && (
                                             <ListItem disablePadding>
                                                 <ListItemButton onClick={() => {
                                                     setEditMode(true);
-                                                    if (currentPath !== '/') navigate('/');
                                                     handleCloseDrawer();
                                                 }}>
                                                     <ListItemIcon>
@@ -324,6 +386,60 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                 </ListItemButton>
                                             </ListItem>
                                         )}
+                                        {/* Pages Section */}
+                                        {pages.length > 0 && (
+                                            <>
+                                                <Divider sx={{ my: 1 }} />
+                                                {pages.map((page) => (
+                                                    <ListItem key={page.id} disablePadding>
+                                                        <ListItemButton
+                                                            onClick={() => {
+                                                                const slug = pageNameToSlug(page.name);
+                                                                navigate(`/${slug}`);
+                                                                handleCloseDrawer();
+                                                            }}
+                                                            sx={{
+                                                                backgroundColor: currentPageId === page.id ? 'rgba(255, 255, 255, 0.1)' : 'transparent'
+                                                            }}
+                                                        >
+                                                            <ListItemText primary={page.name} />
+                                                            {isLoggedIn && isAdmin && editMode && (
+                                                                <>
+                                                                    <IconButton
+                                                                        size='small'
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleOpenEditPage(page);
+                                                                        }}
+                                                                        sx={{ ml: 1 }}
+                                                                    >
+                                                                        <FaEdit style={{ fontSize: 18, color: 'white' }} />
+                                                                    </IconButton>
+                                                                    <IconButton
+                                                                        size='small'
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            deletePage(page.id);
+                                                                        }}
+                                                                        sx={{ ml: 1 }}
+                                                                    >
+                                                                        <FaTrashCan style={{ fontSize: 18, color: 'white' }} />
+                                                                    </IconButton>
+                                                                </>
+                                                            )}
+                                                        </ListItemButton>
+                                                    </ListItem>
+                                                ))}
+                                            </>
+                                        )}
+                                    </List>
+
+                                    {/* Spacer to push account info to bottom */}
+                                    <Box sx={{ flexGrow: 1 }} />
+
+                                    {/* Bottom */}
+                                    <List sx={{ mt: 'auto', mb: 1 }}>
+                                        <Divider />
                                         {isLoggedIn && isAdmin && (
                                             <NavLink to='/settings' style={{ width: '100%', color: 'white' }} onClick={() => {handleCloseDrawer(); setEditMode(false);}}>
                                                 <ListItem disablePadding>
@@ -336,14 +452,6 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                 </ListItem>
                                             </NavLink>
                                         )}
-                                    </List>
-
-                                    {/* Spacer to push account info to bottom */}
-                                    <Box sx={{ flexGrow: 1 }} />
-
-                                    {/* Account Info at Bottom */}
-                                    <List sx={{ mt: 'auto', mb: 1 }}>
-                                        <Divider />
 
                                         {/* Update Available Item */}
                                         {updateAvailable && (
@@ -380,10 +488,10 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                             variant='dot'
                                                             overlap='circular'
                                                         >
-                                                            <FaInfoCircle style={{ color: theme.palette.text.primary, fontSize: 22, marginLeft: '-4px' }} />
+                                                            <FaInfoCircle style={{ color: theme.palette.text.primary, fontSize: 22 }} />
                                                         </Badge>
                                                     ) : (
-                                                        <FaInfoCircle style={{ color: theme.palette.text.primary, fontSize: 22, marginLeft: '-4px' }} />
+                                                        <FaInfoCircle style={{ color: theme.palette.text.primary, fontSize: 22 }} />
                                                     )}
                                                 </ListItemIcon>
                                                 <ListItemText
@@ -407,9 +515,6 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                 {/* User Info */}
                                                 <ListItem
                                                     disablePadding
-                                                    sx={{
-                                                        mt: 1
-                                                    }}
                                                 >
                                                     <ListItemButton onClick={handleProfile}>
                                                         <ListItemIcon>
@@ -419,7 +524,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                                     height: 26,
                                                                     bgcolor: 'primary.main',
                                                                     fontSize: 18,
-                                                                    ml: '-4px'
+                                                                    ml: '-1px'
                                                                 }}
                                                             >
                                                                 {username ? username.charAt(0).toUpperCase() : <FaUser style={{ fontSize: 16 }} />}
@@ -449,16 +554,14 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                             </>
                                         ) : (
                                             // Login Button for Non-Logged in Users
-                                            <NavLink to='/login' style={{ width: '100%', color: 'white' }} onClick={() => {handleCloseDrawer(); setEditMode(false);}}>
-                                                <ListItem disablePadding>
-                                                    <ListItemButton>
-                                                        <ListItemIcon>
-                                                            <FaUser style={{ color: theme.palette.text.primary, fontSize: 22 }}/>
-                                                        </ListItemIcon>
-                                                        <ListItemText primary={'Login'} />
-                                                    </ListItemButton>
-                                                </ListItem>
-                                            </NavLink>
+                                            <ListItem disablePadding>
+                                                <ListItemButton onClick={() => {handleCloseDrawer(); setEditMode(false); handleLogin();}}>
+                                                    <ListItemIcon>
+                                                        <FaUser style={{ color: theme.palette.text.primary, fontSize: 22 }}/>
+                                                    </ListItemIcon>
+                                                    <ListItemText primary={'Login'} />
+                                                </ListItemButton>
+                                            </ListItem>
                                         )}
                                     </List>
                                 </Box>
@@ -468,6 +571,21 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                 </Container>
                 <CenteredModal open={openAddModal} handleClose={handleClose} title='Add Item'>
                     <AddEditForm handleClose={handleClose}/>
+                </CenteredModal>
+                <CenteredModal open={openEditPageModal} handleClose={handleCloseEditPage} title='Edit Page'>
+                    <AddEditForm
+                        handleClose={handleCloseEditPage}
+                        existingItem={selectedPageForEdit ? {
+                            id: selectedPageForEdit.id,
+                            type: ITEM_TYPE.PAGE,
+                            label: selectedPageForEdit.name,
+                            url: '',
+                            icon: undefined,
+                            config: {},
+                            adminOnly: selectedPageForEdit.adminOnly || false
+                        } : null}
+                        onSubmit={handlePageUpdate}
+                    />
                 </CenteredModal>
                 {/* Update Modal - Replaced with component */}
                 <UpdateModal
@@ -496,11 +614,11 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                 {
                     editMode
                         ? <Box position='absolute' sx={{ top: { xs: '66px', sm: '77px', md: '70px' }, zIndex: 99, display: 'flex', justifyContent: 'flex-end', width: '100%', px: 3, gap: 2 }}>
-                            <Button variant='contained' onClick={handleEditCancel} sx={{ backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT, color: 'black', borderRadius: '999px', height: '1.7rem', width: '4.5rem' }}>Cancel</Button>
+                            {/* <Button variant='contained' onClick={handleEditCancel} sx={{ backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT, color: 'black', borderRadius: '999px', height: '1.7rem', width: '4.5rem' }}>Cancel</Button> */}
                             <Button variant='contained' onClick={handleSave}  sx={{ backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT, color: 'black', borderRadius: '999px', height: '1.7rem', width: '4.5rem' }}>Done</Button>
                         </Box>
                         :
-                        currentPath === '/' && config?.search && <Box position='absolute' sx={{ top: { xs: '49px', sm: '58px' }, zIndex: 99, display: { xs: 'flex', md: 'none' }, justifyContent: 'center', width: '100%' }} mt={.5}>
+                        !currentPath.includes('/settings') && config?.search && <Box position='absolute' sx={{ top: { xs: '49px', sm: '58px' }, zIndex: 99, display: { xs: 'flex', md: 'none' }, justifyContent: 'center', width: '100%' }} mt={.5}>
                             <GlobalSearch />
                         </Box>
                 }

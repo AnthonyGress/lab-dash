@@ -4,15 +4,14 @@ import multer from 'multer';
 import path from 'path';
 
 import { UPLOAD_DIRECTORY } from '../constants/constants';
+import { authenticateToken } from '../middleware/auth.middleware';
 
 export const appShortcutRoute = Router();
 
 const sanitizeFileName = (fileName: string): string => {
-    const nameWithoutExt = fileName.replace(/\.[^/.]+$/, '');
-
-    // Replace special characters and normalize spaces
-    return nameWithoutExt
-        .replace(/[^\w\s-]/g, '')
+    // Replace special characters and normalize spaces, but keep the extension
+    return fileName
+        .replace(/[^\w\s.-]/g, '')
         .replace(/[\s_-]+/g, ' ')
         .trim();
 };
@@ -42,14 +41,14 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// Upload app icon
+// Upload app icon (single file)
 appShortcutRoute.post('/upload', upload.single('file'), (req: Request, res: Response) => {
     if (!req.file) {
         res.status(400).json({ message: 'No file uploaded' });
         return;
     }
 
-    // Sanitize the file name for display
+    // Sanitize the file name for display (keeping extension)
     const sanitizedName = sanitizeFileName(req.file.originalname);
 
     console.log('File uploaded successfully:', {
@@ -64,6 +63,38 @@ appShortcutRoute.post('/upload', upload.single('file'), (req: Request, res: Resp
         filePath: `/uploads/app-icons/${req.file.filename}`,
         name: sanitizedName, // Use sanitized name
         source: 'custom'
+    });
+});
+
+// Upload multiple app icons (batch upload)
+appShortcutRoute.post('/upload-batch', authenticateToken, upload.array('files', 20), (req: Request, res: Response) => {
+    const files = req.files as Express.Multer.File[];
+
+    if (!files || files.length === 0) {
+        res.status(400).json({ message: 'No files uploaded' });
+        return;
+    }
+
+    const uploadedIcons = files.map(file => {
+        const sanitizedName = sanitizeFileName(file.originalname);
+
+        console.log('File uploaded successfully:', {
+            originalName: file.originalname,
+            sanitizedName,
+            filename: file.filename,
+            path: file.path
+        });
+
+        return {
+            name: sanitizedName,
+            filePath: `/uploads/app-icons/${file.filename}`,
+            source: 'custom'
+        };
+    });
+
+    res.status(200).json({
+        message: `${uploadedIcons.length} app icon(s) uploaded successfully`,
+        icons: uploadedIcons
     });
 });
 
@@ -84,7 +115,8 @@ appShortcutRoute.get('/custom-icons', (req: Request, res: Response) => {
 
         // Map files to icon objects
         const icons = files.map(file => {
-            // Get the file name without extension
+            // Get the file name without extension and the extension separately
+            const fileExtension = path.extname(file);
             const filenameWithoutExt = path.parse(file).name;
 
             // Extract the original name part (everything before the timestamp)
@@ -93,16 +125,16 @@ appShortcutRoute.get('/custom-icons', (req: Request, res: Response) => {
 
             // If the filename has our expected format with a timestamp suffix,
             // remove the timestamp; otherwise keep the full name
-            let displayName = filenameWithoutExt;
+            let displayNameWithoutExt = filenameWithoutExt;
 
             // Check if the last part is a timestamp (all digits)
             if (nameParts.length > 1 && /^\d+$/.test(nameParts[nameParts.length - 1])) {
                 // Remove the timestamp part and join the rest
-                displayName = nameParts.slice(0, -1).join('-');
+                displayNameWithoutExt = nameParts.slice(0, -1).join('-');
             }
 
-            // Ensure the display name is sanitized
-            displayName = sanitizeFileName(displayName);
+            // Ensure the display name is sanitized and add back the extension
+            const displayName = sanitizeFileName(displayNameWithoutExt + fileExtension);
 
             // Create the icon object
             return {

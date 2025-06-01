@@ -1,18 +1,20 @@
 import CloseIcon from '@mui/icons-material/Close';
-import { Box, Button, MenuItem, Tab, Tabs, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material';
+import { Box, Button, Tab, Tabs, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material';
 import { SyntheticEvent, useEffect, useState } from 'react';
 import { CheckboxElement, FormContainer, SelectElement, TextFieldElement, useForm } from 'react-hook-form-mui';
 import { FaCog } from 'react-icons/fa';
-import { FaClockRotateLeft, FaDatabase, FaImage } from 'react-icons/fa6';
+import { FaClockRotateLeft, FaImage, FaTrashCan } from 'react-icons/fa6';
 import { useNavigate } from 'react-router-dom';
 
 import { FileInput } from './FileInput';
+import { MultiFileInput } from './MultiFileInput';
 import { DashApi } from '../../api/dash-api';
+import { BACKEND_URL } from '../../constants/constants';
 import { useAppContext } from '../../context/useAppContext';
 import { COLORS } from '../../theme/styles';
 import { Config, SearchProvider } from '../../types';
-import { getAppVersion } from '../../utils/version';
 import { PopupManager } from '../modals/PopupManager';
+import { ToastManager } from '../toast/ToastManager';
 
 // Predefined search providers
 const SEARCH_PROVIDERS = [
@@ -30,6 +32,7 @@ type FormValues = {
     searchProviderId: string;
     searchProvider?: SearchProvider;
     configFile?: File | null;
+    appIconFiles?: File[] | null;
 }
 
 interface TabPanelProps {
@@ -47,11 +50,11 @@ function TabPanel(props: TabPanelProps) {
             hidden={value !== index}
             id={`vertical-tabpanel-${index}`}
             aria-labelledby={`vertical-tab-${index}`}
-            style={{ width: '100%', height: '100%', overflow: 'auto' }}
+            style={{ width: '100%' }}
             {...other}
         >
             {value === index && (
-                <Box sx={{ p: 3, height: '100%' }}>
+                <Box sx={{ p: 3 }}>
                     {children}
                 </Box>
             )}
@@ -66,6 +69,128 @@ function a11yProps(index: number) {
     };
 }
 
+// Separate component for image preview to handle state properly
+const ImagePreviewCard = ({ image, onDelete, formatFileSize }: {
+    image: any;
+    onDelete: () => void;
+    formatFileSize: (bytes: number) => string;
+}) => {
+    const [imageError, setImageError] = useState(false);
+
+    return (
+        <Box
+            sx={{
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: 1,
+                pt: 1,
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                transition: 'transform 0.2s ease-in-out',
+                '&:hover': {
+                    transform: 'scale(1.02)',
+                    borderColor: 'primary.main'
+                }
+            }}
+        >
+            {/* Image Preview */}
+            <Box sx={{
+                width: '100%',
+                height: '100px',
+                position: 'relative',
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: imageError ? 'rgba(255, 255, 255, 0.1)' : 'transparent'
+            }}>
+                {imageError ? (
+                    <Typography variant='caption' sx={{
+                        color: 'rgba(255, 255, 255, 0.5)',
+                        fontSize: '12px'
+                    }}>
+                        Preview unavailable
+                    </Typography>
+                ) : (
+                    <img
+                        src={`${BACKEND_URL}${image.path}`}
+                        alt={image.name}
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'contain',
+                            objectPosition: 'center'
+                        }}
+                        onError={() => setImageError(true)}
+                    />
+                )}
+            </Box>
+
+            {/* Image Info */}
+            <Box sx={{ p: 1, display: 'flex', flexDirection: 'column', gap: 0.5, flexGrow: 1 }}>
+                <Typography variant='caption' sx={{
+                    fontWeight: 'bold',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    fontSize: '0.75rem',
+                    mb: 0.5
+                }}>
+                    {image.name}
+                </Typography>
+
+                {/* Two-column layout for details */}
+                <Box sx={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: 0.5,
+                    fontSize: '0.7rem'
+                }}>
+                    <Typography variant='caption' sx={{ fontSize: '0.7rem' }}>
+                        Size:
+                    </Typography>
+                    <Typography variant='caption' sx={{ fontSize: '0.7rem' }}>
+                        {formatFileSize(image.size)}
+                    </Typography>
+
+                    <Typography variant='caption' sx={{ fontSize: '0.7rem' }}>
+                        Uploaded:
+                    </Typography>
+                    <Typography variant='caption' sx={{ fontSize: '0.7rem' }}>
+                        {new Date(image.uploadDate).toLocaleDateString()}
+                    </Typography>
+
+                    <Typography variant='caption' sx={{ fontSize: '0.7rem' }}>
+                        Type:
+                    </Typography>
+                    <Typography variant='caption' sx={{
+                        fontSize: '0.7rem',
+                        textTransform: 'capitalize'
+                    }}>
+                        {image.type.replace('-', ' ')}
+                    </Typography>
+                </Box>
+
+                <Button
+                    variant='contained'
+                    color='error'
+                    size='small'
+                    startIcon={<FaTrashCan style={{ fontSize: '0.8rem' }} />}
+                    onClick={onDelete}
+                    sx={{
+                        mt: 1,
+                        fontSize: '0.7rem',
+                        py: 0.5,
+                        minHeight: 'unset'
+                    }}
+                >
+                    Delete
+                </Button>
+            </Box>
+        </Box>
+    );
+};
+
 export const SettingsForm = () => {
     const [isCustomProvider, setIsCustomProvider] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
@@ -74,6 +199,8 @@ export const SettingsForm = () => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const navigate = useNavigate();
+    const [uploadedImages, setUploadedImages] = useState<any[]>([]);
+    const [loadingImages, setLoadingImages] = useState(false);
     // Add custom styling for menu items
     useEffect(() => {
         // Create a style element
@@ -140,7 +267,8 @@ export const SettingsForm = () => {
                         ? SEARCH_PROVIDERS.find(p => p.id === initialProviderId)?.url || ''
                         : ''
             },
-            configFile: null
+            configFile: null,
+            appIconFiles: null
         }
     });
 
@@ -151,6 +279,7 @@ export const SettingsForm = () => {
     const searchProviderName = formContext.watch('searchProvider.name', '');
     const searchProviderUrl = formContext.watch('searchProvider.url', '');
     const configFile = formContext.watch('configFile', null);
+    const appIconFiles = formContext.watch('appIconFiles', null);
 
     // Initialize custom provider flag properly on component mount
     useEffect(() => {
@@ -192,6 +321,9 @@ export const SettingsForm = () => {
             // Background image change
             if (backgroundFile) return true;
 
+            // App icon files change
+            if (appIconFiles && appIconFiles.length > 0) return true;
+
             // Search enabled change
             if (searchEnabled !== (config?.search || false)) return true;
 
@@ -230,6 +362,7 @@ export const SettingsForm = () => {
     }, [
         title,
         backgroundFile,
+        appIconFiles,
         searchEnabled,
         searchProviderId,
         searchProviderName,
@@ -323,11 +456,39 @@ export const SettingsForm = () => {
                 }
             }
 
+            // Handle app icon uploads
+            if (data.appIconFiles && data.appIconFiles.length > 0) {
+                try {
+                    const uploadedIcons = await DashApi.uploadAppIconsBatch(data.appIconFiles);
+                    if (uploadedIcons.length > 0) {
+                        PopupManager.success(`${uploadedIcons.length} app icon(s) uploaded successfully!`);
+                        // Reset the app icon files field
+                        formContext.resetField('appIconFiles');
+                        // Refresh uploaded images list
+                        await loadUploadedImages();
+                    } else {
+                        PopupManager.failure('Failed to upload app icons. Please try again.');
+                    }
+                } catch (error) {
+                    PopupManager.failure('Failed to upload app icons. Please try again.');
+                    console.error('Error uploading app icons:', error);
+                }
+            }
+
             if (Object.keys(updatedConfig).length > 0) {
+                const hasBackgroundImage = data.backgroundFile instanceof File;
+
                 await updateConfig(updatedConfig); // Update only the provided fields
 
-                // Show success message
-                PopupManager.success('Settings updated successfully!');
+                // If a background image was uploaded, refresh the uploaded images list
+                if (hasBackgroundImage) {
+                    await loadUploadedImages();
+                }
+
+                // Show success message (only if no app icons were uploaded, to avoid duplicate messages)
+                if (!data.appIconFiles || data.appIconFiles.length === 0) {
+                    PopupManager.success('Settings updated successfully!');
+                }
                 // Refresh the form with new config values (optional)
                 const refreshedConfig = await DashApi.getConfig();
 
@@ -354,7 +515,8 @@ export const SettingsForm = () => {
                     searchProvider: {
                         name: refreshedConfig?.searchProvider?.name || '',
                         url: refreshedConfig?.searchProvider?.url || ''
-                    }
+                    },
+                    appIconFiles: null
                 });
             }
         } catch (error) {
@@ -386,6 +548,69 @@ export const SettingsForm = () => {
         });
     };
 
+    // Load uploaded images
+    const loadUploadedImages = async () => {
+        setLoadingImages(true);
+        try {
+            const images = await DashApi.getUploadedImages();
+            setUploadedImages(images);
+        } catch (error) {
+            console.error('Error loading uploaded images:', error);
+            PopupManager.failure('Failed to load uploaded images');
+        } finally {
+            setLoadingImages(false);
+        }
+    };
+
+    // Delete uploaded image
+    const deleteUploadedImage = async (imagePath: string, imageName: string, imageType: string) => {
+        PopupManager.deleteConfirmation({
+            title: 'Delete Image',
+            text: `Are you sure you want to delete "${imageName}"? This action cannot be undone.`,
+            confirmAction: async () => {
+                try {
+                    const success = await DashApi.deleteUploadedImage(imagePath);
+                    if (success) {
+                        // If a background image is deleted, reset config to default
+                        if (imageType === 'background') {
+                            try {
+                                await updateConfig({ backgroundImage: '' });
+                                ToastManager.success('Background image deleted and reset to default');
+                            } catch (configError) {
+                                console.error('Error resetting background config:', configError);
+                                ToastManager.success('Image deleted successfully, but failed to reset background config');
+                            }
+                        } else {
+                            ToastManager.success(`${imageName} deleted successfully`);
+                        }
+                        await loadUploadedImages(); // Refresh the list
+                    } else {
+                        PopupManager.failure('Failed to delete image');
+                    }
+                } catch (error) {
+                    console.error('Error deleting image:', error);
+                    PopupManager.failure('Failed to delete image');
+                }
+            }
+        });
+    };
+
+    // Format file size for display
+    const formatFileSize = (bytes: number): string => {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
+
+    // Load images when component mounts or when appearance tab is selected
+    useEffect(() => {
+        if (tabValue === 1) { // Appearance tab
+            loadUploadedImages();
+        }
+    }, [tabValue]);
+
     return (
         <FormContainer onSuccess={handleSubmit} formContext={formContext}>
             <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
@@ -395,7 +620,7 @@ export const SettingsForm = () => {
                         <Button
                             variant='contained'
                             type='submit'
-                            disabled={!hasChanges && !configFile}
+                            disabled={!hasChanges && !configFile && (!appIconFiles || appIconFiles.length === 0)}
                             sx={{
                                 '&.Mui-disabled': {
                                     color: 'rgba(255, 255, 255, 0.5)'
@@ -409,9 +634,8 @@ export const SettingsForm = () => {
                 <Box sx={{
                     display: 'flex',
                     flexDirection: { xs: 'column', md: 'row' },
-                    height: { xs: 'auto', md: '550px' },
-                    width: '100%',
-                    overflow: 'hidden' // Ensure the container doesn't grow
+                    minHeight: { xs: 'auto', md: '550px', lg: '700px' },
+                    width: '100%'
                 }}>
                     <Tabs
                         orientation={isMobile ? 'horizontal' : 'vertical'}
@@ -429,7 +653,6 @@ export const SettingsForm = () => {
                                 md: 'none'
                             },
                             minWidth: { xs: '100%', md: '160px' },
-                            height: { xs: 'auto', md: '100%' },
                             mb: { xs: 2, md: 0 },
                             '& .MuiTab-root': {
                                 alignItems: 'center',
@@ -454,9 +677,7 @@ export const SettingsForm = () => {
                         <Box sx={{
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: 3,
-                            height: '100%',
-                            overflow: 'auto' // Add scroll to inner content
+                            gap: 3
                         }}>
                             <Typography variant='h6'>General Settings</Typography>
 
@@ -620,9 +841,7 @@ export const SettingsForm = () => {
                         <Box sx={{
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: 3,
-                            height: '100%',
-                            overflow: 'auto'
+                            gap: 3
                         }}>
                             <Typography variant='h6'>Appearance Settings</Typography>
 
@@ -659,6 +878,34 @@ export const SettingsForm = () => {
                                     )}
                                 </Box>
 
+                                <Typography variant='body1' sx={{
+                                    alignSelf: 'center',
+                                    fontSize: { xs: '0.875rem', sm: '1rem' }
+                                }}>Upload App Icons</Typography>
+                                <Box sx={{ position: 'relative' }}>
+                                    <MultiFileInput
+                                        name='appIconFiles'
+                                        maxFiles={20}
+                                        sx={{ width: '95%' }}
+                                    />
+                                    {appIconFiles && appIconFiles.length > 0 && (
+                                        <Tooltip title='Clear'>
+                                            <CloseIcon
+                                                onClick={() => formContext.resetField('appIconFiles')}
+                                                sx={{
+                                                    position: 'absolute',
+                                                    right: '10px',
+                                                    top: '50%',
+                                                    transform: 'translateY(-50%)',
+                                                    cursor: 'pointer',
+                                                    fontSize: 22,
+                                                    color: 'rgba(255, 255, 255, 0.7)',
+                                                }}
+                                            />
+                                        </Tooltip>
+                                    )}
+                                </Box>
+
                             </Box>
                             <Box sx={{
                                 gridColumn: { xs: '1', sm: '1 / -1' },
@@ -669,6 +916,37 @@ export const SettingsForm = () => {
                                         Reset Background
                                 </Button>
                             </Box>
+
+                            {/* Image Management Section */}
+                            <Box>
+                                <Typography variant='h6' sx={{ mb: 2 }}>Uploaded Images</Typography>
+
+                                {loadingImages ? (
+                                    <Typography>Loading images...</Typography>
+                                ) : uploadedImages.length === 0 ? (
+                                    <Typography variant='body2' sx={{ fontStyle: 'italic' }}>
+                                        No uploaded images found.
+                                    </Typography>
+                                ) : (
+                                    <Box sx={{
+                                        display: 'grid',
+                                        gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                                        gap: 2,
+                                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                                        borderRadius: 1,
+                                        p: 2
+                                    }}>
+                                        {uploadedImages.map((image, index) => (
+                                            <ImagePreviewCard
+                                                key={index}
+                                                image={image}
+                                                onDelete={() => deleteUploadedImage(image.path, image.name, image.type)}
+                                                formatFileSize={formatFileSize}
+                                            />
+                                        ))}
+                                    </Box>
+                                )}
+                            </Box>
                         </Box>
                     </TabPanel>
 
@@ -676,9 +954,7 @@ export const SettingsForm = () => {
                         <Box sx={{
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: 3,
-                            height: '100%',
-                            overflow: 'auto'
+                            gap: 3
                         }}>
                             <Typography variant='h6'>Backup Settings</Typography>
 

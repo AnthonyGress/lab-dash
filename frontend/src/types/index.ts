@@ -5,15 +5,20 @@ export enum ITEM_TYPE {
     TORRENT_CLIENT = 'torrent-client',
     PIHOLE_WIDGET = 'pihole-widget',
     DUAL_WIDGET = 'dual-widget',
+    GROUP_WIDGET = 'group-widget',
     APP_SHORTCUT = 'app-shortcut',
+    PLACEHOLDER = 'placeholder',
+    // Legacy placeholder types - keeping for backward compatibility
     BLANK_APP = 'blank-app',
     BLANK_WIDGET = 'blank-widget',
-    BLANK_ROW = 'blank-row'
+    BLANK_ROW = 'blank-row',
+    PAGE = 'page'
 }
 
 export enum TORRENT_CLIENT_TYPE {
     QBITTORRENT = 'qbittorrent',
-    DELUGE = 'deluge'
+    DELUGE = 'deluge',
+    TRANSMISSION = 'transmission'
 }
 
 export type NewItem = {
@@ -28,6 +33,9 @@ export type NewItem = {
         temperatureUnit?: string;
         healthUrl?: string;
         healthCheckType?: string;
+        // Security flags for sensitive data
+        _hasApiToken?: boolean;
+        _hasPassword?: boolean;
         [key: string]: any;
     };
 }
@@ -44,11 +52,22 @@ export type SearchProvider = {
     url: string;
 }
 
+export type Page = {
+    id: string;
+    name: string;
+    adminOnly?: boolean;
+    layout: {
+        desktop: DashboardItem[];
+        mobile: DashboardItem[];
+    };
+}
+
 export type Config = {
     layout: {
         desktop: DashboardItem[];
         mobile: DashboardItem[];
     },
+    pages?: Page[];
     title?: string;
     backgroundImage?: string;
     search?: boolean;
@@ -81,6 +100,9 @@ export type DashboardItem = {
         temperatureUnit?: string;
         healthUrl?: string;
         healthCheckType?: string;
+        // Security flags for sensitive data
+        _hasApiToken?: boolean;
+        _hasPassword?: boolean;
         [key: string]: any;
     };
 };

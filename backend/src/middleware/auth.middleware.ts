@@ -4,15 +4,14 @@ import jwt from 'jsonwebtoken';
 const JWT_SECRET = process.env.SECRET || '@jZCgtn^qg8So*^^6A2M'; // Same secret used in auth.route.ts
 
 // Define custom Request interface with user property
-declare global {
-    namespace Express {
-        interface Request {
-            user?: {
-                username: string;
-                role: string;
-                [key: string]: any;
-            };
-        }
+
+declare module 'express-serve-static-core' {
+    interface Request {
+        user?: {
+            username: string;
+            role: string;
+            [key: string]: any;
+        };
     }
 }
 

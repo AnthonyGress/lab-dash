@@ -10,16 +10,20 @@ import { theme } from '../../../../theme/theme';
 type DualWidgetContainerProps = {
     children: React.ReactNode;
     editMode?: boolean;
+    id?: string;
     onEdit?: () => void;
     onDelete?: () => void;
+    onDuplicate?: () => void;
     url?: string;
 };
 
 export const DualWidgetContainer: React.FC<DualWidgetContainerProps> = ({
     children,
     editMode = false,
+    id,
     onEdit,
     onDelete,
+    onDuplicate,
     url
 }) => {
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -48,7 +52,7 @@ export const DualWidgetContainer: React.FC<DualWidgetContainerProps> = ({
                 backdropFilter: '6px'
             }}
         >
-            <EditMenu editMode={editMode} onEdit={onEdit} onDelete={onDelete} />
+            <EditMenu editMode={editMode} itemId={id} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} />
 
             <CardContent
                 sx={{

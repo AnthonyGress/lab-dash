@@ -225,14 +225,17 @@ export class DashApi {
         }
     }
 
-    public static async saveConfig(config: Partial<Config>): Promise<void> {
+    public static async saveConfig(config: Partial<Config>): Promise<Config | null> {
         try {
             // Explicitly set withCredentials for this request
             // Clone and stringify-parse the config to ensure proper serialization of complex objects
             const preparedConfig = JSON.parse(JSON.stringify(config));
-            await axios.post(`${BACKEND_URL}/api/config`, preparedConfig, {
+            const response = await axios.post(`${BACKEND_URL}/api/config`, preparedConfig, {
                 withCredentials: true
             });
+
+            // Return the updated config from the backend response
+            return response.data.updatedConfig || null;
         } catch (error) {
             console.error('Failed to save layout:', error);
             throw error; // Rethrow to allow handling in the UI
@@ -420,6 +423,60 @@ export class DashApi {
         }
     }
 
+    public static async uploadAppIconsBatch(files: File[]): Promise<Icon[]> {
+        try {
+            const formData = new FormData();
+            files.forEach(file => {
+                formData.append('files', file);
+            });
+
+            const res = await axios({
+                method: 'POST',
+                url: `${BACKEND_URL}/api/app-shortcut/upload-batch`,
+                data: formData,
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                },
+                withCredentials: true
+            });
+
+            return res.data.icons.map((icon: any) => ({
+                name: icon.name,
+                path: icon.filePath,
+                source: 'custom'
+            }));
+        } catch (error) {
+            console.error('Failed to upload app icons:', error);
+            return [];
+        }
+    }
+
+    // Uploads management methods
+    public static async getUploadedImages(): Promise<any[]> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/uploads/images`, {
+                withCredentials: true
+            });
+            return res.data?.images || [];
+        } catch (error) {
+            console.error('Error fetching uploaded images:', error);
+            return [];
+        }
+    }
+
+    public static async deleteUploadedImage(imagePath: string): Promise<boolean> {
+        try {
+            const res = await axios.delete(`${BACKEND_URL}/api/uploads/images`, {
+                data: { imagePath },
+                withCredentials: true
+            });
+            return res.status === StatusCodes.OK;
+        } catch (error) {
+            console.error('Error deleting uploaded image:', error);
+            return false;
+        }
+    }
+
     // Check if any users exist (for first-time setup)
     public static async checkIfUsersExist(): Promise<boolean> {
         try {
@@ -512,20 +569,13 @@ export class DashApi {
     }
 
     // qBittorrent methods
-    public static async qbittorrentLogin(credentials: {
-        username: string;
-        password: string;
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-    }): Promise<boolean> {
+    public static async qbittorrentLogin(itemId: string): Promise<boolean> {
         try {
-            const { host, port, ssl, username, password } = credentials;
             const response = await axios.post(
                 `${BACKEND_URL}/api/qbittorrent/login`,
-                { username, password },
+                {},
                 {
-                    params: { host, port, ssl },
+                    params: { itemId },
                     withCredentials: false
                 }
             );
@@ -558,16 +608,10 @@ export class DashApi {
         }
     }
 
-    public static async qbittorrentGetStats(connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-        username?: string;
-        password?: string;
-    }): Promise<any> {
+    public static async qbittorrentGetStats(itemId: string): Promise<any> {
         try {
             const res = await axios.get(`${BACKEND_URL}/api/qbittorrent/stats`, {
-                params: connectionInfo,
+                params: { itemId },
                 withCredentials: false
             });
             return res.data;
@@ -577,16 +621,10 @@ export class DashApi {
         }
     }
 
-    public static async qbittorrentGetTorrents(connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-        username?: string;
-        password?: string;
-    }): Promise<any[]> {
+    public static async qbittorrentGetTorrents(itemId: string): Promise<any[]> {
         try {
             const res = await axios.get(`${BACKEND_URL}/api/qbittorrent/torrents`, {
-                params: connectionInfo,
+                params: { itemId },
                 withCredentials: false
             });
             return res.data;
@@ -596,14 +634,10 @@ export class DashApi {
         }
     }
 
-    public static async qbittorrentLogout(connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-    }): Promise<boolean> {
+    public static async qbittorrentLogout(itemId: string): Promise<boolean> {
         try {
             await axios.post(`${BACKEND_URL}/api/qbittorrent/logout`, {}, {
-                params: connectionInfo,
+                params: { itemId },
                 withCredentials: true
             });
             return true;
@@ -613,13 +647,7 @@ export class DashApi {
         }
     }
 
-    public static async qbittorrentStartTorrent(hash: string, connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-        username?: string;
-        password?: string;
-    }): Promise<boolean> {
+    public static async qbittorrentStartTorrent(hash: string, itemId: string): Promise<boolean> {
         try {
             // Create a URLSearchParams object for form data
             const formData = new URLSearchParams();
@@ -629,7 +657,7 @@ export class DashApi {
                 `${BACKEND_URL}/api/qbittorrent/torrents/start`,
                 formData.toString(),
                 {
-                    params: connectionInfo,
+                    params: { itemId },
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded'
                     },
@@ -644,13 +672,7 @@ export class DashApi {
         }
     }
 
-    public static async qbittorrentStopTorrent(hash: string, connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-        username?: string;
-        password?: string;
-    }): Promise<boolean> {
+    public static async qbittorrentStopTorrent(hash: string, itemId: string): Promise<boolean> {
         try {
             // Create a URLSearchParams object for form data
             const formData = new URLSearchParams();
@@ -660,7 +682,7 @@ export class DashApi {
                 `${BACKEND_URL}/api/qbittorrent/torrents/stop`,
                 formData.toString(),
                 {
-                    params: connectionInfo,
+                    params: { itemId },
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded'
                     },
@@ -675,13 +697,7 @@ export class DashApi {
         }
     }
 
-    public static async qbittorrentDeleteTorrent(hash: string, deleteFiles: boolean = false, connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-        username?: string;
-        password?: string;
-    }): Promise<boolean> {
+    public static async qbittorrentDeleteTorrent(hash: string, deleteFiles: boolean = false, itemId: string): Promise<boolean> {
         try {
             // Create a URLSearchParams object for form data
             const formData = new URLSearchParams();
@@ -692,7 +708,7 @@ export class DashApi {
                 `${BACKEND_URL}/api/qbittorrent/torrents/delete`,
                 formData.toString(),
                 {
-                    params: connectionInfo,
+                    params: { itemId },
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded'
                     },
@@ -708,25 +724,13 @@ export class DashApi {
     }
 
     // Deluge methods
-    public static async delugeLogin(credentials: {
-        username: string;
-        password: string;
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-    }): Promise<boolean> {
+    public static async delugeLogin(itemId: string): Promise<boolean> {
         try {
-            const { host, port, ssl, password } = credentials;
             const response = await axios.post(
                 `${BACKEND_URL}/api/deluge/login`,
                 {},
                 {
-                    params: {
-                        host,
-                        port,
-                        ssl,
-                        password
-                    },
+                    params: { itemId },
                     withCredentials: false
                 }
             );
@@ -737,14 +741,10 @@ export class DashApi {
         }
     }
 
-    public static async delugeGetStats(connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-    }): Promise<any> {
+    public static async delugeGetStats(itemId: string): Promise<any> {
         try {
             const res = await axios.get(`${BACKEND_URL}/api/deluge/stats`, {
-                params: connectionInfo,
+                params: { itemId },
                 withCredentials: false
             });
             return res.data;
@@ -754,14 +754,10 @@ export class DashApi {
         }
     }
 
-    public static async delugeGetTorrents(connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-    }): Promise<any[]> {
+    public static async delugeGetTorrents(itemId: string): Promise<any[]> {
         try {
             const res = await axios.get(`${BACKEND_URL}/api/deluge/torrents`, {
-                params: connectionInfo,
+                params: { itemId },
                 withCredentials: false
             });
             return res.data;
@@ -771,14 +767,10 @@ export class DashApi {
         }
     }
 
-    public static async delugeLogout(connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-    }): Promise<boolean> {
+    public static async delugeLogout(itemId: string): Promise<boolean> {
         try {
             await axios.post(`${BACKEND_URL}/api/deluge/logout`, {}, {
-                params: connectionInfo,
+                params: { itemId },
                 withCredentials: true
             });
             return true;
@@ -788,18 +780,12 @@ export class DashApi {
         }
     }
 
-    public static async delugeResumeTorrent(hash: string, connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-        username?: string;
-        password?: string;
-    }): Promise<boolean> {
+    public static async delugeResumeTorrent(hash: string, itemId: string): Promise<boolean> {
         try {
             await axios.post(`${BACKEND_URL}/api/deluge/torrents/resume`,
                 { hash },
                 {
-                    params: connectionInfo,
+                    params: { itemId },
                     withCredentials: true
                 }
             );
@@ -810,18 +796,12 @@ export class DashApi {
         }
     }
 
-    public static async delugePauseTorrent(hash: string, connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-        username?: string;
-        password?: string;
-    }): Promise<boolean> {
+    public static async delugePauseTorrent(hash: string, itemId: string): Promise<boolean> {
         try {
             await axios.post(`${BACKEND_URL}/api/deluge/torrents/pause`,
                 { hash },
                 {
-                    params: connectionInfo,
+                    params: { itemId },
                     withCredentials: true
                 }
             );
@@ -832,13 +812,7 @@ export class DashApi {
         }
     }
 
-    public static async delugeDeleteTorrent(hash: string, deleteFiles: boolean = false, connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-        username?: string;
-        password?: string;
-    }): Promise<boolean> {
+    public static async delugeDeleteTorrent(hash: string, deleteFiles: boolean = false, itemId: string): Promise<boolean> {
         try {
             await axios.post(`${BACKEND_URL}/api/deluge/torrents/delete`,
                 {
@@ -846,7 +820,7 @@ export class DashApi {
                     deleteFiles
                 },
                 {
-                    params: connectionInfo,
+                    params: { itemId },
                     withCredentials: true
                 }
             );
@@ -857,47 +831,376 @@ export class DashApi {
         }
     }
 
-    // Pi-hole methods
-    public static async getPiholeStats(connectionInfo?: {
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-        apiToken?: string;
-        password?: string;
-    }): Promise<any> {
+    // Transmission methods
+    public static async transmissionLogin(itemId: string): Promise<boolean> {
         try {
-            const params: any = {};
+            const response = await axios.post(
+                `${BACKEND_URL}/api/transmission/login`,
+                {},
+                {
+                    params: { itemId },
+                    withCredentials: false
+                }
+            );
+            return response.data.success;
+        } catch (error) {
+            console.error('Failed to login to Transmission:', error);
+            return false;
+        }
+    }
 
-            if (connectionInfo) {
-                if (connectionInfo.host) params.host = connectionInfo.host;
-                if (connectionInfo.port) params.port = connectionInfo.port;
-                if (connectionInfo.ssl !== undefined) params.ssl = connectionInfo.ssl;
+    public static async transmissionGetStats(itemId: string): Promise<any> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/transmission/stats`, {
+                params: { itemId },
+                withCredentials: false
+            });
+            return res.data;
+        } catch (error) {
+            console.error('Transmission stats error:', error);
+            throw error;
+        }
+    }
 
-                // Only include credentials that are actually provided
-                if (connectionInfo.apiToken) params.apiToken = connectionInfo.apiToken;
-                if (connectionInfo.password) params.password = connectionInfo.password;
+    public static async transmissionGetTorrents(itemId: string): Promise<any[]> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/transmission/torrents`, {
+                params: { itemId },
+                withCredentials: false
+            });
+            return res.data;
+        } catch (error) {
+            console.error('Transmission torrents error:', error);
+            return [];
+        }
+    }
+
+    public static async transmissionLogout(itemId: string): Promise<boolean> {
+        try {
+            await axios.post(`${BACKEND_URL}/api/transmission/logout`, {}, {
+                params: { itemId },
+                withCredentials: true
+            });
+            return true;
+        } catch (error) {
+            console.error('Transmission logout error:', error);
+            return false;
+        }
+    }
+
+    public static async transmissionStartTorrent(id: string, itemId: string): Promise<boolean> {
+        try {
+            const response = await axios.post(
+                `${BACKEND_URL}/api/transmission/torrents/start`,
+                { ids: [id] },
+                {
+                    params: { itemId },
+                    withCredentials: true
+                }
+            );
+            return true;
+        } catch (error) {
+            console.error('Transmission start error:', error);
+            return false;
+        }
+    }
+
+    public static async transmissionStopTorrent(id: string, itemId: string): Promise<boolean> {
+        try {
+            const response = await axios.post(
+                `${BACKEND_URL}/api/transmission/torrents/stop`,
+                { ids: [id] },
+                {
+                    params: { itemId },
+                    withCredentials: true
+                }
+            );
+            return true;
+        } catch (error) {
+            console.error('Transmission stop error:', error);
+            return false;
+        }
+    }
+
+    public static async transmissionDeleteTorrent(id: string, deleteFiles: boolean = false, itemId: string): Promise<boolean> {
+        try {
+            const response = await axios.post(
+                `${BACKEND_URL}/api/transmission/torrents/delete`,
+                { ids: [id], deleteFiles },
+                {
+                    params: { itemId },
+                    withCredentials: true
+                }
+            );
+            return true;
+        } catch (error) {
+            console.error('Transmission delete error:', error);
+            return false;
+        }
+    }
+
+    // Helper method to determine route from config without fetching
+    public static getPiholeRouteFromConfig(itemId: string, config: any): { route: string; isV6: boolean } {
+
+        // Helper function to search for item in a layout array
+        const searchInLayout = (items: any[]): any => {
+            for (const item of items) {
+                // Direct match
+                if (item.id === itemId) {
+                    return item;
+                }
+
+                // Check if this is a dual widget and the itemId is for a position-specific widget
+                if (item.type === 'dual-widget' && itemId.startsWith(item.id + '-')) {
+                    const position = itemId.endsWith('-top') ? 'top' : 'bottom';
+                    const positionWidget = position === 'top' ? item.config?.topWidget : item.config?.bottomWidget;
+
+                    if (positionWidget?.type === 'pihole-widget') {
+                        // Return a synthetic item with the position-specific config
+                        return {
+                            id: itemId,
+                            type: 'pihole-widget',
+                            config: positionWidget.config
+                        };
+                    }
+                }
+
+                // Check group widgets
+                if (item.type === 'group-widget' && item.config?.items) {
+                    const groupItem = searchInLayout(item.config.items);
+                    if (groupItem) return groupItem;
+                }
+            }
+            return null;
+        };
+
+        // Search in main desktop layout
+        let foundItem = searchInLayout(config.layout?.desktop || []);
+        if (foundItem) {
+            return this.determineRouteFromItem(foundItem);
+        }
+
+        // Search in main mobile layout
+        foundItem = searchInLayout(config.layout?.mobile || []);
+        if (foundItem) {
+            return this.determineRouteFromItem(foundItem);
+        }
+
+        // Search in pages if they exist
+        if (config.pages) {
+            for (const page of config.pages) {
+                // Search in page desktop layout
+                foundItem = searchInLayout(page.layout?.desktop || []);
+                if (foundItem) {
+                    return this.determineRouteFromItem(foundItem);
+                }
+
+                // Search in page mobile layout
+                foundItem = searchInLayout(page.layout?.mobile || []);
+                if (foundItem) {
+                    return this.determineRouteFromItem(foundItem);
+                }
+            }
+        }
+
+        throw new Error('Item not found in configuration');
+    }
+
+    // Helper method to determine which Pi-hole route to use based on config
+    private static async getPiholeRouteInfo(itemId: string): Promise<{ route: string; isV6: boolean }> {
+        try {
+
+            // Get the config to determine authentication method
+            const configRes = await axios.get(`${BACKEND_URL}/api/config`, {
+                withCredentials: true
+            });
+
+            const config = configRes.data;
+
+            // Helper function to search for item in a layout array
+            const searchInLayout = (items: any[]): any => {
+                for (const item of items) {
+                    // Direct match
+                    if (item.id === itemId) {
+                        return item;
+                    }
+
+                    // Check if this is a dual widget and the itemId is for a position-specific widget
+                    if (item.type === 'dual-widget' && itemId.startsWith(item.id + '-')) {
+                        const position = itemId.endsWith('-top') ? 'top' : 'bottom';
+                        const positionWidget = position === 'top' ? item.config?.topWidget : item.config?.bottomWidget;
+
+                        if (positionWidget?.type === 'pihole-widget') {
+                            // Return a synthetic item with the position-specific config
+                            return {
+                                id: itemId,
+                                type: 'pihole-widget',
+                                config: positionWidget.config
+                            };
+                        }
+                    }
+
+                    // Check group widgets
+                    if (item.type === 'group-widget' && item.config?.items) {
+                        const groupItem = searchInLayout(item.config.items);
+                        if (groupItem) return groupItem;
+                    }
+                }
+                return null;
+            };
+
+            // Search in main desktop layout
+            let foundItem = searchInLayout(config.layout?.desktop || []);
+            if (foundItem) {
+                return this.determineRouteFromItem(foundItem);
             }
 
-            // Validate that we have at least one authentication method
-            if (!params.apiToken && !params.password) {
-                throw new Error('No authentication credentials provided. Please add either an API token or password.');
+            // Search in main mobile layout
+            foundItem = searchInLayout(config.layout?.mobile || []);
+            if (foundItem) {
+                return this.determineRouteFromItem(foundItem);
             }
 
-            // Choose the appropriate API endpoint based on the authentication method
-            let apiEndpoint = '/api/pihole/stats';
+            // Search in pages if they exist
+            if (config.pages) {
+                for (const page of config.pages) {
+                    // Search in page desktop layout
+                    foundItem = searchInLayout(page.layout?.desktop || []);
+                    if (foundItem) {
+                        return this.determineRouteFromItem(foundItem);
+                    }
 
-            // If using password authentication, use the v6 endpoint
-            if (params.password && !params.apiToken) {
-                apiEndpoint = '/api/pihole/v6/stats';
+                    // Search in page mobile layout
+                    foundItem = searchInLayout(page.layout?.mobile || []);
+                    if (foundItem) {
+                        return this.determineRouteFromItem(foundItem);
+                    }
+                }
             }
 
-            const res = await axios.get(`${BACKEND_URL}${apiEndpoint}`, {
-                params,
+            throw new Error('Item not found in configuration');
+        } catch (error) {
+            console.error('Error determining Pi-hole route:', error);
+            throw new Error('Failed to determine Pi-hole version from configuration');
+        }
+    }
+
+    // Helper method to determine route from item config
+    private static determineRouteFromItem(item: any): { route: string; isV6: boolean } {
+        const itemConfig = item.config || {};
+
+        // Determine route based on security flags (since actual credentials are not sent to frontend)
+        // If password flag exists (with or without apiToken flag), use v6
+        // If only apiToken flag exists, use v5
+        const hasPassword = !!itemConfig._hasPassword;
+        const hasApiToken = !!itemConfig._hasApiToken;
+
+        if (hasPassword) {
+            return { route: 'pihole/v6', isV6: true };
+        } else if (hasApiToken) {
+            return { route: 'pihole', isV6: false };
+        } else {
+            throw new Error('No valid authentication method found (password for v6 or apiToken for v5)');
+        }
+    }
+
+    // Pi-hole methods with config from context (preferred method)
+    public static async getPiholeStatsWithConfig(itemId: string, config: any): Promise<any> {
+        try {
+            if (!itemId) {
+                throw new Error('Item ID is required for Pi-hole stats');
+            }
+
+            const { route } = this.getPiholeRouteFromConfig(itemId, config);
+
+            const res = await axios.get(`${BACKEND_URL}/api/${route}/stats`, {
+                params: { itemId },
                 withCredentials: true
             });
 
             if (res.data.success) {
-                // Log the stats response for debugging
+                return res.data.data;
+            } else {
+                if (res.data.decryptionError) {
+                    throw new Error('Failed to decrypt Pi-hole authentication credentials');
+                }
+                throw new Error(res.data.error || 'Failed to get Pi-hole statistics');
+            }
+        } catch (error: any) {
+            // Check for custom error codes from our backend
+            if (error.response?.data?.code === 'PIHOLE_AUTH_ERROR') {
+                // Authentication error with Pi-hole - create a custom error
+                const piError = new Error(error.response.data.error || 'Pi-hole authentication failed');
+                // Attach the response to the error for the component to use
+                (piError as any).response = {
+                    status: 400,  // Use 400 instead of 401 to avoid global auth interceptor
+                    data: error.response.data
+                };
+                (piError as any).pihole = {
+                    requiresReauth: true
+                };
+                throw piError;
+            }
+
+            if (error.response?.data?.code === 'PIHOLE_API_ERROR') {
+                // API error with Pi-hole - create a custom error
+                const piError = new Error(error.response.data.error || 'Pi-hole API error');
+                (piError as any).response = {
+                    status: 400,
+                    data: error.response.data
+                };
+                (piError as any).pihole = {
+                    requiresReauth: error.response.data.requiresReauth || false
+                };
+                throw piError;
+            }
+
+            // If we get an explicit 401 from the server, throw with an authentication message
+            if (error.response?.status === 401) {
+                console.error('Pi-hole authentication failed:', error.response.data);
+                const errorMsg = error.response.data?.error || 'Authentication failed';
+                const err = new Error(errorMsg);
+                // Add response property so the component can check status code
+                (err as any).response = error.response;
+                throw err;
+            }
+
+            // Provide detailed error information for debugging
+            console.error('Pi-hole stats error:', {
+                message: error.message,
+                status: error.response?.status,
+                data: error.response?.data,
+                stack: error.stack
+            });
+
+            // Add more specific error messages for common issues
+            if (error.message?.includes('ECONNREFUSED')) {
+                throw new Error('Connection refused. Please check if Pi-hole is running at the specified host and port.');
+            } else if (error.message?.includes('timeout')) {
+                throw new Error('Connection timed out. Please check your network connection and Pi-hole configuration.');
+            } else if (error.message?.includes('Network Error')) {
+                throw new Error('Network error. Please check your network connection and Pi-hole configuration.');
+            }
+
+            throw error;
+        }
+    }
+
+    // Pi-hole methods (fallback - fetches config)
+    public static async getPiholeStats(itemId: string): Promise<any> {
+        try {
+            if (!itemId) {
+                throw new Error('Item ID is required for Pi-hole stats');
+            }
+
+            const { route } = await this.getPiholeRouteInfo(itemId);
+
+            const res = await axios.get(`${BACKEND_URL}/api/${route}/stats`, {
+                params: { itemId },
+                withCredentials: true
+            });
+
+            if (res.data.success) {
                 return res.data.data;
             } else {
                 if (res.data.decryptionError) {
@@ -967,6 +1270,7 @@ export class DashApi {
 
     public static async encryptPiholeToken(apiToken: string): Promise<string> {
         try {
+            // API tokens are only used for v5, so always use the v5 route
             const res = await axios.post(`${BACKEND_URL}/api/pihole/encrypt-token`,
                 { apiToken },
                 { withCredentials: true }
@@ -978,9 +1282,22 @@ export class DashApi {
         }
     }
 
-    public static async encryptPiholePassword(password: string): Promise<string> {
+    public static async encryptPiholePassword(password: string, itemId?: string): Promise<string> {
         try {
-            const res = await axios.post(`${BACKEND_URL}/api/pihole/encrypt-password`,
+            let route = 'pihole'; // Default to v5
+
+            // If itemId is provided, determine the correct route
+            if (itemId) {
+                try {
+                    const routeInfo = await this.getPiholeRouteInfo(itemId);
+                    route = routeInfo.route;
+                } catch (error) {
+                    // If we can't determine the route, default to v5 for backward compatibility
+                    console.warn('Could not determine Pi-hole route, defaulting to v5:', error);
+                }
+            }
+
+            const res = await axios.post(`${BACKEND_URL}/api/${route}/encrypt-password`,
                 { password },
                 { withCredentials: true }
             );
@@ -991,36 +1308,21 @@ export class DashApi {
         }
     }
 
-    public static async disablePihole(connectionInfo: {
-        host: string;
-        port: string;
-        ssl: boolean;
-        apiToken?: string;
-        password?: string;
-    }, seconds?: number): Promise<boolean> {
+    public static async disablePiholeWithConfig(itemId: string, config: any, seconds?: number): Promise<boolean> {
         try {
-            const params: any = {
-                host: connectionInfo.host,
-                port: connectionInfo.port,
-                ssl: connectionInfo.ssl
-            };
+            if (!itemId) {
+                throw new Error('Item ID is required for Pi-hole disable');
+            }
 
-            if (connectionInfo.apiToken) params.apiToken = connectionInfo.apiToken;
-            if (connectionInfo.password) params.password = connectionInfo.password;
+            const { route } = this.getPiholeRouteFromConfig(itemId, config);
+
+            const params: any = { itemId };
 
             if (seconds !== undefined && seconds !== null) {
                 params.seconds = seconds;
             }
 
-            // Choose the appropriate API endpoint based on the authentication method
-            let apiEndpoint = '/api/pihole/disable';
-
-            // If using password authentication, use the v6 endpoint
-            if (params.password && !params.apiToken) {
-                apiEndpoint = '/api/pihole/v6/disable';
-            }
-
-            const res = await axios.post(`${BACKEND_URL}${apiEndpoint}`, {}, {
+            const res = await axios.post(`${BACKEND_URL}/api/${route}/disable`, {}, {
                 params,
                 withCredentials: true
             });
@@ -1048,33 +1350,58 @@ export class DashApi {
         }
     }
 
-    public static async enablePihole(connectionInfo: {
-        host: string;
-        port: string;
-        ssl: boolean;
-        apiToken?: string;
-        password?: string;
-    }): Promise<boolean> {
+    public static async disablePihole(itemId: string, seconds?: number): Promise<boolean> {
         try {
-            const params: any = {
-                host: connectionInfo.host,
-                port: connectionInfo.port,
-                ssl: connectionInfo.ssl
-            };
-
-            if (connectionInfo.apiToken) params.apiToken = connectionInfo.apiToken;
-            if (connectionInfo.password) params.password = connectionInfo.password;
-
-            // Choose the appropriate API endpoint based on the authentication method
-            let apiEndpoint = '/api/pihole/enable';
-
-            // If using password authentication, use the v6 endpoint
-            if (params.password && !params.apiToken) {
-                apiEndpoint = '/api/pihole/v6/enable';
+            if (!itemId) {
+                throw new Error('Item ID is required for Pi-hole disable');
             }
 
-            const res = await axios.post(`${BACKEND_URL}${apiEndpoint}`, {}, {
+            const { route } = await this.getPiholeRouteInfo(itemId);
+
+            const params: any = { itemId };
+
+            if (seconds !== undefined && seconds !== null) {
+                params.seconds = seconds;
+            }
+
+            const res = await axios.post(`${BACKEND_URL}/api/${route}/disable`, {}, {
                 params,
+                withCredentials: true
+            });
+
+            return res.data.success === true;
+        } catch (error: any) {
+            // Handle custom error codes from our backend
+            if (error.response?.data?.code) {
+                console.error(`Pi-hole disable error (${error.response.data.code}):`, error.response.data);
+
+                // Create a custom error that won't trigger global auth interceptors
+                const piError = new Error(error.response.data.error || 'Failed to disable Pi-hole');
+                (piError as any).response = {
+                    status: 400,  // Use 400 instead of 401 to avoid global auth interceptor
+                    data: error.response.data
+                };
+                (piError as any).pihole = {
+                    requiresReauth: error.response.data.requiresReauth || false
+                };
+                throw piError;
+            }
+
+            console.error('Failed to disable Pi-hole:', error);
+            throw error;
+        }
+    }
+
+    public static async enablePiholeWithConfig(itemId: string, config: any): Promise<boolean> {
+        try {
+            if (!itemId) {
+                throw new Error('Item ID is required for Pi-hole enable');
+            }
+
+            const { route } = this.getPiholeRouteFromConfig(itemId, config);
+
+            const res = await axios.post(`${BACKEND_URL}/api/${route}/enable`, {}, {
+                params: { itemId },
                 withCredentials: true
             });
 
@@ -1097,6 +1424,90 @@ export class DashApi {
             }
 
             console.error('Failed to enable Pi-hole:', error);
+            throw error;
+        }
+    }
+
+    public static async enablePihole(itemId: string): Promise<boolean> {
+        try {
+            if (!itemId) {
+                throw new Error('Item ID is required for Pi-hole enable');
+            }
+
+            const { route } = await this.getPiholeRouteInfo(itemId);
+
+            const res = await axios.post(`${BACKEND_URL}/api/${route}/enable`, {}, {
+                params: { itemId },
+                withCredentials: true
+            });
+
+            return res.data.success === true;
+        } catch (error: any) {
+            // Handle custom error codes from our backend
+            if (error.response?.data?.code) {
+                console.error(`Pi-hole enable error (${error.response.data.code}):`, error.response.data);
+
+                // Create a custom error that won't trigger global auth interceptors
+                const piError = new Error(error.response.data.error || 'Failed to enable Pi-hole');
+                (piError as any).response = {
+                    status: 400,  // Use 400 instead of 401 to avoid global auth interceptor
+                    data: error.response.data
+                };
+                (piError as any).pihole = {
+                    requiresReauth: error.response.data.requiresReauth || false
+                };
+                throw piError;
+            }
+
+            console.error('Failed to enable Pi-hole:', error);
+            throw error;
+        }
+    }
+
+    public static async getPiholeBlockingStatusWithConfig(itemId: string, config: any): Promise<any> {
+        try {
+            if (!itemId) {
+                throw new Error('Item ID is required for Pi-hole blocking status');
+            }
+
+            const { route } = this.getPiholeRouteFromConfig(itemId, config);
+
+            const res = await axios.get(`${BACKEND_URL}/api/${route}/blocking-status`, {
+                params: { itemId },
+                withCredentials: true
+            });
+
+            if (res.data.success) {
+                return res.data.data;
+            } else {
+                throw new Error(res.data.error || 'Failed to get Pi-hole blocking status');
+            }
+        } catch (error: any) {
+            console.error('Pi-hole blocking status error:', error);
+            throw error;
+        }
+    }
+
+    public static async getPiholeBlockingStatus(itemId: string): Promise<any> {
+        try {
+            if (!itemId) {
+                throw new Error('Item ID is required for Pi-hole blocking status');
+            }
+
+            const { route } = await this.getPiholeRouteInfo(itemId);
+
+            const res = await axios.get(`${BACKEND_URL}/api/${route}/blocking-status`, {
+                params: { itemId },
+                withCredentials: true
+            });
+
+            if (res.data.success) {
+                return res.data.data;
+            } else {
+                throw new Error(res.data.error || 'Failed to get Pi-hole blocking status');
+            }
+        } catch (error: any) {
+            console.error('Pi-hole blocking status error:', error);
             throw error;
         }
     }

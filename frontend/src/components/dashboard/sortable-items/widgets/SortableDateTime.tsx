@@ -21,11 +21,19 @@ type Props = {
     isOverlay?: boolean;
     onDelete?: () => void;
     onEdit?: () => void;
-    // Accept any config type
-    config?: Record<string, any>;
+    onDuplicate?: () => void;
+    config?: DateTimeConfig;
 };
 
-export const SortableDateTimeWidget: React.FC<Props> = ({ id, editMode, isOverlay = false, onDelete, onEdit, config }) => {
+export const SortableDateTimeWidget: React.FC<Props> = ({
+    id,
+    editMode,
+    isOverlay = false,
+    onDelete,
+    onEdit,
+    onDuplicate,
+    config
+}) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
     // Ensure we have a properly typed config for the DateTimeWidget
@@ -48,7 +56,7 @@ export const SortableDateTimeWidget: React.FC<Props> = ({ id, editMode, isOverla
                 visibility: isDragging ? 'hidden' : 'visible',
             }}
         >
-            <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit}>
+            <WidgetContainer editMode={editMode} id={id} onDelete={onDelete} onEdit={onEdit} onDuplicate={onDuplicate}>
                 <DateTimeWidget config={dateTimeConfig} />
             </WidgetContainer>
         </Grid2>

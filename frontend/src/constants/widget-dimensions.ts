@@ -27,7 +27,7 @@ export const DUAL_WIDGET_INNER_HEIGHT = {
 // Standard widget dimensions (for single widgets)
 export const STANDARD_WIDGET_HEIGHT = {
     xs: '100%',
-    sm: '19rem',
-    md: '19rem',
-    lg: '19rem'
+    sm: '12rem',
+    md: '12rem',
+    lg: '12rem'
 };

@@ -8,15 +8,16 @@ import { getIconPath } from '../../../../utils/utils';
 import { PopupManager } from '../../../modals/PopupManager';
 
 type Props = {
-    url: string;
+    url?: string;
     name: string;
     iconName: string;
     showLabel?: boolean;
     editMode?: boolean;
     config?: any;
+    isPreview?: boolean;
 }
 
-export const AppShortcut = ({ url, name, iconName, showLabel, editMode, config }: Props) => {
+export const AppShortcut = ({ url, name, iconName, showLabel, editMode, config, isPreview }: Props) => {
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const isWolShortcut = config?.isWol === true;
 
@@ -142,12 +143,20 @@ export const AppShortcut = ({ url, name, iconName, showLabel, editMode, config }
                 <Box sx={{ ...styles.center, width: '100%', height: '100%' }} className='scale'>
                     {shortcutContent}
                 </Box>
+            ) : isPreview ? (
+                <Box sx={{ ...styles.center, width: '100%', height: '100%' }} className='scale'>
+                    {shortcutContent}
+                </Box>
             ) : isWolShortcut ? (
                 <a href='#' onClick={handleWakeOnLan} style={{ width: '100%', height: '100%' }}>
                     <Box sx={{ ...styles.center }} className='scale'>
                         {shortcutContent}
                     </Box>
                 </a>
+            ) : !url && config?.healthUrl ? (
+                <Box sx={{ ...styles.center, width: '100%', height: '100%' }} className='scale'>
+                    {shortcutContent}
+                </Box>
             ) : (
                 <a href={url} rel='noopener noreferrer' target='_blank' style={{ width: '100%', height: '100%' }}>
                     <Box sx={{ ...styles.center }} className='scale'>

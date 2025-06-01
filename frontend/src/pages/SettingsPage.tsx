@@ -34,7 +34,8 @@ export const SettingsPage = () => {
                 width: '95%',
                 maxWidth: '1200px',
                 minHeight: '600px',
-                borderRadius: 2
+                borderRadius: 2,
+                mb: 4
             }} component={Paper}>
                 <SettingsForm />
             </Box>

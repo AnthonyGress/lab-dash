@@ -2,28 +2,46 @@ import axios from 'axios';
 import { Request, Response, Router } from 'express';
 
 import { authenticateToken } from '../middleware/auth.middleware';
+import { getItemConnectionInfo } from '../utils/config-lookup';
 import { decrypt, encrypt, isEncrypted } from '../utils/crypto';
 
 export const piholeRoute = Router();
 
-const getBaseUrl = (req: Request): string => {
-    const host = req.query.host as string || 'localhost';
-    const port = req.query.port as string || '80';
-    const ssl = req.query.ssl === 'true';
-    const protocol = ssl ? 'https' : 'http';
-    return `${protocol}://${host}:${port}/admin`;
+// Helper function to validate and get itemId with better error message
+const validateItemId = (req: Request): string => {
+    const itemId = req.query.itemId as string;
+    if (!itemId) {
+        throw new Error('itemId parameter is required. Please ensure the widget is properly configured with an item ID.');
+    }
+    return itemId;
 };
 
-const getApiToken = (req: Request): string => {
-    let apiToken = req.query.apiToken as string || '';
+const getBaseUrl = (req: Request): string => {
+    const itemId = validateItemId(req);
+    const connectionInfo = getItemConnectionInfo(itemId);
+    const host = connectionInfo.host || 'localhost';
+    const port = connectionInfo.port || '80';
+    const ssl = connectionInfo.ssl || false;
+    const protocol = ssl ? 'https' : 'http';
+    return `${protocol}://${host}:${port}`;
+};
+
+const getApiToken = (req: Request): string | null => {
+    const itemId = validateItemId(req);
+    const connectionInfo = getItemConnectionInfo(itemId);
+    let apiToken = connectionInfo.apiToken;
+
+    if (!apiToken) {
+        return null;
+    }
 
     // Handle encrypted API token
     if (isEncrypted(apiToken)) {
         apiToken = decrypt(apiToken);
         // Check if decryption failed (returns empty string)
         if (!apiToken) {
-            console.warn('Failed to decrypt Pi-hole API token. Token may have been encrypted with a different key.');
-            return '';
+            console.error('API token decryption failed for Pi-hole');
+            return null;
         }
     }
 
@@ -34,22 +52,15 @@ const getApiToken = (req: Request): string => {
 piholeRoute.get('/stats', async (req: Request, res: Response) => {
     try {
         const baseUrl = getBaseUrl(req);
-        let apiToken = req.query.apiToken as string || '';
+        const apiToken = getApiToken(req);
 
-        // Handle encrypted API token
-        if (isEncrypted(apiToken)) {
-            apiToken = decrypt(apiToken);
-            // Check if decryption failed (returns empty string)
-            if (!apiToken) {
-                console.warn('Failed to decrypt Pi-hole API token. Token may have been encrypted with a different key.');
-                // Return empty stats instead of failing
-                res.status(200).json({
-                    success: false,
-                    decryptionError: true,
-                    error: 'Failed to decrypt API token'
-                });
-                return;
-            }
+        if (!apiToken) {
+            // Return empty stats instead of failing
+            res.status(200).json({
+                success: false,
+                error: 'API token not configured or failed to decrypt'
+            });
+            return;
         }
 
         const response = await axios.get(`${baseUrl}/api.php`, {

@@ -2,30 +2,369 @@ import { Request, Response, Router } from 'express';
 import fsSync from 'fs';
 import fs from 'fs/promises';
 import StatusCodes from 'http-status-codes';
+import jwt from 'jsonwebtoken';
 import path from 'path';
 
 import {  authenticateToken, requireAdmin } from '../middleware/auth.middleware';
 import { Config } from '../types';
+
 export const configRoute = Router();
 
 const CONFIG_FILE = path.join(__dirname, '../config/config.json');
+const JWT_SECRET = process.env.SECRET || '@jZCgtn^qg8So*^^6A2M';
 
+// Helper function to check if user is authenticated and is admin
+const isUserAdmin = (req: Request): boolean => {
+    try {
+        // Check for token in cookies first
+        const tokenFromCookie = req.cookies?.access_token;
+        // Then check Authorization header
+        const authHeader = req.headers.authorization;
+        const tokenFromHeader = authHeader && authHeader.split(' ')[1];
+
+        const token = tokenFromCookie || tokenFromHeader;
+
+        if (!token) {
+            return false;
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET) as any;
+        return decoded && decoded.role === 'admin';
+    } catch (error) {
+        return false;
+    }
+};
+
+// Helper function to filter admin-only items from config
+const filterAdminOnlyItems = (config: any): any => {
+    const filteredConfig = JSON.parse(JSON.stringify(config)); // Deep clone
+
+    const filterItems = (items: any[]) => {
+        return items.filter(item => {
+            // Remove admin-only items
+            if (item.adminOnly === true) {
+                return false;
+            }
+
+            // Handle group widget items recursively
+            if (item.type === 'group-widget' && item.config?.items) {
+                item.config.items = filterItems(item.config.items);
+            }
+
+            return true;
+        });
+    };
+
+    // Filter desktop and mobile layouts
+    if (filteredConfig.layout) {
+        if (filteredConfig.layout.desktop) {
+            filteredConfig.layout.desktop = filterItems(filteredConfig.layout.desktop);
+        }
+        if (filteredConfig.layout.mobile) {
+            filteredConfig.layout.mobile = filterItems(filteredConfig.layout.mobile);
+        }
+    }
+
+    // Filter pages
+    if (filteredConfig.pages) {
+        filteredConfig.pages = filteredConfig.pages
+            .filter((page: any) => !page.adminOnly) // Filter out admin-only pages
+            .map((page: any) => ({
+                ...page,
+                layout: {
+                    desktop: page.layout.desktop ? filterItems(page.layout.desktop) : [],
+                    mobile: page.layout.mobile ? filterItems(page.layout.mobile) : []
+                }
+            }));
+    }
+
+    return filteredConfig;
+};
 const loadConfig = () => {
     if (fsSync.existsSync(CONFIG_FILE)) {
-        return JSON.parse(fsSync.readFileSync(CONFIG_FILE, 'utf-8'));
+        try {
+            const fileContent = fsSync.readFileSync(CONFIG_FILE, 'utf-8');
+            if (!fileContent.trim()) {
+                console.error('Config file is empty, returning default config');
+                return { layout: { desktop: [], mobile: [] } };
+            }
+            const config = JSON.parse(fileContent);
+            return config;
+        } catch (error) {
+            console.error('Error parsing config file:', error);
+            console.error('Config file content length:', fsSync.readFileSync(CONFIG_FILE, 'utf-8').length);
+
+            // Try to read the first and last 100 characters to help debug
+            try {
+                const content = fsSync.readFileSync(CONFIG_FILE, 'utf-8');
+                console.error('First 100 chars:', content.substring(0, 100));
+                console.error('Last 100 chars:', content.substring(Math.max(0, content.length - 100)));
+            } catch (readError) {
+                console.error('Could not read config file for debugging:', readError);
+            }
+
+            // Return default config if parsing fails
+            return { layout: { desktop: [], mobile: [] } };
+        }
     }
     return { layout: { desktop: [], mobile: [] } };
 };
 
-// GET - Retrieve the saved layout JSON from disk (public access)
-configRoute.get('/', async (_req: Request, res: Response): Promise<void> => {
+// Helper function to filter sensitive data from config before sending to frontend
+const filterSensitiveData = (config: any): any => {
+    const filteredConfig = JSON.parse(JSON.stringify(config)); // Deep clone
+
+    const processItems = (items: any[]) => {
+        return items.map(item => {
+            if (!item.config) return item;
+
+            const newConfig = { ...item.config };
+
+            // Handle Pi-hole widget sensitive data
+            if (newConfig.apiToken) {
+                newConfig._hasApiToken = true;
+                delete newConfig.apiToken;
+            }
+            if (newConfig.password) {
+                newConfig._hasPassword = true;
+                delete newConfig.password;
+            }
+
+            // Handle torrent client sensitive data
+            if (item.type === 'torrent-client' && newConfig.password) {
+                newConfig._hasPassword = true;
+                delete newConfig.password;
+            }
+
+            // Handle dual widget sensitive data
+            if (item.type === 'dual-widget') {
+                if (newConfig.topWidget?.config) {
+                    if (newConfig.topWidget.config.apiToken) {
+                        newConfig.topWidget.config._hasApiToken = true;
+                        delete newConfig.topWidget.config.apiToken;
+                    }
+                    if (newConfig.topWidget.config.password) {
+                        newConfig.topWidget.config._hasPassword = true;
+                        delete newConfig.topWidget.config.password;
+                    }
+                }
+                if (newConfig.bottomWidget?.config) {
+                    if (newConfig.bottomWidget.config.apiToken) {
+                        newConfig.bottomWidget.config._hasApiToken = true;
+                        delete newConfig.bottomWidget.config.apiToken;
+                    }
+                    if (newConfig.bottomWidget.config.password) {
+                        newConfig.bottomWidget.config._hasPassword = true;
+                        delete newConfig.bottomWidget.config.password;
+                    }
+                }
+            }
+
+            // Handle group widget items (recursively)
+            if (item.type === 'group-widget' && newConfig.items) {
+                newConfig.items = processItems(newConfig.items);
+            }
+
+            return { ...item, config: newConfig };
+        });
+    };
+
+    // Process desktop and mobile layouts
+    if (filteredConfig.layout) {
+        if (filteredConfig.layout.desktop) {
+            filteredConfig.layout.desktop = processItems(filteredConfig.layout.desktop);
+        }
+        if (filteredConfig.layout.mobile) {
+            filteredConfig.layout.mobile = processItems(filteredConfig.layout.mobile);
+        }
+    }
+
+    // Process pages
+    if (filteredConfig.pages) {
+        filteredConfig.pages = filteredConfig.pages.map((page: any) => ({
+            ...page,
+            layout: {
+                desktop: page.layout.desktop ? processItems(page.layout.desktop) : [],
+                mobile: page.layout.mobile ? processItems(page.layout.mobile) : []
+            }
+        }));
+    }
+
+    return filteredConfig;
+};
+
+// Helper function to restore sensitive data when saving config
+const restoreSensitiveData = (newConfig: any, existingConfig: any): any => {
+    const restoredConfig = JSON.parse(JSON.stringify(newConfig)); // Deep clone
+
+    // Create a global map of all existing items by ID for cross-location lookups
+    const createGlobalItemMap = (config: any): Map<string, any> => {
+        const globalMap = new Map();
+
+        // Helper to add items from a layout to the global map
+        const addItemsToMap = (items: any[]) => {
+            items.forEach(item => {
+                globalMap.set(item.id, item);
+
+                // Also add group widget items
+                if (item.type === 'group-widget' && item.config?.items) {
+                    item.config.items.forEach((groupItem: any) => {
+                        globalMap.set(groupItem.id, groupItem);
+                    });
+                }
+            });
+        };
+
+        // Add items from main dashboard
+        if (config.layout?.desktop) addItemsToMap(config.layout.desktop);
+        if (config.layout?.mobile) addItemsToMap(config.layout.mobile);
+
+        // Add items from all pages
+        if (config.pages) {
+            config.pages.forEach((page: any) => {
+                if (page.layout?.desktop) addItemsToMap(page.layout.desktop);
+                if (page.layout?.mobile) addItemsToMap(page.layout.mobile);
+            });
+        }
+
+        return globalMap;
+    };
+
+    const globalExistingItemsMap = createGlobalItemMap(existingConfig);
+
+    const restoreItemSensitiveData = (newItem: any, existingItem: any): any => {
+        if (!newItem.config || !existingItem.config) return newItem;
+
+        const restoredItemConfig = { ...newItem.config };
+
+        // Handle group widget items (recursively)
+        if (newItem.type === 'group-widget' && restoredItemConfig.items && existingItem.config.items) {
+            restoredItemConfig.items = restoreItemsArray(restoredItemConfig.items, existingItem.config.items);
+        }
+
+        // Restore Pi-hole sensitive data if flags indicate existing data should be preserved
+        if (newItem.config._hasApiToken && !newItem.config.apiToken && existingItem.config.apiToken) {
+            restoredItemConfig.apiToken = existingItem.config.apiToken;
+        }
+        if (newItem.config._hasPassword && !newItem.config.password && existingItem.config.password) {
+            restoredItemConfig.password = existingItem.config.password;
+        }
+
+        // Handle torrent client sensitive data
+        if (newItem.type === 'torrent-client') {
+            if (newItem.config._hasPassword && !newItem.config.password && existingItem.config.password) {
+                restoredItemConfig.password = existingItem.config.password;
+            }
+        }
+
+        // Handle dual widget sensitive data
+        if (newItem.type === 'dual-widget') {
+            if (restoredItemConfig.topWidget?.config && existingItem.config.topWidget?.config) {
+                if (restoredItemConfig.topWidget.config._hasApiToken && !restoredItemConfig.topWidget.config.apiToken && existingItem.config.topWidget.config.apiToken) {
+                    restoredItemConfig.topWidget.config.apiToken = existingItem.config.topWidget.config.apiToken;
+                }
+                if (restoredItemConfig.topWidget.config._hasPassword && !restoredItemConfig.topWidget.config.password && existingItem.config.topWidget.config.password) {
+                    restoredItemConfig.topWidget.config.password = existingItem.config.topWidget.config.password;
+                }
+            }
+            if (restoredItemConfig.bottomWidget?.config && existingItem.config.bottomWidget?.config) {
+                if (restoredItemConfig.bottomWidget.config._hasApiToken && !restoredItemConfig.bottomWidget.config.apiToken && existingItem.config.bottomWidget.config.apiToken) {
+                    restoredItemConfig.bottomWidget.config.apiToken = existingItem.config.bottomWidget.config.apiToken;
+                }
+                if (restoredItemConfig.bottomWidget.config._hasPassword && !restoredItemConfig.bottomWidget.config.password && existingItem.config.bottomWidget.config.password) {
+                    restoredItemConfig.bottomWidget.config.password = existingItem.config.bottomWidget.config.password;
+                }
+            }
+        }
+
+        // Clean up security flags (they're only for communication, not storage)
+        delete restoredItemConfig._hasApiToken;
+        delete restoredItemConfig._hasPassword;
+        if (restoredItemConfig.topWidget?.config) {
+            delete restoredItemConfig.topWidget.config._hasApiToken;
+            delete restoredItemConfig.topWidget.config._hasPassword;
+        }
+        if (restoredItemConfig.bottomWidget?.config) {
+            delete restoredItemConfig.bottomWidget.config._hasApiToken;
+            delete restoredItemConfig.bottomWidget.config._hasPassword;
+        }
+
+        return { ...newItem, config: restoredItemConfig };
+    };
+
+    const restoreItemsArray = (newItems: any[], existingItems: any[]): any[] => {
+        const existingItemsMap = new Map(existingItems.map(item => [item.id, item]));
+
+        return newItems.map(newItem => {
+            // First try to find the item in the local existing items (for normal updates)
+            let existingItem = existingItemsMap.get(newItem.id);
+
+            // If not found locally, try the global map (for item moves)
+            if (!existingItem) {
+                existingItem = globalExistingItemsMap.get(newItem.id);
+            }
+
+            return existingItem ? restoreItemSensitiveData(newItem, existingItem) : newItem;
+        });
+    };
+
+    // Restore desktop and mobile layouts
+    if (restoredConfig.layout && existingConfig.layout) {
+        if (restoredConfig.layout.desktop && existingConfig.layout.desktop) {
+            restoredConfig.layout.desktop = restoreItemsArray(restoredConfig.layout.desktop, existingConfig.layout.desktop);
+        }
+        if (restoredConfig.layout.mobile && existingConfig.layout.mobile) {
+            restoredConfig.layout.mobile = restoreItemsArray(restoredConfig.layout.mobile, existingConfig.layout.mobile);
+        }
+    }
+
+    // Restore pages
+    if (restoredConfig.pages && existingConfig.pages) {
+        const existingPagesMap = new Map(existingConfig.pages.map((page: any) => [page.id, page]));
+
+        restoredConfig.pages = restoredConfig.pages.map((newPage: any) => {
+            const existingPage = existingPagesMap.get(newPage.id) as any;
+            if (!existingPage || !existingPage.layout) return newPage;
+            if (!newPage.layout) return newPage;
+
+            const newPageWithLayout = newPage as any;
+            const existingPageWithLayout = existingPage as any;
+
+            return {
+                ...newPage,
+                layout: {
+                    desktop: (newPageWithLayout.layout.desktop && existingPageWithLayout.layout.desktop) ?
+                        restoreItemsArray(newPageWithLayout.layout.desktop, existingPageWithLayout.layout.desktop) :
+                        (newPageWithLayout.layout.desktop || []),
+                    mobile: (newPageWithLayout.layout.mobile && existingPageWithLayout.layout.mobile) ?
+                        restoreItemsArray(newPageWithLayout.layout.mobile, existingPageWithLayout.layout.mobile) :
+                        (newPageWithLayout.layout.mobile || [])
+                }
+            };
+        });
+    }
+
+    return restoredConfig;
+};
+
+// GET - Return the config file with sensitive data filtered and admin-only items filtered based on user role
+configRoute.get('/', async (req: Request, res: Response): Promise<void> => {
     try {
         const config = loadConfig();
-        console.log('loading layout');
-        res.status(StatusCodes.OK).json(config);
+
+        // Filter sensitive data (passwords/tokens) and add security flags
+        let filteredConfig = filterSensitiveData(config);
+
+        // Filter admin-only items if user is not admin
+        if (!isUserAdmin(req)) {
+            filteredConfig = filterAdminOnlyItems(filteredConfig);
+        }
+
+        res.status(StatusCodes.OK).json(filteredConfig);
     } catch (error) {
+        console.error('Error loading config:', error);
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-            message: 'Error reading config file',
+            message: 'Error loading config file',
             error: (error as Error).message
         });
     }
@@ -41,7 +380,7 @@ configRoute.get('/export', [authenticateToken, requireAdmin], async (_req: Reque
         res.setHeader('Content-Type', 'application/json');
         res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
 
-        // Send the formatted JSON as the response
+        // Send the formatted JSON as the response (with sensitive data for backup)
         res.status(StatusCodes.OK).send(JSON.stringify(config, null, 2));
     } catch (error) {
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -54,20 +393,37 @@ configRoute.get('/export', [authenticateToken, requireAdmin], async (_req: Reque
 // POST - Save the incoming JSON layout to disk (admin only)
 configRoute.post('/', [authenticateToken, requireAdmin], async (req: Request, res: Response): Promise<void> => {
     try {
-        const updates = req.body; // Get all key-value pairs from the request
-        const config: Config = loadConfig(); // Load current config
+        const updates = req.body;
+        const existingConfig: Config = loadConfig();
 
-        // Apply updates dynamically
-        Object.keys(updates).forEach((key) => {
-            if (updates[key] !== undefined) {
-                (config as any)[key] = updates[key]; // Update the key dynamically
+        // Restore sensitive data from existing config before saving
+        const configToSave = restoreSensitiveData(updates, existingConfig);
+
+        // Apply updates to existing config
+        Object.keys(configToSave).forEach((key) => {
+            if (configToSave[key] !== undefined) {
+                (existingConfig as any)[key] = configToSave[key];
             }
         });
 
-        // Save the updated config to file
-        await fs.writeFile(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8');
+        // Ensure the config has all required properties
+        if (!existingConfig.layout) {
+            existingConfig.layout = { desktop: [], mobile: [] };
+        }
+        if (!existingConfig.pages) {
+            existingConfig.pages = [];
+        }
 
-        res.status(StatusCodes.OK).json({ message: 'Config saved successfully', updatedConfig: config });
+        // Save the updated config to file (with sensitive data preserved)
+        await fs.writeFile(CONFIG_FILE, JSON.stringify(existingConfig, null, 2), 'utf-8');
+
+        // Return filtered config to frontend (without sensitive data)
+        const filteredConfig = filterSensitiveData(existingConfig);
+
+        res.status(StatusCodes.OK).json({
+            message: 'Config saved successfully',
+            updatedConfig: filteredConfig
+        });
     } catch (error) {
         console.error('Error saving config:', error);
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -101,9 +457,11 @@ configRoute.post('/import', [authenticateToken, requireAdmin], async (req: Reque
         // Write the imported config directly to the config file
         await fs.writeFile(CONFIG_FILE, JSON.stringify(importedConfig, null, 2), 'utf-8');
 
+        // Return filtered config to frontend
+        const filteredConfig = filterSensitiveData(importedConfig);
         res.status(StatusCodes.OK).json({
             message: 'Configuration imported successfully',
-            updatedConfig: importedConfig
+            updatedConfig: filteredConfig
         });
     } catch (error) {
         console.error('Error importing config:', error);

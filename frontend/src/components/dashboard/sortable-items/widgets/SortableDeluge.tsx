@@ -12,6 +12,7 @@ interface Props {
     isOverlay?: boolean;
     onDelete?: () => void;
     onEdit?: () => void;
+    onDuplicate?: () => void;
     config?: any;
 }
 
@@ -21,6 +22,7 @@ export const SortableDeluge: React.FC<Props> = ({
     isOverlay = false,
     onDelete,
     onEdit,
+    onDuplicate,
     config
 }) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
@@ -38,8 +40,8 @@ export const SortableDeluge: React.FC<Props> = ({
                 visibility: isDragging ? 'hidden' : 'visible',
             }}
         >
-            <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit}>
-                <DelugeWidget config={config} />
+            <WidgetContainer editMode={editMode} id={id} onDelete={onDelete} onEdit={onEdit} onDuplicate={onDuplicate}>
+                <DelugeWidget config={config} id={id} />
             </WidgetContainer>
         </Grid2>
     );

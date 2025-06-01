@@ -1,26 +1,35 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Box, Grid2 } from '@mui/material';
+import { Grid2 } from '@mui/material';
 import React from 'react';
 
-import { styles } from '../../../../theme/styles';
-import { WidgetContainer } from '../widgets/WidgetContainer';
+import { TransmissionWidget } from '../../base-items/widgets/TransmissionWidget';
+import { WidgetContainer } from '../../base-items/widgets/WidgetContainer';
 
-type Props = {
+interface Props {
     id: string;
-    editMode: boolean;
+    editMode?: boolean;
     isOverlay?: boolean;
     onDelete?: () => void;
     onEdit?: () => void;
     onDuplicate?: () => void;
-};
+    config?: any;
+}
 
-export const BlankAppShortcut: React.FC<Props> = ({ id, editMode, isOverlay = false, onDelete, onEdit, onDuplicate }) => {
+export const SortableTransmission: React.FC<Props> = ({
+    id,
+    editMode = false,
+    isOverlay = false,
+    onDelete,
+    onEdit,
+    onDuplicate,
+    config
+}) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
     return (
         <Grid2
-            size={{ xs: 4 , sm: 4 , md: 2, lg: 4/3, xl: 4/3 }}
+            size={{ xs: 12, sm: 6, md: 6, lg: 4, xl: 4 }}
             ref={!isOverlay ? setNodeRef : undefined}
             {...(!isOverlay ? attributes : {})}
             {...(!isOverlay ? listeners : {})}
@@ -31,9 +40,8 @@ export const BlankAppShortcut: React.FC<Props> = ({ id, editMode, isOverlay = fa
                 visibility: isDragging ? 'hidden' : 'visible',
             }}
         >
-            <WidgetContainer editMode={editMode} id={id} onDelete={onDelete} onEdit={onEdit} onDuplicate={onDuplicate} appShortcut placeholder>
-                {/* <AppShortcut url={url} name={name} iconName={iconName} /> */}
-                <Box sx={{ width: { xs: '45%', sm: '40%', md: '55%', lg: '50%', xl: '35%' } }} />
+            <WidgetContainer editMode={editMode} id={id} onDelete={onDelete} onEdit={onEdit} onDuplicate={onDuplicate}>
+                <TransmissionWidget config={config} id={id} />
             </WidgetContainer>
         </Grid2>
     );

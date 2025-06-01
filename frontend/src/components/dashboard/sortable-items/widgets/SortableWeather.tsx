@@ -13,12 +13,13 @@ type Props = {
     isOverlay?: boolean;
     onDelete?: () => void;
     onEdit?: () => void;
+    onDuplicate?: () => void;
     config?: {
         temperatureUnit?: string;
     };
 };
 
-export const SortableWeatherWidget: React.FC<Props> = ({ id, editMode, isOverlay = false, onDelete, onEdit, config }) => {
+export const SortableWeatherWidget: React.FC<Props> = ({ id, editMode, isOverlay = false, onDelete, onEdit, onDuplicate, config }) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
     return (
@@ -34,7 +35,7 @@ export const SortableWeatherWidget: React.FC<Props> = ({ id, editMode, isOverlay
                 visibility: isDragging ? 'hidden' : 'visible'
             }}
         >
-            <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit}>
+            <WidgetContainer editMode={editMode} id={id} onDelete={onDelete} onEdit={onEdit} onDuplicate={onDuplicate}>
                 <WeatherWidget config={config} />
             </WidgetContainer>
         </Grid2>

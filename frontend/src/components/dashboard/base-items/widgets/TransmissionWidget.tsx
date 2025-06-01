@@ -3,7 +3,21 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { TorrentClientWidget } from './TorrentClientWidget';
 import { DashApi } from '../../../../api/dash-api';
 
-type QBittorrentWidgetConfig = {
+// Helper function to convert Transmission status codes to common state strings
+const getTransmissionState = (status: number): string => {
+    switch (status) {
+    case 0: return 'stopped';        // TR_STATUS_STOPPED
+    case 1: return 'checkingResumeData'; // TR_STATUS_CHECK_WAIT
+    case 2: return 'checkingDL';     // TR_STATUS_CHECK
+    case 3: return 'stalledDL';      // TR_STATUS_DOWNLOAD_WAIT
+    case 4: return 'downloading';    // TR_STATUS_DOWNLOAD
+    case 5: return 'stalledUP';      // TR_STATUS_SEED_WAIT
+    case 6: return 'seeding';        // TR_STATUS_SEED
+    default: return 'unknown';
+    }
+};
+
+type TransmissionWidgetConfig = {
     host?: string;
     port?: string;
     ssl?: boolean;
@@ -14,7 +28,7 @@ type QBittorrentWidgetConfig = {
     showLabel?: boolean;
 };
 
-export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig; id?: string }) => {
+export const TransmissionWidget = (props: { config?: TransmissionWidgetConfig; id?: string }) => {
     const { config, id } = props;
     const [isLoading, setIsLoading] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -24,7 +38,7 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig; id?
     const [loginAttemptFailed, setLoginAttemptFailed] = useState(false);
     const [loginCredentials, setLoginCredentials] = useState({
         host: config?.host || 'localhost',
-        port: config?.port || '8080',
+        port: config?.port || '9091',
         ssl: config?.ssl || false,
         username: config?.username || '',
         password: '' // Password is handled on backend, not sent to frontend
@@ -39,7 +53,7 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig; id?
         if (config) {
             setLoginCredentials({
                 host: config.host || '',
-                port: config.port || '8080',
+                port: config.port || '9091',
                 ssl: config.ssl || false,
                 username: config.username || '',
                 password: '' // Password is handled on backend, not sent to frontend
@@ -54,7 +68,17 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig; id?
         setIsLoading(true);
         setAuthError('');
         try {
-            const success = await DashApi.qbittorrentLogin(id || '');
+            // If no username and no password configured, skip login and go straight to authenticated state
+            // For Transmission, authentication is optional
+            if (!config?.username && !config?._hasPassword) {
+                setIsAuthenticated(true);
+                loginAttemptsRef.current = 0;
+                setLoginAttemptFailed(false);
+                setIsLoading(false);
+                return;
+            }
+
+            const success = await DashApi.transmissionLogin(id || '');
             setIsAuthenticated(success);
 
             if (!success) {
@@ -93,7 +117,7 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig; id?
                 if (error.response?.data?.error?.includes('Failed to decrypt password')) {
                     setAuthError('Failed to decrypt password. Please update your credentials in the widget settings.');
                 } else {
-                    setAuthError('Connection error after multiple attempts. Check your qBittorrent WebUI settings.');
+                    setAuthError('Connection error after multiple attempts. Check your Transmission settings.');
                 }
                 setIsAuthenticated(false);
                 setLoginAttemptFailed(true);
@@ -120,7 +144,7 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig; id?
         if (!isAuthenticated) return;
 
         try {
-            const statsData = await DashApi.qbittorrentGetStats(id || '');
+            const statsData = await DashApi.transmissionGetStats(id || '');
 
             // Check for decryption error
             if (statsData.decryptionError) {
@@ -129,9 +153,25 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig; id?
                 return;
             }
 
-            setStats(statsData);
+            // Convert Transmission stats format to common format
+            // Transmission session-stats returns: downloadSpeed, uploadSpeed, cumulative-stats with downloadedBytes/uploadedBytes
+            const convertedStats = {
+                dl_info_speed: statsData.downloadSpeed || 0,
+                dl_info_data: statsData['cumulative-stats']?.downloadedBytes || 0,
+                up_info_speed: statsData.uploadSpeed || 0,
+                up_info_data: statsData['cumulative-stats']?.uploadedBytes || 0,
+                torrents: {
+                    total: statsData.torrentCount || 0,
+                    downloading: statsData.activeTorrentCount || 0,
+                    seeding: statsData.activeTorrentCount || 0,
+                    completed: 0,
+                    paused: statsData.pausedTorrentCount || 0
+                }
+            };
+
+            setStats(convertedStats);
         } catch (error) {
-            console.error('Error fetching qBittorrent stats:', error);
+            console.error('Error fetching Transmission stats:', error);
             // If we get an auth error, set isAuthenticated to false to show login form
             if ((error as any)?.response?.status === 401) {
                 setIsAuthenticated(false);
@@ -144,7 +184,7 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig; id?
         if (!isAuthenticated) return;
 
         try {
-            const torrentsData = await DashApi.qbittorrentGetTorrents(id || '');
+            const torrentsData = await DashApi.transmissionGetTorrents(id || '');
 
             // Check if an empty array was returned due to decryption error
             if (Array.isArray(torrentsData) && torrentsData.length === 0 && loginCredentials.username && config?._hasPassword) {
@@ -154,8 +194,21 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig; id?
                 return;
             }
 
+            // Convert Transmission format to common format and sort
+            const convertedTorrents = torrentsData.map((torrent: any) => ({
+                hash: torrent.hashString || torrent.id?.toString() || '',
+                id: torrent.id, // Keep original ID for API calls
+                name: torrent.name || '',
+                state: getTransmissionState(torrent.status),
+                progress: torrent.percentDone || 0,
+                size: torrent.totalSize || 0,
+                dlspeed: torrent.rateDownload || 0,
+                upspeed: torrent.rateUpload || 0,
+                eta: torrent.eta && torrent.eta > 0 ? torrent.eta : undefined
+            }));
+
             // Sort by progress (downloading first) then by name
-            const sortedTorrents = torrentsData.sort((a, b) => {
+            const sortedTorrents = convertedTorrents.sort((a: any, b: any) => {
                 // Prioritize downloading torrents
                 if (a.state === 'downloading' && b.state !== 'downloading') return -1;
                 if (a.state !== 'downloading' && b.state === 'downloading') return 1;
@@ -171,7 +224,7 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig; id?
             const maxTorrents = config?.maxDisplayedTorrents || 5;
             setTorrents(sortedTorrents.slice(0, maxTorrents));
         } catch (error) {
-            console.error('Error fetching qBittorrent torrents:', error);
+            console.error('Error fetching Transmission torrents:', error);
             if ((error as any)?.response?.status === 401) {
                 setIsAuthenticated(false);
                 setAuthError('Session expired. Please login again.');
@@ -188,9 +241,10 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig; id?
         }));
     };
 
-    // Auto-login when username and password are available and not authenticated
+    // Auto-login when config is available and not authenticated
+    // For Transmission, credentials are optional
     useEffect(() => {
-        if (config?.username && config?._hasPassword && !isAuthenticated && !loginAttemptFailed) {
+        if (config && !isAuthenticated && !loginAttemptFailed) {
             handleLogin();
         }
     }, [config, handleLogin, isAuthenticated, loginAttemptFailed]);
@@ -217,8 +271,11 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig; id?
     // Torrent actions
     const handleStartTorrent = useCallback(async (hash: string) => {
         try {
-            // Use the existing resume API endpoint
-            const success = await DashApi.qbittorrentStartTorrent(hash, id || '');
+            // For Transmission, we need to find the torrent ID from the hash
+            const torrent = torrents.find(t => t.hash === hash);
+            if (!torrent) return false;
+
+            const success = await DashApi.transmissionStartTorrent(torrent.id || hash, id || '');
 
             // Refresh the torrents list after operation
             if (success) {
@@ -231,7 +288,7 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig; id?
 
             return success;
         } catch (error: any) {
-            console.error('Error starting qBittorrent torrent:', error);
+            console.error('Error starting Transmission torrent:', error);
             // Check for decryption error
             if (error.response?.data?.error?.includes('Failed to decrypt password')) {
                 setAuthError('Failed to decrypt password. Please update your credentials in the widget settings.');
@@ -239,12 +296,15 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig; id?
             }
             return false;
         }
-    }, [loginCredentials, fetchTorrents]);
+    }, [loginCredentials, fetchTorrents, torrents]);
 
     const handleStopTorrent = useCallback(async (hash: string) => {
         try {
-            // Use the existing pause API endpoint
-            const success = await DashApi.qbittorrentStopTorrent(hash, id || '');
+            // For Transmission, we need to find the torrent ID from the hash
+            const torrent = torrents.find(t => t.hash === hash);
+            if (!torrent) return false;
+
+            const success = await DashApi.transmissionStopTorrent(torrent.id || hash, id || '');
 
             // Refresh the torrents list after operation
             if (success) {
@@ -257,7 +317,7 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig; id?
 
             return success;
         } catch (error: any) {
-            console.error('Error stopping qBittorrent torrent:', error);
+            console.error('Error stopping Transmission torrent:', error);
             // Check for decryption error
             if (error.response?.data?.error?.includes('Failed to decrypt password')) {
                 setAuthError('Failed to decrypt password. Please update your credentials in the widget settings.');
@@ -265,11 +325,15 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig; id?
             }
             return false;
         }
-    }, [loginCredentials, fetchTorrents]);
+    }, [loginCredentials, fetchTorrents, torrents]);
 
     const handleDeleteTorrent = useCallback(async (hash: string, deleteFiles: boolean) => {
         try {
-            const success = await DashApi.qbittorrentDeleteTorrent(hash, deleteFiles, id || '');
+            // For Transmission, we need to find the torrent ID from the hash
+            const torrent = torrents.find(t => t.hash === hash);
+            if (!torrent) return false;
+
+            const success = await DashApi.transmissionDeleteTorrent(torrent.id || hash, deleteFiles, id || '');
 
             // Refresh the torrents list after operation
             if (success) {
@@ -282,7 +346,7 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig; id?
 
             return success;
         } catch (error: any) {
-            console.error('Error deleting qBittorrent torrent:', error);
+            console.error('Error deleting Transmission torrent:', error);
             // Check for decryption error
             if (error.response?.data?.error?.includes('Failed to decrypt password')) {
                 setAuthError('Failed to decrypt password. Please update your credentials in the widget settings.');
@@ -290,11 +354,11 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig; id?
             }
             return false;
         }
-    }, [loginCredentials, fetchTorrents]);
+    }, [loginCredentials, fetchTorrents, torrents]);
 
     return (
         <TorrentClientWidget
-            clientName='qBittorrent'
+            clientName='Transmission'
             isLoading={isLoading}
             isAuthenticated={isAuthenticated}
             authError={authError}

@@ -11,7 +11,7 @@ import { COLORS } from '../../../../theme/styles';
 import { theme } from '../../../../theme/theme';
 import { ITEM_TYPE } from '../../../../types';
 
-type DualWidgetProps = {
+export interface DualWidgetProps {
     config?: {
         topWidget?: {
             type: string;
@@ -23,16 +23,20 @@ type DualWidgetProps = {
         };
     };
     editMode?: boolean;
+    id?: string;
     onEdit?: () => void;
     onDelete?: () => void;
+    onDuplicate?: () => void;
     url?: string;
-};
+}
 
 export const DualWidget: React.FC<DualWidgetProps> = ({
     config,
     editMode = false,
+    id,
     onEdit,
     onDelete,
+    onDuplicate,
     url
 }) => {
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -68,7 +72,10 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
                     dualWidgetPosition: position
                 }} />;
             case ITEM_TYPE.PIHOLE_WIDGET:
-                return <PiholeWidget config={widgetConfig.config} />;
+                return <PiholeWidget
+                    config={widgetConfig.config}
+                    id={id ? `${id}-${position}` : undefined}
+                />;
             default:
                 return (
                     <Box
@@ -108,8 +115,10 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
     return (
         <DualWidgetContainer
             editMode={editMode}
+            id={id}
             onEdit={onEdit}
             onDelete={onDelete}
+            onDuplicate={onDuplicate}
             url={url}
         >
             <Box

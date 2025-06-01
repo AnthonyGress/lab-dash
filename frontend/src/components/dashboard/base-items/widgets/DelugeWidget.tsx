@@ -8,13 +8,14 @@ type DelugeWidgetConfig = {
     port?: string;
     ssl?: boolean;
     username?: string;
-    password?: string;
+    _hasPassword?: boolean; // Security flag instead of actual password
+    refreshInterval?: number;
     maxDisplayedTorrents?: number;
     showLabel?: boolean;
 };
 
-export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
-    const { config } = props;
+export const DelugeWidget = (props: { config?: DelugeWidgetConfig; id?: string }) => {
+    const { config, id } = props;
     const [isLoading, setIsLoading] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [authError, setAuthError] = useState('');
@@ -26,7 +27,7 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
         port: config?.port || '8112',
         ssl: config?.ssl || false,
         username: config?.username || '',
-        password: config?.password || ''
+        password: '' // Password is handled on backend, not sent to frontend
     });
 
     // Add a counter for login attempts and a maximum number of attempts
@@ -43,7 +44,7 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
                 port: config.port || '8112',
                 ssl: config.ssl || false,
                 username: config.username || '',
-                password: config.password || ''
+                password: '' // Password is handled on backend, not sent to frontend
             };
 
             const credentialsChanged =
@@ -74,8 +75,10 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
         setAuthError('');
 
         try {
-            const success = await DashApi.delugeLogin(loginCredentials);
-            console.log('Deluge login result:', success);
+            if (!id) {
+                throw new Error('Widget ID is required but not provided');
+            }
+            const success = await DashApi.delugeLogin(id);
             setIsAuthenticated(success);
 
             if (!success) {
@@ -101,7 +104,6 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
                     }, 2000);
                 }
             } else {
-                console.log('Login successful');
                 // Reset counter on success
                 loginAttemptsRef.current = 0;
                 setLoginAttemptFailed(false);
@@ -145,7 +147,7 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
     // Auto-login when component mounts or credentials change
     useEffect(() => {
         if (
-            config?.password &&
+            config?._hasPassword &&
             !autoLoginAttemptedRef.current &&
             !isAuthenticated &&
             !loginAttemptFailed
@@ -162,14 +164,11 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
         if (loginAttemptFailed || !isAuthenticated) return;
 
         try {
-            const connectionInfo = {
-                host: loginCredentials.host,
-                port: loginCredentials.port,
-                ssl: loginCredentials.ssl,
-                username: loginCredentials.username,
-                password: loginCredentials.password
-            };
-            const statsData = await DashApi.delugeGetStats(connectionInfo);
+            if (!id) {
+                console.error('Widget ID is required for stats');
+                return;
+            }
+            const statsData = await DashApi.delugeGetStats(id);
 
             // Check for decryption error
             if (statsData.decryptionError) {
@@ -193,14 +192,11 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
         if (loginAttemptFailed || !isAuthenticated) return;
 
         try {
-            const connectionInfo = {
-                host: loginCredentials.host,
-                port: loginCredentials.port,
-                ssl: loginCredentials.ssl,
-                username: loginCredentials.username,
-                password: loginCredentials.password
-            };
-            const torrentsData = await DashApi.delugeGetTorrents(connectionInfo);
+            if (!id) {
+                console.error('Widget ID is required for torrents');
+                return;
+            }
+            const torrentsData = await DashApi.delugeGetTorrents(id);
             // Sort by progress (downloading first) then by name
             const sortedTorrents = torrentsData.sort((a, b) => {
                 // Prioritize downloading torrents
@@ -240,36 +236,37 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
 
     // Refresh stats and torrents periodically
     useEffect(() => {
-        // Only fetch data if authenticated
-        if (isAuthenticated) {
+        if (!isAuthenticated) return;
+
+        // Initial fetch
+        fetchStats();
+        fetchTorrents();
+
+        // Simple fixed interval to avoid dependency loops
+        const interval = setInterval(() => {
             fetchStats();
             fetchTorrents();
+        }, 20000); // Fixed 20 seconds - compromise between 15 and 30
 
-            // Set up periodic refresh
-            const interval = setInterval(() => {
-                fetchStats();
-                fetchTorrents();
-            }, 30000); // 30 seconds
-
-            return () => clearInterval(interval);
-        }
-    }, [fetchStats, fetchTorrents, isAuthenticated]);
+        return () => clearInterval(interval);
+    }, [isAuthenticated, fetchStats, fetchTorrents]);
 
     // Torrent actions
     const handleResumeTorrent = useCallback(async (hash: string) => {
         try {
-            const connectionInfo = {
-                host: loginCredentials.host,
-                port: loginCredentials.port,
-                ssl: loginCredentials.ssl,
-                username: loginCredentials.username,
-                password: loginCredentials.password
-            };
-            const success = await DashApi.delugeResumeTorrent(hash, connectionInfo);
+            if (!id) {
+                console.error('Widget ID is required for resume torrent');
+                return false;
+            }
+            const success = await DashApi.delugeResumeTorrent(hash, id);
 
             // Refresh the torrents list after operation
             if (success) {
                 await fetchTorrents();
+                // Schedule another refresh after 2 seconds to ensure state is updated
+                setTimeout(() => {
+                    fetchTorrents();
+                }, 2000);
             }
 
             return success;
@@ -281,18 +278,19 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
 
     const handlePauseTorrent = useCallback(async (hash: string) => {
         try {
-            const connectionInfo = {
-                host: loginCredentials.host,
-                port: loginCredentials.port,
-                ssl: loginCredentials.ssl,
-                username: loginCredentials.username,
-                password: loginCredentials.password
-            };
-            const success = await DashApi.delugePauseTorrent(hash, connectionInfo);
+            if (!id) {
+                console.error('Widget ID is required for pause torrent');
+                return false;
+            }
+            const success = await DashApi.delugePauseTorrent(hash, id);
 
             // Refresh the torrents list after operation
             if (success) {
                 await fetchTorrents();
+                // Schedule another refresh after 2 seconds to ensure state is updated
+                setTimeout(() => {
+                    fetchTorrents();
+                }, 2000);
             }
 
             return success;
@@ -304,18 +302,19 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig }) => {
 
     const handleDeleteTorrent = useCallback(async (hash: string, deleteFiles: boolean) => {
         try {
-            const connectionInfo = {
-                host: loginCredentials.host,
-                port: loginCredentials.port,
-                ssl: loginCredentials.ssl,
-                username: loginCredentials.username,
-                password: loginCredentials.password
-            };
-            const success = await DashApi.delugeDeleteTorrent(hash, deleteFiles, connectionInfo);
+            if (!id) {
+                console.error('Widget ID is required for delete torrent');
+                return false;
+            }
+            const success = await DashApi.delugeDeleteTorrent(hash, deleteFiles, id);
 
             // Refresh the torrents list after operation
             if (success) {
                 await fetchTorrents();
+                // Schedule another refresh after 2 seconds to ensure state is updated
+                setTimeout(() => {
+                    fetchTorrents();
+                }, 2000);
             }
 
             return success;

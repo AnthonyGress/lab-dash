@@ -1,6 +1,6 @@
 import { createContext, Dispatch, SetStateAction } from 'react';
 
-import { Config, DashboardItem, NewItem } from '../types';
+import { Config, DashboardItem, NewItem, Page } from '../types';
 
 export interface IAppContext {
     dashboardLayout: DashboardItem[];
@@ -8,11 +8,20 @@ export interface IAppContext {
     refreshDashboard: () => Promise<void>;
     saveLayout: (items: DashboardItem[]) => void;
     addItem: (itemToAdd: NewItem) => Promise<void>;
-    updateItem: (id: string, updatedData: Partial<NewItem>) => void;
+    updateItem: (id: string, updatedData: Partial<NewItem>) => Promise<void>;
     editMode: boolean;
     setEditMode: Dispatch<SetStateAction<boolean>>;
     config: Config | undefined;
     updateConfig: (partialConfig: Partial<Config>) => Promise<void>;
+    // Page management
+    currentPageId: string | null;
+    setCurrentPageId: Dispatch<SetStateAction<string | null>>;
+    pages: Page[];
+    addPage: (name: string, adminOnly?: boolean) => Promise<string | null>;
+    deletePage: (pageId: string) => Promise<void>;
+    switchToPage: (pageId: string) => Promise<void>;
+    pageNameToSlug: (pageName: string) => string;
+    moveItemToPage: (itemId: string, targetPageId: string | null) => Promise<void>;
     // Authentication & setup states
     isLoggedIn: boolean;
     setIsLoggedIn: Dispatch<SetStateAction<boolean>>;

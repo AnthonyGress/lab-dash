@@ -16,9 +16,10 @@ type Props = {
     };
     onDelete?: () => void;
     onEdit?: () => void;
+    onDuplicate?: () => void;
 };
 
-export const SortableSystemMonitorWidget: React.FC<Props> = ({ id, editMode, isOverlay = false, config, onDelete, onEdit }) => {
+export const SortableSystemMonitorWidget: React.FC<Props> = ({ id, editMode, isOverlay = false, config, onDelete, onEdit, onDuplicate }) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
     return (
@@ -34,7 +35,7 @@ export const SortableSystemMonitorWidget: React.FC<Props> = ({ id, editMode, isO
                 visibility: isDragging ? 'hidden' : 'visible'
             }}
         >
-            <WidgetContainer editMode={editMode} onDelete={onDelete} onEdit={onEdit}>
+            <WidgetContainer editMode={editMode} id={id} onDelete={onDelete} onEdit={onEdit} onDuplicate={onDuplicate}>
                 <SystemMonitorWidget config={config} />
             </WidgetContainer>
         </Grid2>

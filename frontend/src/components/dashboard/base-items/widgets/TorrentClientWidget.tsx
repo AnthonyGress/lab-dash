@@ -286,15 +286,15 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin,
                     }}
 
                 >
-                    {clientName === 'qBittorrent' ? (
-                        // For qBittorrent: Use Start/Stop terminology
+                    {(clientName === 'qBittorrent' || clientName === 'Transmission') ? (
+                        // For qBittorrent and Transmission: Use Start/Stop terminology
                         <>
                             {/* Show Start option for torrents that can be started */}
                             {(torrent.state.includes('paused') || torrent.state === 'missingfiles' ||
                               torrent.state === 'error' || torrent.state === 'stalledDL' ||
                               torrent.state === 'unknown' || torrent.state === 'checkingUP' ||
                               torrent.state === 'checkingDL' || torrent.state === 'checkingResumeData' ||
-                              torrent.state === 'stoppedDL') && (
+                              torrent.state === 'stoppedDL' || torrent.state === 'stopped') && (
                                 <MenuItem
                                     onClick={handleResume}
                                     disabled={!onResume}
@@ -396,7 +396,7 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin,
                     )}
 
                     {(torrent.state === 'stopped' || torrent.state === 'error' || torrent.state.includes('paused')) &&
-                    `${clientName === 'qBittorrent' ? 'Stopped' : 'Paused'}`}
+                    `${(clientName === 'qBittorrent' || clientName === 'Transmission') ? 'Stopped' : 'Paused'}`}
                 </Typography>
                 <Typography
                     variant='caption'
@@ -479,7 +479,7 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
                     {showLabel && (
                         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 1 }}>
                             <img
-                                src={`${BACKEND_URL}/icons/${clientName.toLowerCase().includes('qbittorrent') ? 'qbittorrent.svg' : 'deluge.svg'}`}
+                                src={`${BACKEND_URL}/icons/${clientName.toLowerCase().includes('qbittorrent') ? 'qbittorrent.svg' : clientName.toLowerCase().includes('transmission') ? 'transmission.svg' : 'deluge.svg'}`}
                                 alt={clientName}
                                 style={{
                                     width: '24px',
@@ -559,7 +559,7 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
                             onClick={handleOpenWebUI}
                         >
                             <img
-                                src={`${BACKEND_URL}/icons/${clientName.toLowerCase().includes('qbittorrent') ? 'qbittorrent.svg' : 'deluge.svg'}`}
+                                src={`${BACKEND_URL}/icons/${clientName.toLowerCase().includes('qbittorrent') ? 'qbittorrent.svg' : clientName.toLowerCase().includes('transmission') ? 'transmission.svg' : 'deluge.svg'}`}
                                 alt={clientName}
                                 style={{
                                     width: '24px',

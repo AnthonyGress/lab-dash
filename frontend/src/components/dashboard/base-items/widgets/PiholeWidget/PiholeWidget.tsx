@@ -1,5 +1,4 @@
 import { Box, Button, CircularProgress, Grid2 as Grid, Menu, MenuItem, Paper, TextField, Typography } from '@mui/material';
-import axios from 'axios';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FaGlobe, FaList, FaPercentage } from 'react-icons/fa';
 import { MdBlockFlipped, MdDns, MdPause, MdPlayArrow } from 'react-icons/md';
@@ -16,8 +15,8 @@ type PiholeWidgetConfig = {
     host?: string;
     port?: string;
     ssl?: boolean;
-    apiToken?: string;
-    password?: string;
+    _hasApiToken?: boolean;
+    _hasPassword?: boolean;
     showLabel?: boolean;
     displayName?: string;
 };
@@ -40,9 +39,9 @@ const initialStats: PiholeStats = {
     timer: null
 };
 
-export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
-    const { config } = props;
-    const { editMode } = useAppContext();
+export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }) => {
+    const { config, id } = props;
+    const { editMode, config: appConfig } = useAppContext();
 
     // Reference to track if this is the first render
     const isFirstRender = useRef(true);
@@ -51,7 +50,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
     const [isConfigured, setIsConfigured] = useState(() => {
         // Initialize with a proper check of the config
         if (config) {
-            return !!config.host && (!!config.apiToken || !!config.password);
+            return !!config.host && (!!config._hasApiToken || !!config._hasPassword);
         }
         return false;
     });
@@ -61,8 +60,8 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
         host: config?.host || 'pi.hole',
         port: config?.port || '80',
         ssl: config?.ssl || false,
-        apiToken: config?.apiToken || '',
-        password: config?.password || '',
+        _hasApiToken: config?._hasApiToken || false,
+        _hasPassword: config?._hasPassword || false,
         showLabel: config?.showLabel,
         displayName: config?.displayName || 'Pi-hole'
     });
@@ -99,7 +98,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
             isFirstRender.current = false;
 
             // Force configuration validation on mount
-            const isValid = !!piholeConfig.host && (!!piholeConfig.apiToken || !!piholeConfig.password);
+            const isValid = !!piholeConfig.host && (!!piholeConfig._hasApiToken || !!piholeConfig._hasPassword);
             if (isValid !== isConfigured) {
                 setIsConfigured(isValid);
             }
@@ -126,7 +125,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
     // Determine if we're using Pi-hole v6 based on authentication method
     useEffect(() => {
         // Using password-only auth indicates Pi-hole v6
-        const isV6 = !!piholeConfig.password && !piholeConfig.apiToken;
+        const isV6 = !!piholeConfig._hasPassword && !piholeConfig._hasApiToken;
         setIsPiholeV6(isV6);
     }, [piholeConfig]);
 
@@ -137,98 +136,88 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
 
         // Skip if not properly configured or authentication failed or existing error
         if (!isConfigured || !piholeConfig.host ||
-            (!piholeConfig.apiToken && !piholeConfig.password) || authFailed || error) {
+            (!piholeConfig._hasApiToken && !piholeConfig._hasPassword) || authFailed || error) {
             return;
         }
 
         try {
-            // First check Pi-hole v6 blocking status if applicable
-            if (isPiholeV6 && piholeConfig.password) {
-                try {
-                    // Create the base URL for the backend API
-                    const backendUrl = `${BACKEND_URL}/api/pihole/v6/blocking-status`;
+            // First check Pi-hole blocking status (works for both v5 and v6)
+            try {
+                if (!id) {
+                    console.error('Widget ID is required for Pi-hole blocking status');
+                    return;
+                }
 
-                    // Make the request to our backend API for blocking status
-                    const response = await axios.get(backendUrl, {
-                        params: {
-                            host: piholeConfig.host,
-                            port: piholeConfig.port,
-                            ssl: piholeConfig.ssl,
-                            password: piholeConfig.password
-                        },
-                        timeout: 1000
-                    });
+                // Use DashApi method with config from context to avoid fetching config
+                const blockingData = appConfig
+                    ? await DashApi.getPiholeBlockingStatusWithConfig(id, appConfig)
+                    : await DashApi.getPiholeBlockingStatus(id);
 
-                    if (response.data.success && response.data.data) {
-                        const blockingData = response.data.data;
+                // Update isBlocking state based on status
+                const newIsBlocking = blockingData.status === 'enabled';
 
-                        // Update isBlocking state based on status
-                        const newIsBlocking = blockingData.status === 'enabled';
+                // Only update when there's a change to avoid unnecessary renders
+                if (isBlocking !== newIsBlocking) {
+                    setIsBlocking(newIsBlocking);
+                }
 
-                        // Only update when there's a change to avoid unnecessary renders
-                        if (isBlocking !== newIsBlocking) {
-                            setIsBlocking(newIsBlocking);
-                        }
+                // If disabled with timer, set up the countdown
+                if (blockingData.status === 'disabled') {
+                    // Check if we have a timer or until value
+                    if (blockingData.timer && typeof blockingData.timer === 'number') {
+                        // Calculate end time from timer (seconds)
+                        const endTime = new Date();
+                        endTime.setSeconds(endTime.getSeconds() + blockingData.timer);
 
-                        // If disabled with timer, set up the countdown
-                        if (blockingData.status === 'disabled') {
-                            // Check if we have a timer or until value
-                            if (blockingData.timer && typeof blockingData.timer === 'number') {
-                                // Calculate end time from timer (seconds)
-                                const endTime = new Date();
-                                endTime.setSeconds(endTime.getSeconds() + blockingData.timer);
+                        // Check if this is a significant change from the current end time
+                        const shouldUpdateEndTime = !disableEndTime ||
+                            Math.abs(endTime.getTime() - disableEndTime.getTime()) > 2000;
 
-                                // Check if this is a significant change from the current end time
-                                const shouldUpdateEndTime = !disableEndTime ||
-                                    Math.abs(endTime.getTime() - disableEndTime.getTime()) > 2000;
+                        if (shouldUpdateEndTime) {
+                            setDisableEndTime(endTime);
 
-                                if (shouldUpdateEndTime) {
-                                    setDisableEndTime(endTime);
+                            // Immediately calculate remaining time for UI responsiveness
+                            const now = new Date();
+                            const diffMs = endTime.getTime() - now.getTime();
+                            const diffSec = Math.floor(diffMs / 1000);
+                            const minutes = Math.floor(diffSec / 60);
+                            const seconds = diffSec % 60;
+                            const newRemainingTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                            setRemainingTime(newRemainingTime);
 
-                                    // Immediately calculate remaining time for UI responsiveness
-                                    const now = new Date();
-                                    const diffMs = endTime.getTime() - now.getTime();
-                                    const diffSec = Math.floor(diffMs / 1000);
-                                    const minutes = Math.floor(diffSec / 60);
-                                    const seconds = diffSec % 60;
-                                    const newRemainingTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                                    setRemainingTime(newRemainingTime);
-
-                                    // Update stats
-                                    setStats(prevStats => ({
-                                        ...prevStats,
-                                        status: 'disabled',
-                                        timer: blockingData.timer
-                                    }));
-                                }
-                            } else {
-                                // No timer, must be indefinite
-                                setDisableEndTime(null);
-                                setRemainingTime('');
-                                setStats(prevStats => ({
-                                    ...prevStats,
-                                    status: 'disabled',
-                                    timer: null
-                                }));
-                            }
-                        } else {
-                            // Pi-hole is enabled, clear any end time
-                            setDisableEndTime(null);
-                            setRemainingTime('');
+                            // Update stats
                             setStats(prevStats => ({
                                 ...prevStats,
-                                status: 'enabled',
-                                timer: null
+                                status: 'disabled',
+                                timer: blockingData.timer
                             }));
                         }
+                    } else {
+                        // No timer, must be indefinite
+                        setDisableEndTime(null);
+                        setRemainingTime('');
+                        setStats(prevStats => ({
+                            ...prevStats,
+                            status: 'disabled',
+                            timer: null
+                        }));
                     }
-                } catch (statusError: any) {
-                    // Handle status check errors for v6
-                    if (statusError.response?.status === 400) {
-                        setAuthFailed(true);
-                        setError('Bad Request: Invalid configuration or authentication data');
-                        return; // Exit early to avoid the stats request
-                    }
+                } else {
+                    // Pi-hole is enabled, clear any end time
+                    setDisableEndTime(null);
+                    setRemainingTime('');
+                    setStats(prevStats => ({
+                        ...prevStats,
+                        status: 'enabled',
+                        timer: null
+                    }));
+                }
+            } catch (statusError: any) {
+                // Handle status check errors
+                if (statusError.response?.status === 400) {
+                    setAuthFailed(true);
+                    setError('Bad Request: Invalid configuration or authentication data');
+                    return; // Exit early to avoid the stats request
                 }
             }
 
@@ -238,7 +227,13 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 // Only set error to null if we're currently showing an error
                 if (error) setError(null);
 
-                const piholeStats = await DashApi.getPiholeStats(piholeConfig);
+                if (!id) {
+                    console.error('Widget ID is required for Pi-hole stats');
+                    return;
+                }
+                const piholeStats = appConfig
+                    ? await DashApi.getPiholeStatsWithConfig(id, appConfig)
+                    : await DashApi.getPiholeStats(id);
 
                 // Reset auth failed flag on successful fetch
                 setAuthFailed(false);
@@ -410,14 +405,14 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
             host: config.host || 'pi.hole',
             port: config.port || '80',
             ssl: config.ssl || false,
-            apiToken: config.apiToken || '',
-            password: config.password || '',
+            _hasApiToken: config._hasApiToken || false,
+            _hasPassword: config._hasPassword || false,
             showLabel: config.showLabel,
             displayName: config.displayName || 'Pi-hole'
         };
 
         // Check if this is a valid configuration
-        const isValid = !!config.host && (!!config.apiToken || !!config.password);
+        const isValid = !!config.host && (!!config._hasApiToken || !!config._hasPassword);
 
         // If configured state doesn't match validity, update it
         if (isValid !== isConfigured) {
@@ -429,8 +424,8 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
             newConfig.host !== piholeConfig.host ||
             newConfig.port !== piholeConfig.port ||
             newConfig.ssl !== piholeConfig.ssl ||
-            newConfig.apiToken !== piholeConfig.apiToken ||
-            newConfig.password !== piholeConfig.password;
+            newConfig._hasApiToken !== piholeConfig._hasApiToken ||
+            newConfig._hasPassword !== piholeConfig._hasPassword;
 
         if (configChanged) {
             // Update config
@@ -563,7 +558,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
 
     // Handle disable blocking with timeout
     const handleDisableBlocking = async (seconds: number | null) => {
-        if (!isConfigured || (!piholeConfig.apiToken && !piholeConfig.password)) return;
+        if (!isConfigured || (!piholeConfig._hasApiToken && !piholeConfig._hasPassword)) return;
 
         setIsDisablingBlocking(true);
         setDisableMenuAnchor(null);
@@ -571,17 +566,14 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
         try {
             // Don't update UI state here - wait for API call to complete
 
+            if (!id) {
+                throw new Error('Widget ID is required for Pi-hole disable');
+            }
+
             // Call the backend API to disable blocking
-            const result = await DashApi.disablePihole(
-                {
-                    host: piholeConfig.host,
-                    port: piholeConfig.port,
-                    ssl: piholeConfig.ssl,
-                    apiToken: piholeConfig.apiToken,
-                    password: piholeConfig.password
-                },
-                seconds || undefined
-            );
+            const result = appConfig
+                ? await DashApi.disablePiholeWithConfig(id, appConfig, seconds || undefined)
+                : await DashApi.disablePihole(id, seconds || undefined);
 
             if (result) {
                 // Only update UI after successful API call
@@ -695,14 +687,16 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
         try {
             setIsLoading(true);
 
+            if (!id) {
+                throw new Error('Widget ID is required for Pi-hole enable');
+            }
+
             // Call API first, don't update UI state optimistically
-            await DashApi.enablePihole({
-                host: piholeConfig.host,
-                port: piholeConfig.port,
-                ssl: piholeConfig.ssl,
-                apiToken: piholeConfig.apiToken,
-                password: piholeConfig.password
-            });
+            if (appConfig) {
+                await DashApi.enablePiholeWithConfig(id, appConfig);
+            } else {
+                await DashApi.enablePihole(id);
+            }
 
             // Only update UI after successful API call
             setIsBlocking(true);
@@ -790,7 +784,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
         }
 
         // Recheck configuration
-        const isValid = !!piholeConfig.host && (!!piholeConfig.apiToken || !!piholeConfig.password);
+        const isValid = !!piholeConfig.host && (!!piholeConfig._hasApiToken || !!piholeConfig._hasPassword);
         setIsConfigured(isValid);
 
         // Reset stats to initial state
@@ -844,7 +838,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
         if (!baseUrl) return;
 
         // For v6, direct links won't work without authentication, so just open the main admin page
-        const isV6 = !!piholeConfig.password && !piholeConfig.apiToken;
+        const isV6 = !!piholeConfig._hasPassword && !piholeConfig._hasApiToken;
         if (isV6) {
             // For v6, just go to main admin page since direct links require authentication
             window.open(baseUrl, '_blank');
@@ -862,7 +856,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
         if (!baseUrl) return;
 
         // For v6, direct links won't work without authentication, so just open the main admin page
-        const isV6 = !!piholeConfig.password && !piholeConfig.apiToken;
+        const isV6 = !!piholeConfig._hasPassword && !piholeConfig._hasApiToken;
         if (isV6) {
             // For v6, just go to main admin page since direct links require authentication
             window.open(baseUrl, '_blank');
@@ -880,7 +874,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
         if (!baseUrl) return;
 
         // For v6, direct links won't work without authentication, so just open the main admin page
-        const isV6 = !!piholeConfig.password && !piholeConfig.apiToken;
+        const isV6 = !!piholeConfig._hasPassword && !piholeConfig._hasApiToken;
         if (isV6) {
             // For v6, just go to main admin page since direct links require authentication
             window.open(baseUrl, '_blank');
@@ -898,7 +892,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
         if (!baseUrl) return;
 
         // For v6, direct links won't work without authentication, so just open the main admin page
-        const isV6 = !!piholeConfig.password && !piholeConfig.apiToken;
+        const isV6 = !!piholeConfig._hasPassword && !piholeConfig._hasApiToken;
         if (isV6) {
             // For v6, just go to main admin page since direct links require authentication
             window.open(baseUrl, '_blank');
@@ -926,7 +920,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig }) => {
                 </Typography>
                 <Typography variant='caption' align='center' sx={{ mt: 1, fontSize: '0.8rem' }}>
                     {authFailed ?
-                        `Using ${piholeConfig.apiToken ? 'API token' : 'password'} authentication` :
+                        `Using ${piholeConfig._hasApiToken ? 'API token' : 'password'} authentication` :
                         'Check your Pi-hole configuration and network connection'}
                 </Typography>
                 <Button

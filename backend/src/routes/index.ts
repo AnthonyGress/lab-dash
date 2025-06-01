@@ -10,6 +10,8 @@ import { piholeRoute } from './pihole.route';
 import { qbittorrentRoute } from './qbittorrent.route';
 import { systemRoute } from './system.route';
 import { timezoneRoute } from './timezone.route';
+import { transmissionRoute } from './transmission.route';
+import { uploadsRoute } from './uploads.route';
 import { weatherRoute } from './weather.route';
 import {
     apiLimiter,
@@ -41,8 +43,12 @@ router.use('/timezone', timezoneApiLimiter, timezoneRoute);
 // App shortcut routes
 router.use('/app-shortcut', apiLimiter, appShortcutRoute);
 
+// Uploads management routes
+router.use('/uploads', apiLimiter, uploadsRoute);
+
 // Torrent client routes
 router.use('/qbittorrent', torrentApiLimiter, qbittorrentRoute);
+router.use('/transmission', torrentApiLimiter, transmissionRoute);
 
 // Pi-hole routes
 router.use('/pihole', apiLimiter, piholeRoute);

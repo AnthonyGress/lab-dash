@@ -3,6 +3,7 @@ import { Request, Response, Router } from 'express';
 import qs from 'querystring';
 
 import { authenticateToken } from '../middleware/auth.middleware';
+import { getItemConnectionInfo } from '../utils/config-lookup';
 import { decrypt, encrypt, isEncrypted } from '../utils/crypto';
 
 export const delugeRoute = Router();
@@ -76,13 +77,39 @@ const getBaseUrlFromSession = (session: SessionInfo): string | null => {
     return `${protocol}://${session.host}:${port}/json`;
 };
 
+// Helper function to validate and get itemId with better error message
+const validateItemId = (req: Request): string => {
+    const itemId = req.query.itemId as string;
+    if (!itemId) {
+        throw new Error('itemId parameter is required. Please ensure the widget is properly configured with an item ID.');
+    }
+    return itemId;
+};
+
 const getBaseUrl = (req: Request): string => {
-    const host = req.query.host as string || 'localhost';
-    const port = req.query.port as string || '8112';
-    const ssl = req.query.ssl === 'true';
+    const itemId = validateItemId(req);
+    const connectionInfo = getItemConnectionInfo(itemId);
+    const host = connectionInfo.host || 'localhost';
+    const port = connectionInfo.port || '8112';
+    const ssl = connectionInfo.ssl || false;
     const protocol = ssl ? 'https' : 'http';
     return `${protocol}://${host}:${port}/json`;
 };
+
+// Function to get connection info from item config
+function getConnectionDetails(req: Request) {
+    const itemId = validateItemId(req);
+    const connectionInfo = getItemConnectionInfo(itemId);
+    // Try different possible password field names
+    const password = connectionInfo.password || (connectionInfo as any).webPassword || (connectionInfo as any).auth?.password;
+
+    return {
+        password: password,
+        host: connectionInfo.host || 'localhost',
+        port: connectionInfo.port || '8112',
+        ssl: connectionInfo.ssl || false
+    };
+}
 
 // Helper function to logout a Deluge session
 async function logoutDelugeSession(baseUrl: string, cookie: string): Promise<boolean> {
@@ -152,16 +179,23 @@ process.on('SIGINT', async () => {
 });
 
 delugeRoute.post('/login', async (req: Request, res: Response) => {
+    console.log('Deluge login request');
     try {
-        let password = req.body.password || req.query.password as string;
+        const itemId = validateItemId(req);
+
         const baseUrl = getBaseUrl(req);
-        const host = req.query.host as string;
-        const port = req.query.port as string;
-        const ssl = req.query.ssl === 'true';
+        const connectionInfo = getItemConnectionInfo(itemId);
+
+
+        // Try different possible password field names
+        let password = connectionInfo.password;
+        const host = connectionInfo.host;
+        const port = connectionInfo.port;
+        const ssl = connectionInfo.ssl;
 
         if (!password) {
-            console.error('Password not provided in Deluge login request');
-            res.status(400).json({ error: 'Password is required' });
+            console.error('Deluge authentication failed - missing password. Ensure the password is configured for this item.');
+            res.status(400).json({ error: 'Password must be configured for this item' });
             return;
         }
 
@@ -170,7 +204,7 @@ delugeRoute.post('/login', async (req: Request, res: Response) => {
             password = decrypt(password);
             // Check if decryption failed (returns empty string)
             if (!password) {
-                console.error('Password decryption failed for Deluge login');
+                console.error('Deluge password decryption failed');
                 res.status(400).json({
                     error: 'Failed to decrypt password. It may have been encrypted with a different key. Please update your credentials.'
                 });
@@ -178,7 +212,7 @@ delugeRoute.post('/login', async (req: Request, res: Response) => {
             }
         }
 
-        console.log(`Attempting Deluge login at ${baseUrl}`);
+        console.log('Deluge login attempt');
         const response = await axios.post(`${baseUrl}`,
             {
                 method: 'auth.login',
@@ -227,28 +261,49 @@ delugeRoute.post('/login', async (req: Request, res: Response) => {
 delugeRoute.get('/stats', async (req: Request, res: Response) => {
     try {
         const baseUrl = getBaseUrl(req);
-        console.log(`Deluge stats request for ${baseUrl}`);
+        console.log('Deluge stats request');
 
         // Use IP address as identifier for non-authenticated users
         const sessionId = req.user?.username || req.ip || 'default';
         const session = sessions[sessionId];
         let cookie = session?.cookie;
 
-        // If no cookie exists, try to use credentials from query params
-        if (!cookie && req.query.password) {
+        // If no cookie exists, try to use credentials from item config
+        if (!cookie) {
             try {
-                let password = req.query.password as string;
-                const host = req.query.host as string;
-                const port = req.query.port as string;
-                const ssl = req.query.ssl === 'true';
-                console.log(`Attempting to login to Deluge at ${host}:${port} (SSL: ${ssl})`);
+                const connectionDetails = getConnectionDetails(req);
+                let password = connectionDetails.password;
+                const host = connectionDetails.host;
+                const port = connectionDetails.port;
+                const ssl = connectionDetails.ssl;
+
+                if (!password) {
+                    // No password configured, return empty stats
+                    const stats = {
+                        dl_info_speed: 0,
+                        up_info_speed: 0,
+                        dl_info_data: 0,
+                        up_info_data: 0,
+                        torrents: {
+                            total: 0,
+                            downloading: 0,
+                            seeding: 0,
+                            completed: 0,
+                            paused: 0
+                        }
+                    };
+                    res.status(200).json(stats);
+                    return;
+                }
+
+                console.log('Deluge auto-login attempt');
 
                 // Handle encrypted password
                 if (isEncrypted(password)) {
                     password = decrypt(password);
                     // Check if decryption failed (returns empty string)
                     if (!password) {
-                        console.log('Failed to decrypt Deluge password');
+                        console.error('Deluge password decryption failed');
                         // Return basic stats instead of failing
                         const stats = {
                             dl_info_speed: 0,
@@ -294,27 +349,26 @@ delugeRoute.get('/stats', async (req: Request, res: Response) => {
                             port,
                             ssl
                         };
-                        console.log('Deluge login successful, cookie stored');
+                        console.log('Deluge auto-login successful');
                     } else {
                         console.log('Deluge login failed: Invalid credentials or response format');
                     }
                 } catch (connErr: any) {
                     if (connErr.code === 'ECONNREFUSED' || connErr.code === 'ETIMEDOUT' || connErr.code === 'ECONNABORTED') {
-                        console.log(`Deluge is offline ${baseUrl} - Connection error: ${connErr.code}`);
+                        console.log(`Deluge service offline: ${baseUrl}`);
                     } else {
-                        console.error('Deluge login error:', connErr.message);
+                        console.error('Deluge auto-login error:', connErr.message);
                     }
                     // Continue without cookie - will return default stats
                 }
             } catch (loginErr: any) {
-                console.error('Deluge login attempt failed:', loginErr.message);
+                console.error('Deluge auto-login failed:', loginErr.message);
                 // Continue without cookie - will return default stats
             }
         }
 
         if (!cookie) {
             // If not authenticated and couldn't auto-login, provide basic response with empty/zero values
-            console.log(`No valid Deluge session for ${baseUrl}, returning empty stats`);
             const stats = {
                 dl_info_speed: 0,
                 up_info_speed: 0,
@@ -424,7 +478,7 @@ delugeRoute.get('/stats', async (req: Request, res: Response) => {
         } catch (apiErr: any) {
             console.error('Deluge stats API error:', apiErr.message);
             if (apiErr.code === 'ECONNREFUSED' || apiErr.code === 'ETIMEDOUT' || apiErr.code === 'ECONNABORTED') {
-                console.log(`Deluge is offline ${baseUrl}`);
+                console.log(`Deluge service offline: ${baseUrl}`);
             }
             res.status(apiErr.response?.status || 500).json({
                 error: apiErr.response?.data || 'Failed to get Deluge stats'
@@ -440,6 +494,7 @@ delugeRoute.get('/stats', async (req: Request, res: Response) => {
 
 // Get list of all torrents
 delugeRoute.get('/torrents', async (req: Request, res: Response) => {
+    console.log('Deluge torrents request');
     try {
         const baseUrl = getBaseUrl(req);
         // Use IP address as identifier for non-authenticated users
@@ -447,13 +502,20 @@ delugeRoute.get('/torrents', async (req: Request, res: Response) => {
         const session = sessions[sessionId];
         let cookie = session?.cookie;
 
-        // If no cookie exists, try to use credentials from query params
-        if (!cookie && req.query.password) {
+        // If no cookie exists, try to use credentials from item config
+        if (!cookie) {
             try {
-                let password = req.query.password as string;
-                const host = req.query.host as string;
-                const port = req.query.port as string;
-                const ssl = req.query.ssl === 'true';
+                const connectionDetails = getConnectionDetails(req);
+                let password = connectionDetails.password;
+                const host = connectionDetails.host;
+                const port = connectionDetails.port;
+                const ssl = connectionDetails.ssl;
+
+                if (!password) {
+                    // No password configured, return empty array
+                    res.status(200).json([]);
+                    return;
+                }
 
                 // Handle encrypted password
                 if (isEncrypted(password)) {
@@ -589,13 +651,19 @@ delugeRoute.post('/torrents/resume', authenticateToken, async (req: Request, res
         let cookie = session?.cookie;
         const { hash } = req.body;
 
-        // If no cookie exists or we have new credentials, try to use credentials from query params
-        if ((!cookie || req.query.password) && req.query.password) {
+        // If no cookie exists, try to use credentials from item config
+        if (!cookie) {
             try {
-                let password = req.query.password as string;
-                const host = req.query.host as string;
-                const port = req.query.port as string;
-                const ssl = req.query.ssl === 'true';
+                const connectionDetails = getConnectionDetails(req);
+                let password = connectionDetails.password;
+                const host = connectionDetails.host;
+                const port = connectionDetails.port;
+                const ssl = connectionDetails.ssl;
+
+                if (!password) {
+                    res.status(401).json({ error: 'Not authenticated with Deluge' });
+                    return;
+                }
 
                 // Handle encrypted password
                 if (isEncrypted(password)) {
@@ -683,13 +751,19 @@ delugeRoute.post('/torrents/pause', authenticateToken, async (req: Request, res:
         let cookie = session?.cookie;
         const { hash } = req.body;
 
-        // If no cookie exists or we have new credentials, try to use credentials from query params
-        if ((!cookie || req.query.password) && req.query.password) {
+        // If no cookie exists, try to use credentials from item config
+        if (!cookie) {
             try {
-                let password = req.query.password as string;
-                const host = req.query.host as string;
-                const port = req.query.port as string;
-                const ssl = req.query.ssl === 'true';
+                const connectionDetails = getConnectionDetails(req);
+                let password = connectionDetails.password;
+                const host = connectionDetails.host;
+                const port = connectionDetails.port;
+                const ssl = connectionDetails.ssl;
+
+                if (!password) {
+                    res.status(401).json({ error: 'Not authenticated with Deluge' });
+                    return;
+                }
 
                 // Handle encrypted password
                 if (isEncrypted(password)) {
@@ -777,13 +851,19 @@ delugeRoute.post('/torrents/delete', authenticateToken, async (req: Request, res
         let cookie = session?.cookie;
         const { hash, deleteFiles } = req.body;
 
-        // If no cookie exists or we have new credentials, try to use credentials from query params
-        if ((!cookie || req.query.password) && req.query.password) {
+        // If no cookie exists, try to use credentials from item config
+        if (!cookie) {
             try {
-                let password = req.query.password as string;
-                const host = req.query.host as string;
-                const port = req.query.port as string;
-                const ssl = req.query.ssl === 'true';
+                const connectionDetails = getConnectionDetails(req);
+                let password = connectionDetails.password;
+                const host = connectionDetails.host;
+                const port = connectionDetails.port;
+                const ssl = connectionDetails.ssl;
+
+                if (!password) {
+                    res.status(401).json({ error: 'Not authenticated with Deluge' });
+                    return;
+                }
 
                 // Handle encrypted password
                 if (isEncrypted(password)) {

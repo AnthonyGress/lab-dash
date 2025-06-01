@@ -19,6 +19,31 @@ type Props = {
     onCustomIconSelect?: (file: File | null) => void;
 };
 
+// Helper function to get the actual icon display name from the icon object
+const getIconDisplayName = (icon: Icon | null): string => {
+    if (!icon) return '';
+
+    // If the icon has a name property and it's not a custom-pending icon, use it
+    if (icon.name && icon.source !== 'custom-pending') {
+        return icon.name;
+    }
+
+    // For custom pending icons or fallback for other icons, extract name from path
+    if (icon.path) {
+        // Get the last part of the path
+        const pathParts = icon.path.split('/');
+        const fileName = pathParts[pathParts.length - 1];
+
+        // Remove file extension
+        const nameWithoutExtension = fileName.split('.')[0];
+
+        // Replace hyphens and underscores with spaces
+        return nameWithoutExtension.replace(/[-_]/g, ' ');
+    }
+
+    return '';
+};
+
 export const IconSearch = ({ control, errors, onCustomIconSelect }: Props) => {
     const [selectedIcon, setSelectedIcon] = useState<Icon | null>(control._defaultValues.icon || null);
     const [iconList, setIconList] = useState<Icon[]>([]);
@@ -44,6 +69,23 @@ export const IconSearch = ({ control, errors, onCustomIconSelect }: Props) => {
     useEffect(() => {
         fetchIconList();
     }, []);
+
+    // Update selectedIcon when icon list is loaded
+    useEffect(() => {
+        if (iconList.length > 0 && selectedIcon && selectedIcon.path) {
+            // Find the matching icon in the loaded icon list by path
+            const matchingIcon = iconList.find(icon => icon.path === selectedIcon.path);
+            if (matchingIcon) {
+                // Replace the selectedIcon with the one from the backend that has the correct name
+                setSelectedIcon(matchingIcon);
+
+                // Also update the form value
+                if (control && control.setValue) {
+                    control.setValue('icon', matchingIcon);
+                }
+            }
+        }
+    }, [iconList, selectedIcon, control]);
 
     useEffect(() => {
         if (control._defaultValues.icon) {
@@ -134,9 +176,17 @@ export const IconSearch = ({ control, errors, onCustomIconSelect }: Props) => {
                                 disablePortal
                                 blurOnSelect={true}
                                 ListboxComponent={VirtualizedListbox}
-                                getOptionLabel={(option) => option?.name ?? ''}
+                                getOptionLabel={(option) => getIconDisplayName(option)}
                                 isOptionEqualToValue={(option, value) => {
-                                    // Consider custom-pending icons equal to their non-pending versions
+                                    // First check if both have paths and match by path (most reliable)
+                                    if (option?.path && value?.path) {
+                                        // Strip protocol and hostname for uploaded icons
+                                        const optionPath = option.path.replace(/^(https?:\/[^/]+)?/, '');
+                                        const valuePath = value.path.replace(/^(https?:\/[^/]+)?/, '');
+                                        return optionPath === valuePath;
+                                    }
+
+                                    // Fallback to name comparison
                                     return option?.name === value?.name ||
                                         (option?.source === 'custom-pending' && option?.name === value?.name);
                                 }}
@@ -169,7 +219,7 @@ export const IconSearch = ({ control, errors, onCustomIconSelect }: Props) => {
                                     }} key={shortid.generate()}>
                                         <img
                                             src={option.source === 'custom-pending' ? option.path : getIconPath(option.path)}
-                                            alt={option.name}
+                                            alt={getIconDisplayName(option)}
                                             width={24}
                                             style={{ marginRight: 8 }}
                                             key={shortid.generate()}
@@ -182,7 +232,7 @@ export const IconSearch = ({ control, errors, onCustomIconSelect }: Props) => {
                                                 whiteSpace: 'nowrap',
                                                 maxWidth: '180px'
                                             }}>
-                                            {option.name} {option.source === 'custom' && ' (Custom)'}
+                                            {getIconDisplayName(option)} {option.source === 'custom' && ' (Custom)'}
                                         </Typography>
                                     </Box>
                                 )}
@@ -214,7 +264,7 @@ export const IconSearch = ({ control, errors, onCustomIconSelect }: Props) => {
                                                     src={selectedIcon.source === 'custom-pending'
                                                         ? encodeURI(selectedIcon.path)
                                                         : getIconPath(selectedIcon.path)}
-                                                    alt={selectedIcon.name}
+                                                    alt={getIconDisplayName(selectedIcon)}
                                                     width={25}
                                                     crossOrigin='anonymous'
                                                 />
@@ -228,7 +278,7 @@ export const IconSearch = ({ control, errors, onCustomIconSelect }: Props) => {
                                                         maxWidth: '60px',
                                                         textAlign: 'center'
                                                     }}>
-                                                    {selectedIcon.name}
+                                                    {getIconDisplayName(selectedIcon)}
                                                 </Typography>
                                             </Box>
                                         }

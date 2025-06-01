@@ -3,6 +3,7 @@ import { NextFunction, Request, Response, Router } from 'express';
 import qs from 'querystring';
 
 import { authenticateToken } from '../middleware/auth.middleware';
+import { getItemConnectionInfo } from '../utils/config-lookup';
 import { decrypt, encrypt, isEncrypted } from '../utils/crypto';
 
 export const qbittorrentRoute = Router();
@@ -22,9 +23,16 @@ const sessions: Record<string, SessionInfo> = {};
 const SESSION_LIFETIME = 25 * 60 * 1000; // 25 minutes in milliseconds
 
 const getBaseUrl = (req: Request): string => {
-    const host = req.query.host as string || 'localhost';
-    const port = req.query.port as string || '8080';
-    const ssl = req.query.ssl === 'true';
+    const itemId = req.query.itemId as string;
+
+    if (!itemId) {
+        throw new Error('itemId parameter is required');
+    }
+
+    const connectionInfo = getItemConnectionInfo(itemId);
+    const host = connectionInfo.host || 'localhost';
+    const port = connectionInfo.port || '8080';
+    const ssl = connectionInfo.ssl || false;
     const protocol = ssl ? 'https' : 'http';
     return `${protocol}://${host}:${port}/api/v2`;
 };
@@ -36,9 +44,9 @@ async function authenticateQBittorrent(baseUrl: string, username: string, passwo
         let decryptedPassword = password;
         if (isEncrypted(password)) {
             decryptedPassword = decrypt(password);
-            // Check if decryption failed
+            // Check if decryption failed (returns empty string)
             if (!decryptedPassword) {
-                console.warn('Failed to decrypt qBittorrent password for authentication');
+                console.error('qBittorrent password decryption failed');
                 return null;
             }
         }
@@ -62,27 +70,40 @@ async function authenticateQBittorrent(baseUrl: string, username: string, passwo
     }
 }
 
+// Function to get credentials from item config
+function getCredentials(req: Request): { username?: string; password?: string } {
+    const itemId = req.query.itemId as string;
+
+    if (!itemId) {
+        throw new Error('itemId parameter is required');
+    }
+
+    const connectionInfo = getItemConnectionInfo(itemId);
+    return {
+        username: connectionInfo.username,
+        password: connectionInfo.password
+    };
+}
+
 // Function to check and renew session if needed
 async function ensureValidSession(req: Request): Promise<string | null> {
     const baseUrl = getBaseUrl(req);
     const sessionId = req.user?.username || req.ip || 'default';
     const session = sessions[sessionId];
+    const credentials = getCredentials(req);
 
     // If no session exists, try to create one
     if (!session) {
         // If credentials provided, try to authenticate
-        if (req.query.username && req.query.password) {
-            const username = req.query.username as string;
-            const password = req.query.password as string;
-
-            const cookie = await authenticateQBittorrent(baseUrl, username, password);
+        if (credentials.username && credentials.password) {
+            const cookie = await authenticateQBittorrent(baseUrl, credentials.username, credentials.password);
             if (cookie) {
                 // Store session with expiration
                 sessions[sessionId] = {
                     cookie,
                     expires: Date.now() + SESSION_LIFETIME,
-                    username,
-                    password // Store encrypted password for renewal
+                    username: credentials.username,
+                    password: credentials.password // Store encrypted password for renewal
                 };
                 return cookie;
             }
@@ -92,7 +113,7 @@ async function ensureValidSession(req: Request): Promise<string | null> {
 
     // If session exists but may be expired
     if (session.expires < Date.now() + 60000) { // Renew if less than 1 minute left
-        console.log('qBittorrent session close to expiration, renewing...');
+        console.log('qBittorrent session renewing...');
 
         // Try to use stored credentials for renewal
         if (session.username && session.password) {
@@ -108,19 +129,16 @@ async function ensureValidSession(req: Request): Promise<string | null> {
             }
         }
 
-        // If no stored credentials or renewal failed, try with query params
-        if (req.query.username && req.query.password) {
-            const username = req.query.username as string;
-            const password = req.query.password as string;
-
-            const cookie = await authenticateQBittorrent(baseUrl, username, password);
+        // If no stored credentials or renewal failed, try with current credentials
+        if (credentials.username && credentials.password) {
+            const cookie = await authenticateQBittorrent(baseUrl, credentials.username, credentials.password);
             if (cookie) {
                 // Store session with expiration
                 sessions[sessionId] = {
                     cookie,
                     expires: Date.now() + SESSION_LIFETIME,
-                    username,
-                    password
+                    username: credentials.username,
+                    password: credentials.password
                 };
                 return cookie;
             }
@@ -132,13 +150,23 @@ async function ensureValidSession(req: Request): Promise<string | null> {
 }
 
 qbittorrentRoute.post('/login', async (req: Request, res: Response) => {
+    console.log('qBittorrent login request');
     try {
-        const { username } = req.body;
-        const { password } = req.body;
+        const itemId = req.query.itemId as string;
+
+        if (!itemId) {
+            res.status(400).json({ error: 'itemId parameter is required' });
+            return;
+        }
+
+        const connectionInfo = getItemConnectionInfo(itemId);
         const baseUrl = getBaseUrl(req);
+        const username = connectionInfo.username;
+        const password = connectionInfo.password;
 
         if (!username || !password) {
-            res.status(400).json({ error: 'Username and password are required' });
+            console.error('qBittorrent authentication failed - missing password. Ensure the password is configured for this item.');
+            res.status(400).json({ error: 'Username and password must be configured for this item' });
             return;
         }
 
@@ -148,12 +176,14 @@ qbittorrentRoute.post('/login', async (req: Request, res: Response) => {
             decryptedPassword = decrypt(password);
             // Check if decryption failed (returns empty string)
             if (!decryptedPassword) {
+                console.error('qBittorrent password decryption failed');
                 res.status(400).json({
                     error: 'Failed to decrypt password. It may have been encrypted with a different key. Please update your credentials.'
                 });
                 return;
             }
         }
+
 
         const response = await axios.post(`${baseUrl}/auth/login`,
             qs.stringify({ username, password: decryptedPassword }),
@@ -209,6 +239,7 @@ qbittorrentRoute.post('/encrypt-password', authenticateToken, async (req: Reques
 
 // Get current download stats
 qbittorrentRoute.get('/stats', async (req: Request, res: Response) => {
+    console.log('qBittorrent stats request');
     try {
         const baseUrl = getBaseUrl(req);
 
@@ -217,7 +248,6 @@ qbittorrentRoute.get('/stats', async (req: Request, res: Response) => {
 
         if (!cookie) {
             // If not authenticated and couldn't auto-login, provide basic response with empty/zero values
-            console.log(`No valid qBittorrent session for ${baseUrl}, returning empty stats`);
             const stats = {
                 dl_info_speed: 0,
                 up_info_speed: 0,
@@ -266,7 +296,7 @@ qbittorrentRoute.get('/stats', async (req: Request, res: Response) => {
         } catch (apiErr: any) {
             // If we get a 403 (Forbidden), the session has likely expired
             if (apiErr.response?.status === 403) {
-                console.log('qBittorrent session expired, attempting to renew');
+                console.log('qBittorrent session expired, renewing...');
                 // Clear the invalid session
                 const sessionId = req.user?.username || req.ip || 'default';
                 if (sessions[sessionId]) {
@@ -282,7 +312,7 @@ qbittorrentRoute.get('/stats', async (req: Request, res: Response) => {
                             );
 
                             if (newCookie) {
-                                console.log('Successfully renewed qBittorrent session');
+                                console.log('qBittorrent session renewed successfully');
                                 // Update session with new cookie
                                 sessions[sessionId] = {
                                     ...sessionInfo,
@@ -331,7 +361,7 @@ qbittorrentRoute.get('/stats', async (req: Request, res: Response) => {
                     }
 
                     // If renewal failed or no credentials, delete the session
-                    console.log('Session renewal failed, deleting session');
+                    console.log('qBittorrent session renewal failed');
                     delete sessions[sessionId];
                 }
 
@@ -355,7 +385,7 @@ qbittorrentRoute.get('/stats', async (req: Request, res: Response) => {
 
             // Check for connection errors
             if (apiErr.code === 'ECONNREFUSED' || apiErr.code === 'ETIMEDOUT' || apiErr.code === 'ECONNABORTED') {
-                console.log(`service is offline ${baseUrl}`);
+                console.log(`qBittorrent service offline: ${baseUrl}`);
             }
 
             throw apiErr; // Re-throw for the outer catch
@@ -370,6 +400,7 @@ qbittorrentRoute.get('/stats', async (req: Request, res: Response) => {
 
 // Get list of all torrents
 qbittorrentRoute.get('/torrents', async (req: Request, res: Response) => {
+    console.log('qBittorrent torrents request');
     try {
         const baseUrl = getBaseUrl(req);
         // Get or create a valid session

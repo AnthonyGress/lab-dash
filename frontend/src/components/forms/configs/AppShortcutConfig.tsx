@@ -26,10 +26,31 @@ export const AppShortcutConfig = ({ formContext, onCustomIconSelect }: AppShortc
     const healthUrl = formContext.watch('healthUrl', '');
     const healthCheckType = formContext.watch('healthCheckType', 'http') as 'http' | 'ping';
 
+    // Clear URL validation errors when health URL is provided
+    useEffect(() => {
+        if (healthUrl && formContext.formState.errors.url) {
+            formContext.clearErrors('url');
+
+            // If URL field is empty, set it to empty string to avoid required validation
+            if (!formContext.getValues('url')) {
+                formContext.setValue('url', '');
+            }
+        }
+    }, [healthUrl, formContext]);
+
     // Initialize WOL editing state when the component mounts or isWol changes
     useEffect(() => {
         setEditingWolShortcut(isWol || false);
     }, [isWol]);
+
+    // Update URL field validation requirements whenever health URL changes
+    useEffect(() => {
+        const currentUrl = formContext.getValues('url');
+        if (healthUrl && !currentUrl) {
+            // If health URL is filled but URL is empty, clear the URL field validation errors
+            formContext.clearErrors('url');
+        }
+    }, [healthUrl, formContext]);
 
     // When switching to WOL mode, save the health URL and type
     useEffect(() => {
@@ -96,7 +117,7 @@ export const AppShortcutConfig = ({ formContext, onCustomIconSelect }: AppShortc
                         <TextFieldElement
                             name='url'
                             label='URL'
-                            required
+                            required={!healthUrl}
                             variant='outlined'
                             sx={{
                                 width: '100%',
@@ -109,8 +130,23 @@ export const AppShortcutConfig = ({ formContext, onCustomIconSelect }: AppShortc
                                 },
                             }}
                             rules={{
-                                validate: (value) =>
-                                    value.includes('://') || 'Invalid url. Ex "http://192.168.x.x" or "unifi-network://"',
+                                required: {
+                                    value: !healthUrl,
+                                    message: 'This field is required'
+                                },
+                                validate: (value: any) => {
+                                    // If health URL is provided, URL is optional
+                                    if (healthUrl && (!value || value.trim() === '')) {
+                                        return true;
+                                    }
+
+                                    // If there's a value, validate the URL format
+                                    if (value && !value.includes('://')) {
+                                        return 'Invalid url. Ex "http://192.168.x.x" or "unifi-network://"';
+                                    }
+
+                                    return true;
+                                }
                             }}
                             autoComplete='off'
                             slotProps={{

@@ -1,8 +1,6 @@
-/* eslint-disable promise/catch-or-return */
 import { grey } from '@mui/material/colors';
 import Swal from 'sweetalert2';
 
-import { COLORS, styles } from '../../theme/styles';
 import { theme } from '../../theme/theme';
 const CONFIRM_COLOR = theme.palette.success.main;
 const ThemedAlert = Swal.mixin({
