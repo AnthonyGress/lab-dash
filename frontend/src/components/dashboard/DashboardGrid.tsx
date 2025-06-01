@@ -322,6 +322,12 @@ export const DashboardGrid: React.FC = () => {
         setActiveId(null);
         setActiveData(null);
 
+        // FAILSAFE: Always restore scrolling on mobile when ANY drag ends
+        if (isMobile) {
+            document.body.style.overflow = '';
+            console.log('DashboardGrid: Restored scrolling on drag end');
+        }
+
         // Only proceed with events if we have both active and over
         if (!active || !over) {
             // Just dispatch the general drag end and inactive events
@@ -492,7 +498,9 @@ export const DashboardGrid: React.FC = () => {
 
     useEffect(() => {
         const disableScroll = (event: TouchEvent) => {
-            event.preventDefault();
+            if (event.cancelable) {
+                event.preventDefault();
+            }
         };
 
         if (isDragging) {

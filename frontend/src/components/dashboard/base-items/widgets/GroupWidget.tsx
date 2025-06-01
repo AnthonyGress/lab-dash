@@ -387,9 +387,19 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
             }
         }));
 
-        // Restore normal scrolling on mobile
+        // Restore normal scrolling on mobile - enhanced cleanup
         if (isMobile) {
             document.body.style.overflow = '';
+            // Also force removal of any touch event listeners that might be stuck
+            const noop = () => {};
+            document.removeEventListener('touchmove', noop);
+
+            // Force restore scrolling with a small delay to ensure it takes effect
+            setTimeout(() => {
+                if (document.body.style.overflow === 'hidden') {
+                    document.body.style.overflow = '';
+                }
+            }, 50);
         }
 
         if (!over) {
@@ -473,11 +483,14 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
         // Cleanup function to ensure we don't leave lingering event listeners
         return () => {
             if (isMobile) {
+                // Always restore scrolling when component unmounts or dependencies change
                 document.body.style.overflow = '';
 
-                // Remove any lingering touch event handlers
+                // Remove any lingering touch event handlers more thoroughly
                 const noop = () => {};
                 document.removeEventListener('touchmove', noop);
+                document.removeEventListener('touchstart', noop);
+                document.removeEventListener('touchend', noop);
             }
         };
     }, [isMobile]);
@@ -486,6 +499,7 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
     const handleDragStart = (event: DragStartEvent) => {
         const { active } = event;
         setActiveId(active.id.toString());
+
         // For mobile: ensure all document touchmove events are captured
         if (isMobile) {
             // This prevents the page from scrolling during drag on mobile
@@ -493,21 +507,34 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
 
             // Prevent default behavior for touch events
             const preventDefaultTouchMove = (e: TouchEvent) => {
-                if (activeId) {
+                if (activeId && e.cancelable) {
                     e.preventDefault();
                 }
             };
 
             document.addEventListener('touchmove', preventDefaultTouchMove, { passive: false });
 
-            // Clean up on next dragend
+            // More robust cleanup that works even when dragging out of group
             const cleanup = () => {
                 document.body.style.overflow = '';
                 document.removeEventListener('touchmove', preventDefaultTouchMove);
                 document.removeEventListener('dragend', cleanup);
+                document.removeEventListener('pointerup', cleanup);
+                document.removeEventListener('touchend', cleanup);
             };
 
+            // Listen for multiple end events to ensure cleanup happens
             document.addEventListener('dragend', cleanup, { once: true });
+            document.addEventListener('pointerup', cleanup, { once: true });
+            document.addEventListener('touchend', cleanup, { once: true });
+
+            // Add a failsafe timeout to restore scrolling
+            setTimeout(() => {
+                if (document.body.style.overflow === 'hidden') {
+                    console.log('GroupWidget: Failsafe scroll restore triggered');
+                    cleanup();
+                }
+            }, 5000);
         }
     };
 
