@@ -165,12 +165,7 @@ qbittorrentRoute.post('/login', async (req: Request, res: Response) => {
         const password = connectionInfo.password;
 
         if (!username || !password) {
-            console.error('qBittorrent authentication failed - missing credentials:', {
-                hasUsername: !!username,
-                hasPassword: !!password,
-                usernameLength: username?.length || 0,
-                passwordLength: password?.length || 0
-            });
+            console.error('qBittorrent authentication failed - missing password. Ensure the password is configured for this item.');
             res.status(400).json({ error: 'Username and password must be configured for this item' });
             return;
         }

@@ -194,11 +194,7 @@ delugeRoute.post('/login', async (req: Request, res: Response) => {
         const ssl = connectionInfo.ssl;
 
         if (!password) {
-            console.error('Deluge authentication failed - missing password:', {
-                hasPassword: !!password,
-                passwordLength: password?.length || 0,
-                connectionInfoKeys: Object.keys(connectionInfo)
-            });
+            console.error('Deluge authentication failed - missing password. Ensure the password is configured for this item.');
             res.status(400).json({ error: 'Password must be configured for this item' });
             return;
         }
