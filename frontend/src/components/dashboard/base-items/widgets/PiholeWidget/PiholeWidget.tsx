@@ -218,6 +218,15 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
                     setAuthFailed(true);
                     setError('Bad Request: Invalid configuration or authentication data');
                     return; // Exit early to avoid the stats request
+                } else if (statusError.response?.status === 503 || statusError.message?.includes('socket hang up')) {
+                    // Handle connection errors specifically
+                    console.warn('Pi-hole connection error, will retry on next interval:', statusError.message);
+                    // Don't set error state immediately for connection issues, allow retry
+                    return; // Exit early but don't set permanent error
+                } else if (statusError.response?.status === 504 || statusError.message?.includes('timeout')) {
+                    // Handle timeout errors
+                    console.warn('Pi-hole timeout error, will retry on next interval:', statusError.message);
+                    return; // Exit early but don't set permanent error
                 }
             }
 
@@ -273,6 +282,14 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
                 } else if (err.response?.status === 400) {
                     setAuthFailed(true);
                     setError('Bad Request: Invalid configuration or authentication data');
+                } else if (err.response?.status === 503 || err.message?.includes('socket hang up')) {
+                    // Handle connection errors - don't set permanent error, allow retry
+                    console.warn('Pi-hole connection error during stats fetch, will retry:', err.message);
+                    return; // Exit without setting error state
+                } else if (err.response?.status === 504 || err.message?.includes('timeout')) {
+                    // Handle timeout errors - don't set permanent error, allow retry
+                    console.warn('Pi-hole timeout error during stats fetch, will retry:', err.message);
+                    return; // Exit without setting error state
                 } else if (err.response?.status === 429) {
                     // Check if this is a rate limit from our backend API
                     if (err.response?.data?.error_source === 'labdash_api') {
@@ -287,11 +304,11 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
                     setAuthFailed(true);
                     setError('Too many requests to Pi-hole API. The default session expiration is 30 minutes. You can manually clear unused sessions or increase the max_sessions setting in Pi-hole.');
                 } else if (err.message?.includes('Network Error') || err.message?.includes('timeout')) {
-                    // Network errors like timeouts or connection refused
-                    setAuthFailed(true); // Use authFailed to prevent further requests
-                    setError(`Connection failed: ${err.message}. Please check if Pi-hole is running.`);
+                    // Network errors like timeouts or connection refused - don't set permanent error for temporary issues
+                    console.warn('Pi-hole network error, will retry:', err.message);
+                    return; // Exit without setting permanent error state
                 } else if (err.message) {
-                    setAuthFailed(true); // Use authFailed to prevent further requests for all error types
+                    setAuthFailed(true); // Use authFailed to prevent further requests for all other error types
                     setError(err.message);
                 } else {
                     setAuthFailed(true);
