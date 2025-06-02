@@ -1211,10 +1211,10 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                             validate: (value: string) => {
                                                 if (!value) return 'Page name is required';
 
-                                                // Check if it's only alphanumeric characters
-                                                const alphanumericRegex = /^[a-zA-Z0-9]+$/;
-                                                if (!alphanumericRegex.test(value)) {
-                                                    return 'Page name can only contain letters and numbers';
+                                                // Check if it contains only alphanumeric characters and spaces
+                                                const allowedCharsRegex = /^[a-zA-Z0-9\s]+$/;
+                                                if (!allowedCharsRegex.test(value)) {
+                                                    return 'Page name can only contain letters, numbers, and spaces';
                                                 }
 
                                                 // Check if it's the word "settings" (case-insensitive)

@@ -16,12 +16,31 @@ interface SessionInfo {
 // Store sessions by host+password hash to reuse sessions until they expire
 const sessionCache = new Map<string, SessionInfo>();
 
+// Track request timing to prevent overwhelming Pi-hole with concurrent requests
+const requestTimestamps = new Map<string, number>();
+
 // Generate a cache key from host and password (without storing the actual password)
 const getCacheKey = (baseUrl: string, password: string): string => {
     // Simple hash function - do not use the password directly as a key
     const hash = Array.from(password).reduce((h, c) =>
         (h << 5) - h + c.charCodeAt(0) | 0, 0) + baseUrl.length;
     return `${baseUrl}:${hash}`;
+};
+
+// Helper function to add a small delay between requests to the same Pi-hole instance
+const addRequestDelay = async (baseUrl: string): Promise<void> => {
+    const lastRequestTime = requestTimestamps.get(baseUrl) || 0;
+    const now = Date.now();
+    const timeSinceLastRequest = now - lastRequestTime;
+
+    // If the last request was less than 100ms ago, add a small delay
+    if (timeSinceLastRequest < 100) {
+        const delay = 100 - timeSinceLastRequest;
+        await new Promise(resolve => setTimeout(resolve, delay));
+    }
+
+    // Update the timestamp
+    requestTimestamps.set(baseUrl, Date.now());
 };
 
 // Clean expired sessions periodically
@@ -64,6 +83,20 @@ setInterval(async () => {
 
         // Wait for all logout operations to complete
         await Promise.all(logoutPromises);
+    }
+
+    // Clean up old request timestamps (older than 1 hour)
+    const oneHourAgo = now - (60 * 60 * 1000);
+    let cleanedTimestamps = 0;
+    requestTimestamps.forEach((timestamp, key) => {
+        if (timestamp < oneHourAgo) {
+            requestTimestamps.delete(key);
+            cleanedTimestamps++;
+        }
+    });
+
+    if (expiredCount > 0 || cleanedTimestamps > 0) {
+        console.log(`Pi-hole cleanup: ${expiredCount} expired sessions, ${logoutCount} successful logouts, ${cleanedTimestamps} old timestamps cleaned`);
     }
 }, 60000); // Check every minute
 
@@ -109,6 +142,21 @@ const getPassword = (req: Request): string | null => {
 };
 
 /**
+ * Helper function to check if an error is a connection/session related error that should trigger a retry
+ */
+const isConnectionError = (error: any): boolean => {
+    return error.code === 'ECONNRESET' ||
+           error.code === 'ECONNABORTED' ||
+           error.code === 'ETIMEDOUT' ||
+           error.message?.includes('socket hang up') ||
+           error.message?.includes('ECONNRESET') ||
+           error.message?.includes('ECONNABORTED') ||
+           error.message?.includes('timeout') ||
+           error.response?.status === 401 ||
+           error.response?.status === 403;
+};
+
+/**
  * Helper function to check if an error is a DNS resolution error
  */
 const isDnsResolutionError = (error: any): boolean => {
@@ -136,17 +184,23 @@ async function authenticatePihole(baseUrl: string, password: string): Promise<{ 
     const now = Date.now();
 
     if (cachedSession && cachedSession.expires > now) {
-        // If the session is about to expire soon (within 30 seconds), don't use it
-        // This avoids potential edge cases where the session might expire during the request
-        if (cachedSession.expires - now > 30000) {
+        // If the session is about to expire soon (within 60 seconds), don't use it
+        // This gives us more buffer to avoid edge cases where sessions expire during requests
+        if (cachedSession.expires - now > 60000) {
             return {
                 sid: cachedSession.sid,
                 csrf: cachedSession.csrf
             };
+        } else {
+            // Session is expiring soon, remove it from cache
+            console.log('Pi-hole session expiring soon, removing from cache');
+            sessionCache.delete(cacheKey);
         }
     }
 
     try {
+        console.log(`Authenticating with Pi-hole at ${baseUrl}`);
+
         const response = await axios.post(
             `${baseUrl}/api/auth`,
             { password },
@@ -154,7 +208,7 @@ async function authenticatePihole(baseUrl: string, password: string): Promise<{ 
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                timeout: 2000
+                timeout: 10000 // Increased timeout for authentication
             }
         );
 
@@ -162,7 +216,11 @@ async function authenticatePihole(baseUrl: string, password: string): Promise<{ 
             // Calculate expiration based on validity period (in seconds) returned by the API
             // Default to 1800 seconds (30 minutes) if not provided, which is Pi-hole v6's default
             const validitySeconds = response.data.session.validity || 1800;
-            const expiresAt = now + (validitySeconds * 1000);
+            // Reduce the validity by 10% to ensure we refresh before actual expiration
+            const adjustedValiditySeconds = Math.floor(validitySeconds * 0.9);
+            const expiresAt = now + (adjustedValiditySeconds * 1000);
+
+            console.log(`Pi-hole session created, expires in ${adjustedValiditySeconds} seconds`);
 
             // Store the session in cache
             const sessionInfo: SessionInfo = {
@@ -184,16 +242,18 @@ async function authenticatePihole(baseUrl: string, password: string): Promise<{ 
         throw new Error('Authentication failed: Invalid or missing session information');
     } catch (error: any) {
         console.error('Pi-hole v6 authentication error:', error.message);
-        console.error('Auth error details:', {
-            status: error.response?.status,
-            statusText: error.response?.statusText,
-            data: error.response?.data,
-            headers: error.response?.headers,
-            stack: error.stack
-        });
 
         // Clear any cached session as it might be invalid
         sessionCache.delete(cacheKey);
+
+        // Enhanced error handling for connection issues
+        if (error.message?.includes('socket hang up') || error.code === 'ECONNRESET') {
+            throw {
+                status: 503,
+                message: 'Connection to Pi-hole failed (socket hang up). The Pi-hole server may be overloaded or experiencing network issues.',
+                code: 'CONNECTION_ERROR'
+            };
+        }
 
         // Check for rate limiting (429 Too Many Requests)
         if (isRateLimitError(error)) {
@@ -222,6 +282,15 @@ async function authenticatePihole(baseUrl: string, password: string): Promise<{ 
             };
         }
 
+        // Check for timeout errors
+        if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+            throw {
+                status: 504,
+                message: 'Authentication timeout. Pi-hole server may be slow to respond.',
+                code: 'TIMEOUT_ERROR'
+            };
+        }
+
         throw {
             status: error.response?.status || 500,
             message: error.response?.data?.error?.message || error.message || 'Authentication failed',
@@ -231,8 +300,8 @@ async function authenticatePihole(baseUrl: string, password: string): Promise<{ 
 }
 
 /**
- * Helper function to handle API calls with automatic retry on 401 errors
- * This centralizes the logic for handling expired sessions
+ * Helper function to handle API calls with automatic retry on connection/session errors
+ * This centralizes the logic for handling expired sessions and connection issues
  */
 async function handleApiWith401Retry(
     baseUrl: string,
@@ -243,17 +312,20 @@ async function handleApiWith401Retry(
     retryAttempt = 0
 ): Promise<any> {
     // Maximum retry attempts to prevent infinite loops
-    const MAX_RETRIES = 1;
+    const MAX_RETRIES = 2;
 
     try {
+        // Add a small delay to prevent overwhelming Pi-hole with concurrent requests
+        await addRequestDelay(baseUrl);
+
         // First authenticate to get a session
         const authInfo = await authenticatePihole(baseUrl, password);
 
-        // Prepare the request config
+        // Prepare the request config with increased timeout for better reliability
         const config = {
             params: { sid: authInfo.sid },
             headers: { 'X-FTL-CSRF': authInfo.csrf, 'Content-Type': 'application/json' },
-            timeout: 2000
+            timeout: 5000 // Increased from 2000ms to 5000ms for better reliability
         };
 
         // Make the API request based on the method
@@ -270,19 +342,30 @@ async function handleApiWith401Retry(
 
         return response;
     } catch (error: any) {
-        // If this is a 401 error and we haven't exceeded max retries, try to re-authenticate
-        if (error.response?.status === 401 && retryAttempt < MAX_RETRIES) {
-            console.log(`Received 401 during API call to ${endpoint}, clearing session and retrying...`);
+        console.error(`Pi-hole API error on ${endpoint} (attempt ${retryAttempt + 1}):`, {
+            message: error.message,
+            code: error.code,
+            status: error.response?.status,
+            data: error.response?.data
+        });
+
+        // If this is a connection error (including socket hang up) and we haven't exceeded max retries
+        if (isConnectionError(error) && retryAttempt < MAX_RETRIES) {
+            console.log(`Connection error detected on ${endpoint}, clearing session and retrying...`);
 
             // Clear the cached session as it's likely invalid
             const cacheKey = getCacheKey(baseUrl, password);
             sessionCache.delete(cacheKey);
 
+            // Add a longer delay before retry to give Pi-hole time to recover
+            const retryDelay = Math.min(2000 + (retryAttempt * 1000), 5000); // 2s, 3s, max 5s
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+
             // Retry the request with a fresh authentication
             return handleApiWith401Retry(baseUrl, password, endpoint, method, data, retryAttempt + 1);
         }
 
-        // If it's not a 401 or we've exceeded retries, throw the error
+        // If it's not a retryable error or we've exceeded retries, throw the error
         throw error;
     }
 }
