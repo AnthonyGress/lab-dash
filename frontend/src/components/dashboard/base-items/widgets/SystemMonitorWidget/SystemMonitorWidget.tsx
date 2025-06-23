@@ -1,5 +1,5 @@
-import { ArrowDownward, ArrowUpward, ErrorOutline } from '@mui/icons-material';
-import { Box, Button, CircularProgress, Grid2 as Grid, IconButton, Paper, Typography } from '@mui/material';
+import { ArrowDownward, ArrowUpward, ErrorOutline, Wifi, WifiOff } from '@mui/icons-material';
+import { Box, Button, CircularProgress, Grid2 as Grid, IconButton, Paper, Tooltip, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { IoInformationCircleOutline } from 'react-icons/io5';
 
@@ -41,6 +41,7 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
     const [isFahrenheit, setIsFahrenheit] = useState(config?.temperatureUnit !== 'celsius');
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [internetStatus, setInternetStatus] = useState<'online' | 'offline' | 'checking'>('checking');
 
     // Default gauges if not specified in config
     const selectedGauges = config?.gauges || ['cpu', 'temp', 'ram'];
@@ -363,6 +364,18 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
         }
     };
 
+    // Function to check internet connectivity
+    const checkInternetConnectivity = async () => {
+        try {
+            setInternetStatus('checking');
+            const status = await DashApi.checkInternetConnectivity();
+            setInternetStatus(status);
+        } catch (error) {
+            console.error('Error checking internet connectivity:', error);
+            setInternetStatus('offline');
+        }
+    };
+
     // Function to fetch system information
     const fetchSystemInfo = async () => {
         try {
@@ -402,18 +415,25 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
 
         // Immediately fetch data with the current settings
         fetchSystemInfo();
+        checkInternetConnectivity();
 
         // Fetch system info every 5 seconds
-        const interval = setInterval(() => {
+        const systemInfoInterval = setInterval(() => {
             // Only fetch if there's no error
             if (!errorMessage) {
                 fetchSystemInfo();
             }
         }, 5000); // 5000 ms = 5 seconds
 
-        // Clean up the interval when component unmounts or dependencies change
+        // Check internet connectivity every 2 minutes
+        const internetCheckInterval = setInterval(() => {
+            checkInternetConnectivity();
+        }, 120000); // 120000 ms = 2 minutes
+
+        // Clean up the intervals when component unmounts or dependencies change
         return () => {
-            clearInterval(interval);
+            clearInterval(systemInfoInterval);
+            clearInterval(internetCheckInterval);
         };
     }, [config?.temperatureUnit, config?.networkInterface]);
 
@@ -489,6 +509,42 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                 </IconButton>
             </div>
 
+            {/* Internet Status Indicator */}
+            <div
+                onPointerDownCapture={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
+            >
+                <Tooltip
+                    title={internetStatus === 'online' ? 'Internet Connected' : internetStatus === 'offline' ? 'No Internet Connection' : 'Checking Internet...'}
+                    arrow
+                    placement='top'
+                    slotProps={{
+                        tooltip: {
+                            sx: {
+                                fontSize: 14,
+                            },
+                        },
+                    }}
+                >
+                    <IconButton
+                        sx={{
+                            position: 'absolute',
+                            top: isDualWidget ? (isBottomWidget ? 0 : -5) : -5,
+                            right: -5,
+                            zIndex: 99
+                        }}
+                    >
+                        {internetStatus === 'online' ? (
+                            <Wifi style={{ color: theme.palette.text.primary, fontSize: '1.2rem' }} />
+                        ) : internetStatus === 'offline' ? (
+                            <WifiOff style={{ color: theme.palette.text.primary, fontSize: '1.2rem' }} />
+                        ) : (
+                            <CircularProgress size={16} sx={{ color: theme.palette.text.primary }} />
+                        )}
+                    </IconButton>
+                </Tooltip>
+            </div>
+
             <Grid container
                 gap={gapSize}
                 sx={containerStyles}
@@ -522,6 +578,7 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                     <Typography><b>Kernel:</b> {systemInformation?.system?.kernel}</Typography>
                     <Typography><b>Uptime:</b> {convertSecondsToUptime(systemInformation?.system?.uptime)}</Typography>
                     <Typography><b>CPU Temperature:</b> {systemInformation?.cpu?.main ? formatTemperature(systemInformation?.cpu?.main) : 0}°{isFahrenheit ? 'F' : 'C'}</Typography>
+                    <Typography><b>Internet Status:</b> {internetStatus === 'online' ? 'Connected' : internetStatus === 'offline' ? 'Disconnected' : '⏳ Checking...'}</Typography>
                     <Typography><b>Disk Mount:</b> {diskInformation?.mount}</Typography>
                     <Typography><b>Disk Usage:</b> {`${diskInformation?.usedPercentage?.toFixed(0)}%`}</Typography>
                     <Typography><b>Disk Total:</b> {`${diskInformation?.totalSpace} GB`}</Typography>

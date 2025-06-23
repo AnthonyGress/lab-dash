@@ -347,6 +347,22 @@ export class DashApi {
         }
     }
 
+    public static async checkInternetConnectivity(): Promise<'online' | 'offline'> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/health`, {
+                params: { url: '8.8.8.8', type: 'ping' },
+                // Don't send credentials for health checks to avoid auth issues
+                withCredentials: false,
+                // Add timeout to prevent long-running requests
+                timeout: 10000
+            });
+            return res.data.status;
+        } catch (error) {
+            console.error('Failed to check internet connectivity:', error);
+            return 'offline';
+        }
+    }
+
     public static async uploadBackgroundImage(file: File): Promise<UploadImageResponse | null> {
         try {
             const formData = new FormData();
