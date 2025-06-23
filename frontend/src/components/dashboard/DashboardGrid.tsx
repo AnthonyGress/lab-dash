@@ -459,31 +459,70 @@ export const DashboardGrid: React.FC = () => {
         setOpenEditModal(true);
     };
 
-    const handleDuplicate = (item: DashboardItem) => {
+    const handleDuplicate = async (item: DashboardItem) => {
         // Deep clone the item
         const duplicatedItem: DashboardItem = JSON.parse(JSON.stringify(item));
 
         // Generate a new unique ID for the main item
-        const newGroupId = shortid.generate();
-        duplicatedItem.id = newGroupId;
+        const newItemId = shortid.generate();
+        duplicatedItem.id = newItemId;
 
-        // If this is a group widget, generate new IDs for each item inside it
-        if (item.type === ITEM_TYPE.GROUP_WIDGET && item.config?.items) {
+        // Helper function to preserve sensitive data flags for any config
+        const preserveSensitiveDataFlags = (config: any) => {
+            if (!config) return config;
 
-            // Ensure config exists
-            if (!duplicatedItem.config) {
-                duplicatedItem.config = {};
+            const preservedConfig = { ...config };
+
+            // Preserve Pi-hole sensitive data flags
+            if (config._hasApiToken) {
+                preservedConfig._hasApiToken = true;
+            }
+            if (config._hasPassword) {
+                preservedConfig._hasPassword = true;
             }
 
-            // Ensure each item in the group gets a new ID
-            duplicatedItem.config.items = item.config.items.map((groupItem: any) => {
-                const newItemId = shortid.generate();
+            // Preserve AdGuard Home sensitive data flags
+            if (config._hasUsername) {
+                preservedConfig._hasUsername = true;
+            }
 
-                return {
-                    ...groupItem,
-                    id: newItemId // New ID for each group item
-                };
-            });
+            return preservedConfig;
+        };
+
+        // Add duplication metadata to help backend copy credentials
+        if (duplicatedItem.config) {
+            duplicatedItem.config._duplicatedFrom = item.id;
+        } else {
+            duplicatedItem.config = { _duplicatedFrom: item.id };
+        }
+
+        // Handle different widget types with sensitive data
+        if (duplicatedItem.config) {
+            // Handle regular widgets with sensitive data
+            duplicatedItem.config = preserveSensitiveDataFlags(duplicatedItem.config);
+
+            // Handle dual widgets with sensitive data
+            if (item.type === ITEM_TYPE.DUAL_WIDGET && duplicatedItem.config) {
+                if (duplicatedItem.config.topWidget?.config) {
+                    duplicatedItem.config.topWidget.config = preserveSensitiveDataFlags(duplicatedItem.config.topWidget.config);
+                }
+                if (duplicatedItem.config.bottomWidget?.config) {
+                    duplicatedItem.config.bottomWidget.config = preserveSensitiveDataFlags(duplicatedItem.config.bottomWidget.config);
+                }
+            }
+
+            // Handle group widgets
+            if (item.type === ITEM_TYPE.GROUP_WIDGET && duplicatedItem.config?.items && item.config?.items) {
+                // Ensure each item in the group gets a new ID
+                duplicatedItem.config.items = item.config.items.map((groupItem: any) => {
+                    const newGroupItemId = shortid.generate();
+
+                    return {
+                        ...groupItem,
+                        id: newGroupItemId // New ID for each group item
+                    };
+                });
+            }
         }
 
         // Find the item's position in the layout
@@ -492,9 +531,18 @@ export const DashboardGrid: React.FC = () => {
         // Insert the duplicated item after the original
         const updatedLayout = [...dashboardLayout];
         updatedLayout.splice(index + 1, 0, duplicatedItem);
+
         // Update the dashboard
         setDashboardLayout(updatedLayout);
-        saveLayout(updatedLayout);
+
+        // Save layout and refresh config to ensure backend processing is complete
+        await saveLayout(updatedLayout);
+
+        // Refresh the dashboard to get the updated config with processed credentials
+        await refreshDashboard();
+
+        // Add a longer delay to ensure config propagates to all widgets and backend processing is complete
+        await new Promise(resolve => setTimeout(resolve, 500));
     };
 
     useEffect(() => {

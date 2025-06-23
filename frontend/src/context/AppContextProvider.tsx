@@ -427,6 +427,15 @@ export const AppContextProvider = ({ children }: Props) => {
             }) || [];
 
             await DashApi.saveConfig({ pages: updatedPages });
+
+            // Update the config state with the new pages data
+            setConfig(prevConfig => ({
+                ...prevConfig!,
+                pages: updatedPages
+            }));
+
+            // Update pages state as well
+            setPages(updatedPages);
             return;
         }
 
@@ -443,6 +452,12 @@ export const AppContextProvider = ({ children }: Props) => {
         }
 
         await DashApi.saveConfig(updatedLayout);
+
+        // Update the config state with the new layout data
+        setConfig(prevConfig => ({
+            ...prevConfig!,
+            layout: updatedLayout.layout
+        }));
     };
 
     const refreshDashboard = async () => {

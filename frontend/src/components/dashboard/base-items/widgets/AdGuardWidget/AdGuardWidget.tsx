@@ -148,6 +148,16 @@ export const AdGuardWidget = (props: { config?: AdGuardWidgetConfig; id?: string
                 if (err?.adguard?.requiresReauth) {
                     setAuthFailed(true);
                     setError('Authentication failed. Please reconfigure your AdGuard Home credentials.');
+                } else if (err.message?.includes('Item not found in configuration')) {
+                    // Handle "Item not found" errors - this might be a timing issue during duplication
+                    console.log('🔄 AdGuard: Item not found, retrying in 2s (duplication timing)');
+                    // Schedule a retry after a short delay instead of setting permanent error
+                    setTimeout(() => {
+                        if (isMountedRef.current && !error && !authFailed) {
+                            fetchStats();
+                        }
+                    }, 2000); // Retry after 2 seconds
+                    return; // Exit without setting error state
                 } else {
                     setError(err.message || 'Failed to fetch AdGuard Home statistics');
                 }
@@ -296,7 +306,19 @@ export const AdGuardWidget = (props: { config?: AdGuardWidgetConfig; id?: string
         } catch (err: any) {
             console.error('Failed to disable AdGuard protection:', err);
             safeSetState(() => {
-                setError(err.message || 'Failed to disable AdGuard Home protection');
+                if (err.message?.includes('Item not found in configuration')) {
+                    // Handle "Item not found" errors - this might be a timing issue during duplication
+                    console.log('🔄 AdGuard: Disable failed, retrying in 2s (duplication timing)');
+                    // Schedule a retry after a short delay instead of setting permanent error
+                    setTimeout(() => {
+                        if (isMountedRef.current && !error && !authFailed) {
+                            handleDisableProtection(seconds);
+                        }
+                    }, 2000); // Retry after 2 seconds
+                    return; // Exit without setting error state
+                } else {
+                    setError(err.message || 'Failed to disable AdGuard Home protection');
+                }
             });
         } finally {
             safeSetState(() => {
@@ -327,7 +349,19 @@ export const AdGuardWidget = (props: { config?: AdGuardWidgetConfig; id?: string
         } catch (err: any) {
             console.error('Failed to enable AdGuard protection:', err);
             safeSetState(() => {
-                setError(err.message || 'Failed to enable AdGuard Home protection');
+                if (err.message?.includes('Item not found in configuration')) {
+                    // Handle "Item not found" errors - this might be a timing issue during duplication
+                    console.log('🔄 AdGuard: Enable failed, retrying in 2s (duplication timing)');
+                    // Schedule a retry after a short delay instead of setting permanent error
+                    setTimeout(() => {
+                        if (isMountedRef.current && !error && !authFailed) {
+                            handleEnableProtection();
+                        }
+                    }, 2000); // Retry after 2 seconds
+                    return; // Exit without setting error state
+                } else {
+                    setError(err.message || 'Failed to enable AdGuard Home protection');
+                }
             });
         } finally {
             safeSetState(() => {

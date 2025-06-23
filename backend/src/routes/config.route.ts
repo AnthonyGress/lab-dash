@@ -255,9 +255,95 @@ const restoreSensitiveData = (newConfig: any, existingConfig: any): any => {
     const globalExistingItemsMap = createGlobalItemMap(existingConfig);
 
     const restoreItemSensitiveData = (newItem: any, existingItem: any): any => {
-        if (!newItem.config || !existingItem.config) return newItem;
+        if (!newItem.config) return newItem;
 
         const restoredItemConfig = { ...newItem.config };
+
+        // Handle duplication: if this is a duplicated item, copy credentials from source item
+        if (newItem.config._duplicatedFrom) {
+            const sourceItem = globalExistingItemsMap.get(newItem.config._duplicatedFrom);
+            if (sourceItem?.config) {
+                console.log(`Copying credentials from source item ${newItem.config._duplicatedFrom} to duplicated item ${newItem.id}`);
+
+                // Copy encrypted credentials directly from source item
+                if (sourceItem.config.apiToken) {
+                    restoredItemConfig.apiToken = sourceItem.config.apiToken;
+                }
+                if (sourceItem.config.password) {
+                    restoredItemConfig.password = sourceItem.config.password;
+                }
+                if (sourceItem.config.username) {
+                    restoredItemConfig.username = sourceItem.config.username;
+                }
+
+                // Handle dual widget credential copying
+                if (newItem.type === 'dual-widget' && sourceItem.config.topWidget?.config) {
+                    if (restoredItemConfig.topWidget?.config) {
+                        if (sourceItem.config.topWidget.config.apiToken) {
+                            restoredItemConfig.topWidget.config.apiToken = sourceItem.config.topWidget.config.apiToken;
+                        }
+                        if (sourceItem.config.topWidget.config.password) {
+                            restoredItemConfig.topWidget.config.password = sourceItem.config.topWidget.config.password;
+                        }
+                        if (sourceItem.config.topWidget.config.username) {
+                            restoredItemConfig.topWidget.config.username = sourceItem.config.topWidget.config.username;
+                        }
+                    }
+                }
+                if (newItem.type === 'dual-widget' && sourceItem.config.bottomWidget?.config) {
+                    if (restoredItemConfig.bottomWidget?.config) {
+                        if (sourceItem.config.bottomWidget.config.apiToken) {
+                            restoredItemConfig.bottomWidget.config.apiToken = sourceItem.config.bottomWidget.config.apiToken;
+                        }
+                        if (sourceItem.config.bottomWidget.config.password) {
+                            restoredItemConfig.bottomWidget.config.password = sourceItem.config.bottomWidget.config.password;
+                        }
+                        if (sourceItem.config.bottomWidget.config.username) {
+                            restoredItemConfig.bottomWidget.config.username = sourceItem.config.bottomWidget.config.username;
+                        }
+                    }
+                }
+
+                // Clean up and return early since we've copied everything we need
+                delete restoredItemConfig._hasApiToken;
+                delete restoredItemConfig._hasPassword;
+                delete restoredItemConfig._hasUsername;
+                delete restoredItemConfig._duplicatedFrom;
+                if (restoredItemConfig.topWidget?.config) {
+                    delete restoredItemConfig.topWidget.config._hasApiToken;
+                    delete restoredItemConfig.topWidget.config._hasPassword;
+                    delete restoredItemConfig.topWidget.config._hasUsername;
+                }
+                if (restoredItemConfig.bottomWidget?.config) {
+                    delete restoredItemConfig.bottomWidget.config._hasApiToken;
+                    delete restoredItemConfig.bottomWidget.config._hasPassword;
+                    delete restoredItemConfig.bottomWidget.config._hasUsername;
+                }
+
+                return { ...newItem, config: restoredItemConfig };
+            }
+        }
+
+        if (!existingItem?.config) {
+            // Even if no existing item, we still need to clean up security flags
+            // Clean up security flags and duplication metadata (they're only for communication, not storage)
+            delete restoredItemConfig._hasApiToken;
+            delete restoredItemConfig._hasPassword;
+            delete restoredItemConfig._hasUsername;
+            delete restoredItemConfig._duplicatedFrom;
+            if (restoredItemConfig.topWidget?.config) {
+                delete restoredItemConfig.topWidget.config._hasApiToken;
+                delete restoredItemConfig.topWidget.config._hasPassword;
+                delete restoredItemConfig.topWidget.config._hasUsername;
+            }
+            if (restoredItemConfig.bottomWidget?.config) {
+                delete restoredItemConfig.bottomWidget.config._hasApiToken;
+                delete restoredItemConfig.bottomWidget.config._hasPassword;
+                delete restoredItemConfig.bottomWidget.config._hasUsername;
+            }
+
+            return { ...newItem, config: restoredItemConfig };
+        }
 
         // Handle group widget items (recursively)
         if (newItem.type === 'group-widget' && restoredItemConfig.items && existingItem.config.items) {
@@ -317,10 +403,11 @@ const restoreSensitiveData = (newConfig: any, existingConfig: any): any => {
             }
         }
 
-        // Clean up security flags (they're only for communication, not storage)
+        // Clean up security flags and duplication metadata (they're only for communication, not storage)
         delete restoredItemConfig._hasApiToken;
         delete restoredItemConfig._hasPassword;
         delete restoredItemConfig._hasUsername;
+        delete restoredItemConfig._duplicatedFrom;
         if (restoredItemConfig.topWidget?.config) {
             delete restoredItemConfig.topWidget.config._hasApiToken;
             delete restoredItemConfig.topWidget.config._hasPassword;
@@ -347,7 +434,9 @@ const restoreSensitiveData = (newConfig: any, existingConfig: any): any => {
                 existingItem = globalExistingItemsMap.get(newItem.id);
             }
 
-            return existingItem ? restoreItemSensitiveData(newItem, existingItem) : newItem;
+            // Always call restoreItemSensitiveData, even if no existing item found
+            // This ensures duplication logic and cleanup always runs
+            return restoreItemSensitiveData(newItem, existingItem);
         });
     };
 
