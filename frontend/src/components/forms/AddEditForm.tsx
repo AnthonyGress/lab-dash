@@ -32,6 +32,7 @@ const WIDGET_OPTIONS = [
     { id: ITEM_TYPE.PIHOLE_WIDGET, label: 'Pi-hole' },
     { id: ITEM_TYPE.ADGUARD_WIDGET, label: 'AdGuard Home' },
     { id: ITEM_TYPE.DOWNLOAD_CLIENT, label: 'Download Client' },
+    { id: ITEM_TYPE.MEDIA_SERVER_WIDGET, label: 'Media Server' },
     { id: ITEM_TYPE.DUAL_WIDGET, label: 'Dual Widget' },
     { id: ITEM_TYPE.GROUP_WIDGET, label: 'Group' }
 ];
@@ -73,6 +74,13 @@ export type FormValues = {
     adguardUsername?: string;
     adguardPassword?: string;
     adguardName?: string;
+    // Media server widget
+    mediaServerType?: string;
+    mediaServerName?: string;
+    msHost?: string;
+    msPort?: string;
+    msSsl?: boolean;
+    msApiKey?: string;
     // Torrent client widget
     torrentClient?: string;
     torrentUrl?: string;
@@ -171,6 +179,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                existingItem?.type === ITEM_TYPE.ADGUARD_WIDGET ||
                                existingItem?.type === ITEM_TYPE.DOWNLOAD_CLIENT ||
                                existingItem?.type === ITEM_TYPE.TORRENT_CLIENT || // Legacy support
+                               existingItem?.type === ITEM_TYPE.MEDIA_SERVER_WIDGET ||
                                existingItem?.type === ITEM_TYPE.DUAL_WIDGET ||
                                existingItem?.type === ITEM_TYPE.GROUP_WIDGET
             ? 'widget'
@@ -192,7 +201,8 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                   existingItem?.type === ITEM_TYPE.PIHOLE_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.ADGUARD_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.DOWNLOAD_CLIENT ||
-                                  existingItem?.type === ITEM_TYPE.TORRENT_CLIENT // Legacy support - map to DOWNLOAD_CLIENT
+                                  existingItem?.type === ITEM_TYPE.TORRENT_CLIENT || // Legacy support - map to DOWNLOAD_CLIENT
+                                  existingItem?.type === ITEM_TYPE.MEDIA_SERVER_WIDGET
             ? (existingItem?.type === ITEM_TYPE.TORRENT_CLIENT ? ITEM_TYPE.DOWNLOAD_CLIENT : existingItem?.type)
             : existingItem?.type === ITEM_TYPE.DUAL_WIDGET ||
                                     existingItem?.type === ITEM_TYPE.GROUP_WIDGET
@@ -202,7 +212,8 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
         const initialShowLabel = (existingItem?.type === ITEM_TYPE.PIHOLE_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.DOWNLOAD_CLIENT ||
                                   existingItem?.type === ITEM_TYPE.TORRENT_CLIENT || // Legacy support
-                                  existingItem?.type === ITEM_TYPE.ADGUARD_WIDGET)
+                                  existingItem?.type === ITEM_TYPE.ADGUARD_WIDGET ||
+                                  existingItem?.type === ITEM_TYPE.MEDIA_SERVER_WIDGET)
             ? (existingItem?.showLabel !== undefined ? existingItem.showLabel : true)
             : (existingItem?.showLabel !== undefined ? existingItem.showLabel : false);
 
@@ -248,7 +259,6 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                 // Use the exact value from config
                 maxItems = String(existingItem.config.maxItems);
             }
-            console.log('Loaded maxItems from config:', maxItems);
         }
 
         // Special handling for dual widget - extract top and bottom widget types
@@ -261,8 +271,6 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                 bottomWidgetType = existingItem.config.bottomWidget.type;
             }
         }
-
-
 
         // Reset the form with the existing item data
         formContext.reset({
@@ -315,6 +323,13 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             adguardUsername: adguardUsername,
             adguardPassword: adguardPassword,
             adguardName: adguardName,
+            // Media server widget values
+            mediaServerType: existingItem?.config?.clientType || 'jellyfin',
+            mediaServerName: existingItem?.config?.displayName || (existingItem ? '' : 'Jellyfin'),
+            msHost: existingItem?.config?.host || '',
+            msPort: existingItem?.config?.port || '8096',
+            msSsl: existingItem?.config?.ssl || false,
+            msApiKey: existingItem?.config?._hasApiKey ? '**********' : '',
             location: location,
             gauge1: systemMonitorGauges[0] || 'cpu',
             gauge2: systemMonitorGauges[1] || 'temp',
@@ -399,7 +414,6 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
 
                     // Handle top adguard widget
                     else if (topWidget.type === ITEM_TYPE.ADGUARD_WIDGET) {
-                        console.log('🔧 AddEditForm: Initializing top AdGuard widget with config:', topConfig);
                         formContext.setValue('top_adguardHost', topConfig.host || '');
                         formContext.setValue('top_adguardPort', topConfig.port !== undefined ? topConfig.port : '80');
                         formContext.setValue('top_adguardSsl', topConfig.ssl !== undefined ? topConfig.ssl : false);
@@ -408,7 +422,6 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                         formContext.setValue('top_adguardPassword', topConfig._hasPassword ? '**********' : '');
                         formContext.setValue('top_adguardName', topConfig.displayName || '');
                         formContext.setValue('top_showLabel', topConfig.showLabel !== undefined ? topConfig.showLabel : true);
-                        console.log('🔧 AddEditForm: Set top AdGuard host to:', topConfig.host);
                     }
 
                     // Handle top datetime widget
@@ -462,7 +475,6 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
 
                     // Handle bottom adguard widget
                     else if (bottomWidget.type === ITEM_TYPE.ADGUARD_WIDGET) {
-                        console.log('🔧 AddEditForm: Initializing bottom AdGuard widget with config:', bottomConfig);
                         formContext.setValue('bottom_adguardHost', bottomConfig.host || '');
                         formContext.setValue('bottom_adguardPort', bottomConfig.port !== undefined ? bottomConfig.port : '80');
                         formContext.setValue('bottom_adguardSsl', bottomConfig.ssl !== undefined ? bottomConfig.ssl : false);
@@ -471,7 +483,6 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                         formContext.setValue('bottom_adguardPassword', bottomConfig._hasPassword ? '**********' : '');
                         formContext.setValue('bottom_adguardName', bottomConfig.displayName || '');
                         formContext.setValue('bottom_showLabel', bottomConfig.showLabel !== undefined ? bottomConfig.showLabel : true);
-                        console.log('🔧 AddEditForm: Set bottom AdGuard host to:', bottomConfig.host);
                     }
 
                     // Handle bottom datetime widget
@@ -495,11 +506,13 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                 selectedWidgetType === ITEM_TYPE.PIHOLE_WIDGET ||
                 selectedWidgetType === ITEM_TYPE.ADGUARD_WIDGET ||
                 selectedWidgetType === ITEM_TYPE.DOWNLOAD_CLIENT ||
+                selectedWidgetType === ITEM_TYPE.MEDIA_SERVER_WIDGET ||
                 selectedWidgetType === ITEM_TYPE.DUAL_WIDGET
             ))) {
                 if (selectedWidgetType === ITEM_TYPE.PIHOLE_WIDGET ||
                     selectedWidgetType === ITEM_TYPE.ADGUARD_WIDGET ||
                     selectedWidgetType === ITEM_TYPE.DOWNLOAD_CLIENT ||
+                    selectedWidgetType === ITEM_TYPE.MEDIA_SERVER_WIDGET ||
                     selectedWidgetType === ITEM_TYPE.DUAL_WIDGET) {
                     formContext.setValue('showLabel', true);
                 } else {
@@ -523,8 +536,6 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
     };
 
     const handleSubmit = async (data: FormValues) => {
-        console.log('Form submitted with data:', data);
-
         // Handle page creation/editing
         if (data.itemType === ITEM_TYPE.PAGE) {
             if (data.pageName) {
@@ -579,7 +590,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             }
         }
 
-        let config = undefined;
+        let config: any = undefined;
         if (data.itemType === 'widget') {
             if (data.widgetType === ITEM_TYPE.WEATHER_WIDGET) {
                 config = {
@@ -778,13 +789,41 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                 }
 
                 config = baseConfig;
+            } else if (data.widgetType === ITEM_TYPE.MEDIA_SERVER_WIDGET) {
+                // Media server widget - use ms* fields for all server types
+                config = {
+                    clientType: data.mediaServerType || 'jellyfin',
+                    displayName: data.mediaServerName || '',
+                    host: data.msHost || '',
+                    port: data.msPort || '8096',
+                    ssl: data.msSsl || false,
+                    showLabel: data.showLabel !== undefined ? data.showLabel : true
+                };
+
+                // Handle API key - if masked, set flag for backend to preserve existing key
+                if (data.msApiKey === '**********') {
+                    // API key is masked - tell backend to preserve existing key
+                    config._hasApiKey = true;
+                } else if (data.msApiKey && data.msApiKey.trim() !== '') {
+                    // API key was changed - encrypt and include it
+                    if (!isEncrypted(data.msApiKey)) {
+                        try {
+                            const encryptedApiKey = await DashApi.encryptPassword(data.msApiKey);
+                            config.apiKey = encryptedApiKey;
+                        } catch (error) {
+                            console.error('Error encrypting media server API key:', error);
+                        }
+                    } else {
+                        config.apiKey = data.msApiKey;
+                    }
+                }
             } else if (data.widgetType === ITEM_TYPE.DUAL_WIDGET) {
                 // Check if DualWidgetConfig component has already built the config
                 const existingConfig = (formContext as any).getValues('config');
 
                 if (existingConfig && existingConfig.topWidget && existingConfig.bottomWidget) {
                     // Use the config built by DualWidgetConfig component (preserves sensitive data flags)
-                    config = existingConfig;
+                    return existingConfig;
                 } else {
                     // Fallback to building config from form data (for backwards compatibility)
 
@@ -852,10 +891,10 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                         showLabel: data.bottom_showLabel
                     };
 
-                    const topConfig = await createWidgetConfig(data.topWidgetType || '', topWidgetData);
-                    const bottomConfig = await createWidgetConfig(data.bottomWidgetType || '', bottomWidgetData);
+                    const topConfig: any = await createWidgetConfig(data.topWidgetType || '', topWidgetData);
+                    const bottomConfig: any = await createWidgetConfig(data.bottomWidgetType || '', bottomWidgetData);
 
-                    config = {
+                    return {
                         topWidget: {
                             type: data.topWidgetType,
                             config: topConfig
@@ -974,7 +1013,6 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                 await refreshDashboard();
             }
 
-            console.log('Form submission complete, resetting form');
             formContext.reset();
             handleFormClose();
         } catch (error) {
@@ -1201,10 +1239,6 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                 showLabel: data.showLabel
             };
 
-            console.log('Download client config being created:', config);
-            console.log('Form data tcPort:', data.tcPort);
-            console.log('Form data showLabel:', data.showLabel);
-
             // Include username for clients that need it (not SABnzbd)
             if (data.torrentClientType !== DOWNLOAD_CLIENT_TYPE.SABNZBD && data.tcUsername) {
                 config.username = data.tcUsername;
@@ -1216,6 +1250,36 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             } else if (hasExistingPassword) {
                 // If we have an existing password but no new password provided, set the flag
                 config._hasPassword = true;
+            }
+
+            return config;
+        } else if (widgetType === ITEM_TYPE.MEDIA_SERVER_WIDGET) {
+            // Media server widget - use ms* fields for all server types
+            const config: any = {
+                clientType: data.mediaServerType || 'jellyfin',
+                displayName: data.mediaServerName || '',
+                host: data.msHost || '',
+                port: data.msPort || '8096',
+                ssl: data.msSsl || false,
+                showLabel: data.showLabel !== undefined ? data.showLabel : true
+            };
+
+            // Handle API key - if masked, set flag for backend to preserve existing key
+            if (data.msApiKey === '**********') {
+                // API key is masked - tell backend to preserve existing key
+                config._hasApiKey = true;
+            } else if (data.msApiKey && data.msApiKey.trim() !== '') {
+                // API key was changed - encrypt and include it
+                if (!isEncrypted(data.msApiKey)) {
+                    try {
+                        const encryptedApiKey = await DashApi.encryptPassword(data.msApiKey);
+                        config.apiKey = encryptedApiKey;
+                    } catch (error) {
+                        console.error('Error encrypting media server API key:', error);
+                    }
+                } else {
+                    config.apiKey = data.msApiKey;
+                }
             }
 
             return config;
@@ -1314,8 +1378,6 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
 
     // Function to completely reset form when closing
     const handleFormClose = () => {
-        console.log('Closing form');
-
         // Reset all component state
         setCustomIconFile(null);
 
@@ -1357,6 +1419,13 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             adguardUsername: '',
             adguardPassword: '',
             adguardName: '',
+            // Media server widget fields
+            mediaServerType: 'jellyfin',
+            mediaServerName: 'Jellyfin',
+            msHost: '',
+            msPort: '8096',
+            msSsl: false,
+            msApiKey: '',
             location: null,
             gauge1: 'cpu',
             gauge2: 'temp',

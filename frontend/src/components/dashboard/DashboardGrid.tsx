@@ -31,6 +31,7 @@ import { SortableDateTimeWidget } from './sortable-items/widgets/SortableDateTim
 import { SortableDeluge } from './sortable-items/widgets/SortableDeluge';
 import { SortableDualWidget } from './sortable-items/widgets/SortableDualWidget';
 import { SortableGroupWidget } from './sortable-items/widgets/SortableGroupWidget';
+import { SortableMediaServer } from './sortable-items/widgets/SortableMediaServer';
 import { SortablePihole } from './sortable-items/widgets/SortablePihole';
 import { SortableQBittorrent } from './sortable-items/widgets/SortableQBittorrent';
 import { SortableSystemMonitorWidget } from './sortable-items/widgets/SortableSystemMonitor';
@@ -621,8 +622,8 @@ export const DashboardGrid: React.FC = () => {
     // Helper function to render download client components
     const renderDownloadClient = (item: any, isOverlay = false) => {
         const clientType = item.config?.clientType;
+        const key = item.id;
         const commonProps = {
-            key: item.id,
             id: item.id,
             editMode,
             config: item.config,
@@ -635,35 +636,35 @@ export const DashboardGrid: React.FC = () => {
         // Handle all download client types for DOWNLOAD_CLIENT
         if (item.type === ITEM_TYPE.DOWNLOAD_CLIENT) {
             if (clientType === DOWNLOAD_CLIENT_TYPE.DELUGE) {
-                return <SortableDeluge {...commonProps} />;
+                return <SortableDeluge key={key} {...commonProps} />;
             }
             if (clientType === DOWNLOAD_CLIENT_TYPE.TRANSMISSION) {
-                return <SortableTransmission {...commonProps} />;
+                return <SortableTransmission key={key} {...commonProps} />;
             }
             if (clientType === DOWNLOAD_CLIENT_TYPE.SABNZBD) {
-                return <SortableSabnzbd {...commonProps} />;
+                return <SortableSabnzbd key={key} {...commonProps} />;
             }
             // Default to qBittorrent for DOWNLOAD_CLIENT
-            return <SortableQBittorrent {...commonProps} />;
+            return <SortableQBittorrent key={key} {...commonProps} />;
         }
 
         // Handle legacy TORRENT_CLIENT - only torrent clients (no SABnzbd)
         if (item.type === ITEM_TYPE.TORRENT_CLIENT) {
             if (clientType === TORRENT_CLIENT_TYPE.DELUGE) {
-                return <SortableDeluge {...commonProps} />;
+                return <SortableDeluge key={key} {...commonProps} />;
             }
             if (clientType === TORRENT_CLIENT_TYPE.TRANSMISSION) {
-                return <SortableTransmission {...commonProps} />;
+                return <SortableTransmission key={key} {...commonProps} />;
             }
             if (clientType === TORRENT_CLIENT_TYPE.QBITTORRENT) {
-                return <SortableQBittorrent {...commonProps} />;
+                return <SortableQBittorrent key={key} {...commonProps} />;
             }
             // Default to qBittorrent for legacy torrent client
-            return <SortableQBittorrent {...commonProps} />;
+            return <SortableQBittorrent key={key} {...commonProps} />;
         }
 
         // Fallback
-        return <SortableQBittorrent {...commonProps} />;
+        return <SortableQBittorrent key={key} {...commonProps} />;
     };
 
     // Render a single item
@@ -710,6 +711,28 @@ export const DashboardGrid: React.FC = () => {
                 onEdit={() => handleEdit(item)}
                 onDuplicate={() => handleDuplicate(item)}
             />;
+        case ITEM_TYPE.MEDIA_SERVER_WIDGET: {
+            // Create a properly typed config for MediaServerWidget
+            const mediaServerConfig = {
+                clientType: item.config?.clientType || 'jellyfin',
+                displayName: item.config?.displayName || '',
+                host: item.config?.host || '',
+                port: item.config?.port || '8096',
+                ssl: item.config?.ssl || false,
+                apiKey: item.config?.apiKey || '',
+                showLabel: item.config?.showLabel !== undefined ? item.config.showLabel : true,
+                _hasApiKey: item.config?._hasApiKey || false
+            };
+            return <SortableMediaServer
+                key={item.id}
+                id={item.id}
+                editMode={editMode}
+                config={mediaServerConfig}
+                onDelete={() => handleDelete(item.id)}
+                onEdit={() => handleEdit(item)}
+                onDuplicate={() => handleDuplicate(item)}
+            />;
+        }
         case ITEM_TYPE.APP_SHORTCUT:
             return (
                 <SortableAppShortcut
@@ -875,6 +898,26 @@ export const DashboardGrid: React.FC = () => {
                                             config={item.config}
                                             isOverlay
                                         />;
+                                    case ITEM_TYPE.MEDIA_SERVER_WIDGET: {
+                                        // Create a properly typed config for MediaServerWidget
+                                        const mediaServerConfig = {
+                                            clientType: item.config?.clientType || 'jellyfin',
+                                            displayName: item.config?.displayName || '',
+                                            host: item.config?.host || '',
+                                            port: item.config?.port || '8096',
+                                            ssl: item.config?.ssl || false,
+                                            apiKey: item.config?.apiKey || '',
+                                            showLabel: item.config?.showLabel !== undefined ? item.config.showLabel : true,
+                                            _hasApiKey: item.config?._hasApiKey || false
+                                        };
+                                        return <SortableMediaServer
+                                            key={item.id}
+                                            id={item.id}
+                                            editMode={editMode}
+                                            config={mediaServerConfig}
+                                            isOverlay
+                                        />;
+                                    }
                                     case ITEM_TYPE.APP_SHORTCUT:
                                         return (
                                             <SortableAppShortcut

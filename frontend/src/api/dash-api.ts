@@ -1821,15 +1821,30 @@ export class DashApi {
 
     public static async encryptSabnzbdPassword(password: string): Promise<string> {
         try {
-            const res = await axios.post(`${BACKEND_URL}/api/sabnzbd/encrypt-password`, {
-                password
-            }, {
-                withCredentials: true
-            });
+            const res = await axios.post(
+                `${BACKEND_URL}/api/sabnzbd/encrypt-pwd`,
+                { password },
+                { withCredentials: true }
+            );
             return res.data.encryptedPassword;
         } catch (error: any) {
-            console.error('Error encrypting SABnzbd password:', error);
-            throw error;
+            throw new Error(error.response?.data?.message || 'Failed to encrypt password');
+        }
+    }
+
+    // Media server (Jellyfin) endpoints
+    static async getJellyfinSessions(itemId: string) {
+        try {
+            const res = await axios.get(
+                `${BACKEND_URL}/api/jellyfin/sessions`,
+                {
+                    params: { itemId },
+                    withCredentials: true
+                }
+            );
+            return res.data;
+        } catch (error: any) {
+            throw new Error(error.response?.data?.error || 'Failed to fetch Jellyfin sessions');
         }
     }
 }

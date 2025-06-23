@@ -148,6 +148,12 @@ const filterSensitiveData = (config: any): any => {
                 delete newConfig.password;
             }
 
+            // Handle media server widget sensitive data
+            if (item.type === 'media-server-widget' && newConfig.apiKey) {
+                newConfig._hasApiKey = true;
+                delete newConfig.apiKey;
+            }
+
             // Handle dual widget sensitive data
             if (item.type === 'dual-widget') {
                 if (newConfig.topWidget?.config) {
@@ -275,6 +281,9 @@ const restoreSensitiveData = (newConfig: any, existingConfig: any): any => {
                 if (sourceItem.config.username) {
                     restoredItemConfig.username = sourceItem.config.username;
                 }
+                if (sourceItem.config.apiKey) {
+                    restoredItemConfig.apiKey = sourceItem.config.apiKey;
+                }
 
                 // Handle dual widget credential copying
                 if (newItem.type === 'dual-widget' && sourceItem.config.topWidget?.config) {
@@ -287,6 +296,9 @@ const restoreSensitiveData = (newConfig: any, existingConfig: any): any => {
                         }
                         if (sourceItem.config.topWidget.config.username) {
                             restoredItemConfig.topWidget.config.username = sourceItem.config.topWidget.config.username;
+                        }
+                        if (sourceItem.config.topWidget.config.apiKey) {
+                            restoredItemConfig.topWidget.config.apiKey = sourceItem.config.topWidget.config.apiKey;
                         }
                     }
                 }
@@ -301,21 +313,27 @@ const restoreSensitiveData = (newConfig: any, existingConfig: any): any => {
                         if (sourceItem.config.bottomWidget.config.username) {
                             restoredItemConfig.bottomWidget.config.username = sourceItem.config.bottomWidget.config.username;
                         }
+                        if (sourceItem.config.bottomWidget.config.apiKey) {
+                            restoredItemConfig.bottomWidget.config.apiKey = sourceItem.config.bottomWidget.config.apiKey;
+                        }
                     }
                 }
 
                 // Clean up and return early since we've copied everything we need
                 delete restoredItemConfig._hasApiToken;
+                delete restoredItemConfig._hasApiKey;
                 delete restoredItemConfig._hasPassword;
                 delete restoredItemConfig._hasUsername;
                 delete restoredItemConfig._duplicatedFrom;
                 if (restoredItemConfig.topWidget?.config) {
                     delete restoredItemConfig.topWidget.config._hasApiToken;
+                    delete restoredItemConfig.topWidget.config._hasApiKey;
                     delete restoredItemConfig.topWidget.config._hasPassword;
                     delete restoredItemConfig.topWidget.config._hasUsername;
                 }
                 if (restoredItemConfig.bottomWidget?.config) {
                     delete restoredItemConfig.bottomWidget.config._hasApiToken;
+                    delete restoredItemConfig.bottomWidget.config._hasApiKey;
                     delete restoredItemConfig.bottomWidget.config._hasPassword;
                     delete restoredItemConfig.bottomWidget.config._hasUsername;
                 }
@@ -328,16 +346,19 @@ const restoreSensitiveData = (newConfig: any, existingConfig: any): any => {
             // Even if no existing item, we still need to clean up security flags
             // Clean up security flags and duplication metadata (they're only for communication, not storage)
             delete restoredItemConfig._hasApiToken;
+            delete restoredItemConfig._hasApiKey;
             delete restoredItemConfig._hasPassword;
             delete restoredItemConfig._hasUsername;
             delete restoredItemConfig._duplicatedFrom;
             if (restoredItemConfig.topWidget?.config) {
                 delete restoredItemConfig.topWidget.config._hasApiToken;
+                delete restoredItemConfig.topWidget.config._hasApiKey;
                 delete restoredItemConfig.topWidget.config._hasPassword;
                 delete restoredItemConfig.topWidget.config._hasUsername;
             }
             if (restoredItemConfig.bottomWidget?.config) {
                 delete restoredItemConfig.bottomWidget.config._hasApiToken;
+                delete restoredItemConfig.bottomWidget.config._hasApiKey;
                 delete restoredItemConfig.bottomWidget.config._hasPassword;
                 delete restoredItemConfig.bottomWidget.config._hasUsername;
             }
@@ -375,6 +396,13 @@ const restoreSensitiveData = (newConfig: any, existingConfig: any): any => {
             }
         }
 
+        // Handle media server widget sensitive data
+        if (newItem.type === 'media-server-widget') {
+            if (newItem.config._hasApiKey && !newItem.config.apiKey && existingItem.config.apiKey) {
+                restoredItemConfig.apiKey = existingItem.config.apiKey;
+            }
+        }
+
         // Handle dual widget sensitive data
         if (newItem.type === 'dual-widget') {
             if (restoredItemConfig.topWidget?.config && existingItem.config.topWidget?.config) {
@@ -405,16 +433,19 @@ const restoreSensitiveData = (newConfig: any, existingConfig: any): any => {
 
         // Clean up security flags and duplication metadata (they're only for communication, not storage)
         delete restoredItemConfig._hasApiToken;
+        delete restoredItemConfig._hasApiKey;
         delete restoredItemConfig._hasPassword;
         delete restoredItemConfig._hasUsername;
         delete restoredItemConfig._duplicatedFrom;
         if (restoredItemConfig.topWidget?.config) {
             delete restoredItemConfig.topWidget.config._hasApiToken;
+            delete restoredItemConfig.topWidget.config._hasApiKey;
             delete restoredItemConfig.topWidget.config._hasPassword;
             delete restoredItemConfig.topWidget.config._hasUsername;
         }
         if (restoredItemConfig.bottomWidget?.config) {
             delete restoredItemConfig.bottomWidget.config._hasApiToken;
+            delete restoredItemConfig.bottomWidget.config._hasApiKey;
             delete restoredItemConfig.bottomWidget.config._hasPassword;
             delete restoredItemConfig.bottomWidget.config._hasUsername;
         }

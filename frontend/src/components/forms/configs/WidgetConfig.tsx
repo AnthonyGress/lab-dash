@@ -6,6 +6,7 @@ import { DateTimeWidgetConfig } from './DateTimeWidgetConfig';
 import { DownloadClientWidgetConfig } from './DownloadClientWidgetConfig';
 import { DualWidgetConfig } from './DualWidgetConfig';
 import { GroupWidgetConfig } from './GroupWidgetConfig';
+import { MediaServerWidgetConfig } from './MediaServerWidgetConfig';
 import { PiholeWidgetConfig } from './PiholeWidgetConfig';
 import { SystemMonitorWidgetConfig } from './SystemMonitorWidgetConfig';
 import { WeatherWidgetConfig } from './WeatherWidgetConfig';
@@ -37,6 +38,8 @@ export const WidgetConfig = ({ formContext, widgetType, existingItem }: WidgetCo
         return <DualWidgetConfig formContext={formContext} existingItem={existingItem} />;
     case ITEM_TYPE.GROUP_WIDGET:
         return <GroupWidgetConfig formContext={formContext} />;
+    case ITEM_TYPE.MEDIA_SERVER_WIDGET:
+        return <MediaServerWidgetConfig formContext={formContext} />;
     default:
         return null;
     }

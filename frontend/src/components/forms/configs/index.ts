@@ -8,4 +8,5 @@ export { WidgetConfig } from './WidgetConfig';
 export { AppShortcutConfig } from './AppShortcutConfig';
 export { DateTimeWidgetConfig } from './DateTimeWidgetConfig';
 export { GroupWidgetConfig } from './GroupWidgetConfig';
+export { MediaServerWidgetConfig } from './MediaServerWidgetConfig';
 export { PlaceholderConfig } from './PlaceholderConfig';

@@ -6,6 +6,7 @@ import { authRoute } from './auth.route';
 import { configRoute } from './config.route';
 import { delugeRoute } from './deluge.route';
 import { healthRoute } from './health.route';
+import { jellyfinRoute } from './jellyfin.route';
 import { piholeV6Route } from './pihole-v6.route';
 import { piholeRoute } from './pihole.route';
 import { qbittorrentRoute } from './qbittorrent.route';
@@ -66,6 +67,9 @@ router.use('/adguard', apiLimiter, adguardRoute);
 
 // Deluge routes
 router.use('/deluge', torrentApiLimiter, delugeRoute);
+
+// Jellyfin routes
+router.use('/jellyfin', apiLimiter, jellyfinRoute);
 
 router.use('/auth', authLimiter, authRoute);
 

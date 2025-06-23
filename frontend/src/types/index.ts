@@ -6,6 +6,7 @@ export enum ITEM_TYPE {
     TORRENT_CLIENT = 'torrent-client', // Legacy support - maps to DOWNLOAD_CLIENT
     PIHOLE_WIDGET = 'pihole-widget',
     ADGUARD_WIDGET = 'adguard-widget',
+    MEDIA_SERVER_WIDGET = 'media-server-widget',
     DUAL_WIDGET = 'dual-widget',
     GROUP_WIDGET = 'group-widget',
     APP_SHORTCUT = 'app-shortcut',
