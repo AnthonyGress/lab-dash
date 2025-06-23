@@ -22,9 +22,10 @@ interface SystemMonitorWidgetProps {
         networkInterface?: string;
         dualWidgetPosition?: 'top' | 'bottom';
     };
+    editMode?: boolean;
 }
 
-export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
+export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetProps) => {
     const [systemInformation, setSystemInformation] = useState<any>();
     const [memoryInformation, setMemoryInformation] = useState<any>(0);
     const [diskInformation, setDiskInformation] = useState<any>();
@@ -415,7 +416,11 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
 
         // Immediately fetch data with the current settings
         fetchSystemInfo();
-        checkInternetConnectivity();
+
+        // Only check internet connectivity if not in edit mode
+        if (!editMode) {
+            checkInternetConnectivity();
+        }
 
         // Fetch system info every 5 seconds
         const systemInfoInterval = setInterval(() => {
@@ -425,17 +430,22 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
             }
         }, 5000); // 5000 ms = 5 seconds
 
-        // Check internet connectivity every 2 minutes
-        const internetCheckInterval = setInterval(() => {
-            checkInternetConnectivity();
-        }, 120000); // 120000 ms = 2 minutes
+        // Check internet connectivity every 2 minutes, but only if not in edit mode
+        let internetCheckInterval: NodeJS.Timeout | null = null;
+        if (!editMode) {
+            internetCheckInterval = setInterval(() => {
+                checkInternetConnectivity();
+            }, 120000); // 120000 ms = 2 minutes
+        }
 
         // Clean up the intervals when component unmounts or dependencies change
         return () => {
             clearInterval(systemInfoInterval);
-            clearInterval(internetCheckInterval);
+            if (internetCheckInterval) {
+                clearInterval(internetCheckInterval);
+            }
         };
-    }, [config?.temperatureUnit, config?.networkInterface]);
+    }, [config?.temperatureUnit, config?.networkInterface, editMode]);
 
     // Determine layout styles based on dual widget position
     const containerStyles = {
@@ -509,41 +519,43 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                 </IconButton>
             </div>
 
-            {/* Internet Status Indicator */}
-            <div
-                onPointerDownCapture={(e) => e.stopPropagation()}
-                onClick={(e) => e.stopPropagation()}
-            >
-                <Tooltip
-                    title={internetStatus === 'online' ? 'Internet Connected' : internetStatus === 'offline' ? 'No Internet Connection' : 'Checking Internet...'}
-                    arrow
-                    placement='top'
-                    slotProps={{
-                        tooltip: {
-                            sx: {
-                                fontSize: 14,
-                            },
-                        },
-                    }}
+            {/* Internet Status Indicator - only show when not in edit mode */}
+            {!editMode && (
+                <div
+                    onPointerDownCapture={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
                 >
-                    <IconButton
-                        sx={{
-                            position: 'absolute',
-                            top: isDualWidget ? (isBottomWidget ? 0 : -5) : -5,
-                            right: -5,
-                            zIndex: 99
+                    <Tooltip
+                        title={internetStatus === 'online' ? 'Internet Connected' : internetStatus === 'offline' ? 'No Internet Connection' : 'Checking Internet...'}
+                        arrow
+                        placement='top'
+                        slotProps={{
+                            tooltip: {
+                                sx: {
+                                    fontSize: 14,
+                                },
+                            },
                         }}
                     >
-                        {internetStatus === 'online' ? (
-                            <Wifi style={{ color: theme.palette.text.primary, fontSize: '1.2rem' }} />
-                        ) : internetStatus === 'offline' ? (
-                            <WifiOff style={{ color: theme.palette.text.primary, fontSize: '1.2rem' }} />
-                        ) : (
-                            <CircularProgress size={16} sx={{ color: theme.palette.text.primary }} />
-                        )}
-                    </IconButton>
-                </Tooltip>
-            </div>
+                        <IconButton
+                            sx={{
+                                position: 'absolute',
+                                top: isDualWidget ? (isBottomWidget ? 0 : -5) : -5,
+                                right: -5,
+                                zIndex: 99
+                            }}
+                        >
+                            {internetStatus === 'online' ? (
+                                <Wifi style={{ color: theme.palette.text.primary, fontSize: '1.2rem' }} />
+                            ) : internetStatus === 'offline' ? (
+                                <WifiOff style={{ color: theme.palette.text.primary, fontSize: '1.2rem' }} />
+                            ) : (
+                                <CircularProgress size={16} sx={{ color: theme.palette.text.primary }} />
+                            )}
+                        </IconButton>
+                    </Tooltip>
+                </div>
+            )}
 
             <Grid container
                 gap={gapSize}

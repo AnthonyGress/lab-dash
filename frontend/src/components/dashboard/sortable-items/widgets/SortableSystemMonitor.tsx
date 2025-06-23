@@ -36,7 +36,7 @@ export const SortableSystemMonitorWidget: React.FC<Props> = ({ id, editMode, isO
             }}
         >
             <WidgetContainer editMode={editMode} id={id} onDelete={onDelete} onEdit={onEdit} onDuplicate={onDuplicate}>
-                <SystemMonitorWidget config={config} />
+                <SystemMonitorWidget config={config} editMode={editMode} />
             </WidgetContainer>
         </Grid2>
     );

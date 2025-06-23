@@ -68,10 +68,13 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
             case ITEM_TYPE.DATE_TIME_WIDGET:
                 return <DateTimeWidget config={widgetConfig.config} />;
             case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
-                return <SystemMonitorWidget config={{
-                    ...widgetConfig.config,
-                    dualWidgetPosition: position
-                }} />;
+                return <SystemMonitorWidget
+                    config={{
+                        ...widgetConfig.config,
+                        dualWidgetPosition: position
+                    }}
+                    editMode={editMode}
+                />;
             case ITEM_TYPE.PIHOLE_WIDGET:
                 return <PiholeWidget
                     config={widgetConfig.config}
