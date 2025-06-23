@@ -1511,4 +1511,218 @@ export class DashApi {
             throw error;
         }
     }
+
+    // AdGuard Home API methods
+    public static async getAdGuardStats(itemId: string): Promise<any> {
+        console.log('🚀 Frontend: Calling getAdGuardStats with itemId:', itemId);
+
+        try {
+            if (!itemId) {
+                throw new Error('Item ID is required for AdGuard Home stats');
+            }
+
+            console.log('📡 Frontend: Making request to:', `${BACKEND_URL}/api/adguard/stats`);
+
+            const res = await axios.get(`${BACKEND_URL}/api/adguard/stats`, {
+                params: { itemId },
+                withCredentials: true
+            });
+
+            console.log('✅ Frontend: AdGuard stats response:', res.status, res.data);
+
+            if (res.data.success) {
+                return res.data.data;
+            } else {
+                if (res.data.decryptionError) {
+                    throw new Error('Failed to decrypt AdGuard Home authentication credentials');
+                }
+                throw new Error(res.data.error || 'Failed to get AdGuard Home statistics');
+            }
+        } catch (error: any) {
+            // Check for custom error codes from our backend
+            if (error.response?.data?.code === 'ADGUARD_AUTH_ERROR') {
+                // Authentication error with AdGuard Home - create a custom error
+                const adError = new Error(error.response.data.error || 'AdGuard Home authentication failed');
+                (adError as any).response = {
+                    status: 400,  // Use 400 instead of 401 to avoid global auth interceptor
+                    data: error.response.data
+                };
+                (adError as any).adguard = {
+                    requiresReauth: true
+                };
+                throw adError;
+            }
+
+            if (error.response?.data?.code === 'ADGUARD_API_ERROR') {
+                // API error with AdGuard Home - create a custom error
+                const adError = new Error(error.response.data.error || 'AdGuard Home API error');
+                (adError as any).response = {
+                    status: 400,
+                    data: error.response.data
+                };
+                (adError as any).adguard = {
+                    requiresReauth: error.response.data.requiresReauth || false
+                };
+                throw adError;
+            }
+
+            // If we get an explicit 401 from the server, throw with an authentication message
+            if (error.response?.status === 401) {
+                console.error('AdGuard authentication failed:', error.response.data);
+                const errorMsg = error.response.data?.error || 'Authentication failed';
+                const err = new Error(errorMsg);
+                (err as any).response = error.response;
+                throw err;
+            }
+
+            console.error('AdGuard Home stats error:', {
+                message: error.message,
+                status: error.response?.status,
+                data: error.response?.data,
+                stack: error.stack
+            });
+
+            if (error.message?.includes('ECONNREFUSED')) {
+                throw new Error('Connection refused. Please check if AdGuard Home is running at the specified host and port.');
+            } else if (error.message?.includes('timeout')) {
+                throw new Error('Connection timed out. Please check your network connection and AdGuard Home configuration.');
+            } else if (error.message?.includes('Network Error')) {
+                throw new Error('Network error. Please check your network connection and AdGuard Home configuration.');
+            }
+
+            throw error;
+        }
+    }
+
+    public static async encryptAdGuardUsername(username: string): Promise<string> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/adguard/encrypt-username`,
+                { username },
+                { withCredentials: true }
+            );
+            return res.data.encryptedUsername;
+        } catch (error) {
+            console.error('Failed to encrypt AdGuard username:', error);
+            throw error;
+        }
+    }
+
+    public static async encryptAdGuardPassword(password: string): Promise<string> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/adguard/encrypt-password`,
+                { password },
+                { withCredentials: true }
+            );
+            return res.data.encryptedPassword;
+        } catch (error) {
+            console.error('Failed to encrypt AdGuard password:', error);
+            throw error;
+        }
+    }
+
+    public static async disableAdGuard(itemId: string, seconds?: number): Promise<boolean> {
+        console.log('🚀 Frontend: Calling disableAdGuard with itemId:', itemId, 'seconds:', seconds);
+
+        try {
+            if (!itemId) {
+                throw new Error('Item ID is required for AdGuard Home disable');
+            }
+
+            const params: any = { itemId };
+
+            if (seconds !== undefined && seconds !== null) {
+                params.seconds = seconds;
+            }
+
+            console.log('📡 Frontend: Making disable request with params:', params);
+
+            const res = await axios.post(`${BACKEND_URL}/api/adguard/disable`, {}, {
+                params,
+                withCredentials: true
+            });
+
+            console.log('✅ Frontend: AdGuard disable response:', res.status, res.data);
+
+            return res.data.success === true;
+        } catch (error: any) {
+            // Handle custom error codes from our backend
+            if (error.response?.data?.code) {
+                console.error(`AdGuard disable error (${error.response.data.code}):`, error.response.data);
+
+                const adError = new Error(error.response.data.error || 'Failed to disable AdGuard Home');
+                (adError as any).response = {
+                    status: 400,
+                    data: error.response.data
+                };
+                (adError as any).adguard = {
+                    requiresReauth: error.response.data.requiresReauth || false
+                };
+                throw adError;
+            }
+
+            console.error('Failed to disable AdGuard Home:', error);
+            throw error;
+        }
+    }
+
+    public static async enableAdGuard(itemId: string): Promise<boolean> {
+        console.log('🚀 Frontend: Calling enableAdGuard with itemId:', itemId);
+
+        try {
+            if (!itemId) {
+                throw new Error('Item ID is required for AdGuard Home enable');
+            }
+
+            console.log('📡 Frontend: Making enable request');
+
+            const res = await axios.post(`${BACKEND_URL}/api/adguard/enable`, {}, {
+                params: { itemId },
+                withCredentials: true
+            });
+
+            console.log('✅ Frontend: AdGuard enable response:', res.status, res.data);
+
+            return res.data.success === true;
+        } catch (error: any) {
+            // Handle custom error codes from our backend
+            if (error.response?.data?.code) {
+                console.error(`AdGuard enable error (${error.response.data.code}):`, error.response.data);
+
+                const adError = new Error(error.response.data.error || 'Failed to enable AdGuard Home');
+                (adError as any).response = {
+                    status: 400,
+                    data: error.response.data
+                };
+                (adError as any).adguard = {
+                    requiresReauth: error.response.data.requiresReauth || false
+                };
+                throw adError;
+            }
+
+            console.error('Failed to enable AdGuard Home:', error);
+            throw error;
+        }
+    }
+
+    public static async getAdGuardProtectionStatus(itemId: string): Promise<any> {
+        try {
+            if (!itemId) {
+                throw new Error('Item ID is required for AdGuard Home protection status');
+            }
+
+            const res = await axios.get(`${BACKEND_URL}/api/adguard/protection-status`, {
+                params: { itemId },
+                withCredentials: true
+            });
+
+            if (res.data.success) {
+                return res.data.data;
+            } else {
+                throw new Error(res.data.error || 'Failed to get AdGuard Home protection status');
+            }
+        } catch (error: any) {
+            console.error('AdGuard Home protection status error:', error);
+            throw error;
+        }
+    }
 }

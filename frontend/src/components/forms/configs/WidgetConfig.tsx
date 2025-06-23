@@ -1,6 +1,7 @@
 import { UseFormReturn } from 'react-hook-form';
 
 import { FormValues } from '../AddEditForm';
+import { AdGuardWidgetConfig } from './AdGuardWidgetConfig';
 import { DateTimeWidgetConfig } from './DateTimeWidgetConfig';
 import { DualWidgetConfig } from './DualWidgetConfig';
 import { GroupWidgetConfig } from './GroupWidgetConfig';
@@ -26,6 +27,8 @@ export const WidgetConfig = ({ formContext, widgetType, existingItem }: WidgetCo
         return <SystemMonitorWidgetConfig formContext={formContext} />;
     case ITEM_TYPE.PIHOLE_WIDGET:
         return <PiholeWidgetConfig formContext={formContext} existingItem={existingItem} />;
+    case ITEM_TYPE.ADGUARD_WIDGET:
+        return <AdGuardWidgetConfig formContext={formContext} existingItem={existingItem} />;
     case ITEM_TYPE.TORRENT_CLIENT:
         return <TorrentClientWidgetConfig formContext={formContext} existingItem={existingItem} />;
     case ITEM_TYPE.DUAL_WIDGET:

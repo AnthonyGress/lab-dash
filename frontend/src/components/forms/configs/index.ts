@@ -1,6 +1,7 @@
 export { WeatherWidgetConfig } from './WeatherWidgetConfig';
 export { SystemMonitorWidgetConfig } from './SystemMonitorWidgetConfig';
 export { PiholeWidgetConfig } from './PiholeWidgetConfig';
+export { AdGuardWidgetConfig } from './AdGuardWidgetConfig';
 export { TorrentClientWidgetConfig } from './TorrentClientWidgetConfig';
 export { DualWidgetConfig } from './DualWidgetConfig';
 export { WidgetConfig } from './WidgetConfig';

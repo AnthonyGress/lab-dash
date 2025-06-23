@@ -27,6 +27,7 @@ import { ConfirmationOptions, PopupManager } from '../modals/PopupManager';
 import { BlankAppShortcut } from './base-items/apps/BlankAppShortcut';
 import { BlankWidget } from './base-items/widgets/BlankWidget';
 import { SortableAppShortcut } from './sortable-items/apps/SortableAppShortcut';
+import { SortableAdGuard } from './sortable-items/widgets/SortableAdGuard';
 import { SortableDateTimeWidget } from './sortable-items/widgets/SortableDateTime';
 import { SortableDualWidget } from './sortable-items/widgets/SortableDualWidget';
 import { SortableGroupWidget } from './sortable-items/widgets/SortableGroupWidget';
@@ -579,6 +580,8 @@ export const DashboardGrid: React.FC = () => {
             return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
         case ITEM_TYPE.PIHOLE_WIDGET:
             return <SortablePihole key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
+        case ITEM_TYPE.ADGUARD_WIDGET:
+            return <SortableAdGuard key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
         case ITEM_TYPE.TORRENT_CLIENT:
             return item.config?.clientType === TORRENT_CLIENT_TYPE.DELUGE
                 ? <SortableDeluge key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>
@@ -749,6 +752,8 @@ export const DashboardGrid: React.FC = () => {
                                         return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
                                     case ITEM_TYPE.PIHOLE_WIDGET:
                                         return <SortablePihole key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
+                                    case ITEM_TYPE.ADGUARD_WIDGET:
+                                        return <SortableAdGuard key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
                                     case ITEM_TYPE.TORRENT_CLIENT: {
                                         return item.config?.clientType === TORRENT_CLIENT_TYPE.DELUGE
                                             ? <SortableDeluge key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>

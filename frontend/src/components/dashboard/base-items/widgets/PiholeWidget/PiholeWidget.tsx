@@ -857,12 +857,10 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
         // For v6, direct links won't work without authentication, so just open the main admin page
         const isV6 = !!piholeConfig._hasPassword && !piholeConfig._hasApiToken;
         if (isV6) {
-            // For v6, just go to main admin page since direct links require authentication
-            window.open(baseUrl, '_blank');
+            window.open(`${baseUrl}/queries`, '_blank');
             return;
         }
 
-        // For v5, we can deep link directly
         const queriesUrl = `${baseUrl}/queries.php`;
         window.open(queriesUrl, '_blank');
     };
@@ -872,15 +870,12 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
         const baseUrl = getBaseUrl();
         if (!baseUrl) return;
 
-        // For v6, direct links won't work without authentication, so just open the main admin page
         const isV6 = !!piholeConfig._hasPassword && !piholeConfig._hasApiToken;
         if (isV6) {
-            // For v6, just go to main admin page since direct links require authentication
-            window.open(baseUrl, '_blank');
+            window.open(`${baseUrl}/queries?upstream=blocklist`, '_blank');
             return;
         }
 
-        // For v5, we can deep link directly
         const blockedUrl = `${baseUrl}/queries.php?forwarddest=blocked`;
         window.open(blockedUrl, '_blank');
     };
@@ -890,11 +885,9 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
         const baseUrl = getBaseUrl();
         if (!baseUrl) return;
 
-        // For v6, direct links won't work without authentication, so just open the main admin page
         const isV6 = !!piholeConfig._hasPassword && !piholeConfig._hasApiToken;
         if (isV6) {
-            // For v6, just go to main admin page since direct links require authentication
-            window.open(baseUrl, '_blank');
+            window.open(`${baseUrl}/network`, '_blank');
             return;
         }
 
@@ -908,15 +901,12 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
         const baseUrl = getBaseUrl();
         if (!baseUrl) return;
 
-        // For v6, direct links won't work without authentication, so just open the main admin page
         const isV6 = !!piholeConfig._hasPassword && !piholeConfig._hasApiToken;
         if (isV6) {
-            // For v6, just go to main admin page since direct links require authentication
-            window.open(baseUrl, '_blank');
+            window.open(`${baseUrl}/groups-lists`, '_blank');
             return;
         }
 
-        // For v5, we can deep link directly
         const adlistsUrl = `${baseUrl}/groups-adlists.php`;
         window.open(adlistsUrl, '_blank');
     };

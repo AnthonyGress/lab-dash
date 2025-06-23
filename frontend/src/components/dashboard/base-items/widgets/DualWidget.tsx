@@ -1,6 +1,7 @@
 import { Box, Divider, Typography, useMediaQuery } from '@mui/material';
 import React from 'react';
 
+import { AdGuardWidget } from './AdGuardWidget/AdGuardWidget';
 import { DateTimeWidget } from './DateTimeWidget';
 import { DualWidgetContainer } from './DualWidgetContainer';
 import { PiholeWidget } from './PiholeWidget/PiholeWidget';
@@ -73,6 +74,11 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
                 }} />;
             case ITEM_TYPE.PIHOLE_WIDGET:
                 return <PiholeWidget
+                    config={widgetConfig.config}
+                    id={id ? `${id}-${position}` : undefined}
+                />;
+            case ITEM_TYPE.ADGUARD_WIDGET:
+                return <AdGuardWidget
                     config={widgetConfig.config}
                     id={id ? `${id}-${position}` : undefined}
                 />;

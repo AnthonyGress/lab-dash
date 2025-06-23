@@ -1,5 +1,6 @@
 import { Router } from 'express';
 
+import { adguardRoute } from './adguard.route';
 import { appShortcutRoute } from './app-shortcut.route';
 import { authRoute } from './auth.route';
 import { configRoute } from './config.route';
@@ -55,6 +56,9 @@ router.use('/pihole', apiLimiter, piholeRoute);
 
 // Pi-hole v6 routes (separate to maintain backward compatibility)
 router.use('/pihole/v6', apiLimiter, piholeV6Route);
+
+// AdGuard Home routes
+router.use('/adguard', apiLimiter, adguardRoute);
 
 // Deluge routes
 router.use('/deluge', torrentApiLimiter, delugeRoute);

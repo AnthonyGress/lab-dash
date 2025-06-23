@@ -4,6 +4,7 @@ export enum ITEM_TYPE {
     SYSTEM_MONITOR_WIDGET = 'system-monitor-widget',
     TORRENT_CLIENT = 'torrent-client',
     PIHOLE_WIDGET = 'pihole-widget',
+    ADGUARD_WIDGET = 'adguard-widget',
     DUAL_WIDGET = 'dual-widget',
     GROUP_WIDGET = 'group-widget',
     APP_SHORTCUT = 'app-shortcut',

@@ -30,6 +30,7 @@ const WIDGET_OPTIONS = [
     { id: ITEM_TYPE.WEATHER_WIDGET, label: 'Weather' },
     { id: ITEM_TYPE.SYSTEM_MONITOR_WIDGET, label: 'System Monitor' },
     { id: ITEM_TYPE.PIHOLE_WIDGET, label: 'Pi-hole' },
+    { id: ITEM_TYPE.ADGUARD_WIDGET, label: 'AdGuard Home' },
     { id: ITEM_TYPE.TORRENT_CLIENT, label: 'Torrent Client' },
     { id: ITEM_TYPE.DUAL_WIDGET, label: 'Dual Widget' },
     { id: ITEM_TYPE.GROUP_WIDGET, label: 'Group' }
@@ -65,6 +66,13 @@ export type FormValues = {
     piholeApiToken?: string;
     piholePassword?: string;
     piholeName?: string;
+    // AdGuard widget
+    adguardHost?: string;
+    adguardPort?: string;
+    adguardSsl?: boolean;
+    adguardUsername?: string;
+    adguardPassword?: string;
+    adguardName?: string;
     // Torrent client widget
     torrentClient?: string;
     torrentUrl?: string;
@@ -93,6 +101,12 @@ export type FormValues = {
     top_piholeApiToken?: string;
     top_piholePassword?: string;
     top_piholeName?: string;
+    top_adguardHost?: string;
+    top_adguardPort?: string;
+    top_adguardSsl?: boolean;
+    top_adguardUsername?: string;
+    top_adguardPassword?: string;
+    top_adguardName?: string;
     top_showLabel?: boolean;
     // Dual Widget - position-specific fields for bottom widget
     bottom_temperatureUnit?: string;
@@ -108,6 +122,12 @@ export type FormValues = {
     bottom_piholeApiToken?: string;
     bottom_piholePassword?: string;
     bottom_piholeName?: string;
+    bottom_adguardHost?: string;
+    bottom_adguardPort?: string;
+    bottom_adguardSsl?: boolean;
+    bottom_adguardUsername?: string;
+    bottom_adguardPassword?: string;
+    bottom_adguardName?: string;
     bottom_showLabel?: boolean;
     // Other fields
     adminOnly?: boolean;
@@ -147,6 +167,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                existingItem?.type === ITEM_TYPE.DATE_TIME_WIDGET ||
                                existingItem?.type === ITEM_TYPE.SYSTEM_MONITOR_WIDGET ||
                                existingItem?.type === ITEM_TYPE.PIHOLE_WIDGET ||
+                               existingItem?.type === ITEM_TYPE.ADGUARD_WIDGET ||
                                existingItem?.type === ITEM_TYPE.TORRENT_CLIENT ||
                                existingItem?.type === ITEM_TYPE.DUAL_WIDGET ||
                                existingItem?.type === ITEM_TYPE.GROUP_WIDGET
@@ -167,6 +188,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                   existingItem?.type === ITEM_TYPE.DATE_TIME_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.SYSTEM_MONITOR_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.PIHOLE_WIDGET ||
+                                  existingItem?.type === ITEM_TYPE.ADGUARD_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.TORRENT_CLIENT ||
                                   existingItem?.type === ITEM_TYPE.DUAL_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.GROUP_WIDGET
@@ -196,6 +218,16 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
         const piholeApiToken = existingItem?.config?._hasApiToken ? '**********' : '';
         const piholePassword = existingItem?.config?._hasPassword ? '**********' : '';
         const piholeName = existingItem?.config?.displayName || '';
+
+        // AdGuard widget initialization
+        const adguardHost = existingItem?.config?.host || '';
+        const adguardPort = existingItem?.config?.port || '3000'; // AdGuard Home default web interface port
+        const adguardSsl = existingItem?.config?.ssl || false;
+        // Use masked values for sensitive data - actual values are never sent to frontend
+        const adguardUsername = existingItem?.config?._hasUsername ? '**********' : '';
+        const adguardPassword = existingItem?.config?._hasPassword ? '**********' : '';
+        const adguardName = existingItem?.config?.displayName || '';
+
         const healthUrl = existingItem?.config?.healthUrl || '';
 
         // Extract maxItems for group widget
@@ -266,6 +298,13 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             piholeApiToken: piholeApiToken,
             piholePassword: piholePassword,
             piholeName: piholeName,
+            // AdGuard widget values
+            adguardHost: adguardHost,
+            adguardPort: adguardPort,
+            adguardSsl: adguardSsl,
+            adguardUsername: adguardUsername,
+            adguardPassword: adguardPassword,
+            adguardName: adguardName,
             location: location,
             gauge1: systemMonitorGauges[0] || 'cpu',
             gauge2: systemMonitorGauges[1] || 'temp',
@@ -348,6 +387,20 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                         formContext.setValue('top_showLabel', topConfig.showLabel !== undefined ? topConfig.showLabel : true);
                     }
 
+                    // Handle top adguard widget
+                    else if (topWidget.type === ITEM_TYPE.ADGUARD_WIDGET) {
+                        console.log('🔧 AddEditForm: Initializing top AdGuard widget with config:', topConfig);
+                        formContext.setValue('top_adguardHost', topConfig.host || '');
+                        formContext.setValue('top_adguardPort', topConfig.port || '3000');
+                        formContext.setValue('top_adguardSsl', topConfig.ssl !== undefined ? topConfig.ssl : false);
+                        // Use masked values for sensitive data
+                        formContext.setValue('top_adguardUsername', topConfig._hasUsername ? '**********' : '');
+                        formContext.setValue('top_adguardPassword', topConfig._hasPassword ? '**********' : '');
+                        formContext.setValue('top_adguardName', topConfig.displayName || '');
+                        formContext.setValue('top_showLabel', topConfig.showLabel !== undefined ? topConfig.showLabel : true);
+                        console.log('🔧 AddEditForm: Set top AdGuard host to:', topConfig.host);
+                    }
+
                     // Handle top datetime widget
                     else if (topWidget.type === ITEM_TYPE.DATE_TIME_WIDGET) {
                         formContext.setValue('top_location', topConfig.location || null);
@@ -397,6 +450,20 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                         formContext.setValue('bottom_showLabel', bottomConfig.showLabel !== undefined ? bottomConfig.showLabel : true);
                     }
 
+                    // Handle bottom adguard widget
+                    else if (bottomWidget.type === ITEM_TYPE.ADGUARD_WIDGET) {
+                        console.log('🔧 AddEditForm: Initializing bottom AdGuard widget with config:', bottomConfig);
+                        formContext.setValue('bottom_adguardHost', bottomConfig.host || '');
+                        formContext.setValue('bottom_adguardPort', bottomConfig.port || '3000');
+                        formContext.setValue('bottom_adguardSsl', bottomConfig.ssl !== undefined ? bottomConfig.ssl : false);
+                        // Use masked values for sensitive data
+                        formContext.setValue('bottom_adguardUsername', bottomConfig._hasUsername ? '**********' : '');
+                        formContext.setValue('bottom_adguardPassword', bottomConfig._hasPassword ? '**********' : '');
+                        formContext.setValue('bottom_adguardName', bottomConfig.displayName || '');
+                        formContext.setValue('bottom_showLabel', bottomConfig.showLabel !== undefined ? bottomConfig.showLabel : true);
+                        console.log('🔧 AddEditForm: Set bottom AdGuard host to:', bottomConfig.host);
+                    }
+
                     // Handle bottom datetime widget
                     else if (bottomWidget.type === ITEM_TYPE.DATE_TIME_WIDGET) {
                         formContext.setValue('bottom_location', bottomConfig.location || null);
@@ -416,10 +483,12 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             // Only set the default if there's no existing value (to avoid overriding user choice)
             if (formContext.getValues('showLabel') === undefined || (!existingItem && (
                 selectedWidgetType === ITEM_TYPE.PIHOLE_WIDGET ||
+                selectedWidgetType === ITEM_TYPE.ADGUARD_WIDGET ||
                 selectedWidgetType === ITEM_TYPE.TORRENT_CLIENT ||
                 selectedWidgetType === ITEM_TYPE.DUAL_WIDGET
             ))) {
                 if (selectedWidgetType === ITEM_TYPE.PIHOLE_WIDGET ||
+                    selectedWidgetType === ITEM_TYPE.ADGUARD_WIDGET ||
                     selectedWidgetType === ITEM_TYPE.TORRENT_CLIENT ||
                     selectedWidgetType === ITEM_TYPE.DUAL_WIDGET) {
                     formContext.setValue('showLabel', true);
@@ -586,6 +655,70 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                     // If we have an existing password but no new password provided, set the flag
                     config = { ...config, _hasPassword: true };
                 }
+            } else if (data.widgetType === ITEM_TYPE.ADGUARD_WIDGET) {
+                // Handle masked values - only encrypt if not masked
+                let encryptedUsername = '';
+                let encryptedPassword = '';
+                let hasExistingUsername = false;
+                let hasExistingPassword = false;
+
+                // Check if we're editing an existing item with sensitive data
+                if (existingItem?.config) {
+                    hasExistingUsername = !!existingItem.config._hasUsername;
+                    hasExistingPassword = !!existingItem.config._hasPassword;
+                }
+
+                // Only process username if it's not the masked value
+                if (data.adguardUsername && data.adguardUsername !== '**********') {
+                    if (!isEncrypted(data.adguardUsername)) {
+                        try {
+                            encryptedUsername = await DashApi.encryptAdGuardUsername(data.adguardUsername);
+                        } catch (error) {
+                            console.error('Error encrypting AdGuard username:', error);
+                        }
+                    } else {
+                        encryptedUsername = data.adguardUsername;
+                    }
+                }
+
+                // Only process password if it's not the masked value
+                if (data.adguardPassword && data.adguardPassword !== '**********') {
+                    if (!isEncrypted(data.adguardPassword)) {
+                        try {
+                            encryptedPassword = await DashApi.encryptAdGuardPassword(data.adguardPassword);
+                        } catch (error) {
+                            console.error('Error encrypting AdGuard password:', error);
+                        }
+                    } else {
+                        encryptedPassword = data.adguardPassword;
+                    }
+                }
+
+                const baseConfig = {
+                    host: data.adguardHost,
+                    port: data.adguardPort,
+                    ssl: data.adguardSsl,
+                    showLabel: data.showLabel,
+                    displayName: data.adguardName || 'AdGuard Home'
+                };
+
+                // Include sensitive fields if they were actually changed (not masked)
+                if (encryptedUsername && encryptedPassword) {
+                    config = {
+                        ...baseConfig,
+                        username: encryptedUsername,
+                        password: encryptedPassword
+                    };
+                } else {
+                    config = baseConfig;
+                    // If we have existing credentials but no new ones provided, set the flags
+                    if (hasExistingUsername) {
+                        config = { ...config, _hasUsername: true };
+                    }
+                    if (hasExistingPassword) {
+                        config = { ...config, _hasPassword: true };
+                    }
+                }
             } else if (data.widgetType === ITEM_TYPE.TORRENT_CLIENT) {
                 // Handle masked password - only encrypt if not masked
                 let encryptedPassword = '';
@@ -684,6 +817,12 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                         piholeApiToken: data.top_piholeApiToken,
                         piholePassword: data.top_piholePassword,
                         piholeName: data.top_piholeName,
+                        adguardHost: data.top_adguardHost,
+                        adguardPort: data.top_adguardPort,
+                        adguardSsl: data.top_adguardSsl,
+                        adguardUsername: data.top_adguardUsername,
+                        adguardPassword: data.top_adguardPassword,
+                        adguardName: data.top_adguardName,
                         showLabel: data.top_showLabel
                     };
 
@@ -703,6 +842,12 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                         piholeApiToken: data.bottom_piholeApiToken,
                         piholePassword: data.bottom_piholePassword,
                         piholeName: data.bottom_piholeName,
+                        adguardHost: data.bottom_adguardHost,
+                        adguardPort: data.bottom_adguardPort,
+                        adguardSsl: data.bottom_adguardSsl,
+                        adguardUsername: data.bottom_adguardUsername,
+                        adguardPassword: data.bottom_adguardPassword,
+                        adguardName: data.bottom_adguardName,
                         showLabel: data.bottom_showLabel
                     };
 
@@ -954,6 +1099,71 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                 }
                 return config;
             }
+        } else if (widgetType === ITEM_TYPE.ADGUARD_WIDGET) {
+            // Handle masked values - only encrypt if not masked
+            let encryptedUsername = '';
+            let encryptedPassword = '';
+            let hasExistingUsername = false;
+            let hasExistingPassword = false;
+
+            // Check if we're editing an existing item with sensitive data
+            if (existingItem?.config) {
+                hasExistingUsername = !!existingItem.config._hasUsername;
+                hasExistingPassword = !!existingItem.config._hasPassword;
+            }
+
+            // Only process username if it's not the masked value
+            if (data.adguardUsername && data.adguardUsername !== '**********') {
+                if (!isEncrypted(data.adguardUsername)) {
+                    try {
+                        encryptedUsername = await DashApi.encryptAdGuardUsername(data.adguardUsername);
+                    } catch (error) {
+                        console.error('Error encrypting AdGuard username:', error);
+                    }
+                } else {
+                    encryptedUsername = data.adguardUsername;
+                }
+            }
+
+            // Only process password if it's not the masked value
+            if (data.adguardPassword && data.adguardPassword !== '**********') {
+                if (!isEncrypted(data.adguardPassword)) {
+                    try {
+                        encryptedPassword = await DashApi.encryptAdGuardPassword(data.adguardPassword);
+                    } catch (error) {
+                        console.error('Error encrypting AdGuard password:', error);
+                    }
+                } else {
+                    encryptedPassword = data.adguardPassword;
+                }
+            }
+
+            const baseConfig = {
+                host: data.adguardHost,
+                port: data.adguardPort,
+                ssl: data.adguardSsl,
+                showLabel: data.showLabel,
+                displayName: data.adguardName || 'AdGuard Home'
+            };
+
+            // Include sensitive fields if they were actually changed (not masked)
+            if (encryptedUsername && encryptedPassword) {
+                return {
+                    ...baseConfig,
+                    username: encryptedUsername,
+                    password: encryptedPassword
+                };
+            } else {
+                const config: any = { ...baseConfig };
+                // If we have existing credentials but no new ones provided, set the flags
+                if (hasExistingUsername) {
+                    config._hasUsername = true;
+                }
+                if (hasExistingPassword) {
+                    config._hasPassword = true;
+                }
+                return config;
+            }
         } else if (widgetType === ITEM_TYPE.TORRENT_CLIENT) {
             // Handle masked password - only encrypt if not masked
             let encryptedPassword = '';
@@ -1044,6 +1254,13 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             piholeApiToken: '',
             piholePassword: '',
             piholeName: '',
+            // AdGuard widget fields
+            adguardHost: '',
+            adguardPort: '3000', // AdGuard Home default web interface port
+            adguardSsl: false,
+            adguardUsername: '',
+            adguardPassword: '',
+            adguardName: '',
             location: null,
             gauge1: 'cpu',
             gauge2: 'temp',
@@ -1066,6 +1283,12 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             top_piholeApiToken: '',
             top_piholePassword: '',
             top_piholeName: '',
+            top_adguardHost: '',
+            top_adguardPort: '3000',
+            top_adguardSsl: false,
+            top_adguardUsername: '',
+            top_adguardPassword: '',
+            top_adguardName: '',
             top_showLabel: false,
             // Dual Widget - position-specific fields for bottom widget
             bottom_temperatureUnit: '',
@@ -1081,6 +1304,12 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             bottom_piholeApiToken: '',
             bottom_piholePassword: '',
             bottom_piholeName: '',
+            bottom_adguardHost: '',
+            bottom_adguardPort: '3000',
+            bottom_adguardSsl: false,
+            bottom_adguardUsername: '',
+            bottom_adguardPassword: '',
+            bottom_adguardName: '',
             bottom_showLabel: false,
         });
 
