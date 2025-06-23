@@ -29,7 +29,6 @@ export enum TORRENT_CLIENT_TYPE {
     QBITTORRENT = 'qbittorrent',
     DELUGE = 'deluge',
     TRANSMISSION = 'transmission',
-    SABNZBD = 'sabnzbd'
 }
 
 export type NewItem = {

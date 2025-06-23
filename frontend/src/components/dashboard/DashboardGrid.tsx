@@ -618,6 +618,54 @@ export const DashboardGrid: React.FC = () => {
         };
     };
 
+    // Helper function to render download client components
+    const renderDownloadClient = (item: any, isOverlay = false) => {
+        const clientType = item.config?.clientType;
+        const commonProps = {
+            key: item.id,
+            id: item.id,
+            editMode,
+            config: item.config,
+            onDelete: () => handleDelete(item.id),
+            onEdit: () => handleEdit(item),
+            onDuplicate: () => handleDuplicate(item),
+            ...(isOverlay && { isOverlay })
+        };
+
+        // Handle all download client types for DOWNLOAD_CLIENT
+        if (item.type === ITEM_TYPE.DOWNLOAD_CLIENT) {
+            if (clientType === DOWNLOAD_CLIENT_TYPE.DELUGE) {
+                return <SortableDeluge {...commonProps} />;
+            }
+            if (clientType === DOWNLOAD_CLIENT_TYPE.TRANSMISSION) {
+                return <SortableTransmission {...commonProps} />;
+            }
+            if (clientType === DOWNLOAD_CLIENT_TYPE.SABNZBD) {
+                return <SortableSabnzbd {...commonProps} />;
+            }
+            // Default to qBittorrent for DOWNLOAD_CLIENT
+            return <SortableQBittorrent {...commonProps} />;
+        }
+
+        // Handle legacy TORRENT_CLIENT - only torrent clients (no SABnzbd)
+        if (item.type === ITEM_TYPE.TORRENT_CLIENT) {
+            if (clientType === TORRENT_CLIENT_TYPE.DELUGE) {
+                return <SortableDeluge {...commonProps} />;
+            }
+            if (clientType === TORRENT_CLIENT_TYPE.TRANSMISSION) {
+                return <SortableTransmission {...commonProps} />;
+            }
+            if (clientType === TORRENT_CLIENT_TYPE.QBITTORRENT) {
+                return <SortableQBittorrent {...commonProps} />;
+            }
+            // Default to qBittorrent for legacy torrent client
+            return <SortableQBittorrent {...commonProps} />;
+        }
+
+        // Fallback
+        return <SortableQBittorrent {...commonProps} />;
+    };
+
     // Render a single item
     const renderItem = (item: any) => {
         switch (item.type) {
@@ -632,14 +680,9 @@ export const DashboardGrid: React.FC = () => {
         case ITEM_TYPE.ADGUARD_WIDGET:
             return <SortableAdGuard key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
         case ITEM_TYPE.DOWNLOAD_CLIENT:
-        case ITEM_TYPE.TORRENT_CLIENT: // Legacy support
-            return item.config?.clientType === DOWNLOAD_CLIENT_TYPE.DELUGE || item.config?.clientType === TORRENT_CLIENT_TYPE.DELUGE
-                ? <SortableDeluge key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>
-                : item.config?.clientType === DOWNLOAD_CLIENT_TYPE.TRANSMISSION || item.config?.clientType === TORRENT_CLIENT_TYPE.TRANSMISSION
-                    ? <SortableTransmission key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>
-                    : item.config?.clientType === DOWNLOAD_CLIENT_TYPE.SABNZBD || item.config?.clientType === TORRENT_CLIENT_TYPE.SABNZBD
-                        ? <SortableSabnzbd key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>
-                        : <SortableQBittorrent key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
+            return renderDownloadClient(item);
+        case ITEM_TYPE.TORRENT_CLIENT:
+            return renderDownloadClient(item);
         case ITEM_TYPE.DUAL_WIDGET: {
             // Transform the existing config to the correct structure
             const dualWidgetConfig = {
@@ -807,15 +850,8 @@ export const DashboardGrid: React.FC = () => {
                                     case ITEM_TYPE.ADGUARD_WIDGET:
                                         return <SortableAdGuard key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
                                     case ITEM_TYPE.DOWNLOAD_CLIENT:
-                                    case ITEM_TYPE.TORRENT_CLIENT: { // Legacy support
-                                        return item.config?.clientType === DOWNLOAD_CLIENT_TYPE.DELUGE || item.config?.clientType === TORRENT_CLIENT_TYPE.DELUGE
-                                            ? <SortableDeluge key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>
-                                            : item.config?.clientType === DOWNLOAD_CLIENT_TYPE.TRANSMISSION || item.config?.clientType === TORRENT_CLIENT_TYPE.TRANSMISSION
-                                                ? <SortableTransmission key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>
-                                                : item.config?.clientType === DOWNLOAD_CLIENT_TYPE.SABNZBD || item.config?.clientType === TORRENT_CLIENT_TYPE.SABNZBD
-                                                    ? <SortableSabnzbd key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>
-                                                    : <SortableQBittorrent key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
-                                    }
+                                    case ITEM_TYPE.TORRENT_CLIENT:
+                                        return renderDownloadClient(item, true);
                                     case ITEM_TYPE.DUAL_WIDGET: {
                                         // Transform the existing config to the correct structure
                                         const dualWidgetConfig = {
