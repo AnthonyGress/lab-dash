@@ -111,23 +111,16 @@ export const AdGuardWidget = (props: { config?: AdGuardWidgetConfig; id?: string
 
     // Main function to fetch AdGuard Home statistics
     const fetchStats = useCallback(async () => {
-        console.log('🔄 AdGuard Widget: fetchStats called', { isConfigured, id });
-
         if (!isConfigured || !id) {
-            console.log('⚠️ AdGuard Widget: Not configured or no ID', { isConfigured, id });
             return;
         }
-
-        console.log('📊 AdGuard Widget: Starting stats fetch...');
 
         try {
             setIsLoading(true);
             setError(null);
             setAuthFailed(false);
 
-            console.log('🌐 AdGuard Widget: Calling DashApi.getAdGuardStats with ID:', id);
             const data = await DashApi.getAdGuardStats(id);
-            console.log('📈 AdGuard Widget: Received stats data:', data);
 
             safeSetState(() => {
                 setStats(data);
@@ -172,9 +165,6 @@ export const AdGuardWidget = (props: { config?: AdGuardWidgetConfig; id?: string
 
     // Effect to update configuration when props change
     useEffect(() => {
-        console.log('⚙️ AdGuard Widget: Config changed:', config);
-        console.log('🆔 AdGuard Widget: Widget ID:', id);
-
         if (config) {
             const newConfig = {
                 host: config.host || 'localhost',
@@ -186,18 +176,10 @@ export const AdGuardWidget = (props: { config?: AdGuardWidgetConfig; id?: string
                 displayName: config.displayName || 'AdGuard Home'
             };
 
-            console.log('🔧 AdGuard Widget: Setting config:', newConfig);
             setAdguardConfig(newConfig);
 
             const newIsConfigured = !!config.host && (!!config._hasUsername && !!config._hasPassword);
-            console.log('✅ AdGuard Widget: Is configured:', newIsConfigured, {
-                hasHost: !!config.host,
-                hasUsername: !!config._hasUsername,
-                hasPassword: !!config._hasPassword
-            });
             setIsConfigured(newIsConfigured);
-        } else {
-            console.log('❌ AdGuard Widget: No config provided');
         }
     }, [config, id]);
 
@@ -273,7 +255,6 @@ export const AdGuardWidget = (props: { config?: AdGuardWidgetConfig; id?: string
                     // Set up a timeout to re-enable protection and refresh stats
                     const timer = setTimeout(async () => {
                         try {
-                            console.log('⏰ AdGuard Widget: Timer expired, re-enabling protection...');
                             // Re-enable protection when timer expires
                             await DashApi.enableAdGuard(id);
 

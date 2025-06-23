@@ -1514,21 +1514,15 @@ export class DashApi {
 
     // AdGuard Home API methods
     public static async getAdGuardStats(itemId: string): Promise<any> {
-        console.log('🚀 Frontend: Calling getAdGuardStats with itemId:', itemId);
-
         try {
             if (!itemId) {
                 throw new Error('Item ID is required for AdGuard Home stats');
             }
 
-            console.log('📡 Frontend: Making request to:', `${BACKEND_URL}/api/adguard/stats`);
-
             const res = await axios.get(`${BACKEND_URL}/api/adguard/stats`, {
                 params: { itemId },
                 withCredentials: true
             });
-
-            console.log('✅ Frontend: AdGuard stats response:', res.status, res.data);
 
             if (res.data.success) {
                 return res.data.data;
@@ -1621,8 +1615,6 @@ export class DashApi {
     }
 
     public static async disableAdGuard(itemId: string, seconds?: number): Promise<boolean> {
-        console.log('🚀 Frontend: Calling disableAdGuard with itemId:', itemId, 'seconds:', seconds);
-
         try {
             if (!itemId) {
                 throw new Error('Item ID is required for AdGuard Home disable');
@@ -1634,14 +1626,10 @@ export class DashApi {
                 params.seconds = seconds;
             }
 
-            console.log('📡 Frontend: Making disable request with params:', params);
-
             const res = await axios.post(`${BACKEND_URL}/api/adguard/disable`, {}, {
                 params,
                 withCredentials: true
             });
-
-            console.log('✅ Frontend: AdGuard disable response:', res.status, res.data);
 
             return res.data.success === true;
         } catch (error: any) {
@@ -1666,21 +1654,15 @@ export class DashApi {
     }
 
     public static async enableAdGuard(itemId: string): Promise<boolean> {
-        console.log('🚀 Frontend: Calling enableAdGuard with itemId:', itemId);
-
         try {
             if (!itemId) {
                 throw new Error('Item ID is required for AdGuard Home enable');
             }
 
-            console.log('📡 Frontend: Making enable request');
-
             const res = await axios.post(`${BACKEND_URL}/api/adguard/enable`, {}, {
                 params: { itemId },
                 withCredentials: true
             });
-
-            console.log('✅ Frontend: AdGuard enable response:', res.status, res.data);
 
             return res.data.success === true;
         } catch (error: any) {

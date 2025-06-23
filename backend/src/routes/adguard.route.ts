@@ -38,9 +38,7 @@ setInterval(() => {
         }
     });
 
-    if (cleanedTimestamps > 0) {
-        console.log(`AdGuard cleanup: ${cleanedTimestamps} old timestamps cleaned`);
-    }
+    // Cleanup completed
 }, 60000); // Check every minute
 
 // Helper function to validate and get itemId with better error message
@@ -64,28 +62,12 @@ const getBaseUrl = (req: Request): string => {
 
 const getCredentials = (req: Request): { username: string; password: string } | null => {
     const itemId = validateItemId(req);
-    console.log('🔍 AdGuard getCredentials: Looking up item with ID:', itemId);
-
     const connectionInfo = getItemConnectionInfo(itemId);
-    console.log('📋 AdGuard connectionInfo keys:', Object.keys(connectionInfo));
-    console.log('📋 AdGuard connectionInfo:', {
-        host: connectionInfo.host,
-        port: connectionInfo.port,
-        ssl: connectionInfo.ssl,
-        hasUsername: !!connectionInfo.username,
-        hasPassword: !!connectionInfo.password,
-        usernameLength: connectionInfo.username?.length || 0,
-        passwordLength: connectionInfo.password?.length || 0
-    });
 
     let username = connectionInfo.username;
     let password = connectionInfo.password;
 
     if (!username || !password) {
-        console.log('❌ AdGuard getCredentials: Missing credentials', {
-            hasUsername: !!username,
-            hasPassword: !!password
-        });
         return null;
     }
 
@@ -186,17 +168,8 @@ async function handleApiWithRetry(
 
         return response;
     } catch (error: any) {
-        console.error(`AdGuard API error on ${endpoint} (attempt ${retryAttempt + 1}):`, {
-            message: error.message,
-            code: error.code,
-            status: error.response?.status,
-            data: error.response?.data
-        });
-
         // If this is a connection error and we haven't exceeded max retries
         if (isConnectionError(error) && retryAttempt < MAX_RETRIES) {
-            console.log(`Connection error detected on ${endpoint}, retrying...`);
-
             // Add a longer delay before retry to give AdGuard Home time to recover
             const retryDelay = Math.min(2000 + (retryAttempt * 1000), 5000); // 2s, 3s, max 5s
             await new Promise(resolve => setTimeout(resolve, retryDelay));
@@ -212,23 +185,9 @@ async function handleApiWithRetry(
 
 // Get AdGuard Home statistics
 adguardRoute.get('/stats', async (req: Request, res: Response) => {
-    console.log('🔍 AdGuard /stats endpoint called');
-    console.log('Query params:', req.query);
-
     try {
         const baseUrl = getBaseUrl(req);
-        console.log('📡 AdGuard baseUrl:', baseUrl);
-
         const credentials = getCredentials(req);
-        console.log('🔐 AdGuard credentials available:', !!credentials);
-        if (credentials) {
-            console.log('🔐 AdGuard credentials details:', {
-                usernameLength: credentials.username.length,
-                passwordLength: credentials.password.length,
-                usernameFirst3: credentials.username.substring(0, 3),
-                passwordFirst3: credentials.password.substring(0, 3)
-            });
-        }
 
         if (!credentials) {
             res.status(400).json({
@@ -241,8 +200,6 @@ adguardRoute.get('/stats', async (req: Request, res: Response) => {
         }
 
         try {
-            console.log('📞 Making API calls to AdGuard Home...');
-
             // Fetch both status and stats from AdGuard Home
             const [statusResponse, statsResponse] = await Promise.all([
                 handleApiWithRetry(
@@ -259,9 +216,7 @@ adguardRoute.get('/stats', async (req: Request, res: Response) => {
                 )
             ]);
 
-            console.log('✅ AdGuard API calls completed');
-            console.log('Status response status:', statusResponse.status);
-            console.log('Stats response status:', statsResponse.status);
+
 
             if (!statusResponse.data || !statsResponse.data) {
                 throw new Error('Failed to get AdGuard Home statistics');
@@ -270,9 +225,7 @@ adguardRoute.get('/stats', async (req: Request, res: Response) => {
             const statusData = statusResponse.data;
             const statsData = statsResponse.data;
 
-            console.log('📊 AdGuard status data keys:', Object.keys(statusData));
-            console.log('📊 AdGuard stats data keys:', Object.keys(statsData));
-            console.log('🔒 Protection enabled:', statusData.protection_enabled);
+
 
             // Calculate today's stats from AdGuard Home time-series data
             let dnsQueriesToday = 0;
@@ -308,7 +261,7 @@ adguardRoute.get('/stats', async (req: Request, res: Response) => {
                 status: statusData.protection_enabled ? 'enabled' : 'disabled'
             };
 
-            console.log('📈 Transformed data:', transformedData);
+
 
             res.status(200).json({
                 success: true,
@@ -331,11 +284,6 @@ adguardRoute.get('/stats', async (req: Request, res: Response) => {
         }
     } catch (error: any) {
         console.error('AdGuard Home API error:', error.message);
-        console.error('Error details:', {
-            status: error.response?.status,
-            data: error.response?.data,
-            stack: error.stack
-        });
 
         // Check if this is a DNS resolution error
         if (isDnsResolutionError(error)) {
@@ -453,11 +401,6 @@ adguardRoute.get('/protection-status', async (req: Request, res: Response) => {
         }
     } catch (error: any) {
         console.error('AdGuard Home protection status error:', error.message);
-        console.error('Error details:', {
-            status: error.response?.status,
-            data: error.response?.data,
-            stack: error.stack
-        });
 
         const statusCode = error.response?.status || 500;
         let errorMessage = error.response?.data?.message || error.message || 'Failed to get AdGuard Home protection status';
@@ -528,18 +471,10 @@ adguardRoute.post('/encrypt-password', authenticateToken, async (req: Request, r
 
 // Disable AdGuard Home protection (temporarily or indefinitely)
 adguardRoute.post('/disable', async (req: Request, res: Response) => {
-    console.log('🚫 AdGuard /disable endpoint called');
-    console.log('Query params:', req.query);
-
     try {
         const baseUrl = getBaseUrl(req);
-        console.log('📡 AdGuard disable baseUrl:', baseUrl);
-
         const credentials = getCredentials(req);
-        console.log('🔐 AdGuard disable credentials available:', !!credentials);
-
         const seconds = req.query.seconds !== undefined ? parseInt(req.query.seconds as string) : undefined;
-        console.log('⏰ Disable duration (seconds):', seconds);
 
         if (!credentials) {
             res.status(400).json({
@@ -606,11 +541,6 @@ adguardRoute.post('/disable', async (req: Request, res: Response) => {
             }
 
             console.error('AdGuard Home disable error:', error.message);
-            console.error('Error details:', {
-                status: error.response?.status,
-                data: error.response?.data,
-                stack: error.stack
-            });
 
             const statusCode = error.response?.status || 500;
             const errorMessage = error.response?.data?.message || error.message || 'Failed to disable AdGuard Home protection';
@@ -635,15 +565,9 @@ adguardRoute.post('/disable', async (req: Request, res: Response) => {
 
 // Enable AdGuard Home protection
 adguardRoute.post('/enable', async (req: Request, res: Response) => {
-    console.log('✅ AdGuard /enable endpoint called');
-    console.log('Query params:', req.query);
-
     try {
         const baseUrl = getBaseUrl(req);
-        console.log('📡 AdGuard enable baseUrl:', baseUrl);
-
         const credentials = getCredentials(req);
-        console.log('🔐 AdGuard enable credentials available:', !!credentials);
 
         if (!credentials) {
             res.status(400).json({
@@ -706,11 +630,6 @@ adguardRoute.post('/enable', async (req: Request, res: Response) => {
             }
 
             console.error('AdGuard Home enable error:', error.message);
-            console.error('Error details:', {
-                status: error.response?.status,
-                data: error.response?.data,
-                stack: error.stack
-            });
 
             const statusCode = error.response?.status || 500;
             const errorMessage = error.response?.data?.message || error.message || 'Failed to enable AdGuard Home protection';

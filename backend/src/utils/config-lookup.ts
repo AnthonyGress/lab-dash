@@ -108,16 +108,11 @@ export const getConnectionInfo = (item: DashboardItem) => {
  * Get connection info for an item by ID
  */
 export const getItemConnectionInfo = (itemId: string) => {
-    console.log(`🔍 Looking up item with ID: ${itemId}`);
     const item = findItemById(itemId);
     if (!item) {
-        console.error(`❌ Item with ID ${itemId} not found in configuration`);
-        // Let's also log what items we do have for debugging
-        const config = loadConfig();
-        console.log('📋 Available items in desktop layout:', config.layout.desktop.map(i => ({ id: i.id, type: i.type })));
+        console.error(`Item with ID ${itemId} not found in configuration`);
         throw new Error(`Item with ID ${itemId} not found`);
     }
 
-    console.log(`✅ Found item: ${item.id}, type: ${item.type}`);
     return getConnectionInfo(item);
 };
