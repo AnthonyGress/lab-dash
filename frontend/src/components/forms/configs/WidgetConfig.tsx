@@ -3,11 +3,11 @@ import { UseFormReturn } from 'react-hook-form';
 import { FormValues } from '../AddEditForm';
 import { AdGuardWidgetConfig } from './AdGuardWidgetConfig';
 import { DateTimeWidgetConfig } from './DateTimeWidgetConfig';
+import { DownloadClientWidgetConfig } from './DownloadClientWidgetConfig';
 import { DualWidgetConfig } from './DualWidgetConfig';
 import { GroupWidgetConfig } from './GroupWidgetConfig';
 import { PiholeWidgetConfig } from './PiholeWidgetConfig';
 import { SystemMonitorWidgetConfig } from './SystemMonitorWidgetConfig';
-import { TorrentClientWidgetConfig } from './TorrentClientWidgetConfig';
 import { WeatherWidgetConfig } from './WeatherWidgetConfig';
 import { DashboardItem, ITEM_TYPE } from '../../../types';
 
@@ -29,8 +29,10 @@ export const WidgetConfig = ({ formContext, widgetType, existingItem }: WidgetCo
         return <PiholeWidgetConfig formContext={formContext} existingItem={existingItem} />;
     case ITEM_TYPE.ADGUARD_WIDGET:
         return <AdGuardWidgetConfig formContext={formContext} existingItem={existingItem} />;
-    case ITEM_TYPE.TORRENT_CLIENT:
-        return <TorrentClientWidgetConfig formContext={formContext} existingItem={existingItem} />;
+    case ITEM_TYPE.DOWNLOAD_CLIENT:
+        return <DownloadClientWidgetConfig formContext={formContext} existingItem={existingItem} />;
+    case ITEM_TYPE.TORRENT_CLIENT: // Legacy support - maps to DOWNLOAD_CLIENT
+        return <DownloadClientWidgetConfig formContext={formContext} existingItem={existingItem} />;
     case ITEM_TYPE.DUAL_WIDGET:
         return <DualWidgetConfig formContext={formContext} existingItem={existingItem} />;
     case ITEM_TYPE.GROUP_WIDGET:

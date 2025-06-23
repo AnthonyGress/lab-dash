@@ -155,7 +155,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                         showLabel: topConfig.showLabel !== undefined ? topConfig.showLabel : true
                     };
                     formContext.setValue('top_piholeHost', topConfig.host || '');
-                    formContext.setValue('top_piholePort', topConfig.port || '');
+                    formContext.setValue('top_piholePort', topConfig.port !== undefined ? topConfig.port : '');
                     formContext.setValue('top_piholeSsl', topConfig.ssl || false);
                     formContext.setValue('top_piholeApiToken', maskedApiToken);
                     formContext.setValue('top_piholePassword', maskedPassword);
@@ -169,7 +169,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
 
                     topWidgetFields = {
                         adguardHost: topConfig.host || '',
-                        adguardPort: topConfig.port || '3000',
+                        adguardPort: topConfig.port || '80',
                         adguardSsl: topConfig.ssl || false,
                         adguardUsername: maskedUsername,
                         adguardPassword: maskedPassword,
@@ -177,7 +177,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                         showLabel: topConfig.showLabel !== undefined ? topConfig.showLabel : true
                     };
                     formContext.setValue('top_adguardHost', topConfig.host || '');
-                    formContext.setValue('top_adguardPort', topConfig.port || '3000');
+                    formContext.setValue('top_adguardPort', topConfig.port !== undefined ? topConfig.port : '80');
                     formContext.setValue('top_adguardSsl', topConfig.ssl || false);
                     formContext.setValue('top_adguardUsername', maskedUsername);
                     formContext.setValue('top_adguardPassword', maskedPassword);
@@ -263,7 +263,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                         showLabel: bottomConfig.showLabel !== undefined ? bottomConfig.showLabel : true
                     };
                     formContext.setValue('bottom_piholeHost', bottomConfig.host || '');
-                    formContext.setValue('bottom_piholePort', bottomConfig.port || '');
+                    formContext.setValue('bottom_piholePort', bottomConfig.port !== undefined ? bottomConfig.port : '');
                     formContext.setValue('bottom_piholeSsl', bottomConfig.ssl || false);
                     formContext.setValue('bottom_piholeApiToken', maskedApiToken);
                     formContext.setValue('bottom_piholePassword', maskedPassword);
@@ -277,7 +277,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
 
                     bottomWidgetFields = {
                         adguardHost: bottomConfig.host || '',
-                        adguardPort: bottomConfig.port || '3000',
+                        adguardPort: bottomConfig.port || '80',
                         adguardSsl: bottomConfig.ssl || false,
                         adguardUsername: maskedUsername,
                         adguardPassword: maskedPassword,
@@ -285,7 +285,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                         showLabel: bottomConfig.showLabel !== undefined ? bottomConfig.showLabel : true
                     };
                     formContext.setValue('bottom_adguardHost', bottomConfig.host || '');
-                    formContext.setValue('bottom_adguardPort', bottomConfig.port || '3000');
+                    formContext.setValue('bottom_adguardPort', bottomConfig.port !== undefined ? bottomConfig.port : '80');
                     formContext.setValue('bottom_adguardSsl', bottomConfig.ssl || false);
                     formContext.setValue('bottom_adguardUsername', maskedUsername);
                     formContext.setValue('bottom_adguardPassword', maskedPassword);
@@ -487,7 +487,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
         else if (widgetType === ITEM_TYPE.ADGUARD_WIDGET) {
             defaultFields = {
                 adguardHost: '',
-                adguardPort: '3000',
+                adguardPort: '80',
                 adguardSsl: false,
                 adguardUsername: '',
                 adguardPassword: '',
@@ -495,7 +495,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 showLabel: true
             };
             formContext.setValue(getFieldName(position, 'adguardHost'), '');
-            formContext.setValue(getFieldName(position, 'adguardPort'), '3000');
+            formContext.setValue(getFieldName(position, 'adguardPort'), '80');
             formContext.setValue(getFieldName(position, 'adguardSsl'), false);
             formContext.setValue(getFieldName(position, 'adguardUsername'), '');
             formContext.setValue(getFieldName(position, 'adguardPassword'), '');
@@ -1004,7 +1004,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
             // Base configuration
             const configObj: any = {
                 host: host || '',
-                port: port || '3000',
+                port: port || '80',
                 ssl: ssl || false,
                 displayName: displayName || '',
                 showLabel: showLabel !== undefined ? showLabel : true
@@ -1915,7 +1915,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
 
             // Convert to strings, handling any non-string values
             const hostStr = typeof initialHost === 'string' ? initialHost : '';
-            const portStr = typeof initialPort === 'string' ? initialPort : '3000';
+            const portStr = typeof initialPort === 'string' ? initialPort : '80';
             // For sensitive fields, use the values as they are (already masked from form initialization)
             const usernameStr = typeof initialUsername === 'string' ? initialUsername : '';
             const passwordStr = typeof initialPassword === 'string' ? initialPassword : '';

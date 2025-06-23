@@ -17,10 +17,9 @@ import { Box, Grid2 as Grid, useMediaQuery } from '@mui/material';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import shortid from 'shortid';
 
-import { SortableDeluge } from './sortable-items/widgets/SortableDeluge';
-import { SortableTransmission } from './sortable-items/widgets/SortableTransmission';
+import { SortableSabnzbd } from './sortable-items/widgets/SortableSabnzbd';
 import { useAppContext } from '../../context/useAppContext';
-import { DashboardItem, ITEM_TYPE, TORRENT_CLIENT_TYPE } from '../../types';
+import { DashboardItem, DOWNLOAD_CLIENT_TYPE, ITEM_TYPE, TORRENT_CLIENT_TYPE } from '../../types';
 import { AddEditForm } from '../forms/AddEditForm';
 import { CenteredModal } from '../modals/CenteredModal';
 import { ConfirmationOptions, PopupManager } from '../modals/PopupManager';
@@ -29,11 +28,13 @@ import { BlankWidget } from './base-items/widgets/BlankWidget';
 import { SortableAppShortcut } from './sortable-items/apps/SortableAppShortcut';
 import { SortableAdGuard } from './sortable-items/widgets/SortableAdGuard';
 import { SortableDateTimeWidget } from './sortable-items/widgets/SortableDateTime';
+import { SortableDeluge } from './sortable-items/widgets/SortableDeluge';
 import { SortableDualWidget } from './sortable-items/widgets/SortableDualWidget';
 import { SortableGroupWidget } from './sortable-items/widgets/SortableGroupWidget';
 import { SortablePihole } from './sortable-items/widgets/SortablePihole';
 import { SortableQBittorrent } from './sortable-items/widgets/SortableQBittorrent';
 import { SortableSystemMonitorWidget } from './sortable-items/widgets/SortableSystemMonitor';
+import { SortableTransmission } from './sortable-items/widgets/SortableTransmission';
 import { SortableWeatherWidget } from './sortable-items/widgets/SortableWeather';
 import { theme } from '../../theme/theme';
 
@@ -630,12 +631,15 @@ export const DashboardGrid: React.FC = () => {
             return <SortablePihole key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
         case ITEM_TYPE.ADGUARD_WIDGET:
             return <SortableAdGuard key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
-        case ITEM_TYPE.TORRENT_CLIENT:
-            return item.config?.clientType === TORRENT_CLIENT_TYPE.DELUGE
+        case ITEM_TYPE.DOWNLOAD_CLIENT:
+        case ITEM_TYPE.TORRENT_CLIENT: // Legacy support
+            return item.config?.clientType === DOWNLOAD_CLIENT_TYPE.DELUGE || item.config?.clientType === TORRENT_CLIENT_TYPE.DELUGE
                 ? <SortableDeluge key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>
-                : item.config?.clientType === TORRENT_CLIENT_TYPE.TRANSMISSION
+                : item.config?.clientType === DOWNLOAD_CLIENT_TYPE.TRANSMISSION || item.config?.clientType === TORRENT_CLIENT_TYPE.TRANSMISSION
                     ? <SortableTransmission key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>
-                    : <SortableQBittorrent key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
+                    : item.config?.clientType === DOWNLOAD_CLIENT_TYPE.SABNZBD || item.config?.clientType === TORRENT_CLIENT_TYPE.SABNZBD
+                        ? <SortableSabnzbd key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>
+                        : <SortableQBittorrent key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
         case ITEM_TYPE.DUAL_WIDGET: {
             // Transform the existing config to the correct structure
             const dualWidgetConfig = {
@@ -802,12 +806,15 @@ export const DashboardGrid: React.FC = () => {
                                         return <SortablePihole key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
                                     case ITEM_TYPE.ADGUARD_WIDGET:
                                         return <SortableAdGuard key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
-                                    case ITEM_TYPE.TORRENT_CLIENT: {
-                                        return item.config?.clientType === TORRENT_CLIENT_TYPE.DELUGE
+                                    case ITEM_TYPE.DOWNLOAD_CLIENT:
+                                    case ITEM_TYPE.TORRENT_CLIENT: { // Legacy support
+                                        return item.config?.clientType === DOWNLOAD_CLIENT_TYPE.DELUGE || item.config?.clientType === TORRENT_CLIENT_TYPE.DELUGE
                                             ? <SortableDeluge key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>
-                                            : item.config?.clientType === TORRENT_CLIENT_TYPE.TRANSMISSION
+                                            : item.config?.clientType === DOWNLOAD_CLIENT_TYPE.TRANSMISSION || item.config?.clientType === TORRENT_CLIENT_TYPE.TRANSMISSION
                                                 ? <SortableTransmission key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>
-                                                : <SortableQBittorrent key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
+                                                : item.config?.clientType === DOWNLOAD_CLIENT_TYPE.SABNZBD || item.config?.clientType === TORRENT_CLIENT_TYPE.SABNZBD
+                                                    ? <SortableSabnzbd key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>
+                                                    : <SortableQBittorrent key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
                                     }
                                     case ITEM_TYPE.DUAL_WIDGET: {
                                         // Transform the existing config to the correct structure

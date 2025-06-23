@@ -1707,4 +1707,113 @@ export class DashApi {
             throw error;
         }
     }
+
+    // SABnzbd API methods
+    public static async sabnzbdLogin(itemId: string): Promise<boolean> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/sabnzbd/login`, {}, {
+                params: { itemId },
+                withCredentials: true
+            });
+            return res.data.success;
+        } catch (error: any) {
+            console.error('SABnzbd login error:', error);
+            if (error.response?.status === 401) {
+                throw new Error('Invalid API key');
+            }
+            return false;
+        }
+    }
+
+    public static async sabnzbdGetStats(itemId: string): Promise<any> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/sabnzbd/stats`, {
+                params: { itemId },
+                withCredentials: true
+            });
+            return res.data;
+        } catch (error: any) {
+            console.error('Error getting SABnzbd stats:', error);
+            throw error;
+        }
+    }
+
+    public static async sabnzbdGetDownloads(itemId: string): Promise<any[]> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/sabnzbd/downloads`, {
+                params: { itemId },
+                withCredentials: true
+            });
+            return res.data;
+        } catch (error: any) {
+            console.error('Error getting SABnzbd downloads:', error);
+            throw error;
+        }
+    }
+
+    public static async sabnzbdLogout(itemId: string): Promise<boolean> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/sabnzbd/logout`, {}, {
+                params: { itemId },
+                withCredentials: true
+            });
+            return res.data.success;
+        } catch (error: any) {
+            console.error('SABnzbd logout error:', error);
+            return false;
+        }
+    }
+
+    public static async sabnzbdResumeDownload(itemId: string, nzoId: string): Promise<boolean> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/sabnzbd/resume/${nzoId}`, {}, {
+                params: { itemId },
+                withCredentials: true
+            });
+            return res.data.success;
+        } catch (error: any) {
+            console.error('SABnzbd resume download error:', error);
+            return false;
+        }
+    }
+
+    public static async sabnzbdPauseDownload(itemId: string, nzoId: string): Promise<boolean> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/sabnzbd/pause/${nzoId}`, {}, {
+                params: { itemId },
+                withCredentials: true
+            });
+            return res.data.success;
+        } catch (error: any) {
+            console.error('SABnzbd pause download error:', error);
+            return false;
+        }
+    }
+
+    public static async sabnzbdDeleteDownload(itemId: string, nzoId: string, deleteFiles: boolean = false): Promise<boolean> {
+        try {
+            const res = await axios.delete(`${BACKEND_URL}/api/sabnzbd/delete/${nzoId}`, {
+                params: { itemId, deleteFiles: deleteFiles.toString() },
+                withCredentials: true
+            });
+            return res.data.success;
+        } catch (error: any) {
+            console.error('SABnzbd delete download error:', error);
+            return false;
+        }
+    }
+
+    public static async encryptSabnzbdPassword(password: string): Promise<string> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/sabnzbd/encrypt-password`, {
+                password
+            }, {
+                withCredentials: true
+            });
+            return res.data.encryptedPassword;
+        } catch (error: any) {
+            console.error('Error encrypting SABnzbd password:', error);
+            throw error;
+        }
+    }
 }

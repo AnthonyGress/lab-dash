@@ -168,7 +168,7 @@ export const AdGuardWidget = (props: { config?: AdGuardWidgetConfig; id?: string
         if (config) {
             const newConfig = {
                 host: config.host || 'localhost',
-                port: config.port || '3000', // AdGuard Home default web interface port
+                port: config.port !== undefined ? config.port : (adguardConfig.port || '3000'), // AdGuard Home default web interface port
                 ssl: config.ssl || false,
                 _hasUsername: config._hasUsername || false,
                 _hasPassword: config._hasPassword || false,

@@ -9,7 +9,7 @@ import { DashApi } from '../../api/dash-api';
 import { useAppContext } from '../../context/useAppContext';
 import { COLORS, styles } from '../../theme/styles';
 import { theme } from '../../theme/theme';
-import { DashboardItem, ITEM_TYPE, NewItem, Page, TORRENT_CLIENT_TYPE } from '../../types';
+import { DashboardItem, DOWNLOAD_CLIENT_TYPE, ITEM_TYPE, NewItem, Page, TORRENT_CLIENT_TYPE } from '../../types';
 import { isEncrypted } from '../../utils/utils';
 
 type Props = {
@@ -31,7 +31,7 @@ const WIDGET_OPTIONS = [
     { id: ITEM_TYPE.SYSTEM_MONITOR_WIDGET, label: 'System Monitor' },
     { id: ITEM_TYPE.PIHOLE_WIDGET, label: 'Pi-hole' },
     { id: ITEM_TYPE.ADGUARD_WIDGET, label: 'AdGuard Home' },
-    { id: ITEM_TYPE.TORRENT_CLIENT, label: 'Torrent Client' },
+    { id: ITEM_TYPE.DOWNLOAD_CLIENT, label: 'Download Client' },
     { id: ITEM_TYPE.DUAL_WIDGET, label: 'Dual Widget' },
     { id: ITEM_TYPE.GROUP_WIDGET, label: 'Group' }
 ];
@@ -84,6 +84,7 @@ export type FormValues = {
     tcSsl?: boolean;
     tcUsername?: string;
     tcPassword?: string;
+
     // Dual Widget
     topWidgetType?: string;
     bottomWidgetType?: string;
@@ -154,7 +155,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
 
     // Removed location-related state, now handled in WeatherWidgetConfig
 
-    // Removed torrent client type state, now handled in TorrentClientWidgetConfig
+    // Removed torrent client type state, now handled in DownloadClientWidgetConfig
 
     // Removed app shortcut config, now handled in AppShortcutConfig
 
@@ -168,7 +169,8 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                existingItem?.type === ITEM_TYPE.SYSTEM_MONITOR_WIDGET ||
                                existingItem?.type === ITEM_TYPE.PIHOLE_WIDGET ||
                                existingItem?.type === ITEM_TYPE.ADGUARD_WIDGET ||
-                               existingItem?.type === ITEM_TYPE.TORRENT_CLIENT ||
+                               existingItem?.type === ITEM_TYPE.DOWNLOAD_CLIENT ||
+                               existingItem?.type === ITEM_TYPE.TORRENT_CLIENT || // Legacy support
                                existingItem?.type === ITEM_TYPE.DUAL_WIDGET ||
                                existingItem?.type === ITEM_TYPE.GROUP_WIDGET
             ? 'widget'
@@ -189,13 +191,18 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                   existingItem?.type === ITEM_TYPE.SYSTEM_MONITOR_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.PIHOLE_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.ADGUARD_WIDGET ||
-                                  existingItem?.type === ITEM_TYPE.TORRENT_CLIENT ||
-                                  existingItem?.type === ITEM_TYPE.DUAL_WIDGET ||
-                                  existingItem?.type === ITEM_TYPE.GROUP_WIDGET
-            ? existingItem?.type
-            : '';
+                                  existingItem?.type === ITEM_TYPE.DOWNLOAD_CLIENT ||
+                                  existingItem?.type === ITEM_TYPE.TORRENT_CLIENT // Legacy support - map to DOWNLOAD_CLIENT
+            ? (existingItem?.type === ITEM_TYPE.TORRENT_CLIENT ? ITEM_TYPE.DOWNLOAD_CLIENT : existingItem?.type)
+            : existingItem?.type === ITEM_TYPE.DUAL_WIDGET ||
+                                    existingItem?.type === ITEM_TYPE.GROUP_WIDGET
+                ? existingItem?.type
+                : '';
 
-        const initialShowLabel = existingItem?.type === ITEM_TYPE.PIHOLE_WIDGET
+        const initialShowLabel = (existingItem?.type === ITEM_TYPE.PIHOLE_WIDGET ||
+                                  existingItem?.type === ITEM_TYPE.DOWNLOAD_CLIENT ||
+                                  existingItem?.type === ITEM_TYPE.TORRENT_CLIENT || // Legacy support
+                                  existingItem?.type === ITEM_TYPE.ADGUARD_WIDGET)
             ? (existingItem?.showLabel !== undefined ? existingItem.showLabel : true)
             : (existingItem?.showLabel !== undefined ? existingItem.showLabel : false);
 
@@ -221,7 +228,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
 
         // AdGuard widget initialization
         const adguardHost = existingItem?.config?.host || '';
-        const adguardPort = existingItem?.config?.port || '3000'; // AdGuard Home default web interface port
+        const adguardPort = existingItem?.config?.port !== undefined ? existingItem.config.port : '80'; // AdGuard Home default web interface port
         const adguardSsl = existingItem?.config?.ssl || false;
         // Use masked values for sensitive data - actual values are never sent to frontend
         const adguardUsername = existingItem?.config?._hasUsername ? '**********' : '';
@@ -255,6 +262,8 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             }
         }
 
+
+
         // Reset the form with the existing item data
         formContext.reset({
             shortcutName: existingItem?.label || '',
@@ -271,7 +280,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                 : null,
             widgetType: initialWidgetType,
             placeholderSize: initialPlaceholderSize,
-            torrentClientType: existingItem?.config?.clientType || TORRENT_CLIENT_TYPE.QBITTORRENT,
+            torrentClientType: existingItem?.config?.clientType || DOWNLOAD_CLIENT_TYPE.QBITTORRENT,
             temperatureUnit: temperatureUnit,
             timezone: existingItem?.config?.timezone || '',
             adminOnly: existingItem?.adminOnly || false,
@@ -283,15 +292,16 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             healthCheckType: (existingItem?.config?.healthCheckType || 'http') as 'http' | 'ping',
             // Add maxItems for group widget
             maxItems: maxItems,
-            // Torrent client config
+            // Download client config
             tcHost: existingItem?.config?.host || 'localhost',
-            tcPort: existingItem?.config?.port ||
-                (existingItem?.config?.clientType === TORRENT_CLIENT_TYPE.DELUGE ? '8112'
-                    : existingItem?.config?.clientType === TORRENT_CLIENT_TYPE.TRANSMISSION ? '9091'
-                        : '8080'),
+            tcPort: existingItem?.config?.port !== undefined ? String(existingItem.config.port) :
+                (existingItem?.config?.clientType === DOWNLOAD_CLIENT_TYPE.DELUGE ? '8112'
+                    : existingItem?.config?.clientType === DOWNLOAD_CLIENT_TYPE.TRANSMISSION ? '9091'
+                        : existingItem?.config?.clientType === DOWNLOAD_CLIENT_TYPE.SABNZBD ? '8080'
+                            : '8080'),
             tcSsl: existingItem?.config?.ssl || false,
             tcUsername: existingItem?.config?.username || '',
-            tcPassword: (existingItem?.type === ITEM_TYPE.TORRENT_CLIENT && existingItem?.id) ? '**********' : '',
+            tcPassword: existingItem?.config?._hasPassword ? '**********' : '',
             piholeHost: piholeHost,
             piholePort: piholePort,
             piholeSsl: piholeSsl,
@@ -378,7 +388,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                     // Handle top pihole widget
                     else if (topWidget.type === ITEM_TYPE.PIHOLE_WIDGET) {
                         formContext.setValue('top_piholeHost', topConfig.host || '');
-                        formContext.setValue('top_piholePort', topConfig.port || '');
+                        formContext.setValue('top_piholePort', topConfig.port !== undefined ? topConfig.port : '');
                         formContext.setValue('top_piholeSsl', topConfig.ssl !== undefined ? topConfig.ssl : false);
                         // Use masked values for sensitive data
                         formContext.setValue('top_piholeApiToken', topConfig._hasApiToken ? '**********' : '');
@@ -391,7 +401,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                     else if (topWidget.type === ITEM_TYPE.ADGUARD_WIDGET) {
                         console.log('🔧 AddEditForm: Initializing top AdGuard widget with config:', topConfig);
                         formContext.setValue('top_adguardHost', topConfig.host || '');
-                        formContext.setValue('top_adguardPort', topConfig.port || '3000');
+                        formContext.setValue('top_adguardPort', topConfig.port !== undefined ? topConfig.port : '80');
                         formContext.setValue('top_adguardSsl', topConfig.ssl !== undefined ? topConfig.ssl : false);
                         // Use masked values for sensitive data
                         formContext.setValue('top_adguardUsername', topConfig._hasUsername ? '**********' : '');
@@ -441,7 +451,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                     // Handle bottom pihole widget
                     else if (bottomWidget.type === ITEM_TYPE.PIHOLE_WIDGET) {
                         formContext.setValue('bottom_piholeHost', bottomConfig.host || '');
-                        formContext.setValue('bottom_piholePort', bottomConfig.port || '');
+                        formContext.setValue('bottom_piholePort', bottomConfig.port !== undefined ? bottomConfig.port : '');
                         formContext.setValue('bottom_piholeSsl', bottomConfig.ssl !== undefined ? bottomConfig.ssl : false);
                         // Use masked values for sensitive data
                         formContext.setValue('bottom_piholeApiToken', bottomConfig._hasApiToken ? '**********' : '');
@@ -454,7 +464,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                     else if (bottomWidget.type === ITEM_TYPE.ADGUARD_WIDGET) {
                         console.log('🔧 AddEditForm: Initializing bottom AdGuard widget with config:', bottomConfig);
                         formContext.setValue('bottom_adguardHost', bottomConfig.host || '');
-                        formContext.setValue('bottom_adguardPort', bottomConfig.port || '3000');
+                        formContext.setValue('bottom_adguardPort', bottomConfig.port !== undefined ? bottomConfig.port : '80');
                         formContext.setValue('bottom_adguardSsl', bottomConfig.ssl !== undefined ? bottomConfig.ssl : false);
                         // Use masked values for sensitive data
                         formContext.setValue('bottom_adguardUsername', bottomConfig._hasUsername ? '**********' : '');
@@ -484,12 +494,12 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             if (formContext.getValues('showLabel') === undefined || (!existingItem && (
                 selectedWidgetType === ITEM_TYPE.PIHOLE_WIDGET ||
                 selectedWidgetType === ITEM_TYPE.ADGUARD_WIDGET ||
-                selectedWidgetType === ITEM_TYPE.TORRENT_CLIENT ||
+                selectedWidgetType === ITEM_TYPE.DOWNLOAD_CLIENT ||
                 selectedWidgetType === ITEM_TYPE.DUAL_WIDGET
             ))) {
                 if (selectedWidgetType === ITEM_TYPE.PIHOLE_WIDGET ||
                     selectedWidgetType === ITEM_TYPE.ADGUARD_WIDGET ||
-                    selectedWidgetType === ITEM_TYPE.TORRENT_CLIENT ||
+                    selectedWidgetType === ITEM_TYPE.DOWNLOAD_CLIENT ||
                     selectedWidgetType === ITEM_TYPE.DUAL_WIDGET) {
                     formContext.setValue('showLabel', true);
                 } else {
@@ -719,15 +729,13 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                         config = { ...config, _hasPassword: true };
                     }
                 }
-            } else if (data.widgetType === ITEM_TYPE.TORRENT_CLIENT) {
-                // Handle masked password - only encrypt if not masked
+            } else if (data.widgetType === ITEM_TYPE.DOWNLOAD_CLIENT) {
+                // Download client widget - use tc* fields for all client types
                 let encryptedPassword = '';
                 let hasExistingPassword = false;
 
                 // Check if we're editing an existing item with a password
-                // Since existingItem may not have _hasPassword flag (filtered data),
-                // assume existing torrent client items have passwords
-                if (existingItem?.type === ITEM_TYPE.TORRENT_CLIENT && existingItem?.id) {
+                if ((existingItem?.type === ITEM_TYPE.DOWNLOAD_CLIENT || existingItem?.type === ITEM_TYPE.TORRENT_CLIENT) && existingItem?.id) {
                     hasExistingPassword = true;
                 }
 
@@ -735,9 +743,13 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                 if (data.tcPassword && data.tcPassword !== '**********') {
                     if (!isEncrypted(data.tcPassword)) {
                         try {
-                            encryptedPassword = await DashApi.encryptPassword(data.tcPassword);
+                            if (data.torrentClientType === DOWNLOAD_CLIENT_TYPE.SABNZBD) {
+                                encryptedPassword = await DashApi.encryptSabnzbdPassword(data.tcPassword);
+                            } else {
+                                encryptedPassword = await DashApi.encryptPassword(data.tcPassword);
+                            }
                         } catch (error) {
-                            console.error('Error encrypting password:', error);
+                            console.error('Error encrypting download client password:', error);
                         }
                     } else {
                         encryptedPassword = data.tcPassword;
@@ -752,31 +764,20 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                     showLabel: data.showLabel
                 };
 
-                // Only include username if it's provided or if it's required for the client type
-                if (data.tcUsername || data.torrentClientType !== TORRENT_CLIENT_TYPE.TRANSMISSION) {
-                    baseConfig.username = data.tcUsername || '';
+                // Include username for clients that need it (not SABnzbd)
+                if (data.torrentClientType !== DOWNLOAD_CLIENT_TYPE.SABNZBD && data.tcUsername) {
+                    baseConfig.username = data.tcUsername;
                 }
 
                 // Include password if it was actually changed (not masked)
                 if (encryptedPassword) {
-                    config = { ...baseConfig, password: encryptedPassword };
+                    baseConfig.password = encryptedPassword;
                 } else if (hasExistingPassword) {
                     // If we have an existing password but no new password provided, set the flag
-                    config = { ...baseConfig, _hasPassword: true };
-                } else {
-                    config = baseConfig;
+                    baseConfig._hasPassword = true;
                 }
-            } else if (data.widgetType === ITEM_TYPE.GROUP_WIDGET) {
-                // For group widget, use the exact maxItems value from the form
-                // This preserves the layout format (e.g., "6_2x3" or "6_3x2")
-                const maxItems = data.maxItems || '3';
-                console.log('Setting maxItems in GROUP_WIDGET_SMALL:', maxItems);
 
-                config = {
-                    items: existingItem?.config?.items || [],  // Preserve existing items when updating
-                    showLabel: data.showLabel,
-                    maxItems: maxItems  // Store the original string value to preserve layout information
-                };
+                config = baseConfig;
             } else if (data.widgetType === ITEM_TYPE.DUAL_WIDGET) {
                 // Check if DualWidgetConfig component has already built the config
                 const existingConfig = (formContext as any).getValues('config');
@@ -787,15 +788,15 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                 } else {
                     // Fallback to building config from form data (for backwards compatibility)
 
-                    // Ensure neither widget type is TorrentClient
-                    if (data.topWidgetType === ITEM_TYPE.TORRENT_CLIENT ||
-                        data.bottomWidgetType === ITEM_TYPE.TORRENT_CLIENT) {
-                        console.error('TorrentClient widget is not supported in Dual Widget');
-                        // Replace TorrentClient with DateTimeWidget as a fallback
-                        if (data.topWidgetType === ITEM_TYPE.TORRENT_CLIENT) {
+                    // Ensure neither widget type is DOWNLOAD_CLIENT
+                    if (data.topWidgetType === ITEM_TYPE.DOWNLOAD_CLIENT ||
+                        data.bottomWidgetType === ITEM_TYPE.DOWNLOAD_CLIENT) {
+                        console.error('DOWNLOAD_CLIENT widget is not supported in Dual Widget');
+                        // Replace DOWNLOAD_CLIENT with DATE_TIME_WIDGET as a fallback
+                        if (data.topWidgetType === ITEM_TYPE.DOWNLOAD_CLIENT) {
                             data.topWidgetType = ITEM_TYPE.DATE_TIME_WIDGET;
                         }
-                        if (data.bottomWidgetType === ITEM_TYPE.TORRENT_CLIENT) {
+                        if (data.bottomWidgetType === ITEM_TYPE.DOWNLOAD_CLIENT) {
                             data.bottomWidgetType = ITEM_TYPE.DATE_TIME_WIDGET;
                         }
                     }
@@ -920,13 +921,14 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             }
         }
 
-        // Generate label for torrent client widgets if not provided
+        // Generate label for DOWNLOAD_CLIENT widgets if not provided
         let itemLabel = data.shortcutName || '';
-        if (actualItemType === ITEM_TYPE.TORRENT_CLIENT && !itemLabel) {
-            const clientType = data.torrentClientType || TORRENT_CLIENT_TYPE.QBITTORRENT;
-            const clientName = clientType === TORRENT_CLIENT_TYPE.DELUGE ? 'Deluge'
-                : clientType === TORRENT_CLIENT_TYPE.TRANSMISSION ? 'Transmission'
-                    : 'qBittorrent';
+        if (actualItemType === ITEM_TYPE.DOWNLOAD_CLIENT && !itemLabel) {
+            const clientType = data.torrentClientType || DOWNLOAD_CLIENT_TYPE.QBITTORRENT;
+            const clientName = clientType === DOWNLOAD_CLIENT_TYPE.DELUGE ? 'Deluge'
+                : clientType === DOWNLOAD_CLIENT_TYPE.TRANSMISSION ? 'Transmission'
+                    : clientType === DOWNLOAD_CLIENT_TYPE.SABNZBD ? 'SABnzbd'
+                        : 'qBittorrent';
             itemLabel = `${clientName} Client`;
         }
 
@@ -984,7 +986,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
     };
 
     // Helper function to create widget configuration based on widget type
-    const createWidgetConfig = async (widgetType: string, data: FormValues) => {
+    const createWidgetConfig = async (widgetType: string, data: FormValues): Promise<any> => {
         if (widgetType === ITEM_TYPE.WEATHER_WIDGET) {
             // Get the location data and ensure it's properly structured
             const location = data.location || null;
@@ -1164,25 +1166,27 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                 }
                 return config;
             }
-        } else if (widgetType === ITEM_TYPE.TORRENT_CLIENT) {
-            // Handle masked password - only encrypt if not masked
+        } else if (widgetType === ITEM_TYPE.DOWNLOAD_CLIENT) {
+            // Download client widget - use tc* fields for all client types
             let encryptedPassword = '';
             let hasExistingPassword = false;
 
             // Check if we're editing an existing item with a password
-            // Since existingItem may not have _hasPassword flag (filtered data),
-            // assume existing torrent client items have passwords
-            if (existingItem?.type === ITEM_TYPE.TORRENT_CLIENT && existingItem?.id) {
-                hasExistingPassword = true;
+            if (existingItem?.config) {
+                hasExistingPassword = !!existingItem.config._hasPassword;
             }
 
             // Only process password if it's not the masked value
             if (data.tcPassword && data.tcPassword !== '**********') {
                 if (!isEncrypted(data.tcPassword)) {
                     try {
-                        encryptedPassword = await DashApi.encryptPassword(data.tcPassword);
+                        if (data.torrentClientType === DOWNLOAD_CLIENT_TYPE.SABNZBD) {
+                            encryptedPassword = await DashApi.encryptSabnzbdPassword(data.tcPassword);
+                        } else {
+                            encryptedPassword = await DashApi.encryptPassword(data.tcPassword);
+                        }
                     } catch (error) {
-                        console.error('Error encrypting password:', error);
+                        console.error('Error encrypting download client password:', error);
                     }
                 } else {
                     encryptedPassword = data.tcPassword;
@@ -1197,9 +1201,13 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                 showLabel: data.showLabel
             };
 
-            // Only include username if it's provided or if it's required for the client type
-            if (data.tcUsername || data.torrentClientType !== TORRENT_CLIENT_TYPE.TRANSMISSION) {
-                config.username = data.tcUsername || '';
+            console.log('Download client config being created:', config);
+            console.log('Form data tcPort:', data.tcPort);
+            console.log('Form data showLabel:', data.showLabel);
+
+            // Include username for clients that need it (not SABnzbd)
+            if (data.torrentClientType !== DOWNLOAD_CLIENT_TYPE.SABNZBD && data.tcUsername) {
+                config.username = data.tcUsername;
             }
 
             // Include password if it was actually changed (not masked)
@@ -1211,6 +1219,94 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             }
 
             return config;
+        } else if (widgetType === ITEM_TYPE.DUAL_WIDGET) {
+            // Check if DualWidgetConfig component has already built the config
+            const existingConfig = (formContext as any).getValues('config');
+
+            if (existingConfig && existingConfig.topWidget && existingConfig.bottomWidget) {
+                // Use the config built by DualWidgetConfig component (preserves sensitive data flags)
+                return existingConfig;
+            } else {
+                // Fallback to building config from form data (for backwards compatibility)
+
+                // Ensure neither widget type is DOWNLOAD_CLIENT
+                if (data.topWidgetType === ITEM_TYPE.DOWNLOAD_CLIENT ||
+                    data.bottomWidgetType === ITEM_TYPE.DOWNLOAD_CLIENT) {
+                    console.error('DOWNLOAD_CLIENT widget is not supported in Dual Widget');
+                    // Replace DOWNLOAD_CLIENT with DATE_TIME_WIDGET as a fallback
+                    if (data.topWidgetType === ITEM_TYPE.DOWNLOAD_CLIENT) {
+                        data.topWidgetType = ITEM_TYPE.DATE_TIME_WIDGET;
+                    }
+                    if (data.bottomWidgetType === ITEM_TYPE.DOWNLOAD_CLIENT) {
+                        data.bottomWidgetType = ITEM_TYPE.DATE_TIME_WIDGET;
+                    }
+                }
+
+                // Create custom data objects for top and bottom widgets with proper field mapping
+                const topWidgetData = {
+                    ...data,
+                    // Map position-specific fields to standard fields for the createWidgetConfig function
+                    temperatureUnit: data.top_temperatureUnit,
+                    location: data.top_location,
+                    timezone: data.top_timezone,
+                    gauge1: data.top_gauge1,
+                    gauge2: data.top_gauge2,
+                    gauge3: data.top_gauge3,
+                    networkInterface: data.top_networkInterface,
+                    piholeHost: data.top_piholeHost,
+                    piholePort: data.top_piholePort,
+                    piholeSsl: data.top_piholeSsl,
+                    piholeApiToken: data.top_piholeApiToken,
+                    piholePassword: data.top_piholePassword,
+                    piholeName: data.top_piholeName,
+                    adguardHost: data.top_adguardHost,
+                    adguardPort: data.top_adguardPort,
+                    adguardSsl: data.top_adguardSsl,
+                    adguardUsername: data.top_adguardUsername,
+                    adguardPassword: data.top_adguardPassword,
+                    adguardName: data.top_adguardName,
+                    showLabel: data.top_showLabel
+                };
+
+                const bottomWidgetData = {
+                    ...data,
+                    // Map position-specific fields to standard fields for the createWidgetConfig function
+                    temperatureUnit: data.bottom_temperatureUnit,
+                    location: data.bottom_location,
+                    timezone: data.bottom_timezone,
+                    gauge1: data.bottom_gauge1,
+                    gauge2: data.bottom_gauge2,
+                    gauge3: data.bottom_gauge3,
+                    networkInterface: data.bottom_networkInterface,
+                    piholeHost: data.bottom_piholeHost,
+                    piholePort: data.bottom_piholePort,
+                    piholeSsl: data.bottom_piholeSsl,
+                    piholeApiToken: data.bottom_piholeApiToken,
+                    piholePassword: data.bottom_piholePassword,
+                    piholeName: data.bottom_piholeName,
+                    adguardHost: data.bottom_adguardHost,
+                    adguardPort: data.bottom_adguardPort,
+                    adguardSsl: data.bottom_adguardSsl,
+                    adguardUsername: data.bottom_adguardUsername,
+                    adguardPassword: data.bottom_adguardPassword,
+                    adguardName: data.bottom_adguardName,
+                    showLabel: data.bottom_showLabel
+                };
+
+                const topConfig: any = await createWidgetConfig(data.topWidgetType || '', topWidgetData);
+                const bottomConfig: any = await createWidgetConfig(data.bottomWidgetType || '', bottomWidgetData);
+
+                return {
+                    topWidget: {
+                        type: data.topWidgetType,
+                        config: topConfig
+                    },
+                    bottomWidget: {
+                        type: data.bottomWidgetType,
+                        config: bottomConfig
+                    }
+                };
+            }
         }
 
         return {};
@@ -1256,7 +1352,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             piholeName: '',
             // AdGuard widget fields
             adguardHost: '',
-            adguardPort: '3000', // AdGuard Home default web interface port
+            adguardPort: '80', // AdGuard Home default web interface port
             adguardSsl: false,
             adguardUsername: '',
             adguardPassword: '',
@@ -1284,7 +1380,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             top_piholePassword: '',
             top_piholeName: '',
             top_adguardHost: '',
-            top_adguardPort: '3000',
+            top_adguardPort: '80',
             top_adguardSsl: false,
             top_adguardUsername: '',
             top_adguardPassword: '',
@@ -1305,7 +1401,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             bottom_piholePassword: '',
             bottom_piholeName: '',
             bottom_adguardHost: '',
-            bottom_adguardPort: '3000',
+            bottom_adguardPort: '80',
             bottom_adguardSsl: false,
             bottom_adguardUsername: '',
             bottom_adguardPassword: '',

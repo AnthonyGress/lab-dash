@@ -9,7 +9,7 @@ import { useAppContext } from '../../../../context/useAppContext';
 import { theme } from '../../../../theme/theme';
 import { TORRENT_CLIENT_TYPE } from '../../../../types';
 
-export type TorrentClientStats = {
+export type DownloadClientStats = {
     dl_info_speed: number;
     dl_info_data: number;
     up_info_speed: number;
@@ -23,7 +23,7 @@ export type TorrentClientStats = {
     };
 };
 
-export type TorrentInfo = {
+export type DownloadInfo = {
     hash: string;
     name: string;
     state: string;  // Common states: 'downloading', 'seeding', 'pausedDL', 'pausedUP', 'stopped', 'error', etc.
@@ -34,13 +34,13 @@ export type TorrentInfo = {
     eta?: number; // ETA in seconds
 };
 
-export type TorrentClientWidgetProps = {
+export type DownloadClientWidgetProps = {
     clientName: string;
     isLoading: boolean;
     isAuthenticated: boolean;
     authError: string;
-    stats: TorrentClientStats | null;
-    torrents: TorrentInfo[];
+    stats: DownloadClientStats | null;
+    torrents: DownloadInfo[];
     loginCredentials: {
         host: string;
         port: string;
@@ -111,8 +111,8 @@ const getStatusIcon = (state: string) => {
     }
 };
 
-interface TorrentItemProps {
-    torrent: TorrentInfo;
+interface DownloadItemProps {
+    torrent: DownloadInfo;
     clientName: string;
     isAdmin: boolean;
     onResume?: (hash: string) => Promise<boolean>;
@@ -120,7 +120,7 @@ interface TorrentItemProps {
     onDelete?: (hash: string, deleteFiles: boolean) => Promise<boolean>;
 }
 
-const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin, onResume, onPause, onDelete }) => {
+const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmin, onResume, onPause, onDelete }) => {
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
     const [isActionLoading, setIsActionLoading] = useState(false);
@@ -320,6 +320,33 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin,
                                 </MenuItem>
                             )}
                         </>
+                    ) : clientName === 'SABnzbd' ? (
+                        // For SABnzbd: Use Resume/Pause terminology with SABnzbd-specific states
+                        <>
+                            {/* Show Resume option for non-downloading SABnzbd items */}
+                            {(torrent.state !== 'downloading' && torrent.state !== 'active') && (
+                                <MenuItem
+                                    onClick={handleResume}
+                                    disabled={!onResume}
+                                    sx={{ fontSize: '0.9rem', py: 1 }}
+                                >
+                                    <PlayArrow fontSize='small' sx={{ mr: 1 }} />
+                                    Resume
+                                </MenuItem>
+                            )}
+
+                            {/* Show Pause option for active SABnzbd items */}
+                            {(torrent.state === 'downloading' || torrent.state === 'active') && (
+                                <MenuItem
+                                    onClick={handlePause}
+                                    disabled={!onPause}
+                                    sx={{ fontSize: '0.9rem', py: 1 }}
+                                >
+                                    <Pause fontSize='small' sx={{ mr: 1 }} />
+                                    Pause
+                                </MenuItem>
+                            )}
+                        </>
                     ) : (
                         // For other clients like Deluge: Use Pause/Resume terminology
                         <>
@@ -409,7 +436,7 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin,
     );
 };
 
-export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
+export const DownloadClientWidget: React.FC<DownloadClientWidgetProps> = ({
     clientName,
     isLoading,
     isAuthenticated,
@@ -479,7 +506,7 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
                     {showLabel && (
                         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 1 }}>
                             <img
-                                src={`${BACKEND_URL}/icons/${clientName.toLowerCase().includes('qbittorrent') ? 'qbittorrent.svg' : clientName.toLowerCase().includes('transmission') ? 'transmission.svg' : 'deluge.svg'}`}
+                                src={`${BACKEND_URL}/icons/${clientName.toLowerCase().includes('qbittorrent') ? 'qbittorrent.svg' : clientName.toLowerCase().includes('transmission') ? 'transmission.svg' : clientName.toLowerCase().includes('sabnzbd') ? 'sabnzbd.svg' : 'deluge.svg'}`}
                                 alt={clientName}
                                 style={{
                                     width: '24px',
@@ -559,7 +586,7 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
                             onClick={handleOpenWebUI}
                         >
                             <img
-                                src={`${BACKEND_URL}/icons/${clientName.toLowerCase().includes('qbittorrent') ? 'qbittorrent.svg' : clientName.toLowerCase().includes('transmission') ? 'transmission.svg' : 'deluge.svg'}`}
+                                src={`${BACKEND_URL}/icons/${clientName.toLowerCase().includes('qbittorrent') ? 'qbittorrent.svg' : clientName.toLowerCase().includes('transmission') ? 'transmission.svg' : clientName.toLowerCase().includes('sabnzbd') ? 'sabnzbd.svg' : 'deluge.svg'}`}
                                 alt={clientName}
                                 style={{
                                     width: '24px',
@@ -618,7 +645,7 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
                             }}>
                                 {torrents.length > 0 ? (
                                     torrents.map((torrent) => (
-                                        <TorrentItem
+                                        <DownloadItem
                                             key={torrent.hash}
                                             torrent={torrent}
                                             clientName={clientName}
@@ -719,7 +746,7 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
                                         Current:
                                     </Typography>
                                     <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)' }}>
-                                        Session:
+                                        {clientName === 'SABnzbd' ? 'This month:' : 'Session:'}
                                     </Typography>
                                 </Box>
 
@@ -738,20 +765,22 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
                                     </Box>
                                 </Box>
 
-                                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                                        <ArrowUpward sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
-                                        <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white', minWidth: '65px', textAlign: 'right' }}>
-                                            {formatBytes(stats.up_info_speed)}/s
-                                        </Typography>
+                                {clientName !== 'SABnzbd' && (
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                                            <ArrowUpward sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
+                                            <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white', minWidth: '65px', textAlign: 'right' }}>
+                                                {formatBytes(stats.up_info_speed)}/s
+                                            </Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                            <ArrowUpward sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
+                                            <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white', minWidth: '65px', textAlign: 'right' }}>
+                                                {formatBytes(stats.up_info_data || 0)}
+                                            </Typography>
+                                        </Box>
                                     </Box>
-                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <ArrowUpward sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
-                                        <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white', minWidth: '65px', textAlign: 'right' }}>
-                                            {formatBytes(stats.up_info_data || 0)}
-                                        </Typography>
-                                    </Box>
-                                </Box>
+                                )}
                             </Box>
                         </Box>
                     </Box>

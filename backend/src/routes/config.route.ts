@@ -142,8 +142,8 @@ const filterSensitiveData = (config: any): any => {
                 }
             }
 
-            // Handle torrent client sensitive data
-            if (item.type === 'torrent-client' && newConfig.password) {
+            // Handle download client (torrent/NZB) sensitive data
+            if ((item.type === 'download-client' || item.type === 'torrent-client') && newConfig.password) {
                 newConfig._hasPassword = true;
                 delete newConfig.password;
             }
@@ -368,8 +368,8 @@ const restoreSensitiveData = (newConfig: any, existingConfig: any): any => {
             }
         }
 
-        // Handle torrent client sensitive data
-        if (newItem.type === 'torrent-client') {
+        // Handle download client (torrent/NZB) sensitive data
+        if (newItem.type === 'download-client' || newItem.type === 'torrent-client') {
             if (newItem.config._hasPassword && !newItem.config.password && existingItem.config.password) {
                 restoredItemConfig.password = existingItem.config.password;
             }

@@ -6,29 +6,30 @@ import { CheckboxElement, TextFieldElement } from 'react-hook-form-mui';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { COLORS } from '../../../theme/styles';
 import { theme } from '../../../theme/theme';
-import { TORRENT_CLIENT_TYPE } from '../../../types';
+import { DOWNLOAD_CLIENT_TYPE, TORRENT_CLIENT_TYPE } from '../../../types';
 import { FormValues } from '../AddEditForm';
 
-const TORRENT_CLIENT_OPTIONS = [
-    { id: TORRENT_CLIENT_TYPE.QBITTORRENT, label: 'qBittorrent' },
-    { id: TORRENT_CLIENT_TYPE.DELUGE, label: 'Deluge' },
-    { id: TORRENT_CLIENT_TYPE.TRANSMISSION, label: 'Transmission' }
+const DOWNLOAD_CLIENT_OPTIONS = [
+    { id: DOWNLOAD_CLIENT_TYPE.QBITTORRENT, label: 'qBittorrent' },
+    { id: DOWNLOAD_CLIENT_TYPE.DELUGE, label: 'Deluge' },
+    { id: DOWNLOAD_CLIENT_TYPE.TRANSMISSION, label: 'Transmission' },
+    { id: DOWNLOAD_CLIENT_TYPE.SABNZBD, label: 'SABnzbd' }
 ];
 
-interface TorrentClientWidgetConfigProps {
+interface DownloadClientWidgetConfigProps {
     formContext: UseFormReturn<FormValues>;
     existingItem?: any; // Pass existing item to check for security flags
 }
 
 const MASKED_VALUE = '**********'; // 10 asterisks for masked values
 
-export const TorrentClientWidgetConfig = ({ formContext, existingItem }: TorrentClientWidgetConfigProps) => {
+export const DownloadClientWidgetConfig = ({ formContext, existingItem }: DownloadClientWidgetConfigProps) => {
     const isMobile = useIsMobile();
 
     // Watch the torrent client type directly from the form
     const watchedTorrentClientType = formContext.watch('torrentClientType');
     const [torrentClientType, setTorrentClientType] = useState<string>(
-        watchedTorrentClientType || formContext.getValues('torrentClientType') || TORRENT_CLIENT_TYPE.QBITTORRENT
+        watchedTorrentClientType || formContext.getValues('torrentClientType') || DOWNLOAD_CLIENT_TYPE.QBITTORRENT
     );
 
     // Track if we're editing an existing item with sensitive data
@@ -58,7 +59,7 @@ export const TorrentClientWidgetConfig = ({ formContext, existingItem }: Torrent
 
                 // Ensure the masked value is set if not already present
                 if (!currentPassword || currentPassword === '') {
-                    console.log('TorrentClientWidgetConfig: Setting masked password');
+                    console.log('DownloadClientWidgetConfig: Setting masked password');
                     formContext.setValue('tcPassword', MASKED_VALUE, { shouldValidate: false });
                 }
             }
@@ -69,14 +70,19 @@ export const TorrentClientWidgetConfig = ({ formContext, existingItem }: Torrent
         if (watchedTorrentClientType) {
             setTorrentClientType(watchedTorrentClientType);
 
-            // Update the port based on torrent client type
-            const defaultPort = watchedTorrentClientType === TORRENT_CLIENT_TYPE.DELUGE ? '8112'
-                : watchedTorrentClientType === TORRENT_CLIENT_TYPE.TRANSMISSION ? '9091'
-                    : '8080';
-            formContext.setValue('tcPort', defaultPort);
+            // Only update the port if there's no existing port value (for new widgets)
+            // Don't override existing port when editing
+            const currentPort = formContext.getValues('tcPort');
+            if (!currentPort || currentPort === '') {
+                const defaultPort = watchedTorrentClientType === DOWNLOAD_CLIENT_TYPE.DELUGE ? '8112'
+                    : watchedTorrentClientType === DOWNLOAD_CLIENT_TYPE.TRANSMISSION ? '9091'
+                        : watchedTorrentClientType === DOWNLOAD_CLIENT_TYPE.SABNZBD ? '8080'
+                            : '8080';
+                formContext.setValue('tcPort', defaultPort);
+            }
 
             // Clear validation errors for username and password when switching to Transmission
-            if (watchedTorrentClientType === TORRENT_CLIENT_TYPE.TRANSMISSION) {
+            if (watchedTorrentClientType === DOWNLOAD_CLIENT_TYPE.TRANSMISSION) {
                 formContext.clearErrors('tcUsername');
                 formContext.clearErrors('tcPassword');
                 formContext.trigger(['tcUsername', 'tcPassword']);
@@ -112,7 +118,7 @@ export const TorrentClientWidgetConfig = ({ formContext, existingItem }: Torrent
                             ml: 1
                         }}
                     >
-                        Select Torrent Client:
+                        Select Download Client:
                     </Typography>
                     <RadioGroup
                         name='torrentClientType'
@@ -129,7 +135,7 @@ export const TorrentClientWidgetConfig = ({ formContext, existingItem }: Torrent
                             }
                         }}
                     >
-                        {TORRENT_CLIENT_OPTIONS.map((option) => (
+                        {DOWNLOAD_CLIENT_OPTIONS.map((option) => (
                             <FormControlLabel
                                 key={option.id}
                                 value={option.id}
@@ -195,8 +201,8 @@ export const TorrentClientWidgetConfig = ({ formContext, existingItem }: Torrent
                     }}
                 />
             </Grid>
-            {/* Only show username field for qBittorrent and Transmission */}
-            {(torrentClientType === TORRENT_CLIENT_TYPE.QBITTORRENT || torrentClientType === TORRENT_CLIENT_TYPE.TRANSMISSION) && (
+            {/* Only show username field for qBittorrent and Transmission (not SABnzbd - it uses API key) */}
+            {(torrentClientType === DOWNLOAD_CLIENT_TYPE.QBITTORRENT || torrentClientType === DOWNLOAD_CLIENT_TYPE.TRANSMISSION) && (
                 <Grid>
                     <TextFieldElement
                         name='tcUsername'
@@ -204,9 +210,9 @@ export const TorrentClientWidgetConfig = ({ formContext, existingItem }: Torrent
                         variant='outlined'
                         fullWidth
                         autoComplete='off'
-                        required={watchedTorrentClientType !== TORRENT_CLIENT_TYPE.TRANSMISSION}
+                        required={watchedTorrentClientType !== DOWNLOAD_CLIENT_TYPE.TRANSMISSION}
                         rules={{
-                            required: watchedTorrentClientType !== TORRENT_CLIENT_TYPE.TRANSMISSION ? 'Username is required' : false
+                            required: watchedTorrentClientType !== DOWNLOAD_CLIENT_TYPE.TRANSMISSION ? 'Username is required' : false
                         }}
                         sx={{
                             width: '100%',
@@ -227,14 +233,14 @@ export const TorrentClientWidgetConfig = ({ formContext, existingItem }: Torrent
             <Grid>
                 <TextFieldElement
                     name='tcPassword'
-                    label='Password'
+                    label={torrentClientType === DOWNLOAD_CLIENT_TYPE.SABNZBD ? 'API Key' : 'Password'}
                     type='password'
                     variant='outlined'
                     fullWidth
                     autoComplete='off'
-                    required={watchedTorrentClientType !== TORRENT_CLIENT_TYPE.TRANSMISSION && !hasExistingPassword && !userClearedPassword}
+                    required={watchedTorrentClientType !== DOWNLOAD_CLIENT_TYPE.TRANSMISSION && !hasExistingPassword && !userClearedPassword}
                     rules={{
-                        required: (watchedTorrentClientType !== TORRENT_CLIENT_TYPE.TRANSMISSION && !hasExistingPassword && !userClearedPassword) ? 'Password is required' : false
+                        required: (watchedTorrentClientType !== DOWNLOAD_CLIENT_TYPE.TRANSMISSION && !hasExistingPassword && !userClearedPassword) ? 'Password is required' : false
                     }}
                     sx={{
                         width: '100%',

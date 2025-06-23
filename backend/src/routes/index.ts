@@ -9,6 +9,7 @@ import { healthRoute } from './health.route';
 import { piholeV6Route } from './pihole-v6.route';
 import { piholeRoute } from './pihole.route';
 import { qbittorrentRoute } from './qbittorrent.route';
+import { sabnzbdRoute } from './sabnzbd.route';
 import { systemRoute } from './system.route';
 import { timezoneRoute } from './timezone.route';
 import { transmissionRoute } from './transmission.route';
@@ -50,6 +51,9 @@ router.use('/uploads', apiLimiter, uploadsRoute);
 // Torrent client routes
 router.use('/qbittorrent', torrentApiLimiter, qbittorrentRoute);
 router.use('/transmission', torrentApiLimiter, transmissionRoute);
+
+// NZB client routes
+router.use('/sabnzbd', torrentApiLimiter, sabnzbdRoute);
 
 // Pi-hole routes
 router.use('/pihole', apiLimiter, piholeRoute);

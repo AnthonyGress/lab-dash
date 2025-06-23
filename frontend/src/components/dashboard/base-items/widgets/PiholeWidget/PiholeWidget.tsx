@@ -436,7 +436,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
 
         const newConfig = {
             host: config.host || 'pi.hole',
-            port: config.port || '80',
+            port: config.port !== undefined ? config.port : (piholeConfig.port || '80'),
             ssl: config.ssl || false,
             _hasApiToken: config._hasApiToken || false,
             _hasPassword: config._hasPassword || false,
