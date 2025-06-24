@@ -1042,7 +1042,6 @@ export const AppContextProvider = ({ children }: Props) => {
             // Use getLayout() which already fetches config and updates state
             await getLayout();
 
-            const { ToastManager } = await import('../components/toast/ToastManager');
             const targetName = targetPageId === null ? 'Home' : pages.find(p => p.id === targetPageId)?.name || 'Unknown Page';
             const itemName = itemToMove?.label || itemToMove?.type || 'Item';
 
@@ -1068,7 +1067,6 @@ export const AppContextProvider = ({ children }: Props) => {
 
         } catch (error) {
             console.error('Failed to move item:', error);
-            const { ToastManager } = await import('../components/toast/ToastManager');
             ToastManager.error('Failed to move item. Please try again.');
         } finally {
             // Clear move in progress flag
