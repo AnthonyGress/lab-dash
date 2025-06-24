@@ -9,7 +9,7 @@ import Toolbar from '@mui/material/Toolbar';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { nanoid } from 'nanoid';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { FaEdit, FaHeart, FaInfoCircle, FaSync } from 'react-icons/fa';
 import { FaArrowRightFromBracket, FaGear, FaHouse, FaTrashCan, FaUser } from 'react-icons/fa6';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';

@@ -54,6 +54,31 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
     // State to track current page - 0 for top, 1 for bottom
     const [currentPage, setCurrentPage] = useState(0);
 
+    // Track widget types using state instead of formContext.watch to prevent re-renders
+    const [topWidgetType, setTopWidgetType] = useState<string>('');
+    const [bottomWidgetType, setBottomWidgetType] = useState<string>('');
+
+    // Subscribe to widget type changes without causing re-renders
+    useEffect(() => {
+        const subscription = formContext.watch((value, { name }) => {
+            if (name === 'topWidgetType') {
+                setTopWidgetType(value.topWidgetType || '');
+            }
+            if (name === 'bottomWidgetType') {
+                setBottomWidgetType(value.bottomWidgetType || '');
+            }
+        });
+        return () => subscription.unsubscribe();
+    }, [formContext]);
+
+    // Initialize widget types from form values
+    useEffect(() => {
+        const currentTopType = formContext.getValues('topWidgetType');
+        const currentBottomType = formContext.getValues('bottomWidgetType');
+        if (currentTopType) setTopWidgetType(currentTopType);
+        if (currentBottomType) setBottomWidgetType(currentBottomType);
+    }, [formContext]);
+
     const selectStyling = {
         '& .MuiOutlinedInput-root': {
             '& fieldset': {
@@ -424,8 +449,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
             }
         }
 
-        // Trigger form validation
-        formContext.trigger();
+        // Don't trigger validation here as it can cause flashing
+        // formContext.trigger();
     };
 
     // Reset form fields to defaults for a position
@@ -509,8 +534,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
             [`${position}WidgetFields`]: { ...defaultFields }
         }));
 
-        // Ensure form is validated
-        formContext.trigger();
+        // Don't trigger validation here as it can cause flashing
+        // formContext.trigger();
     };
 
     // Capture form values to state based on widget type
@@ -624,7 +649,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
             const currentPosition = currentPage === 0 ? 'top' : 'bottom';
 
             // Explicitly check for timezone values before switching tabs
-            if (formContext.watch(`${currentPosition}WidgetType`) === ITEM_TYPE.DATE_TIME_WIDGET) {
+            const currentWidgetType = currentPosition === 'top' ? topWidgetType : bottomWidgetType;
+            if (currentWidgetType === ITEM_TYPE.DATE_TIME_WIDGET) {
                 const timezoneFieldName = getFieldName(currentPosition, 'timezone');
                 const timezone = formContext.getValues(timezoneFieldName);
 
@@ -664,8 +690,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 // Apply the fields
                 applyWidgetFieldsToForm(newPosition, fields);
 
-                // Trigger form validation
-                formContext.trigger();
+                // Don't trigger validation during tab changes as it can cause flashing
+                // formContext.trigger();
             }, 50);
         }
     };
@@ -688,27 +714,26 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
         }
     }, [currentPage]); // Only depend on currentPage, not on widgetState which changes frequently
 
-    // Watch for changes to widget types
+    // Watch for changes to widget types - use separate subscriptions to avoid triggering on every form change
     useEffect(() => {
-        const topWidgetType = formContext.watch('topWidgetType');
-        const bottomWidgetType = formContext.watch('bottomWidgetType');
-
-        if (currentPage === 0 && topWidgetType) {
-            // When top widget type changes, apply default values
-            if (Object.keys(widgetState.topWidgetFields).length === 0) {
-                resetFormFields('top');
+        const subscription = formContext.watch((value, { name }) => {
+            if (name === 'topWidgetType' && currentPage === 0 && value.topWidgetType) {
+                // When top widget type changes, apply default values
+                if (Object.keys(widgetState.topWidgetFields).length === 0) {
+                    resetFormFields('top');
+                }
             }
-        }
 
-        if (currentPage === 1 && bottomWidgetType) {
-            // When bottom widget type changes, apply default values
-            if (Object.keys(widgetState.bottomWidgetFields).length === 0) {
-                resetFormFields('bottom');
+            if (name === 'bottomWidgetType' && currentPage === 1 && value.bottomWidgetType) {
+                // When bottom widget type changes, apply default values
+                if (Object.keys(widgetState.bottomWidgetFields).length === 0) {
+                    resetFormFields('bottom');
+                }
             }
-        }
+        });
 
-        formContext.trigger();
-    }, [formContext.watch('topWidgetType'), formContext.watch('bottomWidgetType')]);
+        return () => subscription.unsubscribe();
+    }, [currentPage, widgetState.topWidgetFields, widgetState.bottomWidgetFields]);
 
     // Save final configurations when form is submitted
     useEffect(() => {
@@ -747,7 +772,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 formElement.removeEventListener('submit', handleFormSubmit);
             };
         }
-    }, [formContext, widgetState, currentPage]);
+    }, [formContext, currentPage]); // Removed widgetState dependency to prevent unnecessary re-renders
 
     // Build widget config with explicit widget type (to avoid form reset issues)
     const buildWidgetConfigWithType = async (position: 'top' | 'bottom', widgetType: string) => {
@@ -2301,7 +2326,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                             />
                         </Grid>
 
-                        {formContext.watch('topWidgetType') && (
+                        {topWidgetType && (
                             <Grid container sx={{
                                 marginTop: '8px',
                                 display: 'flex',
@@ -2309,7 +2334,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                                 alignItems: 'center',
                                 width: '100%'
                             }}>
-                                {renderWidgetConfig(formContext.watch('topWidgetType'), 'top')}
+                                {renderWidgetConfig(topWidgetType, 'top')}
                             </Grid>
                         )}
                     </>
@@ -2332,7 +2357,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                             />
                         </Grid>
 
-                        {formContext.watch('bottomWidgetType') && (
+                        {bottomWidgetType && (
                             <Grid container sx={{
                                 marginTop: '8px',
                                 display: 'flex',
@@ -2340,7 +2365,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                                 alignItems: 'center',
                                 width: '100%'
                             }}>
-                                {renderWidgetConfig(formContext.watch('bottomWidgetType'), 'bottom')}
+                                {renderWidgetConfig(bottomWidgetType, 'bottom')}
                             </Grid>
                         )}
                     </>

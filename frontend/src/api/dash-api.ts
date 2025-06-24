@@ -1822,7 +1822,7 @@ export class DashApi {
     public static async encryptSabnzbdPassword(password: string): Promise<string> {
         try {
             const res = await axios.post(
-                `${BACKEND_URL}/api/sabnzbd/encrypt-pwd`,
+                `${BACKEND_URL}/api/sabnzbd/encrypt-password`,
                 { password },
                 { withCredentials: true }
             );

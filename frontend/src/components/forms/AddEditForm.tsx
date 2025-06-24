@@ -823,7 +823,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
 
                 if (existingConfig && existingConfig.topWidget && existingConfig.bottomWidget) {
                     // Use the config built by DualWidgetConfig component (preserves sensitive data flags)
-                    return existingConfig;
+                    config = existingConfig;
                 } else {
                     // Fallback to building config from form data (for backwards compatibility)
 
@@ -894,7 +894,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                     const topConfig: any = await createWidgetConfig(data.topWidgetType || '', topWidgetData);
                     const bottomConfig: any = await createWidgetConfig(data.bottomWidgetType || '', bottomWidgetData);
 
-                    return {
+                    config = {
                         topWidget: {
                             type: data.topWidgetType,
                             config: topConfig

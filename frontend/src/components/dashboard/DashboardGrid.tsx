@@ -711,28 +711,16 @@ export const DashboardGrid: React.FC = () => {
                 onEdit={() => handleEdit(item)}
                 onDuplicate={() => handleDuplicate(item)}
             />;
-        case ITEM_TYPE.MEDIA_SERVER_WIDGET: {
-            // Create a properly typed config for MediaServerWidget
-            const mediaServerConfig = {
-                clientType: item.config?.clientType || 'jellyfin',
-                displayName: item.config?.displayName || '',
-                host: item.config?.host || '',
-                port: item.config?.port || '8096',
-                ssl: item.config?.ssl || false,
-                apiKey: item.config?.apiKey || '',
-                showLabel: item.config?.showLabel !== undefined ? item.config.showLabel : true,
-                _hasApiKey: item.config?._hasApiKey || false
-            };
+        case ITEM_TYPE.MEDIA_SERVER_WIDGET:
             return <SortableMediaServer
                 key={item.id}
                 id={item.id}
                 editMode={editMode}
-                config={mediaServerConfig}
+                config={item.config}
                 onDelete={() => handleDelete(item.id)}
                 onEdit={() => handleEdit(item)}
                 onDuplicate={() => handleDuplicate(item)}
             />;
-        }
         case ITEM_TYPE.APP_SHORTCUT:
             return (
                 <SortableAppShortcut
@@ -898,26 +886,14 @@ export const DashboardGrid: React.FC = () => {
                                             config={item.config}
                                             isOverlay
                                         />;
-                                    case ITEM_TYPE.MEDIA_SERVER_WIDGET: {
-                                        // Create a properly typed config for MediaServerWidget
-                                        const mediaServerConfig = {
-                                            clientType: item.config?.clientType || 'jellyfin',
-                                            displayName: item.config?.displayName || '',
-                                            host: item.config?.host || '',
-                                            port: item.config?.port || '8096',
-                                            ssl: item.config?.ssl || false,
-                                            apiKey: item.config?.apiKey || '',
-                                            showLabel: item.config?.showLabel !== undefined ? item.config.showLabel : true,
-                                            _hasApiKey: item.config?._hasApiKey || false
-                                        };
+                                    case ITEM_TYPE.MEDIA_SERVER_WIDGET:
                                         return <SortableMediaServer
                                             key={item.id}
                                             id={item.id}
                                             editMode={editMode}
-                                            config={mediaServerConfig}
+                                            config={item.config}
                                             isOverlay
                                         />;
-                                    }
                                     case ITEM_TYPE.APP_SHORTCUT:
                                         return (
                                             <SortableAppShortcut

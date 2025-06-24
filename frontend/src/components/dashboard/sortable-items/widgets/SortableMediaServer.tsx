@@ -12,16 +12,7 @@ type Props = {
     onDelete?: () => void;
     onEdit?: () => void;
     onDuplicate?: () => void;
-    config?: {
-        clientType?: 'jellyfin' | 'plex';
-        displayName?: string;
-        host?: string;
-        port?: string;
-        ssl?: boolean;
-        apiKey?: string;
-        showLabel?: boolean;
-        _hasApiKey?: boolean; // Security flag instead of actual API key
-    };
+    config?: any;
     url?: string;
 };
 
