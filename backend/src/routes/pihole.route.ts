@@ -1,11 +1,17 @@
 import axios from 'axios';
 import { Request, Response, Router } from 'express';
+import https from 'https';
 
 import { authenticateToken } from '../middleware/auth.middleware';
 import { getItemConnectionInfo } from '../utils/config-lookup';
 import { decrypt, encrypt, isEncrypted } from '../utils/crypto';
 
 export const piholeRoute = Router();
+
+// Configure HTTPS agent to allow self-signed certificates for Pi-hole connections
+const httpsAgent = new https.Agent({
+    rejectUnauthorized: false // Allow self-signed certificates
+});
 
 // Helper function to validate and get itemId with better error message
 const validateItemId = (req: Request): string => {
@@ -68,7 +74,8 @@ piholeRoute.get('/stats', async (req: Request, res: Response) => {
                 summary: '',
                 auth: apiToken
             },
-            timeout: 5000 // 5 second timeout
+            timeout: 5000, // 5 second timeout
+            httpsAgent: httpsAgent // Allow self-signed certificates
         });
 
         if (!response.data || response.data.status === 'error') {
@@ -82,7 +89,8 @@ piholeRoute.get('/stats', async (req: Request, res: Response) => {
                     list: 'domains',
                     auth: apiToken
                 },
-                timeout: 5000
+                timeout: 5000,
+                httpsAgent: httpsAgent // Allow self-signed certificates
             });
 
             // Combine responses
@@ -183,7 +191,10 @@ piholeRoute.post('/disable', async (req: Request, res: Response) => {
             : `${baseUrl}/api.php?disable&auth=${apiToken}`;
 
         // Call Pi-hole API to disable blocking
-        const response = await axios.get(disableUrl, { timeout: 5000 });
+        const response = await axios.get(disableUrl, {
+            timeout: 5000,
+            httpsAgent: httpsAgent // Allow self-signed certificates
+        });
 
         if (response.data.status === 'disabled') {
             res.status(200).json({
@@ -220,7 +231,10 @@ piholeRoute.post('/enable', async (req: Request, res: Response) => {
         }
 
         // Call Pi-hole API to enable blocking
-        const response = await axios.get(`${baseUrl}/api.php?enable&auth=${apiToken}`, { timeout: 5000 });
+        const response = await axios.get(`${baseUrl}/api.php?enable&auth=${apiToken}`, {
+            timeout: 5000,
+            httpsAgent: httpsAgent // Allow self-signed certificates
+        });
 
         if (response.data.status === 'enabled') {
             res.status(200).json({
