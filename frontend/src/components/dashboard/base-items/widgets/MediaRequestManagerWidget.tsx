@@ -116,7 +116,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
     const [previousSearchQuery, setPreviousSearchQuery] = useState<string>('');
 
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-    const { editMode, isAdmin } = useAppContext();
+    const { editMode, isAdmin, isLoggedIn } = useAppContext();
 
     const serviceName = service === 'jellyseerr' ? 'Jellyseerr' : 'Overseerr';
     const serviceUrl = `${ssl ? 'https' : 'http'}://${host}:${port}`;
@@ -810,7 +810,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
 
                                                                     {/* Approval buttons positioned between status and username */}
                                                                     <Box sx={{ mt: 0.25 }}>
-                                                                        {request.status === 1 && isAdmin && !editMode ? (
+                                                                        {request.status === 1 && isAdmin && isLoggedIn && !editMode ? (
                                                                             <Box sx={{ display: 'flex', gap: 0.5 }}>
                                                                                 <IconButton
                                                                                     size='small'
