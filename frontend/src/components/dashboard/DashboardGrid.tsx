@@ -943,6 +943,14 @@ export const DashboardGrid: React.FC = () => {
                                             config={item.config}
                                             isOverlay
                                         />;
+                                    case ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET:
+                                        return <SortableMediaRequestManager
+                                            key={item.id}
+                                            id={item.id}
+                                            editMode={editMode}
+                                            config={item.config}
+                                            isOverlay
+                                        />;
                                     case ITEM_TYPE.APP_SHORTCUT:
                                         return (
                                             <SortableAppShortcut

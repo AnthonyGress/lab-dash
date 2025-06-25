@@ -252,7 +252,7 @@ const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmi
                     arrow
                 >
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                {getStatusIcon(torrent.state)}
+                        {getStatusIcon(torrent.state)}
                     </Box>
                 </Tooltip>
                 <Tooltip
@@ -261,21 +261,21 @@ const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmi
                     enterDelay={1000}
                     arrow
                 >
-                <Typography
-                    variant='caption'
-                    noWrap
-                    sx={{
-                        ml: 0.5,
-                        maxWidth: '50%',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        color: 'white',
+                    <Typography
+                        variant='caption'
+                        noWrap
+                        sx={{
+                            ml: 0.5,
+                            maxWidth: '50%',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            color: 'white',
                             fontSize: isMobile ? '0.7rem' : '.8rem',
                             cursor: 'default'
-                    }}
-                >
-                    {torrent.name}
-                </Typography>
+                        }}
+                    >
+                        {torrent.name}
+                    </Typography>
                 </Tooltip>
                 <Typography
                     variant='caption'
@@ -752,9 +752,9 @@ export const DownloadClientWidget: React.FC<DownloadClientWidgetProps> = ({
                                                     </Typography>
                                                 </Box>
                                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.2 }}>
-                                                    <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white', minWidth: '100px' }}>
+                                                    <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary', minWidth: '100px' }}>
                                                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                            <ArrowDownward sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
+                                                            <ArrowDownward sx={{ color: 'text.primary', fontSize: '0.75rem', mr: 0.3 }} />
                                                             <span>3.2 MB/s</span>
                                                         </Box>
                                                     </Typography>
@@ -775,24 +775,24 @@ export const DownloadClientWidget: React.FC<DownloadClientWidgetProps> = ({
                         <Box sx={{ mt: 'auto', pt: 1, borderTop: '1px solid rgba(255,255,255,0.1)', width: '100%' }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
                                 <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                                    <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)', mb: 0.5 }}>
+                                    <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary', mb: 0.5 }}>
                                         Current:
                                     </Typography>
-                                    <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)' }}>
+                                    <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary' }}>
                                         {clientName === 'SABnzbd' ? 'This month:' : 'Session:'}
                                     </Typography>
                                 </Box>
 
                                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                                        <ArrowDownward sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
-                                        <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white', minWidth: '65px', textAlign: 'right' }}>
+                                        <ArrowDownward sx={{ color: 'text.primary', fontSize: '0.75rem', mr: 0.3 }} />
+                                        <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary', minWidth: '65px', textAlign: 'right' }}>
                                             {formatBytes(stats.dl_info_speed)}/s
                                         </Typography>
                                     </Box>
                                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <ArrowDownward sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
-                                        <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white', minWidth: '65px', textAlign: 'right' }}>
+                                        <ArrowDownward sx={{ color: 'text.primary', fontSize: '0.75rem', mr: 0.3 }} />
+                                        <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary', minWidth: '65px', textAlign: 'right' }}>
                                             {formatBytes(stats.dl_info_data || 0)}
                                         </Typography>
                                     </Box>
@@ -801,14 +801,14 @@ export const DownloadClientWidget: React.FC<DownloadClientWidgetProps> = ({
                                 {clientName !== 'SABnzbd' && (
                                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                                            <ArrowUpward sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
-                                            <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white', minWidth: '65px', textAlign: 'right' }}>
+                                            <ArrowUpward sx={{ color: 'text.primary', fontSize: '0.75rem', mr: 0.3 }} />
+                                            <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary', minWidth: '65px', textAlign: 'right' }}>
                                                 {formatBytes(stats.up_info_speed)}/s
                                             </Typography>
                                         </Box>
                                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                            <ArrowUpward sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
-                                            <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white', minWidth: '65px', textAlign: 'right' }}>
+                                            <ArrowUpward sx={{ color: 'text.primary', fontSize: '0.75rem', mr: 0.3 }} />
+                                            <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary', minWidth: '65px', textAlign: 'right' }}>
                                                 {formatBytes(stats.up_info_data || 0)}
                                             </Typography>
                                         </Box>

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Request, Response, Router } from 'express';
+import { Request, response, Response, Router } from 'express';
 import https from 'https';
 
 import { getItemConnectionInfo } from '../utils/config-lookup';
@@ -76,17 +76,24 @@ jellyseerrRoute.get('/search', async (req: Request, res: Response) => {
             return;
         }
 
-        const response = await axios.get(`${baseUrl}/api/v1/search`, {
+        console.log('Jellyseerr search request:', {
+            baseUrl,
+            query,
+            hasApiKey: !!apiKey
+        });
+
+        // Simple search call without pagination for now
+        const encodedQuery = encodeURIComponent(query.trim());
+        const response = await axios.get(`${baseUrl}/api/v1/search?query=${encodedQuery}`, {
             headers: {
                 'X-Api-Key': apiKey
-            },
-            params: {
-                query: query,
-                page: 1
             },
             timeout: 10000,
             httpsAgent: httpsAgent
         });
+
+        console.log('Jellyseerr search response status:', response.status);
+        console.log('Jellyseerr search results count:', response.data?.results?.length || 0);
 
         res.json({
             success: true,

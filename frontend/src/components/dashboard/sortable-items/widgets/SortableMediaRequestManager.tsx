@@ -49,7 +49,7 @@ const SortableMediaRequestManager: React.FC<Props> = ({
                     ssl={config?.ssl}
                     _hasApiKey={config?._hasApiKey}
                     displayName={config?.displayName}
-                    showLabel={true}
+                    showLabel={config?.showLabel}
                 />
             </WidgetContainer>
         </Grid2>

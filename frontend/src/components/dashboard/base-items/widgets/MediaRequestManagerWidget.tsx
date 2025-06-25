@@ -3,21 +3,17 @@ import {
     Cancel as DeclineIcon,
     Movie as MovieIcon,
     Person as PersonIcon,
-    Search as SearchIcon,
     Tv as TvIcon
 } from '@mui/icons-material';
 import {
+    Autocomplete,
     Avatar,
     Box,
     Button,
     CardContent,
     Chip,
     CircularProgress,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogContentText,
-    DialogTitle,
+    ClickAwayListener,
     Divider,
     IconButton,
     InputAdornment,
@@ -25,19 +21,22 @@ import {
     ListItem,
     ListItemAvatar,
     ListItemText,
+    Paper,
+    Popper,
     TextField,
     Tooltip,
     Typography,
     useMediaQuery
 } from '@mui/material';
-import { open } from 'fs';
 import React, { useCallback, useEffect, useState } from 'react';
+import { FaSearch } from 'react-icons/fa';
 import { FaRegThumbsDown, FaRegThumbsUp } from 'react-icons/fa6';
 
 import { DashApi } from '../../../../api/dash-api';
 import { BACKEND_URL, TWENTY_SEC_IN_MS } from '../../../../constants/constants';
 import { DUAL_WIDGET_CONTAINER_HEIGHT } from '../../../../constants/widget-dimensions';
 import { useAppContext } from '../../../../context/useAppContext';
+import { COLORS } from '../../../../theme/styles';
 import { theme } from '../../../../theme/theme';
 import { PopupManager } from '../../../modals/PopupManager';
 
@@ -113,6 +112,8 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
     const [searchLoading, setSearchLoading] = useState(false);
     const [allRequests, setAllRequests] = useState<MediaRequest[]>([]);
     const [loading, setLoading] = useState(true);
+    const [confirmationItem, setConfirmationItem] = useState<SearchResult | null>(null);
+    const [previousSearchQuery, setPreviousSearchQuery] = useState<string>('');
 
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const { editMode, isAdmin } = useAppContext();
@@ -171,14 +172,19 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
         }
     }, [id, host, _hasApiKey]);
 
-    const handleSearch = async () => {
-        if (!searchQuery.trim() || !id || !_hasApiKey) return;
+    const handleSearch = useCallback(async (query: string) => {
+        if (!query.trim() || !id || !_hasApiKey) {
+            setSearchResults([]);
+            return;
+        }
 
         setSearchLoading(true);
         try {
-            const response = await DashApi.jellyseerrSearch(id, searchQuery.trim());
+            const response = await DashApi.jellyseerrSearch(id, query.trim());
             if (response.success) {
-                setSearchResults(response.data.results || []);
+                const results = response.data.results || [];
+                // Don't limit results, show all matches from Jellyseerr
+                setSearchResults(results);
             }
         } catch (searchError) {
             console.error('Search error:', searchError);
@@ -186,7 +192,21 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
         } finally {
             setSearchLoading(false);
         }
-    };
+    }, [id, _hasApiKey]);
+
+    // Debounced search effect
+    useEffect(() => {
+        if (!searchQuery.trim() || searchQuery.trim().length < 2) {
+            setSearchResults([]);
+            return;
+        }
+
+        const timeoutId = setTimeout(() => {
+            handleSearch(searchQuery);
+        }, 250); // Reduced to 250ms for faster response
+
+        return () => clearTimeout(timeoutId);
+    }, [searchQuery, handleSearch]);
 
     const handleRequest = async (item: SearchResult) => {
         if (!id || !_hasApiKey) return;
@@ -200,7 +220,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
             if (response.success) {
                 // Refresh requests after creating one
                 fetchRequests();
-                // Clear search results
+                // Clear search results and query
                 setSearchResults([]);
                 setSearchQuery('');
             }
@@ -314,15 +334,27 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
     };
 
     const getUserAvatar = (user: MediaRequest['requestedBy']) => {
-        if (user.avatar && !user.avatar.startsWith('/avatarproxy/')) {
-            // If it's a full URL
-            return user.avatar;
-        } else if (user.avatar) {
-            // If it's a relative path, construct the full URL
-            const userServiceUrl = `${ssl ? 'https' : 'http'}://${host}:${port}`;
-            return `${userServiceUrl}${user.avatar}`;
+        if (!user.avatar) {
+            return null;
         }
-        return null;
+
+        // Check if it's a default Jellyseerr avatar - these typically use /avatarproxy/ or default avatar patterns
+        if (user.avatar.startsWith('/avatarproxy/') ||
+            user.avatar.includes('default') ||
+            user.avatar.includes('gravatar') ||
+            user.avatar.endsWith('/avatar') ||
+            user.avatar === '/avatar') {
+            return null; // Use PersonIcon fallback instead
+        }
+
+        // If it's a full URL, return as is
+        if (user.avatar.startsWith('http')) {
+            return user.avatar;
+        }
+
+        // If it's a relative path, construct the full URL
+        const userServiceUrl = `${ssl ? 'https' : 'http'}://${host}:${port}`;
+        return `${userServiceUrl}${user.avatar}`;
     };
 
     const formatSeasons = (seasons: any[]) => {
@@ -332,13 +364,6 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
             return `${seasonNumbers.length} seasons requested`;
         } else {
             return `Seasons: ${seasonNumbers.join(', ')}`;
-        }
-    };
-
-    // Handle search on Enter key
-    const handleKeyPress = (event: React.KeyboardEvent) => {
-        if (event.key === 'Enter') {
-            handleSearch();
         }
     };
 
@@ -374,8 +399,9 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                 color: 'white',
                 width: '100%'
             }}>
-                {showLabel && (
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, width: '100%' }}>
+                {/* Title/Icon and Search Bar Section */}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: .5, width: '100%' }}>
+                    {showLabel && (
                         <Box
                             sx={{
                                 display: 'flex',
@@ -404,49 +430,188 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                                 {displayName || serviceName}
                             </Typography>
                         </Box>
-                        {!editMode && (
-                            <TextField
-                                size='small'
-                                placeholder='Search movies & TV...'
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                onKeyPress={handleKeyPress}
-                                sx={{
-                                    flex: 1,
-                                    ml: 2,
-                                    '& .MuiInputBase-input::placeholder': {
-                                        color: 'rgba(255,255,255,0.5)',
-                                        opacity: 1
+                    )}
+                    <ClickAwayListener onClickAway={() => {
+                        if (searchQuery && !confirmationItem) {
+                            setSearchQuery('');
+                            setSearchResults([]);
+                        }
+                    }}>
+                        <Box sx={{
+                            flex: 1,
+                            ml: showLabel ? 2 : 0,
+                            mr: 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            visibility: editMode ? 'hidden' : 'visible'
+                        }}>
+                            <Autocomplete
+                                freeSolo
+                                options={searchResults}
+                                getOptionLabel={(option) =>
+                                    typeof option === 'string' ? option : getTitle(option)
+                                }
+                                inputValue={searchQuery}
+                                onInputChange={(_, newInputValue) => {
+                                    setSearchQuery(newInputValue);
+                                }}
+                                onChange={(_, newValue) => {
+                                    if (newValue && typeof newValue !== 'string') {
+                                        setPreviousSearchQuery(searchQuery); // Save current search query
+                                        setConfirmationItem(newValue);
+                                        setSearchQuery(''); // Clear search after selection
                                     }
                                 }}
-                                InputProps={{
-                                    startAdornment: (
-                                        <InputAdornment position='start'>
-                                            <SearchIcon sx={{ color: 'rgba(255,255,255,0.7)' }} />
-                                        </InputAdornment>
-                                    ),
-                                    endAdornment: searchLoading && (
-                                        <InputAdornment position='end'>
-                                            <CircularProgress size={16} sx={{ color: 'white' }} />
-                                        </InputAdornment>
-                                    ),
-                                    sx: {
+                                loading={searchLoading}
+                                loadingText='Searching...'
+                                noOptionsText={searchQuery.length < 2 ? 'Type to search...' : 'No results found'}
+                                filterOptions={(options) => options} // Don't filter on frontend, show all API results
+                                open={searchQuery.length >= 2 && searchResults.length > 0 && !searchLoading && !confirmationItem} // Close when modal is open
+                                disablePortal={false} // Allow portal for proper dropdown positioning
+                                disableClearable={false}
+                                componentsProps={{
+                                    popper: {
+                                        placement: 'bottom-start', // Always place dropdown below
+                                        modifiers: [
+                                            {
+                                                name: 'flip',
+                                                enabled: false, // Disable flipping to top
+                                            },
+                                            {
+                                                name: 'preventOverflow',
+                                                enabled: false, // Allow overflow if needed
+                                            }
+                                        ]
+                                    }
+                                }}
+                                sx={{
+                                    width: '100%',
+                                    '& .MuiOutlinedInput-root': {
+                                        borderRadius: 2,
+                                        height: '36px', // Slightly taller for better usability
+                                        '& fieldset': {
+                                            border: `1px solid ${COLORS.BORDER} !important`,
+                                        },
+                                        '&:hover fieldset': {
+                                            border: `1px solid ${COLORS.BORDER} !important`,
+                                        },
+                                        '&.Mui-focused fieldset': {
+                                            border: `1px solid ${COLORS.BORDER} !important`,
+                                        },
+                                    },
+                                    '& .MuiAutocomplete-clearIndicator': {
                                         color: 'white',
-                                        '& .MuiOutlinedInput-notchedOutline': {
-                                            borderColor: 'divider'
-                                        },
-                                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                                            borderColor: 'rgba(255,255,255,0.5)'
-                                        },
-                                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                            borderColor: 'rgba(255,255,255,0.7)'
+                                        alignSelf: 'center', // Center the clear icon vertically
+                                    },
+                                    '& .MuiAutocomplete-popupIndicator': {
+                                        display: 'none', // Hide the dropdown arrow
+                                    },
+                                    '& .MuiAutocomplete-endAdornment': {
+                                        top: '50%', // Center vertically
+                                        transform: 'translateY(-50%)', // Perfect centering
+                                        right: '9px', // Adjust positioning
+                                    },
+                                }}
+                                renderOption={(props, option) => (
+                                    <Box
+                                        component='li'
+                                        {...props}
+                                        key={`search-result-${option.id}`}
+                                        sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 1,
+                                            py: 1,
+                                            opacity: option.status?.status === 4 ? 0.6 : 1,
+                                            cursor: option.status?.status === 4 ? 'default' : 'pointer',
+                                            '&:hover': {
+                                                backgroundColor: option.status?.status === 4 ? 'transparent' : 'rgba(255,255,255,0.05)'
+                                            }
+                                        }}
+
+                                    >
+                                        <Avatar
+                                            key={`avatar-${option.id}`}
+                                            src={getPosterUrl(option.posterPath) || undefined}
+                                            sx={{ width: 36, height: 54 }}
+                                            variant='rounded'
+                                        >
+                                            {option.mediaType === 'movie' ? <MovieIcon /> : <TvIcon />}
+                                        </Avatar>
+                                        <Box key={`content-${option.id}`} sx={{ flex: 1, minWidth: 0 }}>
+                                            <Typography key={`title-${option.id}`} variant='body2' sx={{ color: 'white', fontWeight: 500 }}>
+                                                {getTitle(option)}
+                                            </Typography>
+                                            <Typography key={`subtitle-${option.id}`} variant='caption' sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                                                {getReleaseYear(option)} • {option.mediaType === 'movie' ? 'Movie' : 'TV Show'}
+                                            </Typography>
+                                        </Box>
+                                        {option.status?.status === 4 && (
+                                            <Chip
+                                                key={`chip-${option.id}`}
+                                                label='Available'
+                                                size='small'
+                                                sx={{
+                                                    fontSize: '0.7rem',
+                                                    height: '1rem',
+                                                    backgroundColor: 'success.dark',
+                                                    color: 'success.contrastText'
+                                                }}
+                                            />
+                                        )}
+                                    </Box>
+                                )}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        placeholder='Search for movies or TV shows...'
+                                        InputProps={{
+                                            ...params.InputProps,
+                                            startAdornment: (
+                                                <InputAdornment position='start' sx={{ color: 'text.primary' }}>
+                                                    <FaSearch />
+                                                </InputAdornment>
+                                            ),
+                                            endAdornment: (
+                                                <>
+                                                    {searchLoading && (
+                                                        <InputAdornment position='end'>
+                                                            <CircularProgress size={16} sx={{ color: 'white' }} />
+                                                        </InputAdornment>
+                                                    )}
+                                                    {params.InputProps.endAdornment}
+                                                </>
+                                            ),
+                                            sx: { height: '36px' }, // Match container height
+                                        }}
+                                        sx={{
+                                            height: '36px', // Match the container height
+                                        }}
+                                    />
+                                )}
+                                slotProps={{
+                                    listbox: {
+                                        sx: {
+                                            maxHeight: 400, // Increased height for more results
+                                            '& .MuiAutocomplete-option': {
+                                                minHeight: 'unset',
+                                                lineHeight: '1.5'
+                                            }
+                                        }
+                                    },
+                                    paper: {
+                                        sx: {
+                                            backgroundColor: 'rgba(30, 30, 30, 0.95)',
+                                            backdropFilter: 'blur(10px)',
+                                            border: '1px solid rgba(255,255,255,0.1)',
+                                            maxHeight: 450 // Ensure paper can accommodate the listbox
                                         }
                                     }
                                 }}
                             />
-                        )}
-                    </Box>
-                )}
+                        </Box>
+                    </ClickAwayListener>
+                </Box>
 
                 {error ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1, width: '100%', flexDirection: 'column' }}>
@@ -459,55 +624,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                     </Box>
                 ) : (
                     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
-                        {/* Search Results */}
-                        {searchResults.length > 0 && !editMode && (
-                            <Box sx={{ mb: 2, maxHeight: 150, overflow: 'auto' }}>
-                                <Typography variant='caption' sx={{ px: 1, mb: 0.5, color: 'white' }}>
-                                    Search Results
-                                </Typography>
-                                <List dense sx={{ pt: 0 }}>
-                                    {searchResults.map((item) => (
-                                        <ListItem
-                                            key={item.id}
-                                            sx={{ px: 1 }}
-                                            secondaryAction={
-                                                <Button
-                                                    size='small'
-                                                    variant='contained'
-                                                    onClick={() => handleRequest(item)}
-                                                    disabled={item.status?.status === 4}
-                                                    sx={{ minWidth: 'auto', px: 1 }}
-                                                >
-                                                    {item.status?.status === 4 ? 'Available' : 'Request'}
-                                                </Button>
-                                            }
-                                        >
-                                            <ListItemAvatar>
-                                                <Avatar
-                                                    src={getPosterUrl(item.posterPath) || undefined}
-                                                    sx={{ width: 32, height: 48 }}
-                                                    variant='rounded'
-                                                >
-                                                    {item.mediaType === 'movie' ? <MovieIcon /> : <TvIcon />}
-                                                </Avatar>
-                                            </ListItemAvatar>
-                                            <ListItemText
-                                                primary={
-                                                    <Typography variant='body2' sx={{ color: 'white' }}>
-                                                        {getTitle(item)}
-                                                    </Typography>
-                                                }
-                                                secondary={
-                                                    <Typography variant='caption' sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                                                        {getReleaseYear(item)} • {item.mediaType === 'movie' ? 'Movie' : 'TV Show'}
-                                                    </Typography>
-                                                }
-                                            />
-                                        </ListItem>
-                                    ))}
-                                </List>
-                            </Box>
-                        )}
+
 
                         <Box sx={{ flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', width: '100%' }}>
                             {/* All Requests */}
@@ -520,7 +637,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                                     pt: 1,
                                     pb: 1,
                                     overflowY: 'auto',
-                                    height: '18rem',
+                                    height: '18.5rem',
                                     width: '100%',
                                     border: '1px solid rgba(255,255,255,0.1)',
                                     borderRadius: '4px',
@@ -608,32 +725,34 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                                                                                 {getTitle(request.media)}
                                                                             </Typography>
                                                                         </Tooltip>
-                                                                        <Typography
-                                                                            variant='caption'
-                                                                            sx={{
-                                                                                color: 'rgba(255,255,255,0.7)',
-                                                                                fontSize: '0.65rem',
-                                                                                display: 'block',
-                                                                                mb: 0.5
-                                                                            }}
-                                                                        >
-                                                                            {getReleaseYear(request.media)} • {request.media.mediaType === 'movie' ? 'Movie' : 'TV Show'}
-                                                                        </Typography>
+                                                                        <Box sx={{ pt: 0.25 }}>
+                                                                            <Typography
+                                                                                variant='caption'
+                                                                                sx={{
+                                                                                    color: 'rgba(255,255,255,0.7)',
+                                                                                    fontSize: '0.75rem',
+                                                                                    display: 'block',
+                                                                                    mb: 0.05
+                                                                                }}
+                                                                            >
+                                                                                {getReleaseYear(request.media)} • {request.media.mediaType === 'movie' ? 'Movie' : 'TV Show'}
+                                                                            </Typography>
 
-                                                                        {/* Seasons or blank space for movies */}
-                                                                        {request.type === 'tv' && request.seasons && request.seasons.length > 0 ? (
-                                                                            <Typography variant='caption' sx={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.7)', display: 'block', mb: 0.5 }}>
-                                                                                {formatSeasons(request.seasons)}
-                                                                            </Typography>
-                                                                        ) : (
-                                                                            <Typography variant='caption' sx={{ fontSize: '0.65rem', color: 'transparent', display: 'block', mb: 0.5 }}>
-                                                                                &nbsp;
-                                                                            </Typography>
-                                                                        )}
+                                                                            {/* Seasons or blank space for movies */}
+                                                                            {request.type === 'tv' && request.seasons && request.seasons.length > 0 ? (
+                                                                                <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', display: 'block', mb: 0.05 }}>
+                                                                                    {formatSeasons(request.seasons)}
+                                                                                </Typography>
+                                                                            ) : (
+                                                                                <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'transparent', display: 'block', mb: 0.05 }}>
+                                                                                    &nbsp;
+                                                                                </Typography>
+                                                                            )}
+                                                                        </Box>
                                                                     </Box>
 
                                                                     {/* Profile text */}
-                                                                    <Typography variant='caption' sx={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.7)' }}>
+                                                                    <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)' }}>
                                                                         Profile: {request.profileName || 'Default'}
                                                                     </Typography>
                                                                 </Box>
@@ -647,20 +766,21 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                                                                     alignItems: 'center',
                                                                     gap: 0.5
                                                                 }}>
-                                                                    <Avatar
-                                                                        src={getUserAvatar(request.requestedBy) || undefined}
-                                                                        sx={{
-                                                                            width: 14,
-                                                                            height: 14,
-                                                                            fontSize: '0.5rem'
-                                                                        }}
-                                                                    >
-                                                                        <PersonIcon sx={{ fontSize: '0.5rem' }} />
-                                                                    </Avatar>
-                                                                    <Typography variant='caption' sx={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.8)' }}>
+                                                                    {getUserAvatar(request.requestedBy) ? (
+                                                                        <Avatar
+                                                                            src={getUserAvatar(request.requestedBy) || undefined}
+                                                                            sx={{
+                                                                                width: 14,
+                                                                                height: 14
+                                                                            }}
+                                                                        />
+                                                                    ) : (
+                                                                        <PersonIcon sx={{ fontSize: '0.75rem', color: 'white' }} />
+                                                                    )}
+                                                                    <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary' }}>
                                                                         {request.requestedBy.displayName}
                                                                     </Typography>
-                                                                    <Typography variant='caption' sx={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.6)' }}>
+                                                                    <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)' }}>
                                                                         • {formatDate(request.createdAt)}
                                                                     </Typography>
                                                                 </Box>
@@ -755,6 +875,115 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                     </Box>
                 )}
             </Box>
+
+            {/* Confirmation Modal */}
+            {confirmationItem && (
+                <Box
+                    sx={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 10000, // Higher than autocomplete dropdown
+                    }}
+                    onClick={() => {
+                        setConfirmationItem(null);
+                        // Restore the previous search query to reopen autocomplete
+                        if (previousSearchQuery) {
+                            setSearchQuery(previousSearchQuery);
+                            setPreviousSearchQuery('');
+                        }
+                    }}
+                >
+                    <Box
+                        sx={{
+                            backgroundColor: 'background.paper',
+                            borderRadius: 2,
+                            p: 3,
+                            maxWidth: '400px',
+                            width: '90%',
+                            maxHeight: '80%',
+                            overflow: 'auto',
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 2 }}>
+                            <Avatar
+                                src={getPosterUrl(confirmationItem.posterPath) || undefined}
+                                sx={{ width: 60, height: 90 }}
+                                variant='rounded'
+                            >
+                                {confirmationItem.mediaType === 'movie' ? <MovieIcon /> : <TvIcon />}
+                            </Avatar>
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                                <Typography variant='h6' sx={{ color: 'white', mb: 0.5 }}>
+                                    {getTitle(confirmationItem)}
+                                </Typography>
+                                <Typography variant='body2' sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                                    {getReleaseYear(confirmationItem)} • {confirmationItem.mediaType === 'movie' ? 'Movie' : 'TV Show'}
+                                </Typography>
+                                {confirmationItem.status?.status === 4 && (
+                                    <Chip
+                                        label='Already Available'
+                                        size='small'
+                                        sx={{
+                                            fontSize: '0.7rem',
+                                            height: '1.5rem',
+                                            backgroundColor: 'success.dark',
+                                            color: 'success.contrastText',
+                                            mt: 0.5
+                                        }}
+                                    />
+                                )}
+                            </Box>
+                        </Box>
+
+                        {confirmationItem.overview && (
+                            <Typography variant='body2' sx={{ color: 'rgba(255,255,255,0.8)', mb: 2 }}>
+                                {confirmationItem.overview}
+                            </Typography>
+                        )}
+
+                        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                            <Button
+                                variant='outlined'
+                                onClick={() => {
+                                    setConfirmationItem(null);
+                                    // Restore the previous search query to reopen autocomplete
+                                    if (previousSearchQuery) {
+                                        setSearchQuery(previousSearchQuery);
+                                        setPreviousSearchQuery('');
+                                    }
+                                }}
+                                sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.3)' }}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                variant='contained'
+                                onClick={() => {
+                                    handleRequest(confirmationItem);
+                                    setConfirmationItem(null);
+                                    setPreviousSearchQuery(''); // Clear saved search since request was made
+                                }}
+                                disabled={confirmationItem.status?.status === 4}
+                                sx={{
+                                    backgroundColor: 'primary.main',
+                                    '&:hover': { backgroundColor: 'primary.dark' }
+                                }}
+                            >
+                                {confirmationItem.status?.status === 4 ? 'Already Available' : 'Request'}
+                            </Button>
+                        </Box>
+                    </Box>
+                </Box>
+            )}
+
         </CardContent>
     );
 };

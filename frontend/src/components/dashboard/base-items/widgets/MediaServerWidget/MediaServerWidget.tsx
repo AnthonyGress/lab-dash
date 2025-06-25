@@ -155,8 +155,14 @@ const SessionItem: React.FC<SessionItemProps> = ({ session, clientType, config }
     return (
         <Box sx={{
             mb: 1.5,
+            '&:last-child': { mb: 0 },
             p: 1,
             borderRadius: '4px',
+            backgroundColor: 'rgba(255,255,255,0.05)',
+            transition: 'all 0.2s ease',
+            '&:hover': {
+                backgroundColor: 'rgba(255,255,255,0.08)'
+            },
             width: '100%',
             boxSizing: 'border-box'
         }}>
@@ -217,7 +223,7 @@ const SessionItem: React.FC<SessionItemProps> = ({ session, clientType, config }
                             <Typography
                                 variant='caption'
                                 sx={{
-                                    fontSize: isMobile ? '0.7rem' : '0.75rem',
+                                    fontSize: '0.75rem',
                                     color: 'white',
                                     minWidth: '60px',
                                     textAlign: 'right'
@@ -234,7 +240,7 @@ const SessionItem: React.FC<SessionItemProps> = ({ session, clientType, config }
                             variant='caption'
                             sx={{
                                 color: 'rgba(255,255,255,0.7)',
-                                fontSize: '0.7rem',
+                                fontSize: '0.75rem',
                                 display: 'block',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
@@ -247,7 +253,7 @@ const SessionItem: React.FC<SessionItemProps> = ({ session, clientType, config }
 
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.2 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white' }}>
+                            <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'white' }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                     <Person sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
                                     <span>{session.UserName}</span>
@@ -256,7 +262,7 @@ const SessionItem: React.FC<SessionItemProps> = ({ session, clientType, config }
                             <Typography
                                 variant='caption'
                                 sx={{
-                                    fontSize: '0.7rem',
+                                    fontSize: '0.75rem',
                                     color: 'rgba(255,255,255,0.7)',
                                     display: 'flex',
                                     alignItems: 'center',
@@ -598,7 +604,7 @@ export const MediaServerWidget: React.FC<MediaServerWidgetProps> = ({
                                                         <Typography
                                                             variant='caption'
                                                             sx={{
-                                                                fontSize: isMobile ? '0.7rem' : '0.75rem',
+                                                                fontSize: '0.75rem',
                                                                 ml: 'auto',
                                                                 color: 'white',
                                                                 minWidth: '80px',
@@ -610,7 +616,7 @@ export const MediaServerWidget: React.FC<MediaServerWidgetProps> = ({
                                                         </Typography>
                                                     </Box>
                                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.2 }}>
-                                                        <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white', minWidth: '100px' }}>
+                                                        <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'white', minWidth: '100px' }}>
                                                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                                                 <Person sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
                                                                 <span>User</span>
@@ -633,19 +639,19 @@ export const MediaServerWidget: React.FC<MediaServerWidgetProps> = ({
                             <Box sx={{ mt: 'auto', pt: 1, borderTop: '1px solid rgba(255,255,255,0.1)', width: '100%' }}>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
                                     <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                                        <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)', mb: 0.5 }}>
+                                        <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary', mb: 0.5 }}>
                                             Total Sessions:
                                         </Typography>
-                                        <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)' }}>
+                                        <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary' }}>
                                             Active Users:
                                         </Typography>
                                     </Box>
 
                                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                                        <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white', minWidth: '65px', textAlign: 'right', mb: 0.5 }}>
+                                        <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary', minWidth: '65px', textAlign: 'right', mb: 0.5 }}>
                                             {sessions.length}
                                         </Typography>
-                                        <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white', minWidth: '65px', textAlign: 'right' }}>
+                                        <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary', minWidth: '65px', textAlign: 'right' }}>
                                             {new Set(sessions.map(s => s.UserId)).size}
                                         </Typography>
                                     </Box>
