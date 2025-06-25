@@ -79,6 +79,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const timerRef = useRef<number | null>(null);
     const locationSet = useRef(false);
+    const abortControllerRef = useRef<AbortController | null>(null);
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     // Handle config changes and location setup
@@ -117,6 +118,11 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
                 clearInterval(timerRef.current);
                 timerRef.current = null;
             }
+            // Cancel any ongoing requests when config changes
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+                abortControllerRef.current = null;
+            }
         };
     }, [config]);
 
@@ -137,7 +143,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
         };
     }, []);
 
-    const fetchWeather = async () => {
+    const fetchWeather = async (abortSignal?: AbortSignal) => {
         try {
             setIsLoading(true);
 
@@ -148,22 +154,49 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
                 return;
             }
 
-            const data = await DashApi.getWeather(location.latitude, location.longitude);
+            // Check if request was cancelled before making the API call
+            if (abortSignal?.aborted) {
+                return;
+            }
+
+            // Add a small delay to prevent rapid successive requests
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // Check again after delay
+            if (abortSignal?.aborted) {
+                return;
+            }
+
+            const data = await DashApi.getWeather(location.latitude, location.longitude, abortSignal);
+
+            // Check if request was cancelled after API call
+            if (abortSignal?.aborted) {
+                return;
+            }
+
             setWeatherData(data);
             setErrorMessage(null); // Clear any previous errors
             setIsLoading(false);
 
         } catch (err: any) {
+            // Don't set error state if the request was cancelled
+            if (abortSignal?.aborted || err.name === 'AbortError' || err.code === 'ERR_CANCELED') {
+                return;
+            }
+
             console.error('Error fetching weather:', err);
             setWeatherData(null);
             setIsLoading(false);
 
-            // Display rate limit errors from the backend to the user
+            // Handle specific error types
             if (err?.response?.status === 429 && err?.response?.data?.error_source === 'labdash_api') {
                 setErrorMessage(`API Rate limit: ${err.response?.data?.message}`);
+            } else if (err?.response?.status === 500) {
+                // Handle 500 errors specifically - likely from Open-Meteo API
+                setErrorMessage('Weather service temporarily unavailable. Please try again.');
             } else if (err?.response?.status >= 400) {
                 // Handle other API errors
-                const message = err?.response?.data?.message || 'Error fetching weather data';
+                const message = err?.response?.data?.message || err?.response?.data?.error || 'Error fetching weather data';
                 setErrorMessage(`API error: ${message}`);
             } else if (err?.message) {
                 setErrorMessage(`Error: ${err.message}`);
@@ -181,25 +214,39 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
         }
 
         let isComponentMounted = true;
+        const abortController = new AbortController();
 
-        // Initial fetch
-        fetchWeather();
+        // Initial fetch with abort signal
+        fetchWeather(abortController.signal);
 
         // Set up interval for periodic refresh
         timerRef.current = window.setInterval(() => {
             if (isComponentMounted && !errorMessage) {
-                fetchWeather();
+                // Cancel any existing request before making a new one
+                if (abortControllerRef.current) {
+                    abortControllerRef.current.abort();
+                }
+
+                // Create a new abort controller for the interval request
+                abortControllerRef.current = new AbortController();
+                fetchWeather(abortControllerRef.current.signal);
             }
         }, FIFTEEN_MIN_IN_MS);
 
         return () => {
             isComponentMounted = false;
+            // Cancel any ongoing requests
+            abortController.abort();
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+
             if (timerRef.current !== null) {
                 clearInterval(timerRef.current);
                 timerRef.current = null;
             }
         };
-    }, [location, locationSet.current]);
+    }, [location, locationSet.current, errorMessage]);
 
     const convertTemperature = (temp: number) => (isFahrenheit ? Math.round((temp * 9) / 5 + 32) : Math.round(temp));
 
@@ -381,7 +428,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
                 <Button
                     variant='contained'
                     color='primary'
-                    onClick={fetchWeather}
+                    onClick={() => fetchWeather()}
                     disabled={isLoading}
                     sx={{ mt: 2 }}
                 >

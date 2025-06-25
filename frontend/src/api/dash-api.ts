@@ -266,17 +266,23 @@ export class DashApi {
         return null;
     }
 
-    public static async getWeather(latitude: number, longitude: number): Promise<any> {
+    public static async getWeather(latitude: number, longitude: number, abortSignal?: AbortSignal): Promise<any> {
         try {
             const res = await axios.get(`${BACKEND_URL}/api/weather`, {
                 params: {
                     latitude,
                     longitude
                 },
-                timeout: 8000 // 8 second timeout
+                timeout: 8000, // 8 second timeout
+                signal: abortSignal // Add abort signal support
             });
             return res.data;
         } catch (error: any) {
+            // Don't log errors for cancelled requests
+            if (abortSignal?.aborted || error.name === 'AbortError' || error.code === 'ERR_CANCELED') {
+                throw error;
+            }
+
             // Log detailed error information
             if (error.response) {
                 // The request was made and the server responded with a status code
