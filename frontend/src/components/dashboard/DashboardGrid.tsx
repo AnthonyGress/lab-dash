@@ -34,6 +34,8 @@ import { SortableGroupWidget } from './sortable-items/widgets/SortableGroupWidge
 import { SortableMediaServer } from './sortable-items/widgets/SortableMediaServer';
 import { SortablePihole } from './sortable-items/widgets/SortablePihole';
 import { SortableQBittorrent } from './sortable-items/widgets/SortableQBittorrent';
+import { SortableRadarr } from './sortable-items/widgets/SortableRadarr';
+import { SortableSonarr } from './sortable-items/widgets/SortableSonarr';
 import { SortableSystemMonitorWidget } from './sortable-items/widgets/SortableSystemMonitor';
 import { SortableTransmission } from './sortable-items/widgets/SortableTransmission';
 import { SortableWeatherWidget } from './sortable-items/widgets/SortableWeather';
@@ -438,7 +440,7 @@ export const DashboardGrid: React.FC = () => {
 
     const handleDelete = (id: string) => {
         const itemToDelete = dashboardLayout.find(item => item.id === id);
-        const itemName = itemToDelete?.label || 'Item';
+        const itemName = itemToDelete?.label || itemToDelete?.config?.displayName || 'Item';
 
         const options: ConfirmationOptions = {
             title: 'Delete Item?',
@@ -721,6 +723,26 @@ export const DashboardGrid: React.FC = () => {
                 onEdit={() => handleEdit(item)}
                 onDuplicate={() => handleDuplicate(item)}
             />;
+        case ITEM_TYPE.SONARR_WIDGET:
+            return <SortableSonarr
+                key={item.id}
+                id={item.id}
+                editMode={editMode}
+                config={item.config}
+                onDelete={() => handleDelete(item.id)}
+                onEdit={() => handleEdit(item)}
+                onDuplicate={() => handleDuplicate(item)}
+            />;
+        case ITEM_TYPE.RADARR_WIDGET:
+            return <SortableRadarr
+                key={item.id}
+                id={item.id}
+                editMode={editMode}
+                config={item.config}
+                onDelete={() => handleDelete(item.id)}
+                onEdit={() => handleEdit(item)}
+                onDuplicate={() => handleDuplicate(item)}
+            />;
         case ITEM_TYPE.APP_SHORTCUT:
             return (
                 <SortableAppShortcut
@@ -888,6 +910,22 @@ export const DashboardGrid: React.FC = () => {
                                         />;
                                     case ITEM_TYPE.MEDIA_SERVER_WIDGET:
                                         return <SortableMediaServer
+                                            key={item.id}
+                                            id={item.id}
+                                            editMode={editMode}
+                                            config={item.config}
+                                            isOverlay
+                                        />;
+                                    case ITEM_TYPE.SONARR_WIDGET:
+                                        return <SortableSonarr
+                                            key={item.id}
+                                            id={item.id}
+                                            editMode={editMode}
+                                            config={item.config}
+                                            isOverlay
+                                        />;
+                                    case ITEM_TYPE.RADARR_WIDGET:
+                                        return <SortableRadarr
                                             key={item.id}
                                             id={item.id}
                                             editMode={editMode}

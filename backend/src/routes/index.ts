@@ -10,7 +10,9 @@ import { jellyfinRoute } from './jellyfin.route';
 import { piholeV6Route } from './pihole-v6.route';
 import { piholeRoute } from './pihole.route';
 import { qbittorrentRoute } from './qbittorrent.route';
+import { radarrRoute } from './radarr.route';
 import { sabnzbdRoute } from './sabnzbd.route';
+import { sonarrRoute } from './sonarr.route';
 import { systemRoute } from './system.route';
 import { timezoneRoute } from './timezone.route';
 import { transmissionRoute } from './transmission.route';
@@ -70,6 +72,12 @@ router.use('/deluge', torrentApiLimiter, delugeRoute);
 
 // Jellyfin routes
 router.use('/jellyfin', apiLimiter, jellyfinRoute);
+
+// Sonarr routes
+router.use('/sonarr', apiLimiter, sonarrRoute);
+
+// Radarr routes
+router.use('/radarr', apiLimiter, radarrRoute);
 
 router.use('/auth', authLimiter, authRoute);
 

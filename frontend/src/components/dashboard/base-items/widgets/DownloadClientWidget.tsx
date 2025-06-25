@@ -45,8 +45,6 @@ export type DownloadClientWidgetProps = {
         host: string;
         port: string;
         ssl: boolean;
-        username: string;
-        password: string;
     };
     handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     handleLogin: () => void;
@@ -90,6 +88,24 @@ const formatEta = (seconds?: number): string => {
         return `${minutes}m ${remainingSeconds}s`;
     } else {
         return `${remainingSeconds}s`;
+    }
+};
+
+// Format status text for tooltip display
+const formatStatusText = (state: string): string => {
+    switch (state) {
+    case 'downloading': return 'Downloading';
+    case 'uploading': return 'Uploading';
+    case 'seeding': return 'Seeding';
+    case 'pausedDL': return 'Paused (Download)';
+    case 'pausedUP': return 'Paused (Upload)';
+    case 'stalledDL': return 'Stalled (Download)';
+    case 'stalledUP': return 'Stalled (Upload)';
+    case 'completed': return 'Completed';
+    case 'checkingUP': return 'Checking';
+    case 'stopped': return 'Stopped';
+    case 'error': return 'Error';
+    default: return state.charAt(0).toUpperCase() + state.slice(1);
     }
 };
 
@@ -229,21 +245,38 @@ const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmi
             boxSizing: 'border-box'
         }}>
             <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                {getStatusIcon(torrent.state)}
-                <Typography
-                    variant='caption'
-                    noWrap
-                    sx={{
-                        ml: 0.5,
-                        maxWidth: '50%',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        color: 'white',
-                        fontSize: isMobile ? '0.7rem' : '.8rem'
-                    }}
+                <Tooltip
+                    title={formatStatusText(torrent.state)}
+                    placement='top'
+                    enterDelay={500}
+                    arrow
                 >
-                    {torrent.name}
-                </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        {getStatusIcon(torrent.state)}
+                    </Box>
+                </Tooltip>
+                <Tooltip
+                    title={torrent.name}
+                    placement='top'
+                    enterDelay={1000}
+                    arrow
+                >
+                    <Typography
+                        variant='caption'
+                        noWrap
+                        sx={{
+                            ml: 0.5,
+                            maxWidth: '50%',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            color: 'white',
+                            fontSize: isMobile ? '0.7rem' : '.8rem',
+                            cursor: 'default'
+                        }}
+                    >
+                        {torrent.name}
+                    </Typography>
+                </Tooltip>
                 <Typography
                     variant='caption'
                     sx={{

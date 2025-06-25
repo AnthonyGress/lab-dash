@@ -266,6 +266,94 @@ export class DashApi {
         return null;
     }
 
+    // Sonarr API methods
+    public static async getSonarrQueue(itemId: string): Promise<any> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/sonarr/queue`, {
+                params: { itemId },
+                timeout: 10000
+            });
+            return res.data.data || [];
+        } catch (error) {
+            console.error('Error fetching Sonarr queue:', error);
+            throw error;
+        }
+    }
+
+    public static async removeSonarrQueueItem(itemId: string, queueItemId: string, removeFromClient: boolean = true, blocklist: boolean = false): Promise<boolean> {
+        try {
+            await axios.delete(`${BACKEND_URL}/api/sonarr/queue/${queueItemId}`, {
+                params: {
+                    itemId,
+                    removeFromClient: removeFromClient.toString(),
+                    blocklist: blocklist.toString()
+                },
+                timeout: 10000
+            });
+            return true;
+        } catch (error) {
+            console.error('Error removing Sonarr queue item:', error);
+            throw error;
+        }
+    }
+
+    public static async getSonarrStatus(itemId: string): Promise<any> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/sonarr/status`, {
+                params: { itemId },
+                timeout: 10000
+            });
+            return res.data.data || {};
+        } catch (error) {
+            console.error('Error fetching Sonarr status:', error);
+            throw error;
+        }
+    }
+
+    // Radarr API methods
+    public static async getRadarrQueue(itemId: string): Promise<any> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/radarr/queue`, {
+                params: { itemId },
+                timeout: 10000
+            });
+            return res.data.data || [];
+        } catch (error) {
+            console.error('Error fetching Radarr queue:', error);
+            throw error;
+        }
+    }
+
+    public static async removeRadarrQueueItem(itemId: string, queueItemId: string, removeFromClient: boolean = true, blocklist: boolean = false): Promise<boolean> {
+        try {
+            await axios.delete(`${BACKEND_URL}/api/radarr/queue/${queueItemId}`, {
+                params: {
+                    itemId,
+                    removeFromClient: removeFromClient.toString(),
+                    blocklist: blocklist.toString()
+                },
+                timeout: 10000
+            });
+            return true;
+        } catch (error) {
+            console.error('Error removing Radarr queue item:', error);
+            throw error;
+        }
+    }
+
+    public static async getRadarrStatus(itemId: string): Promise<any> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/radarr/status`, {
+                params: { itemId },
+                timeout: 10000
+            });
+            return res.data.data || {};
+        } catch (error) {
+            console.error('Error fetching Radarr status:', error);
+            throw error;
+        }
+    }
+
     public static async getWeather(latitude: number, longitude: number, abortSignal?: AbortSignal): Promise<any> {
         try {
             const res = await axios.get(`${BACKEND_URL}/api/weather`, {

@@ -33,6 +33,8 @@ const WIDGET_OPTIONS = [
     { id: ITEM_TYPE.ADGUARD_WIDGET, label: 'AdGuard Home' },
     { id: ITEM_TYPE.DOWNLOAD_CLIENT, label: 'Download Client' },
     { id: ITEM_TYPE.MEDIA_SERVER_WIDGET, label: 'Media Server' },
+    { id: ITEM_TYPE.SONARR_WIDGET, label: 'Sonarr' },
+    { id: ITEM_TYPE.RADARR_WIDGET, label: 'Radarr' },
     { id: ITEM_TYPE.DUAL_WIDGET, label: 'Dual Widget' },
     { id: ITEM_TYPE.GROUP_WIDGET, label: 'Group' }
 ];
@@ -81,6 +83,20 @@ export type FormValues = {
     msPort?: string;
     msSsl?: boolean;
     msApiKey?: string;
+    // Sonarr widget
+    sonarrName?: string;
+    sonarrHost?: string;
+    sonarrPort?: string;
+    sonarrSsl?: boolean;
+    sonarrApiKey?: string;
+
+    // Radarr widget
+    radarrName?: string;
+    radarrHost?: string;
+    radarrPort?: string;
+    radarrSsl?: boolean;
+    radarrApiKey?: string;
+
     // Torrent client widget
     torrentClient?: string;
     torrentUrl?: string;
@@ -180,6 +196,8 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                existingItem?.type === ITEM_TYPE.DOWNLOAD_CLIENT ||
                                existingItem?.type === ITEM_TYPE.TORRENT_CLIENT || // Legacy support
                                existingItem?.type === ITEM_TYPE.MEDIA_SERVER_WIDGET ||
+                               existingItem?.type === ITEM_TYPE.SONARR_WIDGET ||
+                               existingItem?.type === ITEM_TYPE.RADARR_WIDGET ||
                                existingItem?.type === ITEM_TYPE.DUAL_WIDGET ||
                                existingItem?.type === ITEM_TYPE.GROUP_WIDGET
             ? 'widget'
@@ -202,7 +220,9 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                   existingItem?.type === ITEM_TYPE.ADGUARD_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.DOWNLOAD_CLIENT ||
                                   existingItem?.type === ITEM_TYPE.TORRENT_CLIENT || // Legacy support - map to DOWNLOAD_CLIENT
-                                  existingItem?.type === ITEM_TYPE.MEDIA_SERVER_WIDGET
+                                  existingItem?.type === ITEM_TYPE.MEDIA_SERVER_WIDGET ||
+                                  existingItem?.type === ITEM_TYPE.SONARR_WIDGET ||
+                                  existingItem?.type === ITEM_TYPE.RADARR_WIDGET
             ? (existingItem?.type === ITEM_TYPE.TORRENT_CLIENT ? ITEM_TYPE.DOWNLOAD_CLIENT : existingItem?.type)
             : existingItem?.type === ITEM_TYPE.DUAL_WIDGET ||
                                     existingItem?.type === ITEM_TYPE.GROUP_WIDGET
@@ -213,7 +233,9 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                   existingItem?.type === ITEM_TYPE.DOWNLOAD_CLIENT ||
                                   existingItem?.type === ITEM_TYPE.TORRENT_CLIENT || // Legacy support
                                   existingItem?.type === ITEM_TYPE.ADGUARD_WIDGET ||
-                                  existingItem?.type === ITEM_TYPE.MEDIA_SERVER_WIDGET)
+                                  existingItem?.type === ITEM_TYPE.MEDIA_SERVER_WIDGET ||
+                                  existingItem?.type === ITEM_TYPE.SONARR_WIDGET ||
+                                  existingItem?.type === ITEM_TYPE.RADARR_WIDGET)
             ? (existingItem?.showLabel !== undefined ? existingItem.showLabel : true)
             : (existingItem?.showLabel !== undefined ? existingItem.showLabel : false);
 
@@ -330,6 +352,20 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             msPort: existingItem?.config?.port || '8096',
             msSsl: existingItem?.config?.ssl || false,
             msApiKey: existingItem?.config?._hasApiKey ? '**********' : '',
+            // Sonarr widget values
+            sonarrName: existingItem?.type === ITEM_TYPE.SONARR_WIDGET ? (existingItem?.config?.displayName || (existingItem ? '' : 'Sonarr')) : 'Sonarr',
+            sonarrHost: existingItem?.type === ITEM_TYPE.SONARR_WIDGET ? (existingItem?.config?.host || '') : '',
+            sonarrPort: existingItem?.type === ITEM_TYPE.SONARR_WIDGET ? (existingItem?.config?.port || '8989') : '8989',
+            sonarrSsl: existingItem?.type === ITEM_TYPE.SONARR_WIDGET ? (existingItem?.config?.ssl || false) : false,
+            sonarrApiKey: existingItem?.type === ITEM_TYPE.SONARR_WIDGET ? (existingItem?.config?._hasApiKey ? '**********' : '') : '',
+
+            // Radarr widget values
+            radarrName: existingItem?.type === ITEM_TYPE.RADARR_WIDGET ? (existingItem?.config?.displayName || (existingItem ? '' : 'Radarr')) : 'Radarr',
+            radarrHost: existingItem?.type === ITEM_TYPE.RADARR_WIDGET ? (existingItem?.config?.host || '') : '',
+            radarrPort: existingItem?.type === ITEM_TYPE.RADARR_WIDGET ? (existingItem?.config?.port || '7878') : '7878',
+            radarrSsl: existingItem?.type === ITEM_TYPE.RADARR_WIDGET ? (existingItem?.config?.ssl || false) : false,
+            radarrApiKey: existingItem?.type === ITEM_TYPE.RADARR_WIDGET ? (existingItem?.config?._hasApiKey ? '**********' : '') : '',
+
             location: location,
             gauge1: systemMonitorGauges[0] || 'cpu',
             gauge2: systemMonitorGauges[1] || 'temp',
@@ -507,12 +543,16 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                 selectedWidgetType === ITEM_TYPE.ADGUARD_WIDGET ||
                 selectedWidgetType === ITEM_TYPE.DOWNLOAD_CLIENT ||
                 selectedWidgetType === ITEM_TYPE.MEDIA_SERVER_WIDGET ||
+                selectedWidgetType === ITEM_TYPE.SONARR_WIDGET ||
+                selectedWidgetType === ITEM_TYPE.RADARR_WIDGET ||
                 selectedWidgetType === ITEM_TYPE.DUAL_WIDGET
             ))) {
                 if (selectedWidgetType === ITEM_TYPE.PIHOLE_WIDGET ||
                     selectedWidgetType === ITEM_TYPE.ADGUARD_WIDGET ||
                     selectedWidgetType === ITEM_TYPE.DOWNLOAD_CLIENT ||
                     selectedWidgetType === ITEM_TYPE.MEDIA_SERVER_WIDGET ||
+                    selectedWidgetType === ITEM_TYPE.SONARR_WIDGET ||
+                    selectedWidgetType === ITEM_TYPE.RADARR_WIDGET ||
                     selectedWidgetType === ITEM_TYPE.DUAL_WIDGET) {
                     formContext.setValue('showLabel', true);
                 } else {
@@ -817,6 +857,12 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                         config.apiKey = data.msApiKey;
                     }
                 }
+            } else if (data.widgetType === ITEM_TYPE.SONARR_WIDGET) {
+                // Sonarr widget configuration
+                config = await createWidgetConfig(ITEM_TYPE.SONARR_WIDGET, data);
+            } else if (data.widgetType === ITEM_TYPE.RADARR_WIDGET) {
+                // Radarr widget configuration
+                config = await createWidgetConfig(ITEM_TYPE.RADARR_WIDGET, data);
             } else if (data.widgetType === ITEM_TYPE.DUAL_WIDGET) {
                 // Check if DualWidgetConfig component has already built the config
                 const existingConfig = (formContext as any).getValues('config');
@@ -1279,6 +1325,66 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                     }
                 } else {
                     config.apiKey = data.msApiKey;
+                }
+            }
+
+            return config;
+        } else if (widgetType === ITEM_TYPE.SONARR_WIDGET) {
+            // Sonarr widget configuration
+            const config: any = {
+                displayName: data.sonarrName || 'Sonarr',
+                host: data.sonarrHost || '',
+                port: data.sonarrPort || '8989',
+                ssl: data.sonarrSsl || false,
+                showLabel: data.showLabel !== undefined ? data.showLabel : true,
+
+            };
+
+            // Handle API key - if masked, set flag for backend to preserve existing key
+            if (data.sonarrApiKey === '**********') {
+                // API key is masked - tell backend to preserve existing key
+                config._hasApiKey = true;
+            } else if (data.sonarrApiKey && data.sonarrApiKey.trim() !== '') {
+                // API key was changed - encrypt and include it
+                if (!isEncrypted(data.sonarrApiKey)) {
+                    try {
+                        const encryptedApiKey = await DashApi.encryptPassword(data.sonarrApiKey);
+                        config.apiKey = encryptedApiKey;
+                    } catch (error) {
+                        console.error('Error encrypting Sonarr API key:', error);
+                    }
+                } else {
+                    config.apiKey = data.sonarrApiKey;
+                }
+            }
+
+            return config;
+        } else if (widgetType === ITEM_TYPE.RADARR_WIDGET) {
+            // Radarr widget configuration
+            const config: any = {
+                displayName: data.radarrName || 'Radarr',
+                host: data.radarrHost || '',
+                port: data.radarrPort || '7878',
+                ssl: data.radarrSsl || false,
+                showLabel: data.showLabel !== undefined ? data.showLabel : true,
+
+            };
+
+            // Handle API key - if masked, set flag for backend to preserve existing key
+            if (data.radarrApiKey === '**********') {
+                // API key is masked - tell backend to preserve existing key
+                config._hasApiKey = true;
+            } else if (data.radarrApiKey && data.radarrApiKey.trim() !== '') {
+                // API key was changed - encrypt and include it
+                if (!isEncrypted(data.radarrApiKey)) {
+                    try {
+                        const encryptedApiKey = await DashApi.encryptPassword(data.radarrApiKey);
+                        config.apiKey = encryptedApiKey;
+                    } catch (error) {
+                        console.error('Error encrypting Radarr API key:', error);
+                    }
+                } else {
+                    config.apiKey = data.radarrApiKey;
                 }
             }
 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { DownloadClientWidget } from './DownloadClientWidget';
 import { DashApi } from '../../../../api/dash-api';
+import { THIRTY_SEC_IN_MS, TWO_MIN_IN_MS } from '../../../../constants/constants';
 
 type QBittorrentWidgetConfig = {
     host?: string;

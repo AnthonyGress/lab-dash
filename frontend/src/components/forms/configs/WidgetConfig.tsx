@@ -8,6 +8,8 @@ import { DualWidgetConfig } from './DualWidgetConfig';
 import { GroupWidgetConfig } from './GroupWidgetConfig';
 import { MediaServerWidgetConfig } from './MediaServerWidgetConfig';
 import { PiholeWidgetConfig } from './PiholeWidgetConfig';
+import { RadarrWidgetConfig } from './RadarrWidgetConfig';
+import { SonarrWidgetConfig } from './SonarrWidgetConfig';
 import { SystemMonitorWidgetConfig } from './SystemMonitorWidgetConfig';
 import { WeatherWidgetConfig } from './WeatherWidgetConfig';
 import { DashboardItem, ITEM_TYPE } from '../../../types';
@@ -40,6 +42,10 @@ export const WidgetConfig = ({ formContext, widgetType, existingItem }: WidgetCo
         return <GroupWidgetConfig formContext={formContext} />;
     case ITEM_TYPE.MEDIA_SERVER_WIDGET:
         return <MediaServerWidgetConfig formContext={formContext} />;
+    case ITEM_TYPE.SONARR_WIDGET:
+        return <SonarrWidgetConfig formContext={formContext} />;
+    case ITEM_TYPE.RADARR_WIDGET:
+        return <RadarrWidgetConfig formContext={formContext} />;
     default:
         return null;
     }

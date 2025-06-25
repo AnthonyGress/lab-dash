@@ -10,3 +10,6 @@ export { DateTimeWidgetConfig } from './DateTimeWidgetConfig';
 export { GroupWidgetConfig } from './GroupWidgetConfig';
 export { MediaServerWidgetConfig } from './MediaServerWidgetConfig';
 export { PlaceholderConfig } from './PlaceholderConfig';
+export { QueueManagementWidgetConfig } from './QueueManagementWidgetConfig';
+export { RadarrWidgetConfig } from './RadarrWidgetConfig';
+export { SonarrWidgetConfig } from './SonarrWidgetConfig';

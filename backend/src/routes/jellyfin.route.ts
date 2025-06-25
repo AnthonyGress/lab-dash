@@ -89,7 +89,9 @@ jellyfinRoute.get('/sessions', async (req: Request, res: Response) => {
                         'Accept': 'application/json',
                         'User-Agent': 'Lab-Dash/1.0'
                     },
-                    timeout: 10000
+                    timeout: 10000,
+                    // Allow self-signed certificates for HTTPS requests
+                    rejectUnauthorized: false
                 };
 
                 const request = httpModule.get(sessionsUrl, options, (response) => {
