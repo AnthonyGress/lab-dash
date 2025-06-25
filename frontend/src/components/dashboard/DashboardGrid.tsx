@@ -31,6 +31,7 @@ import { SortableDateTimeWidget } from './sortable-items/widgets/SortableDateTim
 import { SortableDeluge } from './sortable-items/widgets/SortableDeluge';
 import { SortableDualWidget } from './sortable-items/widgets/SortableDualWidget';
 import { SortableGroupWidget } from './sortable-items/widgets/SortableGroupWidget';
+import { SortableMediaRequestManager } from './sortable-items/widgets/SortableMediaRequestManager';
 import { SortableMediaServer } from './sortable-items/widgets/SortableMediaServer';
 import { SortablePihole } from './sortable-items/widgets/SortablePihole';
 import { SortableQBittorrent } from './sortable-items/widgets/SortableQBittorrent';
@@ -715,6 +716,16 @@ export const DashboardGrid: React.FC = () => {
             />;
         case ITEM_TYPE.MEDIA_SERVER_WIDGET:
             return <SortableMediaServer
+                key={item.id}
+                id={item.id}
+                editMode={editMode}
+                config={item.config}
+                onDelete={() => handleDelete(item.id)}
+                onEdit={() => handleEdit(item)}
+                onDuplicate={() => handleDuplicate(item)}
+            />;
+        case ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET:
+            return <SortableMediaRequestManager
                 key={item.id}
                 id={item.id}
                 editMode={editMode}

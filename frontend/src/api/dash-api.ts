@@ -1941,4 +1941,87 @@ export class DashApi {
             throw new Error(error.response?.data?.error || 'Failed to fetch Jellyfin sessions');
         }
     }
+
+    // Jellyseerr methods
+    public static async jellyseerrSearch(itemId: string, query: string): Promise<any> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/jellyseerr/search`, {
+                params: { itemId, query },
+                withCredentials: false
+            });
+            return res.data;
+        } catch (error) {
+            console.error('Jellyseerr search error:', error);
+            throw error;
+        }
+    }
+
+    public static async jellyseerrGetRequests(itemId: string, status: string = 'pending'): Promise<any> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/jellyseerr/requests`, {
+                params: { itemId, status },
+                withCredentials: false
+            });
+            return res.data;
+        } catch (error) {
+            console.error('Jellyseerr requests error:', error);
+            throw error;
+        }
+    }
+
+    public static async jellyseerrCreateRequest(itemId: string, mediaType: string, mediaId: string, seasons?: number[]): Promise<any> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/jellyseerr/request`, {
+                mediaType,
+                mediaId,
+                seasons
+            }, {
+                params: { itemId },
+                withCredentials: false
+            });
+            return res.data;
+        } catch (error) {
+            console.error('Jellyseerr create request error:', error);
+            throw error;
+        }
+    }
+
+    public static async jellyseerrApproveRequest(itemId: string, requestId: string): Promise<any> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/jellyseerr/request/${requestId}/approve`, {}, {
+                params: { itemId },
+                withCredentials: false
+            });
+            return res.data;
+        } catch (error) {
+            console.error('Jellyseerr approve request error:', error);
+            throw error;
+        }
+    }
+
+    public static async jellyseerrDeclineRequest(itemId: string, requestId: string): Promise<any> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/jellyseerr/request/${requestId}/decline`, {}, {
+                params: { itemId },
+                withCredentials: false
+            });
+            return res.data;
+        } catch (error) {
+            console.error('Jellyseerr decline request error:', error);
+            throw error;
+        }
+    }
+
+    public static async jellyseerrGetStatus(itemId: string): Promise<any> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/jellyseerr/status`, {
+                params: { itemId },
+                withCredentials: false
+            });
+            return res.data;
+        } catch (error) {
+            console.error('Jellyseerr status error:', error);
+            throw error;
+        }
+    }
 }

@@ -9,6 +9,7 @@ export { AppShortcutConfig } from './AppShortcutConfig';
 export { DateTimeWidgetConfig } from './DateTimeWidgetConfig';
 export { GroupWidgetConfig } from './GroupWidgetConfig';
 export { MediaServerWidgetConfig } from './MediaServerWidgetConfig';
+export { MediaRequestManagerWidgetConfig } from './MediaRequestManagerWidgetConfig';
 export { PlaceholderConfig } from './PlaceholderConfig';
 export { QueueManagementWidgetConfig } from './QueueManagementWidgetConfig';
 export { RadarrWidgetConfig } from './RadarrWidgetConfig';

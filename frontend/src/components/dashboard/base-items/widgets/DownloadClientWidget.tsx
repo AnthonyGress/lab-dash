@@ -252,7 +252,7 @@ const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmi
                     arrow
                 >
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        {getStatusIcon(torrent.state)}
+                {getStatusIcon(torrent.state)}
                     </Box>
                 </Tooltip>
                 <Tooltip
@@ -261,21 +261,21 @@ const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmi
                     enterDelay={1000}
                     arrow
                 >
-                    <Typography
-                        variant='caption'
-                        noWrap
-                        sx={{
-                            ml: 0.5,
-                            maxWidth: '50%',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            color: 'white',
+                <Typography
+                    variant='caption'
+                    noWrap
+                    sx={{
+                        ml: 0.5,
+                        maxWidth: '50%',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        color: 'white',
                             fontSize: isMobile ? '0.7rem' : '.8rem',
                             cursor: 'default'
-                        }}
-                    >
-                        {torrent.name}
-                    </Typography>
+                    }}
+                >
+                    {torrent.name}
+                </Typography>
                 </Tooltip>
                 <Typography
                     variant='caption'

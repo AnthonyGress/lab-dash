@@ -33,6 +33,7 @@ const WIDGET_OPTIONS = [
     { id: ITEM_TYPE.ADGUARD_WIDGET, label: 'AdGuard Home' },
     { id: ITEM_TYPE.DOWNLOAD_CLIENT, label: 'Download Client' },
     { id: ITEM_TYPE.MEDIA_SERVER_WIDGET, label: 'Media Server' },
+    { id: ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET, label: 'Media Request Manager' },
     { id: ITEM_TYPE.SONARR_WIDGET, label: 'Sonarr' },
     { id: ITEM_TYPE.RADARR_WIDGET, label: 'Radarr' },
     { id: ITEM_TYPE.DUAL_WIDGET, label: 'Dual Widget' },
@@ -96,6 +97,14 @@ export type FormValues = {
     radarrPort?: string;
     radarrSsl?: boolean;
     radarrApiKey?: string;
+
+    // Media Request Manager widget
+    mediaRequestManagerService?: 'jellyseerr' | 'overseerr';
+    mediaRequestManagerName?: string;
+    mediaRequestManagerHost?: string;
+    mediaRequestManagerPort?: string;
+    mediaRequestManagerSsl?: boolean;
+    mediaRequestManagerApiKey?: string;
 
     // Torrent client widget
     torrentClient?: string;
@@ -196,6 +205,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                existingItem?.type === ITEM_TYPE.DOWNLOAD_CLIENT ||
                                existingItem?.type === ITEM_TYPE.TORRENT_CLIENT || // Legacy support
                                existingItem?.type === ITEM_TYPE.MEDIA_SERVER_WIDGET ||
+                               existingItem?.type === ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET ||
                                existingItem?.type === ITEM_TYPE.SONARR_WIDGET ||
                                existingItem?.type === ITEM_TYPE.RADARR_WIDGET ||
                                existingItem?.type === ITEM_TYPE.DUAL_WIDGET ||
@@ -221,6 +231,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                   existingItem?.type === ITEM_TYPE.DOWNLOAD_CLIENT ||
                                   existingItem?.type === ITEM_TYPE.TORRENT_CLIENT || // Legacy support - map to DOWNLOAD_CLIENT
                                   existingItem?.type === ITEM_TYPE.MEDIA_SERVER_WIDGET ||
+                                  existingItem?.type === ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.SONARR_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.RADARR_WIDGET
             ? (existingItem?.type === ITEM_TYPE.TORRENT_CLIENT ? ITEM_TYPE.DOWNLOAD_CLIENT : existingItem?.type)
@@ -234,6 +245,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                   existingItem?.type === ITEM_TYPE.TORRENT_CLIENT || // Legacy support
                                   existingItem?.type === ITEM_TYPE.ADGUARD_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.MEDIA_SERVER_WIDGET ||
+                                  existingItem?.type === ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.SONARR_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.RADARR_WIDGET)
             ? (existingItem?.showLabel !== undefined ? existingItem.showLabel : true)
@@ -365,6 +377,14 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             radarrPort: existingItem?.type === ITEM_TYPE.RADARR_WIDGET ? (existingItem?.config?.port || '7878') : '7878',
             radarrSsl: existingItem?.type === ITEM_TYPE.RADARR_WIDGET ? (existingItem?.config?.ssl || false) : false,
             radarrApiKey: existingItem?.type === ITEM_TYPE.RADARR_WIDGET ? (existingItem?.config?._hasApiKey ? '**********' : '') : '',
+
+            // Media Request Manager widget values
+            mediaRequestManagerService: existingItem?.type === ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET ? (existingItem?.config?.service || 'jellyseerr') : 'jellyseerr',
+            mediaRequestManagerName: existingItem?.type === ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET ? (existingItem?.config?.displayName || (existingItem ? '' : 'Jellyseerr')) : 'Jellyseerr',
+            mediaRequestManagerHost: existingItem?.type === ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET ? (existingItem?.config?.host || '') : '',
+            mediaRequestManagerPort: existingItem?.type === ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET ? (existingItem?.config?.port || '5055') : '5055',
+            mediaRequestManagerSsl: existingItem?.type === ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET ? (existingItem?.config?.ssl || false) : false,
+            mediaRequestManagerApiKey: existingItem?.type === ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET ? (existingItem?.config?._hasApiKey ? '**********' : '') : '',
 
             location: location,
             gauge1: systemMonitorGauges[0] || 'cpu',
@@ -543,6 +563,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                 selectedWidgetType === ITEM_TYPE.ADGUARD_WIDGET ||
                 selectedWidgetType === ITEM_TYPE.DOWNLOAD_CLIENT ||
                 selectedWidgetType === ITEM_TYPE.MEDIA_SERVER_WIDGET ||
+                selectedWidgetType === ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET ||
                 selectedWidgetType === ITEM_TYPE.SONARR_WIDGET ||
                 selectedWidgetType === ITEM_TYPE.RADARR_WIDGET ||
                 selectedWidgetType === ITEM_TYPE.DUAL_WIDGET
@@ -551,6 +572,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                     selectedWidgetType === ITEM_TYPE.ADGUARD_WIDGET ||
                     selectedWidgetType === ITEM_TYPE.DOWNLOAD_CLIENT ||
                     selectedWidgetType === ITEM_TYPE.MEDIA_SERVER_WIDGET ||
+                    selectedWidgetType === ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET ||
                     selectedWidgetType === ITEM_TYPE.SONARR_WIDGET ||
                     selectedWidgetType === ITEM_TYPE.RADARR_WIDGET ||
                     selectedWidgetType === ITEM_TYPE.DUAL_WIDGET) {
@@ -857,6 +879,9 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                         config.apiKey = data.msApiKey;
                     }
                 }
+            } else if (data.widgetType === ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET) {
+                // Media request widget configuration
+                config = await createWidgetConfig(ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET, data);
             } else if (data.widgetType === ITEM_TYPE.SONARR_WIDGET) {
                 // Sonarr widget configuration
                 config = await createWidgetConfig(ITEM_TYPE.SONARR_WIDGET, data);
@@ -1325,6 +1350,36 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                     }
                 } else {
                     config.apiKey = data.msApiKey;
+                }
+            }
+
+            return config;
+        } else if (widgetType === ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET) {
+            // Media request manager widget configuration
+            const config: any = {
+                service: data.mediaRequestManagerService || 'jellyseerr',
+                displayName: data.mediaRequestManagerName || (data.mediaRequestManagerService === 'jellyseerr' ? 'Jellyseerr' : 'Overseerr'),
+                host: data.mediaRequestManagerHost || '',
+                port: data.mediaRequestManagerPort || '5055',
+                ssl: data.mediaRequestManagerSsl || false,
+                showLabel: data.showLabel !== undefined ? data.showLabel : true
+            };
+
+            // Handle API key - if masked, set flag for backend to preserve existing key
+            if (data.mediaRequestManagerApiKey === '**********') {
+                // API key is masked - tell backend to preserve existing key
+                config._hasApiKey = true;
+            } else if (data.mediaRequestManagerApiKey && data.mediaRequestManagerApiKey.trim() !== '') {
+                // API key was changed - encrypt and include it
+                if (!isEncrypted(data.mediaRequestManagerApiKey)) {
+                    try {
+                        const encryptedApiKey = await DashApi.encryptPassword(data.mediaRequestManagerApiKey);
+                        config.apiKey = encryptedApiKey;
+                    } catch (error) {
+                        console.error('Error encrypting media request manager API key:', error);
+                    }
+                } else {
+                    config.apiKey = data.mediaRequestManagerApiKey;
                 }
             }
 

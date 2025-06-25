@@ -6,6 +6,7 @@ import { DateTimeWidgetConfig } from './DateTimeWidgetConfig';
 import { DownloadClientWidgetConfig } from './DownloadClientWidgetConfig';
 import { DualWidgetConfig } from './DualWidgetConfig';
 import { GroupWidgetConfig } from './GroupWidgetConfig';
+import { MediaRequestManagerWidgetConfig } from './MediaRequestManagerWidgetConfig';
 import { MediaServerWidgetConfig } from './MediaServerWidgetConfig';
 import { PiholeWidgetConfig } from './PiholeWidgetConfig';
 import { RadarrWidgetConfig } from './RadarrWidgetConfig';
@@ -42,6 +43,8 @@ export const WidgetConfig = ({ formContext, widgetType, existingItem }: WidgetCo
         return <GroupWidgetConfig formContext={formContext} />;
     case ITEM_TYPE.MEDIA_SERVER_WIDGET:
         return <MediaServerWidgetConfig formContext={formContext} />;
+    case ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET:
+        return <MediaRequestManagerWidgetConfig formContext={formContext} />;
     case ITEM_TYPE.SONARR_WIDGET:
         return <SonarrWidgetConfig formContext={formContext} />;
     case ITEM_TYPE.RADARR_WIDGET:

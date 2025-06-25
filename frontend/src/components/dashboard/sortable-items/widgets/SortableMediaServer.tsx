@@ -3,7 +3,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Grid2 } from '@mui/material';
 import React from 'react';
 
-import { MediaServerWidget } from '../../base-items/widgets/MediaServerWidget/MediaServerWidget';
+import { MediaServerWidget } from '../../../dashboard/base-items/widgets/MediaServerWidget/MediaServerWidget';
 
 type Props = {
     id: string;

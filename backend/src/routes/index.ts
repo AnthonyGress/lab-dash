@@ -7,6 +7,7 @@ import { configRoute } from './config.route';
 import { delugeRoute } from './deluge.route';
 import { healthRoute } from './health.route';
 import { jellyfinRoute } from './jellyfin.route';
+import { jellyseerrRoute } from './jellyseerr.route';
 import { piholeV6Route } from './pihole-v6.route';
 import { piholeRoute } from './pihole.route';
 import { qbittorrentRoute } from './qbittorrent.route';
@@ -72,6 +73,9 @@ router.use('/deluge', torrentApiLimiter, delugeRoute);
 
 // Jellyfin routes
 router.use('/jellyfin', apiLimiter, jellyfinRoute);
+
+// Jellyseerr routes
+router.use('/jellyseerr', apiLimiter, jellyseerrRoute);
 
 // Sonarr routes
 router.use('/sonarr', apiLimiter, sonarrRoute);

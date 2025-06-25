@@ -166,6 +166,12 @@ const filterSensitiveData = (config: any): any => {
                 delete newConfig.apiKey;
             }
 
+            // Handle Media Request Manager widget sensitive data
+            if (item.type === 'media-request-manager-widget' && newConfig.apiKey) {
+                newConfig._hasApiKey = true;
+                delete newConfig.apiKey;
+            }
+
             // Handle dual widget sensitive data
             if (item.type === 'dual-widget') {
                 if (newConfig.topWidget?.config) {
@@ -424,6 +430,13 @@ const restoreSensitiveData = (newConfig: any, existingConfig: any): any => {
 
         // Handle Radarr widget sensitive data
         if (newItem.type === 'radarr-widget') {
+            if (newItem.config._hasApiKey && !newItem.config.apiKey && existingItem.config.apiKey) {
+                restoredItemConfig.apiKey = existingItem.config.apiKey;
+            }
+        }
+
+        // Handle Media Request Manager widget sensitive data
+        if (newItem.type === 'media-request-manager-widget') {
             if (newItem.config._hasApiKey && !newItem.config.apiKey && existingItem.config.apiKey) {
                 restoredItemConfig.apiKey = existingItem.config.apiKey;
             }
