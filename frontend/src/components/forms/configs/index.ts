@@ -1,5 +1,6 @@
 export { WeatherWidgetConfig } from './WeatherWidgetConfig';
 export { SystemMonitorWidgetConfig } from './SystemMonitorWidgetConfig';
+export { DiskMonitorWidgetConfig } from './DiskMonitorWidgetConfig';
 export { PiholeWidgetConfig } from './PiholeWidgetConfig';
 export { AdGuardWidgetConfig } from './AdGuardWidgetConfig';
 export { DownloadClientWidgetConfig } from './DownloadClientWidgetConfig';

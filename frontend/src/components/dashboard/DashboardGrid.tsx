@@ -29,6 +29,7 @@ import { SortableAppShortcut } from './sortable-items/apps/SortableAppShortcut';
 import { SortableAdGuard } from './sortable-items/widgets/SortableAdGuard';
 import { SortableDateTimeWidget } from './sortable-items/widgets/SortableDateTime';
 import { SortableDeluge } from './sortable-items/widgets/SortableDeluge';
+import { SortableDiskMonitor } from './sortable-items/widgets/SortableDiskMonitor';
 import { SortableDualWidget } from './sortable-items/widgets/SortableDualWidget';
 import { SortableGroupWidget } from './sortable-items/widgets/SortableGroupWidget';
 import { SortableMediaRequestManager } from './sortable-items/widgets/SortableMediaRequestManager';
@@ -679,6 +680,8 @@ export const DashboardGrid: React.FC = () => {
             return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} config={createDateTimeConfig(item.config)} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
         case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
             return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
+        case ITEM_TYPE.DISK_MONITOR_WIDGET:
+            return <SortableDiskMonitor key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)} />;
         case ITEM_TYPE.PIHOLE_WIDGET:
             return <SortablePihole key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
         case ITEM_TYPE.ADGUARD_WIDGET:
@@ -889,6 +892,8 @@ export const DashboardGrid: React.FC = () => {
                                     }
                                     case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
                                         return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
+                                    case ITEM_TYPE.DISK_MONITOR_WIDGET:
+                                        return <SortableDiskMonitor key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay />;
                                     case ITEM_TYPE.PIHOLE_WIDGET:
                                         return <SortablePihole key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
                                     case ITEM_TYPE.ADGUARD_WIDGET:

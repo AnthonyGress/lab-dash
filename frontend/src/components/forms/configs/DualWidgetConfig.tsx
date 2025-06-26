@@ -4,6 +4,7 @@ import { UseFormReturn } from 'react-hook-form';
 import { CheckboxElement, SelectElement, TextFieldElement } from 'react-hook-form-mui';
 
 import { DateTimeWidgetConfig } from './DateTimeWidgetConfig';
+import { DiskMonitorWidgetConfig } from './DiskMonitorWidgetConfig';
 import { DashApi } from '../../../api/dash-api';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { COLORS } from '../../../theme/styles';
@@ -16,6 +17,7 @@ const WIDGET_OPTIONS = [
     { id: ITEM_TYPE.DATE_TIME_WIDGET, label: 'Date & Time' },
     { id: ITEM_TYPE.WEATHER_WIDGET, label: 'Weather' },
     { id: ITEM_TYPE.SYSTEM_MONITOR_WIDGET, label: 'System Monitor' },
+    { id: ITEM_TYPE.DISK_MONITOR_WIDGET, label: 'Disk Monitor' },
     { id: ITEM_TYPE.PIHOLE_WIDGET, label: 'Pi-hole' },
     { id: ITEM_TYPE.ADGUARD_WIDGET, label: 'AdGuard Home' }
 ];
@@ -171,6 +173,16 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                     formContext.setValue('top_showSystemInfo', topConfig.showSystemInfo !== false);
                     formContext.setValue('top_showInternetStatus', topConfig.showInternetStatus !== false);
                 }
+                else if (topWidgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
+                    topWidgetFields = {
+                        selectedDisks: topConfig.selectedDisks || [],
+                        showIcons: topConfig.showIcons !== false,
+                        layout: '2x2' // Force 2x2 for dual widgets
+                    };
+                    formContext.setValue('top_selectedDisks', topConfig.selectedDisks || []);
+                    formContext.setValue('top_showIcons', topConfig.showIcons !== false);
+                    formContext.setValue('top_layout', '2x2');
+                }
                 else if (topWidgetType === ITEM_TYPE.PIHOLE_WIDGET) {
                     // Use masked values for sensitive fields if they exist
                     const maskedApiToken = topConfig._hasApiToken ? '**********' : '';
@@ -284,6 +296,16 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                     formContext.setValue('bottom_showDiskUsage', bottomConfig.showDiskUsage !== false);
                     formContext.setValue('bottom_showSystemInfo', bottomConfig.showSystemInfo !== false);
                     formContext.setValue('bottom_showInternetStatus', bottomConfig.showInternetStatus !== false);
+                }
+                else if (bottomWidgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
+                    bottomWidgetFields = {
+                        selectedDisks: bottomConfig.selectedDisks || [],
+                        showIcons: bottomConfig.showIcons !== false,
+                        layout: '2x2' // Force 2x2 for dual widgets
+                    };
+                    formContext.setValue('bottom_selectedDisks', bottomConfig.selectedDisks || []);
+                    formContext.setValue('bottom_showIcons', bottomConfig.showIcons !== false);
+                    formContext.setValue('bottom_layout', '2x2');
                 }
                 else if (bottomWidgetType === ITEM_TYPE.PIHOLE_WIDGET) {
                     // Use masked values for sensitive fields if they exist
@@ -402,6 +424,18 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 formContext.setValue(getFieldName(position, 'networkInterface'), fields.networkInterface);
             }
         }
+        else if (widgetType && widgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
+            if (fields.selectedDisks !== undefined) {
+                formContext.setValue(getFieldName(position, 'selectedDisks'), fields.selectedDisks);
+            }
+
+            if (fields.showIcons !== undefined) {
+                formContext.setValue(getFieldName(position, 'showIcons'), fields.showIcons);
+            }
+
+            // Always force 2x2 layout for dual widgets
+            formContext.setValue(getFieldName(position, 'layout'), '2x2');
+        }
         else if (widgetType && widgetType === ITEM_TYPE.PIHOLE_WIDGET) {
             if (fields.piholeHost !== undefined) {
                 formContext.setValue(getFieldName(position, 'piholeHost'), fields.piholeHost);
@@ -508,6 +542,16 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
             formContext.setValue(getFieldName(position, 'showDiskUsage'), true);
             formContext.setValue(getFieldName(position, 'showSystemInfo'), true);
             formContext.setValue(getFieldName(position, 'showInternetStatus'), true);
+        }
+        else if (widgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
+            defaultFields = {
+                selectedDisks: [],
+                showIcons: true,
+                layout: '2x2'
+            };
+            formContext.setValue(getFieldName(position, 'selectedDisks'), []);
+            formContext.setValue(getFieldName(position, 'showIcons'), true);
+            formContext.setValue(getFieldName(position, 'layout'), '2x2');
         }
         else if (widgetType === ITEM_TYPE.PIHOLE_WIDGET) {
             defaultFields = {
@@ -632,6 +676,11 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
             fields.showDiskUsage = formContext.getValues(getFieldName(position, 'showDiskUsage'));
             fields.showSystemInfo = formContext.getValues(getFieldName(position, 'showSystemInfo'));
             fields.showInternetStatus = formContext.getValues(getFieldName(position, 'showInternetStatus'));
+        }
+        else if (widgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
+            fields.selectedDisks = formContext.getValues(getFieldName(position, 'selectedDisks'));
+            fields.showIcons = formContext.getValues(getFieldName(position, 'showIcons'));
+            fields.layout = '2x2'; // Always 2x2 for dual widgets
         }
         else if (widgetType === ITEM_TYPE.PIHOLE_WIDGET) {
             fields.piholeHost = formContext.getValues(getFieldName(position, 'piholeHost'));
@@ -1076,6 +1125,17 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 }
             }
             config = configObj;
+        }
+        else if (widgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
+            // Get values directly from form for critical fields
+            const selectedDisks = formContext.getValues(getFieldName(position, 'selectedDisks'));
+            const showIcons = formContext.getValues(getFieldName(position, 'showIcons'));
+
+            config = {
+                selectedDisks: selectedDisks || [],
+                showIcons: showIcons !== false,
+                layout: '2x2' // Always 2x2 for dual widgets
+            };
         }
 
         return {
@@ -2279,6 +2339,15 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
         );
     };
 
+    const DiskMonitorConfigWrapper = ({ position }: { position: 'top' | 'bottom' }) => {
+        return (
+            <DiskMonitorWidgetConfig
+                formContext={formContext as any}
+                fieldNamePrefix={`${position}Widget`}
+            />
+        );
+    };
+
     // Render the appropriate widget config component with position-specific field names
     const renderWidgetConfig = (widgetType: string | undefined, position: 'top' | 'bottom') => {
         if (!widgetType) return null;
@@ -2315,6 +2384,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
             return <PiholeConfigWrapper position={position} />;
         case ITEM_TYPE.ADGUARD_WIDGET:
             return <AdGuardConfigWrapper position={position} />;
+        case ITEM_TYPE.DISK_MONITOR_WIDGET:
+            return <DiskMonitorConfigWrapper position={position} />;
         default:
             return null;
         }

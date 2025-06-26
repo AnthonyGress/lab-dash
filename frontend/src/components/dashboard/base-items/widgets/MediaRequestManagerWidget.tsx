@@ -490,13 +490,13 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                                         borderRadius: 2,
                                         height: '36px', // Slightly taller for better usability
                                         '& fieldset': {
-                                            border: `1px solid ${COLORS.BORDER} !important`,
+                                            border: '1px solid rgba(255, 255, 255, 0.3) !important',
                                         },
                                         '&:hover fieldset': {
-                                            border: `1px solid ${COLORS.BORDER} !important`,
+                                            border: '1px solid rgba(255, 255, 255, 0.5) !important',
                                         },
                                         '&.Mui-focused fieldset': {
-                                            border: `1px solid ${COLORS.BORDER} !important`,
+                                            border: '1px solid rgba(255, 255, 255, 0.7) !important',
                                         },
                                     },
                                     '& .MuiAutocomplete-clearIndicator': {

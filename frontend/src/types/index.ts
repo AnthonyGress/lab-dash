@@ -2,6 +2,7 @@ export enum ITEM_TYPE {
     WEATHER_WIDGET = 'weather-widget',
     DATE_TIME_WIDGET = 'date-time-widget',
     SYSTEM_MONITOR_WIDGET = 'system-monitor-widget',
+    DISK_MONITOR_WIDGET = 'disk-monitor-widget',
     DOWNLOAD_CLIENT = 'download-client',
     TORRENT_CLIENT = 'torrent-client', // Legacy support - maps to DOWNLOAD_CLIENT
     PIHOLE_WIDGET = 'pihole-widget',

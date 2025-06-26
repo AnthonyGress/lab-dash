@@ -29,6 +29,7 @@ const WIDGET_OPTIONS = [
     { id: ITEM_TYPE.DATE_TIME_WIDGET, label: 'Date & Time' },
     { id: ITEM_TYPE.WEATHER_WIDGET, label: 'Weather' },
     { id: ITEM_TYPE.SYSTEM_MONITOR_WIDGET, label: 'System Monitor' },
+    { id: ITEM_TYPE.DISK_MONITOR_WIDGET, label: 'Disk Monitor' },
     { id: ITEM_TYPE.PIHOLE_WIDGET, label: 'Pi-hole' },
     { id: ITEM_TYPE.ADGUARD_WIDGET, label: 'AdGuard Home' },
     { id: ITEM_TYPE.DOWNLOAD_CLIENT, label: 'Download Client' },
@@ -62,6 +63,11 @@ export type FormValues = {
     showDiskUsage?: boolean;
     showSystemInfo?: boolean;
     showInternetStatus?: boolean;
+    // Disk monitor widget
+    selectedDisks?: Array<{ mount: string; customName: string; showMountPath?: boolean }>;
+    showIcons?: boolean;
+    showMountPath?: boolean;
+    layout?: '2x2' | '2x4' | '1x6';
     // DateTime widget
     timezone?: string;
     // Pihole widget
@@ -135,6 +141,10 @@ export type FormValues = {
     top_showDiskUsage?: boolean;
     top_showSystemInfo?: boolean;
     top_showInternetStatus?: boolean;
+    top_selectedDisks?: Array<{ mount: string; customName: string; showMountPath?: boolean }>;
+    top_showIcons?: boolean;
+    top_showMountPath?: boolean;
+    top_layout?: '2x2' | '2x4' | '1x6';
     top_piholeHost?: string;
     top_piholePort?: string;
     top_piholeSsl?: boolean;
@@ -159,6 +169,10 @@ export type FormValues = {
     bottom_showDiskUsage?: boolean;
     bottom_showSystemInfo?: boolean;
     bottom_showInternetStatus?: boolean;
+    bottom_selectedDisks?: Array<{ mount: string; customName: string; showMountPath?: boolean }>;
+    bottom_showIcons?: boolean;
+    bottom_showMountPath?: boolean;
+    bottom_layout?: '2x2' | '2x4' | '1x6';
     bottom_piholeHost?: string;
     bottom_piholePort?: string;
     bottom_piholeSsl?: boolean;
@@ -209,6 +223,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
         const initialItemType = existingItem?.type === ITEM_TYPE.WEATHER_WIDGET ||
                                existingItem?.type === ITEM_TYPE.DATE_TIME_WIDGET ||
                                existingItem?.type === ITEM_TYPE.SYSTEM_MONITOR_WIDGET ||
+                               existingItem?.type === ITEM_TYPE.DISK_MONITOR_WIDGET ||
                                existingItem?.type === ITEM_TYPE.PIHOLE_WIDGET ||
                                existingItem?.type === ITEM_TYPE.ADGUARD_WIDGET ||
                                existingItem?.type === ITEM_TYPE.DOWNLOAD_CLIENT ||
@@ -235,6 +250,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
         const initialWidgetType = existingItem?.type === ITEM_TYPE.WEATHER_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.DATE_TIME_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.SYSTEM_MONITOR_WIDGET ||
+                                  existingItem?.type === ITEM_TYPE.DISK_MONITOR_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.PIHOLE_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.ADGUARD_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.DOWNLOAD_CLIENT ||
@@ -403,6 +419,12 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             showDiskUsage: existingItem?.config?.showDiskUsage !== false, // Default to true
             showSystemInfo: existingItem?.config?.showSystemInfo !== false, // Default to true
             showInternetStatus: existingItem?.config?.showInternetStatus !== false, // Default to true
+
+            // Disk monitor widget values
+            selectedDisks: existingItem?.type === ITEM_TYPE.DISK_MONITOR_WIDGET ? (existingItem?.config?.selectedDisks || []) : [],
+            showIcons: existingItem?.type === ITEM_TYPE.DISK_MONITOR_WIDGET ? (existingItem?.config?.showIcons !== false) : true,
+            layout: existingItem?.type === ITEM_TYPE.DISK_MONITOR_WIDGET ? (existingItem?.config?.layout || '2x2') : '2x2',
+
             // Dual widget configuration (initialized with extracted types)
             topWidgetType: topWidgetType,
             bottomWidgetType: bottomWidgetType,
@@ -417,6 +439,9 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             top_showDiskUsage: true,
             top_showSystemInfo: true,
             top_showInternetStatus: true,
+            top_selectedDisks: [],
+            top_showIcons: true,
+            top_layout: '2x2',
             top_piholeHost: '',
             top_piholePort: '',
             top_piholeSsl: false,
@@ -440,6 +465,9 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             bottom_showDiskUsage: true,
             bottom_showSystemInfo: true,
             bottom_showInternetStatus: true,
+            bottom_selectedDisks: [],
+            bottom_showIcons: true,
+            bottom_layout: '2x2',
             bottom_piholeHost: '',
             bottom_piholePort: '',
             bottom_piholeSsl: false,
@@ -487,6 +515,13 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                         formContext.setValue('top_showDiskUsage', topConfig.showDiskUsage !== false);
                         formContext.setValue('top_showSystemInfo', topConfig.showSystemInfo !== false);
                         formContext.setValue('top_showInternetStatus', topConfig.showInternetStatus !== false);
+                    }
+
+                    // Handle top disk monitor widget
+                    else if (topWidget.type === ITEM_TYPE.DISK_MONITOR_WIDGET) {
+                        formContext.setValue('top_selectedDisks', topConfig.selectedDisks || []);
+                        formContext.setValue('top_showIcons', topConfig.showIcons !== false);
+                        formContext.setValue('top_layout', '2x2'); // Always force 2x2 for dual widgets
                     }
 
                     // Handle top pihole widget
@@ -551,6 +586,13 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                         formContext.setValue('bottom_showDiskUsage', bottomConfig.showDiskUsage !== false);
                         formContext.setValue('bottom_showSystemInfo', bottomConfig.showSystemInfo !== false);
                         formContext.setValue('bottom_showInternetStatus', bottomConfig.showInternetStatus !== false);
+                    }
+
+                    // Handle bottom disk monitor widget
+                    else if (bottomWidget.type === ITEM_TYPE.DISK_MONITOR_WIDGET) {
+                        formContext.setValue('bottom_selectedDisks', bottomConfig.selectedDisks || []);
+                        formContext.setValue('bottom_showIcons', bottomConfig.showIcons !== false);
+                        formContext.setValue('bottom_layout', '2x2'); // Always force 2x2 for dual widgets
                     }
 
                     // Handle bottom pihole widget
@@ -918,6 +960,9 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                         config.apiKey = data.msApiKey;
                     }
                 }
+            } else if (data.widgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
+                // Disk monitor widget configuration
+                config = await createWidgetConfig(ITEM_TYPE.DISK_MONITOR_WIDGET, data);
             } else if (data.widgetType === ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET) {
                 // Media request widget configuration
                 config = await createWidgetConfig(ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET, data);
@@ -961,6 +1006,12 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                         gauge2: data.top_gauge2,
                         gauge3: data.top_gauge3,
                         networkInterface: data.top_networkInterface,
+                        showDiskUsage: data.top_showDiskUsage,
+                        showSystemInfo: data.top_showSystemInfo,
+                        showInternetStatus: data.top_showInternetStatus,
+                        selectedDisks: data.top_selectedDisks,
+                        showIcons: data.top_showIcons,
+                        showMountPath: data.top_showMountPath,
                         piholeHost: data.top_piholeHost,
                         piholePort: data.top_piholePort,
                         piholeSsl: data.top_piholeSsl,
@@ -986,6 +1037,12 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                         gauge2: data.bottom_gauge2,
                         gauge3: data.bottom_gauge3,
                         networkInterface: data.bottom_networkInterface,
+                        showDiskUsage: data.bottom_showDiskUsage,
+                        showSystemInfo: data.bottom_showSystemInfo,
+                        showInternetStatus: data.bottom_showInternetStatus,
+                        selectedDisks: data.bottom_selectedDisks,
+                        showIcons: data.bottom_showIcons,
+                        showMountPath: data.bottom_showMountPath,
                         piholeHost: data.bottom_piholeHost,
                         piholePort: data.bottom_piholePort,
                         piholeSsl: data.bottom_piholeSsl,
@@ -1189,6 +1246,18 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             }
 
             return config;
+        } else if (widgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
+            console.log('Creating disk monitor config with data:', {
+                selectedDisks: data.selectedDisks,
+                showIcons: data.showIcons,
+                showMountPath: data.showMountPath,
+                layout: data.layout
+            });
+            return {
+                selectedDisks: data.selectedDisks || [],
+                showIcons: data.showIcons !== false,
+                layout: data.layout || '2x2'
+            };
         } else if (widgetType === ITEM_TYPE.PIHOLE_WIDGET) {
             // Handle masked values - only encrypt if not masked
             let encryptedToken = '';

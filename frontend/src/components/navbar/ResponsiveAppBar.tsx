@@ -101,6 +101,11 @@ export const ResponsiveAppBar = ({ children }: Props) => {
         };
     }, [internetTooltipOpen]);
 
+    // Reset internet tooltip when edit mode changes
+    useEffect(() => {
+        setInternetTooltipOpen(false);
+    }, [editMode]);
+
     const handleClose = () => setOpenAddModal(false);
     const handleCloseEditPage = () => {
         setOpenEditPageModal(false);
@@ -304,17 +309,18 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                         <Box sx={{ display: 'flex' }}>
                             <Box sx={{ display: 'flex', width: { md: '300px', lg: '350px' }, flexGrow: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
                                 {editMode ? (
-                                    <Tooltip title='Add Item' placement='left'>
+                                    <Tooltip title='Add Item' placement='left' arrow>
                                         <IconButton onClick={() => setOpenAddModal(true)}>
                                             <Add sx={{ color: 'white', fontSize: '2rem' }}/>
                                         </IconButton>
                                     </Tooltip>
                                 ) : showInternetIndicator ? (
                                     <Tooltip
+                                        key='internet-tooltip'
                                         title={internetStatus === 'online' ? 'Internet Connected' : internetStatus === 'offline' ? 'No Internet Connection' : 'Checking Internet...'}
                                         placement='left'
                                         arrow
-                                        open={internetTooltipOpen}
+                                        open={Boolean(internetTooltipOpen)}
                                         onClose={() => {
                                             // Add a small delay to prevent immediate closing
                                             setTimeout(() => setInternetTooltipOpen(false), 100);

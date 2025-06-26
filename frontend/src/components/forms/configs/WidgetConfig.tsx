@@ -3,6 +3,7 @@ import { UseFormReturn } from 'react-hook-form';
 import { FormValues } from '../AddEditForm';
 import { AdGuardWidgetConfig } from './AdGuardWidgetConfig';
 import { DateTimeWidgetConfig } from './DateTimeWidgetConfig';
+import { DiskMonitorWidgetConfig } from './DiskMonitorWidgetConfig';
 import { DownloadClientWidgetConfig } from './DownloadClientWidgetConfig';
 import { DualWidgetConfig } from './DualWidgetConfig';
 import { GroupWidgetConfig } from './GroupWidgetConfig';
@@ -29,6 +30,8 @@ export const WidgetConfig = ({ formContext, widgetType, existingItem }: WidgetCo
         return <DateTimeWidgetConfig formContext={formContext} />;
     case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
         return <SystemMonitorWidgetConfig formContext={formContext} />;
+    case ITEM_TYPE.DISK_MONITOR_WIDGET:
+        return <DiskMonitorWidgetConfig formContext={formContext} />;
     case ITEM_TYPE.PIHOLE_WIDGET:
         return <PiholeWidgetConfig formContext={formContext} existingItem={existingItem} />;
     case ITEM_TYPE.ADGUARD_WIDGET:
