@@ -64,7 +64,7 @@ export const DiskMonitorWidgetConfig = ({ formContext, fieldNamePrefix = '' }: D
 
     // Helper function to get field name with prefix
     const getFieldName = (baseName: string) => {
-        return fieldNamePrefix ? `${fieldNamePrefix}${baseName.charAt(0).toUpperCase() + baseName.slice(1)}` : baseName;
+        return fieldNamePrefix ? `${fieldNamePrefix}${baseName}` : baseName;
     };
 
     // Helper function to get display name for disk
@@ -144,29 +144,42 @@ export const DiskMonitorWidgetConfig = ({ formContext, fieldNamePrefix = '' }: D
         if (!isLoading) {
             const currentSelectedDisks = formContext.getValues(getFieldName('selectedDisks') as any);
 
-            if (currentSelectedDisks && Array.isArray(currentSelectedDisks)) {
+            if (currentSelectedDisks && Array.isArray(currentSelectedDisks) && currentSelectedDisks.length > 0) {
                 setSelectedDisks(currentSelectedDisks);
+                updateFormValue(currentSelectedDisks); // Ensure validation is applied
             } else {
-                // Default based on current layout
+                // Default based on current layout - ensure at least 1 disk if available
                 const currentLayout = formContext.getValues(getFieldName('layout') as any) || '2x2';
                 const maxForLayout = getMaxDisksForLayout(currentLayout);
-                const defaultCount = Math.min(2, maxForLayout); // Start with 2 disks or max for layout
+                const defaultCount = Math.max(1, Math.min(2, maxForLayout)); // Start with at least 1 disk, preferably 2
 
                 const defaultDisks = availableDisks.slice(0, defaultCount).map(disk => ({
                     mount: disk.id,
                     customName: disk.label.split(' (')[0], // Remove size from default name
                     showMountPath: false
                 }));
-                setSelectedDisks(defaultDisks);
-                updateFormValue(defaultDisks);
+
+                // Only set disks if we have available disks
+                if (defaultDisks.length > 0) {
+                    setSelectedDisks(defaultDisks);
+                    updateFormValue(defaultDisks);
+                } else {
+                    // No available disks - set empty and trigger validation error
+                    setSelectedDisks([]);
+                    updateFormValue([]);
+                }
             }
 
             // Set default display options if not set
             const currentShowIcons = formContext.getValues(getFieldName('showIcons') as any);
+            const currentShowName = formContext.getValues(getFieldName('showName') as any);
             const currentLayout = formContext.getValues(getFieldName('layout') as any);
 
             if (currentShowIcons === undefined) {
                 formContext.setValue(getFieldName('showIcons') as any, true);
+            }
+            if (currentShowName === undefined) {
+                formContext.setValue(getFieldName('showName') as any, true);
             }
             if (currentLayout === undefined) {
                 formContext.setValue(getFieldName('layout') as any, '2x2');
@@ -211,6 +224,16 @@ export const DiskMonitorWidgetConfig = ({ formContext, fieldNamePrefix = '' }: D
     // Update form value
     const updateFormValue = (disks: DiskSelection[]) => {
         formContext.setValue(getFieldName('selectedDisks') as any, disks);
+
+        // Add validation - require at least one disk
+        if (disks.length === 0) {
+            formContext.setError(getFieldName('selectedDisks') as any, {
+                type: 'required',
+                message: 'At least one disk must be selected'
+            });
+        } else {
+            formContext.clearErrors(getFieldName('selectedDisks') as any);
+        }
     };
 
     // Get max disks based on layout
@@ -279,9 +302,9 @@ export const DiskMonitorWidgetConfig = ({ formContext, fieldNamePrefix = '' }: D
                         label='Layout'
                         name={getFieldName('layout') as any}
                         options={[
-                            { id: '2x2', label: '2x2 Grid (4 disks max)' },
-                            { id: '2x4', label: '2x4 Grid (8 disks max)' },
-                            { id: '1x5', label: '1x5 List (5 disks max)' }
+                            { id: '2x2', label: '2x2 Grid' },
+                            { id: '2x4', label: '2x4 Grid' },
+                            { id: '1x5', label: '1x5 List' }
                         ]}
                         sx={{
                             ...selectStyling,
@@ -304,6 +327,20 @@ export const DiskMonitorWidgetConfig = ({ formContext, fieldNamePrefix = '' }: D
                     mb: 2,
                     backgroundColor: 'rgba(255, 255, 255, 0.02)'
                 }}>
+                    {/* Error message for no disks selected */}
+                    {selectedDisks.length === 0 && (
+                        <Typography
+                            variant='body2'
+                            sx={{
+                                color: 'error.main',
+                                mb: 2,
+                                fontStyle: 'italic',
+                                textAlign: 'center'
+                            }}
+                        >
+                            At least one disk must be selected
+                        </Typography>
+                    )}
                     {selectedDisks.map((disk, index) => (
                         <Box key={index} sx={{
                             display: 'flex',
@@ -416,6 +453,7 @@ export const DiskMonitorWidgetConfig = ({ formContext, fieldNamePrefix = '' }: D
                                     color='error'
                                     size='small'
                                     disabled={selectedDisks.length <= 1}
+                                    fullWidth
                                 >
                                     Remove
                                 </Button>
@@ -439,24 +477,29 @@ export const DiskMonitorWidgetConfig = ({ formContext, fieldNamePrefix = '' }: D
                     )}
                 </Box>
             </Grid>
-
-            <Grid>
-                <Typography variant='h6' sx={{ color: theme.palette.text.primary, mb: 2, mt: 3 }}>
-                    Display Options
-                </Typography>
-            </Grid>
-
-            <Grid>
+            <Box sx={{ width: '100%' }}>
                 <CheckboxElement
                     label='Show Disk Icons'
                     name={getFieldName('showIcons') as any}
                     sx={{
                         ml: 1,
-                        color: theme.palette.text.primary,
+                        color: 'white',
                         '& .MuiSvgIcon-root': { fontSize: 30 }
                     }}
                 />
-            </Grid>
+            </Box>
+
+            <Box sx={{ width: '100%' }}>
+                <CheckboxElement
+                    label='Show Name'
+                    name={getFieldName('showName') as any}
+                    sx={{
+                        ml: 1,
+                        color: 'white',
+                        '& .MuiSvgIcon-root': { fontSize: 30 }
+                    }}
+                />
+            </Box>
 
             {isLoading && (
                 <Grid>

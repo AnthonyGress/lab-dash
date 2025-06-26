@@ -3,6 +3,7 @@ import React from 'react';
 
 import { AdGuardWidget } from './AdGuardWidget/AdGuardWidget';
 import { DateTimeWidget } from './DateTimeWidget';
+import { DiskMonitorWidget } from './DiskMonitorWidget';
 import { DualWidgetContainer } from './DualWidgetContainer';
 import { PiholeWidget } from './PiholeWidget/PiholeWidget';
 import { SystemMonitorWidget } from './SystemMonitorWidget/SystemMonitorWidget';
@@ -85,6 +86,14 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
                     config={widgetConfig.config}
                     id={id ? `${id}-${position}` : undefined}
                 />;
+            case ITEM_TYPE.DISK_MONITOR_WIDGET:
+                return <DiskMonitorWidget
+                    config={{
+                        ...widgetConfig.config,
+                        dualWidgetPosition: position
+                    }}
+                    editMode={editMode}
+                />;
             default:
                 return (
                     <Box
@@ -95,7 +104,7 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
                             justifyContent: 'center'
                         }}
                     >
-                        <Typography variant='body2' color='text.secondary'>
+                        <Typography variant='body2' color='text.primary'>
                             Unknown widget type: {widgetConfig.type}
                         </Typography>
                     </Box>

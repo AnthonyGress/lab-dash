@@ -177,10 +177,12 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                     topWidgetFields = {
                         selectedDisks: topConfig.selectedDisks || [],
                         showIcons: topConfig.showIcons !== false,
+                        showName: topConfig.showName !== false,
                         layout: '2x2' // Force 2x2 for dual widgets
                     };
                     formContext.setValue('top_selectedDisks', topConfig.selectedDisks || []);
                     formContext.setValue('top_showIcons', topConfig.showIcons !== false);
+                    formContext.setValue('top_showName', topConfig.showName !== false);
                     formContext.setValue('top_layout', '2x2');
                 }
                 else if (topWidgetType === ITEM_TYPE.PIHOLE_WIDGET) {
@@ -301,10 +303,12 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                     bottomWidgetFields = {
                         selectedDisks: bottomConfig.selectedDisks || [],
                         showIcons: bottomConfig.showIcons !== false,
+                        showName: bottomConfig.showName !== false,
                         layout: '2x2' // Force 2x2 for dual widgets
                     };
                     formContext.setValue('bottom_selectedDisks', bottomConfig.selectedDisks || []);
                     formContext.setValue('bottom_showIcons', bottomConfig.showIcons !== false);
+                    formContext.setValue('bottom_showName', bottomConfig.showName !== false);
                     formContext.setValue('bottom_layout', '2x2');
                 }
                 else if (bottomWidgetType === ITEM_TYPE.PIHOLE_WIDGET) {
@@ -433,6 +437,10 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 formContext.setValue(getFieldName(position, 'showIcons'), fields.showIcons);
             }
 
+            if (fields.showName !== undefined) {
+                formContext.setValue(getFieldName(position, 'showName'), fields.showName);
+            }
+
             // Always force 2x2 layout for dual widgets
             formContext.setValue(getFieldName(position, 'layout'), '2x2');
         }
@@ -547,10 +555,12 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
             defaultFields = {
                 selectedDisks: [],
                 showIcons: true,
+                showName: true,
                 layout: '2x2'
             };
             formContext.setValue(getFieldName(position, 'selectedDisks'), []);
             formContext.setValue(getFieldName(position, 'showIcons'), true);
+            formContext.setValue(getFieldName(position, 'showName'), true);
             formContext.setValue(getFieldName(position, 'layout'), '2x2');
         }
         else if (widgetType === ITEM_TYPE.PIHOLE_WIDGET) {
@@ -680,6 +690,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
         else if (widgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
             fields.selectedDisks = formContext.getValues(getFieldName(position, 'selectedDisks'));
             fields.showIcons = formContext.getValues(getFieldName(position, 'showIcons'));
+            fields.showName = formContext.getValues(getFieldName(position, 'showName'));
             fields.layout = '2x2'; // Always 2x2 for dual widgets
         }
         else if (widgetType === ITEM_TYPE.PIHOLE_WIDGET) {
@@ -1128,12 +1139,23 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
         }
         else if (widgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
             // Get values directly from form for critical fields
-            const selectedDisks = formContext.getValues(getFieldName(position, 'selectedDisks'));
+            const selectedDisks = formContext.getValues(getFieldName(position, 'selectedDisks')) as Array<{ mount: string; customName: string; showMountPath?: boolean }> | undefined;
             const showIcons = formContext.getValues(getFieldName(position, 'showIcons'));
+            const showName = formContext.getValues(getFieldName(position, 'showName'));
+
+            // Validate that at least one disk is selected
+            if (!selectedDisks || !Array.isArray(selectedDisks) || selectedDisks.length === 0) {
+                formContext.setError(getFieldName(position, 'selectedDisks'), {
+                    type: 'required',
+                    message: 'At least one disk must be selected'
+                });
+                throw new Error(`At least one disk must be selected for ${position} widget`);
+            }
 
             config = {
                 selectedDisks: selectedDisks || [],
                 showIcons: showIcons !== false,
+                showName: showName !== false,
                 layout: '2x2' // Always 2x2 for dual widgets
             };
         }
@@ -2341,10 +2363,12 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
 
     const DiskMonitorConfigWrapper = ({ position }: { position: 'top' | 'bottom' }) => {
         return (
-            <DiskMonitorWidgetConfig
-                formContext={formContext as any}
-                fieldNamePrefix={`${position}Widget`}
-            />
+            <Box sx={{ width: '100%' }}>
+                <DiskMonitorWidgetConfig
+                    formContext={formContext as any}
+                    fieldNamePrefix={position === 'top' ? 'top_' : 'bottom_'}
+                />
+            </Box>
         );
     };
 

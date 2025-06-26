@@ -28,6 +28,7 @@ interface DiskMonitorWidgetProps {
         selectedDisks?: DiskSelection[];
         showIcons?: boolean;
         showMountPath?: boolean;
+        showName?: boolean;
         layout?: '2x2' | '2x4' | '1x5';
         dualWidgetPosition?: 'top' | 'bottom';
     };
@@ -43,6 +44,7 @@ export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) 
     // Get config options with defaults
     const selectedDisks = config?.selectedDisks || [];
     const showIcons = config?.showIcons !== false;
+    const showName = config?.showName !== false;
     const isDualWidget = config?.dualWidgetPosition !== undefined;
     // Force 2x2 layout for dual widgets to maintain standard widget height
     const layout = isDualWidget ? '2x2' : (config?.layout || '2x2');
@@ -311,25 +313,55 @@ export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) 
             padding: '0 !important', // Remove all default padding
             maxWidth: '100%',
             width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
             ...(layout === '2x4' || layout === '1x5' ? {
                 minHeight: DUAL_WIDGET_CONTAINER_HEIGHT.sm
             } : {})
         }}>
             <Box sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                height: '100%',
+                flex: 1,
                 color: 'white',
                 width: '100%',
-                padding: 2
+                padding: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative'
             }}>
+
+                {/* Conditionally rendered title */}
+                {showName && (
+                    <Box
+                        sx={{
+                            position: 'absolute',
+                            top: layout === '2x2' ? 0 : 2.5,
+                            left: 16,
+                            color: 'white',
+                            fontSize: '1.1rem',
+                            zIndex: 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.5
+                        }}
+                    >
+                        <PiHardDrivesFill size={18} color='white' />
+                        <Typography
+                            variant='h6'
+                            sx={{
+                                color: 'white',
+                                fontSize: '1.1rem',
+                            }}
+                        >
+                            Disk Monitor
+                        </Typography>
+                    </Box>
+                )}
                 {error ? (
                     <Box sx={{
                         display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
                         flexDirection: 'column',
-                        flex: 1
+                        alignItems: 'center'
                     }}>
                         <Typography variant='body2' sx={{ textAlign: 'center', mb: 1 }}>
                             Configuration Error
@@ -338,77 +370,61 @@ export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) 
                             {error}
                         </Typography>
                     </Box>
+                ) : (gridDisks.length === 0 || isLoading) ? (
+                    <Box sx={{
+                        color: 'rgba(255,255,255,0.5)',
+                        fontSize: '0.85rem'
+                    }}>
+                        {isLoading ? 'Loading disks...' : 'No disks configured'}
+                    </Box>
                 ) : (
-                    <>
-                        {/* Empty/Loading state - only show when no disks or loading */}
-                        {(gridDisks.length === 0 || isLoading) && (
-                            <Box sx={{
-                                display: 'flex',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                color: 'rgba(255,255,255,0.5)',
-                                fontSize: '0.85rem',
-                                flex: 1
-                            }}>
-                                {isLoading ? 'Loading disks...' : 'No disks configured'}
-                            </Box>
-                        )}
+                    <Box sx={{
+                        width: '100%',
+                        height: layout === '2x4' || layout === '1x5' ? '100%' : 'auto',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mt: 3
+                    }}>
+                        <Grid container spacing={layout === '2x2' ? 0.75 : 1} sx={{
+                            width: '100%',
+                            maxWidth: '100%'
+                        }}>
+                            {gridDisks.map((disk, index) => {
+                                const getGridSize = () => {
+                                    switch (layout) {
+                                    case '2x2': return 6; // 2 columns
+                                    case '2x4': return 6; // 2 columns
+                                    case '1x5': return 12; // 1 column
+                                    default: return 6;
+                                    }
+                                };
 
-                        {/* Disk items in grid - only show when not loading and has disks */}
-                        {!isLoading && gridDisks.length > 0 && (
-                            <Box sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                flex: 1,
-                                width: '100%'
-                            }}>
-                                <Box sx={{
-                                    width: '100%',
-                                    maxWidth: '100%'
-                                }}>
-                                    <Grid container spacing={layout === '2x2' ? 0.75 : layout === '2x4' ? 1 : 1.25} sx={{
-                                        height: 'fit-content',
-                                        width: '100%'
+                                // Determine alignment based on position
+                                const getAlignment = () => {
+                                    if (layout === '1x5') return 'flex-start'; // All left aligned for single column
+
+                                    // For 2-column layouts (2x2, 2x4)
+                                    const isLeftColumn = index % 2 === 0;
+                                    return isLeftColumn ? 'flex-start' : 'flex-end';
+                                };
+
+                                // Find the disk configuration
+                                const diskConfig = selectedDisks.find(d => d.mount === disk.mount) || { mount: disk.mount, customName: disk.customName };
+
+                                return (
+                                    <Grid key={disk.mount} size={getGridSize()} sx={{
+                                        display: 'flex',
+                                        justifyContent: getAlignment(),
+                                        alignItems: 'stretch',
+                                    // minHeight: layout === '2x2' ? '60px' : layout === '1x5' ? '100%' : '100%'
                                     }}>
-                                        {gridDisks.map((disk, index) => {
-                                            const getGridSize = () => {
-                                                switch (layout) {
-                                                case '2x2': return 6; // 2 columns
-                                                case '2x4': return 6; // 2 columns
-                                                case '1x5': return 12; // 1 column
-                                                default: return 6;
-                                                }
-                                            };
-
-                                            // Determine alignment based on position
-                                            const getAlignment = () => {
-                                                if (layout === '1x5') return 'flex-start'; // All left aligned for single column
-
-                                                // For 2-column layouts (2x2, 2x4)
-                                                const isLeftColumn = index % 2 === 0;
-                                                return isLeftColumn ? 'flex-start' : 'flex-end';
-                                            };
-
-                                            // Find the disk configuration
-                                            const diskConfig = selectedDisks.find(d => d.mount === disk.mount) || { mount: disk.mount, customName: disk.customName };
-
-                                            return (
-                                                <Grid key={disk.mount} size={getGridSize()} sx={{
-                                                    display: 'flex',
-                                                    justifyContent: getAlignment(),
-                                                    alignItems: 'stretch',
-                                                    minHeight: layout === '2x2' ? '60px' : layout === '1x5' ? '55px' : '70px'
-                                                }}>
-                                                    <DiskItem disk={disk} diskConfig={diskConfig} />
-                                                </Grid>
-                                            );
-                                        })}
+                                        <DiskItem disk={disk} diskConfig={diskConfig} />
                                     </Grid>
-                                </Box>
-                            </Box>
-                        )}
-                    </>
+                                );
+                            })}
+                        </Grid>
+                    </Box>
                 )}
             </Box>
         </CardContent>

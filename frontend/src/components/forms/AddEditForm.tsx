@@ -67,6 +67,7 @@ export type FormValues = {
     selectedDisks?: Array<{ mount: string; customName: string; showMountPath?: boolean }>;
     showIcons?: boolean;
     showMountPath?: boolean;
+    showName?: boolean;
     layout?: '2x2' | '2x4' | '1x6';
     // DateTime widget
     timezone?: string;
@@ -144,6 +145,7 @@ export type FormValues = {
     top_selectedDisks?: Array<{ mount: string; customName: string; showMountPath?: boolean }>;
     top_showIcons?: boolean;
     top_showMountPath?: boolean;
+    top_showName?: boolean;
     top_layout?: '2x2' | '2x4' | '1x6';
     top_piholeHost?: string;
     top_piholePort?: string;
@@ -172,6 +174,7 @@ export type FormValues = {
     bottom_selectedDisks?: Array<{ mount: string; customName: string; showMountPath?: boolean }>;
     bottom_showIcons?: boolean;
     bottom_showMountPath?: boolean;
+    bottom_showName?: boolean;
     bottom_layout?: '2x2' | '2x4' | '1x6';
     bottom_piholeHost?: string;
     bottom_piholePort?: string;
@@ -1012,6 +1015,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                         selectedDisks: data.top_selectedDisks,
                         showIcons: data.top_showIcons,
                         showMountPath: data.top_showMountPath,
+                        showName: data.top_showName,
                         piholeHost: data.top_piholeHost,
                         piholePort: data.top_piholePort,
                         piholeSsl: data.top_piholeSsl,
@@ -1043,6 +1047,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                         selectedDisks: data.bottom_selectedDisks,
                         showIcons: data.bottom_showIcons,
                         showMountPath: data.bottom_showMountPath,
+                        showName: data.bottom_showName,
                         piholeHost: data.bottom_piholeHost,
                         piholePort: data.bottom_piholePort,
                         piholeSsl: data.bottom_piholeSsl,
@@ -1251,11 +1256,19 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                 selectedDisks: data.selectedDisks,
                 showIcons: data.showIcons,
                 showMountPath: data.showMountPath,
+                showName: data.showName,
                 layout: data.layout
             });
+
+            // Validate that at least one disk is selected
+            if (!data.selectedDisks || !Array.isArray(data.selectedDisks) || data.selectedDisks.length === 0) {
+                throw new Error('At least one disk must be selected for the Disk Monitor widget');
+            }
+
             return {
                 selectedDisks: data.selectedDisks || [],
                 showIcons: data.showIcons !== false,
+                showName: data.showName !== false,
                 layout: data.layout || '2x2'
             };
         } else if (widgetType === ITEM_TYPE.PIHOLE_WIDGET) {
