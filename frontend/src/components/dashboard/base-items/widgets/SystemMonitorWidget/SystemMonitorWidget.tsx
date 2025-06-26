@@ -1,11 +1,13 @@
-import { ArrowDownward, ArrowUpward, ErrorOutline, Wifi, WifiOff } from '@mui/icons-material';
+import { ArrowDownward, ArrowUpward, ErrorOutline } from '@mui/icons-material';
 import { Box, Button, CircularProgress, Grid2 as Grid, IconButton, Paper, Tooltip, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { IoInformationCircleOutline } from 'react-icons/io5';
+import { PiGlobeSimple, PiGlobeSimpleX } from 'react-icons/pi';
 
 import { DiskUsageBar } from './DiskUsageWidget';
 import { GaugeWidget } from './GaugeWidget';
 import { DashApi } from '../../../../../api/dash-api';
+import { useInternetStatus } from '../../../../../hooks/useInternetStatus';
 import { useIsMobile } from '../../../../../hooks/useIsMobile';
 import { COLORS } from '../../../../../theme/styles';
 import { theme } from '../../../../../theme/theme';
@@ -42,7 +44,9 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
     const [isFahrenheit, setIsFahrenheit] = useState(config?.temperatureUnit !== 'celsius');
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [internetStatus, setInternetStatus] = useState<'online' | 'offline' | 'checking'>('checking');
+    const [internetTooltipOpen, setInternetTooltipOpen] = useState(false);
+
+    const { internetStatus } = useInternetStatus();
 
     // Default gauges if not specified in config
     const selectedGauges = config?.gauges || ['cpu', 'temp', 'ram'];
@@ -72,11 +76,6 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
             infoButtonStyles.top = 0;
         }
     }
-
-    // Helper function to format space dynamically (GB or TB)
-    const formatSpace = (space: number): string => {
-        return space >= 1000 ? `${(space / 1000).toFixed(2)} TB` : `${space.toFixed(2)} GB`;
-    };
 
     // Helper function to convert temperature based on unit
     const formatTemperature = (tempCelsius: number): number => {
@@ -119,11 +118,6 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
         }
 
         return { value, unit, normalizedValue: normalizedMbps, display };
-    };
-
-    const formatNumberForDisplay = (num: number): string => {
-        // Pad numbers to a minimum width of 3 characters to prevent layout shifts
-        return Math.round(num).toString().padStart(3, ' ');
     };
 
     const getRamPercentage = (systemData: any) => {
@@ -366,16 +360,7 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
     };
 
     // Function to check internet connectivity
-    const checkInternetConnectivity = async () => {
-        try {
-            setInternetStatus('checking');
-            const status = await DashApi.checkInternetConnectivity();
-            setInternetStatus(status);
-        } catch (error) {
-            console.error('Error checking internet connectivity:', error);
-            setInternetStatus('offline');
-        }
-    };
+
 
     // Function to fetch system information
     const fetchSystemInfo = async () => {
@@ -417,11 +402,6 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
         // Immediately fetch data with the current settings
         fetchSystemInfo();
 
-        // Only check internet connectivity if not in edit mode
-        if (!editMode) {
-            checkInternetConnectivity();
-        }
-
         // Fetch system info every 5 seconds
         const systemInfoInterval = setInterval(() => {
             // Only fetch if there's no error
@@ -430,22 +410,28 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
             }
         }, 5000); // 5000 ms = 5 seconds
 
-        // Check internet connectivity every 2 minutes, but only if not in edit mode
-        let internetCheckInterval: NodeJS.Timeout | null = null;
-        if (!editMode) {
-            internetCheckInterval = setInterval(() => {
-                checkInternetConnectivity();
-            }, 120000); // 120000 ms = 2 minutes
-        }
-
         // Clean up the intervals when component unmounts or dependencies change
         return () => {
             clearInterval(systemInfoInterval);
-            if (internetCheckInterval) {
-                clearInterval(internetCheckInterval);
-            }
         };
     }, [config?.temperatureUnit, config?.networkInterface, editMode]);
+
+    // Close internet tooltip when clicking outside
+    useEffect(() => {
+        const handleClickOutside = () => {
+            if (internetTooltipOpen) {
+                setInternetTooltipOpen(false);
+            }
+        };
+
+        if (internetTooltipOpen) {
+            document.addEventListener('click', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('click', handleClickOutside);
+        };
+    }, [internetTooltipOpen]);
 
     // Determine layout styles based on dual widget position
     const containerStyles = {
@@ -528,7 +514,18 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
                     <Tooltip
                         title={internetStatus === 'online' ? 'Internet Connected' : internetStatus === 'offline' ? 'No Internet Connection' : 'Checking Internet...'}
                         arrow
-                        placement='top'
+                        placement='left'
+                        open={internetTooltipOpen}
+                        onClose={() => {
+                            // Add a small delay to prevent immediate closing
+                            setTimeout(() => setInternetTooltipOpen(false), 100);
+                        }}
+                        disableHoverListener
+                        disableFocusListener
+                        disableTouchListener
+                        PopperProps={{
+                            disablePortal: true,
+                        }}
                         slotProps={{
                             tooltip: {
                                 sx: {
@@ -544,13 +541,17 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
                                 right: -5,
                                 zIndex: 99
                             }}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setInternetTooltipOpen(!internetTooltipOpen);
+                            }}
                         >
                             {internetStatus === 'online' ? (
-                                <Wifi style={{ color: theme.palette.text.primary, fontSize: '1.2rem' }} />
+                                <PiGlobeSimple style={{ color: theme.palette.text.primary, fontSize: '1.4rem' }} />
                             ) : internetStatus === 'offline' ? (
-                                <WifiOff style={{ color: theme.palette.text.primary, fontSize: '1.2rem' }} />
+                                <PiGlobeSimpleX style={{ color: theme.palette.text.primary, fontSize: '1.4rem' }} />
                             ) : (
-                                <CircularProgress size={16} sx={{ color: theme.palette.text.primary }} />
+                                <PiGlobeSimple style={{ color: 'gray', fontSize: '1.4rem' }} />
                             )}
                         </IconButton>
                     </Tooltip>

@@ -86,6 +86,7 @@ export type Config = {
     backgroundImage?: string;
     search?: boolean;
     searchProvider?: SearchProvider;
+    showInternetIndicator?: boolean;
     isSetupComplete?: boolean;
     lastSeenVersion?: string;
 }

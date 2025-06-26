@@ -1,7 +1,7 @@
 import { Add } from '@mui/icons-material';
 import CloseIcon from '@mui/icons-material/Close';
 import MenuIcon from '@mui/icons-material/Menu';
-import { Avatar, Badge, Button, Divider, Drawer, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, styled } from '@mui/material';
+import { Avatar, Badge, Button, CircularProgress, Divider, Drawer, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, styled } from '@mui/material';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
@@ -9,13 +9,15 @@ import Toolbar from '@mui/material/Toolbar';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { nanoid } from 'nanoid';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FaEdit, FaHeart, FaInfoCircle, FaSync } from 'react-icons/fa';
 import { FaArrowRightFromBracket, FaGear, FaHouse, FaTrashCan, FaUser } from 'react-icons/fa6';
+import { PiGlobeSimple, PiGlobeSimpleX } from 'react-icons/pi';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 
 import { DashApi } from '../../api/dash-api';
 import { useAppContext } from '../../context/useAppContext';
+import { useInternetStatus } from '../../hooks/useInternetStatus';
 import { COLORS, styles } from '../../theme/styles';
 import { theme } from '../../theme/theme';
 import { ITEM_TYPE } from '../../types';
@@ -48,6 +50,10 @@ export const ResponsiveAppBar = ({ children }: Props) => {
     const [openUpdateModal, setOpenUpdateModal] = useState(false);
     const [openVersionModal, setOpenVersionModal] = useState(false);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const [internetTooltipOpen, setInternetTooltipOpen] = useState(false);
+
+    const { internetStatus } = useInternetStatus();
+
     const {
         dashboardLayout,
         saveLayout,
@@ -72,9 +78,28 @@ export const ResponsiveAppBar = ({ children }: Props) => {
         deletePage
     } = useAppContext();
 
+    const showInternetIndicator = config?.showInternetIndicator !== false;
+
     const location = useLocation();
     const navigate = useNavigate();
     const currentPath = location.pathname;
+
+    // Close internet tooltip when clicking outside
+    useEffect(() => {
+        const handleClickOutside = () => {
+            if (internetTooltipOpen) {
+                setInternetTooltipOpen(false);
+            }
+        };
+
+        if (internetTooltipOpen) {
+            document.addEventListener('click', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('click', handleClickOutside);
+        };
+    }, [internetTooltipOpen]);
 
     const handleClose = () => setOpenAddModal(false);
     const handleCloseEditPage = () => {
@@ -278,13 +303,52 @@ export const ResponsiveAppBar = ({ children }: Props) => {
 
                         <Box sx={{ display: 'flex' }}>
                             <Box sx={{ display: 'flex', width: { md: '300px', lg: '350px' }, flexGrow: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
-                                {editMode &&
-                                <Tooltip title='Add Item' placement='left'>
-                                    <IconButton onClick={() => setOpenAddModal(true)}>
-                                        <Add sx={{ color: 'white', fontSize: '2rem' }}/>
-                                    </IconButton>
-                                </Tooltip>
-                                }
+                                {editMode ? (
+                                    <Tooltip title='Add Item' placement='left'>
+                                        <IconButton onClick={() => setOpenAddModal(true)}>
+                                            <Add sx={{ color: 'white', fontSize: '2rem' }}/>
+                                        </IconButton>
+                                    </Tooltip>
+                                ) : showInternetIndicator ? (
+                                    <Tooltip
+                                        title={internetStatus === 'online' ? 'Internet Connected' : internetStatus === 'offline' ? 'No Internet Connection' : 'Checking Internet...'}
+                                        placement='left'
+                                        arrow
+                                        open={internetTooltipOpen}
+                                        onClose={() => {
+                                            // Add a small delay to prevent immediate closing
+                                            setTimeout(() => setInternetTooltipOpen(false), 100);
+                                        }}
+                                        disableHoverListener
+                                        disableFocusListener
+                                        disableTouchListener
+                                        PopperProps={{
+                                            disablePortal: true,
+                                        }}
+                                        slotProps={{
+                                            tooltip: {
+                                                sx: {
+                                                    fontSize: 14,
+                                                },
+                                            },
+                                        }}
+                                    >
+                                        <IconButton
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setInternetTooltipOpen(!internetTooltipOpen);
+                                            }}
+                                        >
+                                            {internetStatus === 'online' ? (
+                                                <PiGlobeSimple style={{ color: 'white', fontSize: '1.7rem' }} />
+                                            ) : internetStatus === 'offline' ? (
+                                                <PiGlobeSimpleX style={{ color: 'white', fontSize: '1.7rem' }} />
+                                            ) : (
+                                                <PiGlobeSimple style={{ color: 'gray', fontSize: '1.7rem' }} />
+                                            )}
+                                        </IconButton>
+                                    </Tooltip>
+                                ) : null}
 
                                 {/* Hamburger Menu Button */}
                                 <IconButton
