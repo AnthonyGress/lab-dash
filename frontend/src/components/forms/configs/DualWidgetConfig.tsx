@@ -1,4 +1,4 @@
-import { Box, Grid2 as Grid, Tab, Tabs, TextField } from '@mui/material';
+import { Box, Grid2 as Grid, Tab, Tabs, TextField, Typography } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { CheckboxElement, SelectElement, TextFieldElement } from 'react-hook-form-mui';
@@ -157,13 +157,19 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                         gauge1: gauges[0] || 'cpu',
                         gauge2: gauges[1] || 'temp',
                         gauge3: gauges[2] || 'ram',
-                        networkInterface: topConfig.networkInterface || ''
+                        networkInterface: topConfig.networkInterface || '',
+                        showDiskUsage: topConfig.showDiskUsage !== false,
+                        showSystemInfo: topConfig.showSystemInfo !== false,
+                        showInternetStatus: topConfig.showInternetStatus !== false
                     };
                     formContext.setValue('top_temperatureUnit', topConfig.temperatureUnit || 'fahrenheit');
                     formContext.setValue('top_gauge1', gauges[0] || 'cpu');
                     formContext.setValue('top_gauge2', gauges[1] || 'temp');
                     formContext.setValue('top_gauge3', gauges[2] || 'ram');
                     formContext.setValue('top_networkInterface', topConfig.networkInterface || '');
+                    formContext.setValue('top_showDiskUsage', topConfig.showDiskUsage !== false);
+                    formContext.setValue('top_showSystemInfo', topConfig.showSystemInfo !== false);
+                    formContext.setValue('top_showInternetStatus', topConfig.showInternetStatus !== false);
                 }
                 else if (topWidgetType === ITEM_TYPE.PIHOLE_WIDGET) {
                     // Use masked values for sensitive fields if they exist
@@ -265,13 +271,19 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                         gauge1: gauges[0] || 'cpu',
                         gauge2: gauges[1] || 'temp',
                         gauge3: gauges[2] || 'ram',
-                        networkInterface: bottomConfig.networkInterface || ''
+                        networkInterface: bottomConfig.networkInterface || '',
+                        showDiskUsage: bottomConfig.showDiskUsage !== false,
+                        showSystemInfo: bottomConfig.showSystemInfo !== false,
+                        showInternetStatus: bottomConfig.showInternetStatus !== false
                     };
                     formContext.setValue('bottom_temperatureUnit', bottomConfig.temperatureUnit || 'fahrenheit');
                     formContext.setValue('bottom_gauge1', gauges[0] || 'cpu');
                     formContext.setValue('bottom_gauge2', gauges[1] || 'temp');
                     formContext.setValue('bottom_gauge3', gauges[2] || 'ram');
                     formContext.setValue('bottom_networkInterface', bottomConfig.networkInterface || '');
+                    formContext.setValue('bottom_showDiskUsage', bottomConfig.showDiskUsage !== false);
+                    formContext.setValue('bottom_showSystemInfo', bottomConfig.showSystemInfo !== false);
+                    formContext.setValue('bottom_showInternetStatus', bottomConfig.showInternetStatus !== false);
                 }
                 else if (bottomWidgetType === ITEM_TYPE.PIHOLE_WIDGET) {
                     // Use masked values for sensitive fields if they exist
@@ -483,13 +495,19 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 gauge1: 'cpu',
                 gauge2: 'temp',
                 gauge3: 'ram',
-                networkInterface: ''
+                networkInterface: '',
+                showDiskUsage: true,
+                showSystemInfo: true,
+                showInternetStatus: true
             };
             formContext.setValue(getFieldName(position, 'temperatureUnit'), 'fahrenheit');
             formContext.setValue(getFieldName(position, 'gauge1'), 'cpu');
             formContext.setValue(getFieldName(position, 'gauge2'), 'temp');
             formContext.setValue(getFieldName(position, 'gauge3'), 'ram');
             formContext.setValue(getFieldName(position, 'networkInterface'), '');
+            formContext.setValue(getFieldName(position, 'showDiskUsage'), true);
+            formContext.setValue(getFieldName(position, 'showSystemInfo'), true);
+            formContext.setValue(getFieldName(position, 'showInternetStatus'), true);
         }
         else if (widgetType === ITEM_TYPE.PIHOLE_WIDGET) {
             defaultFields = {
@@ -611,6 +629,9 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
             fields.gauge2 = formContext.getValues(getFieldName(position, 'gauge2'));
             fields.gauge3 = formContext.getValues(getFieldName(position, 'gauge3'));
             fields.networkInterface = formContext.getValues(getFieldName(position, 'networkInterface'));
+            fields.showDiskUsage = formContext.getValues(getFieldName(position, 'showDiskUsage'));
+            fields.showSystemInfo = formContext.getValues(getFieldName(position, 'showSystemInfo'));
+            fields.showInternetStatus = formContext.getValues(getFieldName(position, 'showInternetStatus'));
         }
         else if (widgetType === ITEM_TYPE.PIHOLE_WIDGET) {
             fields.piholeHost = formContext.getValues(getFieldName(position, 'piholeHost'));
@@ -878,6 +899,9 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
             const gauge2 = formContext.getValues(getFieldName(position, 'gauge2'));
             const gauge3 = formContext.getValues(getFieldName(position, 'gauge3'));
             const networkInterface = formContext.getValues(getFieldName(position, 'networkInterface'));
+            const showDiskUsage = formContext.getValues(getFieldName(position, 'showDiskUsage'));
+            const showSystemInfo = formContext.getValues(getFieldName(position, 'showSystemInfo'));
+            const showInternetStatus = formContext.getValues(getFieldName(position, 'showInternetStatus'));
 
             config = {
                 temperatureUnit: temperatureUnit || 'fahrenheit',
@@ -886,7 +910,10 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                     gauge2 || fields.gauge2 || 'temp',
                     gauge3 || fields.gauge3 || 'ram'
                 ],
-                networkInterface: networkInterface || fields.networkInterface || ''
+                networkInterface: networkInterface || fields.networkInterface || '',
+                showDiskUsage: showDiskUsage !== false,
+                showSystemInfo: showSystemInfo !== false,
+                showInternetStatus: showInternetStatus !== false
             };
         }
         else if (widgetType === ITEM_TYPE.PIHOLE_WIDGET) {
@@ -1329,6 +1356,49 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                         />
                     </Box>
                 )}
+
+                {/* Display Options */}
+                <Box sx={{ mt: 3, mb: 2 }}>
+                    <Typography variant='h6' sx={{ color: 'text.primary', mb: 2 }}>
+                        Display Options
+                    </Typography>
+                </Box>
+
+                <Box sx={{ width: '100%', mb: 2 }}>
+                    <CheckboxElement
+                        label='Show Disk Usage'
+                        name={getFieldName(position, 'showDiskUsage')}
+                        sx={{
+                            ml: 1,
+                            color: 'white',
+                            '& .MuiSvgIcon-root': { fontSize: 30 }
+                        }}
+                    />
+                </Box>
+
+                <Box sx={{ width: '100%', mb: 2 }}>
+                    <CheckboxElement
+                        label='Show System Info Button'
+                        name={getFieldName(position, 'showSystemInfo')}
+                        sx={{
+                            ml: 1,
+                            color: 'white',
+                            '& .MuiSvgIcon-root': { fontSize: 30 }
+                        }}
+                    />
+                </Box>
+
+                <Box sx={{ width: '100%', mb: 2 }}>
+                    <CheckboxElement
+                        label='Show Internet Status'
+                        name={getFieldName(position, 'showInternetStatus')}
+                        sx={{
+                            ml: 1,
+                            color: 'white',
+                            '& .MuiSvgIcon-root': { fontSize: 30 }
+                        }}
+                    />
+                </Box>
             </>
         );
     };

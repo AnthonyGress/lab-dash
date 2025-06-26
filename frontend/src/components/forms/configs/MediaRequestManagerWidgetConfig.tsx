@@ -30,11 +30,11 @@ export const MediaRequestManagerWidgetConfig: React.FC<MediaRequestManagerWidget
         setValue('mediaRequestManagerService', value as 'jellyseerr' | 'overseerr');
 
         // Auto-update display name when service changes
-        if (!displayName || displayName === 'Jellyseerr' || displayName === 'Overseerr') {
+            if (!displayName || displayName === 'Jellyseerr' || displayName === 'Overseerr') {
             setValue('mediaRequestManagerName', value === 'jellyseerr' ? 'Jellyseerr' : 'Overseerr');
-        }
-        // Auto-update port when service changes
-        if (port === '5055' || !port) {
+            }
+            // Auto-update port when service changes
+            if (port === '5055' || !port) {
             setValue('mediaRequestManagerPort', '5055');
         }
     };
@@ -53,9 +53,9 @@ export const MediaRequestManagerWidgetConfig: React.FC<MediaRequestManagerWidget
                     >
                         Select Service:
                     </Typography>
-                    <RadioGroup
+                <RadioGroup
                         name='mediaRequestManagerService'
-                        value={service}
+                    value={service}
                         onChange={(e) => handleServiceChange(e.target.value)}
                         sx={{
                             flexDirection: 'row',
@@ -64,9 +64,9 @@ export const MediaRequestManagerWidgetConfig: React.FC<MediaRequestManagerWidget
                                 color: 'white'
                             }
                         }}
-                    >
-                        <FormControlLabel
-                            value='jellyseerr'
+                >
+                    <FormControlLabel
+                        value='jellyseerr'
                             control={
                                 <Radio
                                     sx={{
@@ -77,10 +77,10 @@ export const MediaRequestManagerWidgetConfig: React.FC<MediaRequestManagerWidget
                                     }}
                                 />
                             }
-                            label='Jellyseerr'
-                        />
-                        <FormControlLabel
-                            value='overseerr'
+                        label='Jellyseerr'
+                    />
+                    <FormControlLabel
+                        value='overseerr'
                             control={
                                 <Radio
                                     sx={{
@@ -91,9 +91,9 @@ export const MediaRequestManagerWidgetConfig: React.FC<MediaRequestManagerWidget
                                     }}
                                 />
                             }
-                            label='Overseerr'
-                        />
-                    </RadioGroup>
+                        label='Overseerr'
+                    />
+                </RadioGroup>
                 </Box>
             </Grid>
             <Grid>
@@ -101,7 +101,7 @@ export const MediaRequestManagerWidgetConfig: React.FC<MediaRequestManagerWidget
                     name='mediaRequestManagerName'
                     label='Display Name'
                     variant='outlined'
-                    fullWidth
+                fullWidth
                     autoComplete='off'
                     sx={{
                         width: '100%',
@@ -116,16 +116,16 @@ export const MediaRequestManagerWidgetConfig: React.FC<MediaRequestManagerWidget
                     slotProps={{
                         inputLabel: { style: { color: theme.palette.text.primary } }
                     }}
-                />
+            />
             </Grid>
             <Grid>
                 <TextFieldElement
                     name='mediaRequestManagerHost'
                     label='Host'
                     variant='outlined'
-                    fullWidth
+                fullWidth
                     autoComplete='off'
-                    required
+                required
                     sx={{
                         width: '100%',
                         '& .MuiOutlinedInput-root': {
@@ -146,9 +146,9 @@ export const MediaRequestManagerWidgetConfig: React.FC<MediaRequestManagerWidget
                     name='mediaRequestManagerPort'
                     label='Port'
                     variant='outlined'
-                    fullWidth
+                fullWidth
                     autoComplete='off'
-                    required
+                required
                     sx={{
                         width: '100%',
                         '& .MuiOutlinedInput-root': {
@@ -162,17 +162,17 @@ export const MediaRequestManagerWidgetConfig: React.FC<MediaRequestManagerWidget
                     slotProps={{
                         inputLabel: { style: { color: theme.palette.text.primary } }
                     }}
-                />
+            />
             </Grid>
             <Grid>
                 <TextFieldElement
                     name='mediaRequestManagerApiKey'
-                    label='API Key'
-                    type='password'
+                label='API Key'
+                type='password'
                     variant='outlined'
                     fullWidth
                     autoComplete='off'
-                    required
+                required
                     sx={{
                         width: '100%',
                         '& .MuiOutlinedInput-root': {
@@ -186,7 +186,7 @@ export const MediaRequestManagerWidgetConfig: React.FC<MediaRequestManagerWidget
                     slotProps={{
                         inputLabel: { style: { color: theme.palette.text.primary } }
                     }}
-                />
+            />
             </Grid>
             <Grid>
                 <CheckboxElement

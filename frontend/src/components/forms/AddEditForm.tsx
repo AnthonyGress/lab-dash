@@ -59,6 +59,9 @@ export type FormValues = {
     gauge2?: string;
     gauge3?: string;
     networkInterface?: string;
+    showDiskUsage?: boolean;
+    showSystemInfo?: boolean;
+    showInternetStatus?: boolean;
     // DateTime widget
     timezone?: string;
     // Pihole widget
@@ -129,6 +132,9 @@ export type FormValues = {
     top_gauge2?: string;
     top_gauge3?: string;
     top_networkInterface?: string;
+    top_showDiskUsage?: boolean;
+    top_showSystemInfo?: boolean;
+    top_showInternetStatus?: boolean;
     top_piholeHost?: string;
     top_piholePort?: string;
     top_piholeSsl?: boolean;
@@ -150,6 +156,9 @@ export type FormValues = {
     bottom_gauge2?: string;
     bottom_gauge3?: string;
     bottom_networkInterface?: string;
+    bottom_showDiskUsage?: boolean;
+    bottom_showSystemInfo?: boolean;
+    bottom_showInternetStatus?: boolean;
     bottom_piholeHost?: string;
     bottom_piholePort?: string;
     bottom_piholeSsl?: boolean;
@@ -391,6 +400,9 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             gauge2: systemMonitorGauges[1] || 'temp',
             gauge3: systemMonitorGauges[2] || 'ram',
             networkInterface: networkInterface,
+            showDiskUsage: existingItem?.config?.showDiskUsage !== false, // Default to true
+            showSystemInfo: existingItem?.config?.showSystemInfo !== false, // Default to true
+            showInternetStatus: existingItem?.config?.showInternetStatus !== false, // Default to true
             // Dual widget configuration (initialized with extracted types)
             topWidgetType: topWidgetType,
             bottomWidgetType: bottomWidgetType,
@@ -402,12 +414,21 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             top_gauge2: 'temp',
             top_gauge3: 'ram',
             top_networkInterface: '',
+            top_showDiskUsage: true,
+            top_showSystemInfo: true,
+            top_showInternetStatus: true,
             top_piholeHost: '',
             top_piholePort: '',
             top_piholeSsl: false,
             top_piholeApiToken: '',
             top_piholePassword: '',
             top_piholeName: '',
+            top_adguardHost: '',
+            top_adguardPort: '80',
+            top_adguardSsl: false,
+            top_adguardUsername: '',
+            top_adguardPassword: '',
+            top_adguardName: '',
             top_showLabel: true,
             bottom_temperatureUnit: 'fahrenheit',
             bottom_location: null,
@@ -416,12 +437,21 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             bottom_gauge2: 'temp',
             bottom_gauge3: 'ram',
             bottom_networkInterface: '',
+            bottom_showDiskUsage: true,
+            bottom_showSystemInfo: true,
+            bottom_showInternetStatus: true,
             bottom_piholeHost: '',
             bottom_piholePort: '',
             bottom_piholeSsl: false,
             bottom_piholeApiToken: '',
             bottom_piholePassword: '',
             bottom_piholeName: '',
+            bottom_adguardHost: '',
+            bottom_adguardPort: '80',
+            bottom_adguardSsl: false,
+            bottom_adguardUsername: '',
+            bottom_adguardPassword: '',
+            bottom_adguardName: '',
             bottom_showLabel: true,
         });
 
@@ -454,6 +484,9 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                         formContext.setValue('top_gauge2', topGauges[1] || 'temp');
                         formContext.setValue('top_gauge3', topGauges[2] || 'ram');
                         formContext.setValue('top_networkInterface', topConfig.networkInterface || '');
+                        formContext.setValue('top_showDiskUsage', topConfig.showDiskUsage !== false);
+                        formContext.setValue('top_showSystemInfo', topConfig.showSystemInfo !== false);
+                        formContext.setValue('top_showInternetStatus', topConfig.showInternetStatus !== false);
                     }
 
                     // Handle top pihole widget
@@ -515,6 +548,9 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                         formContext.setValue('bottom_gauge2', bottomGauges[1] || 'temp');
                         formContext.setValue('bottom_gauge3', bottomGauges[2] || 'ram');
                         formContext.setValue('bottom_networkInterface', bottomConfig.networkInterface || '');
+                        formContext.setValue('bottom_showDiskUsage', bottomConfig.showDiskUsage !== false);
+                        formContext.setValue('bottom_showSystemInfo', bottomConfig.showSystemInfo !== false);
+                        formContext.setValue('bottom_showInternetStatus', bottomConfig.showInternetStatus !== false);
                     }
 
                     // Handle bottom pihole widget
@@ -667,7 +703,10 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             } else if (data.widgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET) {
                 config = {
                     temperatureUnit: data.temperatureUnit || 'fahrenheit',
-                    gauges: [data.gauge1, data.gauge2, data.gauge3]
+                    gauges: [data.gauge1, data.gauge2, data.gauge3],
+                    showDiskUsage: data.showDiskUsage !== false, // Default to true
+                    showSystemInfo: data.showSystemInfo !== false, // Default to true
+                    showInternetStatus: data.showInternetStatus !== false // Default to true
                 };
 
                 // Add network interface to config if a network gauge is included
@@ -1138,7 +1177,10 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
         } else if (widgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET) {
             const config = {
                 temperatureUnit: data.temperatureUnit || 'fahrenheit',
-                gauges: [data.gauge1, data.gauge2, data.gauge3]
+                gauges: [data.gauge1, data.gauge2, data.gauge3],
+                showDiskUsage: data.showDiskUsage !== false, // Default to true
+                showSystemInfo: data.showSystemInfo !== false, // Default to true
+                showInternetStatus: data.showInternetStatus !== false // Default to true
             };
 
             // Add network interface to config if a network gauge is included

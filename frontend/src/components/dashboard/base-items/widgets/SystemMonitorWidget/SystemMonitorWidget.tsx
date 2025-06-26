@@ -23,6 +23,9 @@ interface SystemMonitorWidgetProps {
         gauges?: GaugeType[];
         networkInterface?: string;
         dualWidgetPosition?: 'top' | 'bottom';
+        showDiskUsage?: boolean;
+        showSystemInfo?: boolean;
+        showInternetStatus?: boolean;
     };
     editMode?: boolean;
 }
@@ -53,6 +56,11 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
 
     // Filter out 'none' option from selected gauges
     const visibleGauges = selectedGauges.filter(gauge => gauge !== 'none');
+
+    // Get display options from config (default to true for backward compatibility)
+    const showDiskUsage = config?.showDiskUsage !== false;
+    const showSystemInfo = config?.showSystemInfo !== false;
+    const showInternetStatus = config?.showInternetStatus !== false;
 
     const isMobile = useIsMobile();
 
@@ -493,20 +501,22 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
 
     return (
         <Grid container gap={0} sx={{ display: 'flex', width: '100%', justifyContent: 'center' }}>
-            <div
-                onPointerDownCapture={(e) => e.stopPropagation()}
-                onClick={(e) => e.stopPropagation()}
-            >
-                <IconButton
-                    sx={infoButtonStyles}
-                    onClick={() => setOpenSystemModal(true)}
+            {showSystemInfo && (
+                <div
+                    onPointerDownCapture={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
                 >
-                    <IoInformationCircleOutline style={{ color: theme.palette.text.primary, fontSize: '1.5rem' }}/>
-                </IconButton>
-            </div>
+                    <IconButton
+                        sx={infoButtonStyles}
+                        onClick={() => setOpenSystemModal(true)}
+                    >
+                        <IoInformationCircleOutline style={{ color: theme.palette.text.primary, fontSize: '1.5rem' }}/>
+                    </IconButton>
+                </div>
+            )}
 
-            {/* Internet Status Indicator - only show when not in edit mode */}
-            {!editMode && (
+            {/* Internet Status Indicator - only show when not in edit mode and enabled in config */}
+            {!editMode && showInternetStatus && (
                 <div
                     onPointerDownCapture={(e) => e.stopPropagation()}
                     onClick={(e) => e.stopPropagation()}
@@ -580,21 +590,25 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
                 ))}
             </Grid>
             <Box p={1} width={'92%'} mt={isDualWidget ? -2 : -1}>
-                <DiskUsageBar totalSpace={diskInformation?.totalSpace ? diskInformation?.totalSpace : 0} usedSpace={diskInformation?.usedSpace ? diskInformation?.usedSpace : 0} usedPercentage={diskInformation?.usedPercentage ? diskInformation?.usedPercentage : 0}/>
+                {showDiskUsage && <DiskUsageBar totalSpace={diskInformation?.totalSpace ? diskInformation?.totalSpace : 0} usedSpace={diskInformation?.usedSpace ? diskInformation?.usedSpace : 0} usedPercentage={diskInformation?.usedPercentage ? diskInformation?.usedPercentage : 0}/>}
             </Box>
             <CenteredModal open={openSystemModal} handleClose={() => setOpenSystemModal(false)} title='System Information' width={isMobile ? '90vw' :'30vw'} height='60vh'>
                 <Box component={Paper} p={2} sx={{ backgroundColor: COLORS.GRAY }} elevation={0}>
-                    <Typography><b>Processor:</b> {systemInformation?.cpu?.physicalCores} Core {systemInformation?.cpu?.manufacturer} {systemInformation?.cpu?.brand}</Typography>
-                    <Typography><b>Architecture:</b> {systemInformation?.system?.arch} </Typography>
-                    <Typography><b>Memory:</b> {`${systemInformation?.memory?.totalInstalled} GB`} </Typography>
-                    <Typography><b>OS:</b> {systemInformation?.system?.distro} {systemInformation?.system?.codename} {systemInformation?.system?.release}</Typography>
-                    <Typography><b>Kernel:</b> {systemInformation?.system?.kernel}</Typography>
-                    <Typography><b>Uptime:</b> {convertSecondsToUptime(systemInformation?.system?.uptime)}</Typography>
-                    <Typography><b>CPU Temperature:</b> {systemInformation?.cpu?.main ? formatTemperature(systemInformation?.cpu?.main) : 0}°{isFahrenheit ? 'F' : 'C'}</Typography>
-                    <Typography><b>Internet Status:</b> {internetStatus === 'online' ? 'Connected' : internetStatus === 'offline' ? 'Disconnected' : '⏳ Checking...'}</Typography>
-                    <Typography><b>Disk Mount:</b> {diskInformation?.mount}</Typography>
-                    <Typography><b>Disk Usage:</b> {`${diskInformation?.usedPercentage?.toFixed(0)}%`}</Typography>
-                    <Typography><b>Disk Total:</b> {`${diskInformation?.totalSpace} GB`}</Typography>
+                    {showSystemInfo && (
+                        <>
+                            <Typography><b>Processor:</b> {systemInformation?.cpu?.physicalCores} Core {systemInformation?.cpu?.manufacturer} {systemInformation?.cpu?.brand}</Typography>
+                            <Typography><b>Architecture:</b> {systemInformation?.system?.arch} </Typography>
+                            <Typography><b>Memory:</b> {`${systemInformation?.memory?.totalInstalled} GB`} </Typography>
+                            <Typography><b>OS:</b> {systemInformation?.system?.distro} {systemInformation?.system?.codename} {systemInformation?.system?.release}</Typography>
+                            <Typography><b>Kernel:</b> {systemInformation?.system?.kernel}</Typography>
+                            <Typography><b>Uptime:</b> {convertSecondsToUptime(systemInformation?.system?.uptime)}</Typography>
+                            <Typography><b>CPU Temperature:</b> {systemInformation?.cpu?.main ? formatTemperature(systemInformation?.cpu?.main) : 0}°{isFahrenheit ? 'F' : 'C'}</Typography>
+                            <Typography><b>Internet Status:</b> {internetStatus === 'online' ? 'Connected' : internetStatus === 'offline' ? 'Disconnected' : '⏳ Checking...'}</Typography>
+                            <Typography><b>Disk Mount:</b> {diskInformation?.mount}</Typography>
+                            <Typography><b>Disk Usage:</b> {`${diskInformation?.usedPercentage?.toFixed(0)}%`}</Typography>
+                            <Typography><b>Disk Total:</b> {`${diskInformation?.totalSpace} GB`}</Typography>
+                        </>
+                    )}
                     {systemInformation?.network && (
                         <>
                             <Typography><b>Network Interface:</b> {systemInformation.network.iface}</Typography>
