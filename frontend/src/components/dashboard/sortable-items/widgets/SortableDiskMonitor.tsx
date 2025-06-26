@@ -14,7 +14,7 @@ type Props = {
         selectedDisks?: Array<{ mount: string; customName: string; showMountPath?: boolean }>;
         showIcons?: boolean;
         showMountPath?: boolean;
-        layout?: '2x2' | '2x4' | '1x6';
+        layout?: '2x2' | '2x4' | '1x5';
         [key: string]: any;
     };
     onDelete?: () => void;
