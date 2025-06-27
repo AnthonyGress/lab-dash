@@ -335,7 +335,7 @@ export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) 
                     <Box
                         sx={{
                             position: 'absolute',
-                            top: layout === '2x2' ? 0 : 2.5,
+                            top: layout === '2x2' ? 0 : 3,
                             left: 16,
                             color: 'white',
                             fontSize: '1.1rem',
@@ -370,7 +370,7 @@ export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) 
                             {error}
                         </Typography>
                     </Box>
-                ) : (gridDisks.length === 0 || isLoading) ? (
+                ) : (gridDisks.length === 0) ? (
                     <Box sx={{
                         color: 'rgba(255,255,255,0.5)',
                         fontSize: '0.85rem'
