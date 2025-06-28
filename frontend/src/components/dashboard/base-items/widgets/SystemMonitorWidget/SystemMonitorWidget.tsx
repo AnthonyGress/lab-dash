@@ -1,11 +1,13 @@
 import { ArrowDownward, ArrowUpward, ErrorOutline } from '@mui/icons-material';
-import { Box, Button, CircularProgress, Grid2 as Grid, IconButton, Paper, Typography } from '@mui/material';
+import { Box, Button, CircularProgress, Grid2 as Grid, IconButton, Paper, Tooltip, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { IoInformationCircleOutline } from 'react-icons/io5';
+import { PiGlobeSimple, PiGlobeSimpleX } from 'react-icons/pi';
 
 import { DiskUsageBar } from './DiskUsageWidget';
 import { GaugeWidget } from './GaugeWidget';
 import { DashApi } from '../../../../../api/dash-api';
+import { useInternetStatus } from '../../../../../hooks/useInternetStatus';
 import { useIsMobile } from '../../../../../hooks/useIsMobile';
 import { COLORS } from '../../../../../theme/styles';
 import { theme } from '../../../../../theme/theme';
@@ -21,10 +23,14 @@ interface SystemMonitorWidgetProps {
         gauges?: GaugeType[];
         networkInterface?: string;
         dualWidgetPosition?: 'top' | 'bottom';
+        showDiskUsage?: boolean;
+        showSystemInfo?: boolean;
+        showInternetStatus?: boolean;
     };
+    editMode?: boolean;
 }
 
-export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
+export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetProps) => {
     const [systemInformation, setSystemInformation] = useState<any>();
     const [memoryInformation, setMemoryInformation] = useState<any>(0);
     const [diskInformation, setDiskInformation] = useState<any>();
@@ -41,12 +47,20 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
     const [isFahrenheit, setIsFahrenheit] = useState(config?.temperatureUnit !== 'celsius');
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [internetTooltipOpen, setInternetTooltipOpen] = useState(false);
+
+    const { internetStatus } = useInternetStatus();
 
     // Default gauges if not specified in config
     const selectedGauges = config?.gauges || ['cpu', 'temp', 'ram'];
 
     // Filter out 'none' option from selected gauges
     const visibleGauges = selectedGauges.filter(gauge => gauge !== 'none');
+
+    // Get display options from config (default to true for backward compatibility)
+    const showDiskUsage = config?.showDiskUsage !== false;
+    const showSystemInfo = config?.showSystemInfo !== false;
+    const showInternetStatus = config?.showInternetStatus !== false;
 
     const isMobile = useIsMobile();
 
@@ -70,11 +84,6 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
             infoButtonStyles.top = 0;
         }
     }
-
-    // Helper function to format space dynamically (GB or TB)
-    const formatSpace = (space: number): string => {
-        return space >= 1000 ? `${(space / 1000).toFixed(2)} TB` : `${space.toFixed(2)} GB`;
-    };
 
     // Helper function to convert temperature based on unit
     const formatTemperature = (tempCelsius: number): number => {
@@ -117,11 +126,6 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
         }
 
         return { value, unit, normalizedValue: normalizedMbps, display };
-    };
-
-    const formatNumberForDisplay = (num: number): string => {
-        // Pad numbers to a minimum width of 3 characters to prevent layout shifts
-        return Math.round(num).toString().padStart(3, ' ');
     };
 
     const getRamPercentage = (systemData: any) => {
@@ -404,18 +408,35 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
         fetchSystemInfo();
 
         // Fetch system info every 5 seconds
-        const interval = setInterval(() => {
+        const systemInfoInterval = setInterval(() => {
             // Only fetch if there's no error
             if (!errorMessage) {
                 fetchSystemInfo();
             }
         }, 5000); // 5000 ms = 5 seconds
 
-        // Clean up the interval when component unmounts or dependencies change
+        // Clean up the intervals when component unmounts or dependencies change
         return () => {
-            clearInterval(interval);
+            clearInterval(systemInfoInterval);
         };
-    }, [config?.temperatureUnit, config?.networkInterface]);
+    }, [config?.temperatureUnit, config?.networkInterface, editMode]);
+
+    // Close internet tooltip when clicking outside
+    useEffect(() => {
+        const handleClickOutside = () => {
+            if (internetTooltipOpen) {
+                setInternetTooltipOpen(false);
+            }
+        };
+
+        if (internetTooltipOpen) {
+            document.addEventListener('click', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('click', handleClickOutside);
+        };
+    }, [internetTooltipOpen]);
 
     // Determine layout styles based on dual widget position
     const containerStyles = {
@@ -477,17 +498,72 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
 
     return (
         <Grid container gap={0} sx={{ display: 'flex', width: '100%', justifyContent: 'center' }}>
-            <div
-                onPointerDownCapture={(e) => e.stopPropagation()}
-                onClick={(e) => e.stopPropagation()}
-            >
-                <IconButton
-                    sx={infoButtonStyles}
-                    onClick={() => setOpenSystemModal(true)}
+            {showSystemInfo && (
+                <div
+                    onPointerDownCapture={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
                 >
-                    <IoInformationCircleOutline style={{ color: theme.palette.text.primary, fontSize: '1.5rem' }}/>
-                </IconButton>
-            </div>
+                    <IconButton
+                        sx={infoButtonStyles}
+                        onClick={() => setOpenSystemModal(true)}
+                    >
+                        <IoInformationCircleOutline style={{ color: theme.palette.text.primary, fontSize: '1.5rem' }}/>
+                    </IconButton>
+                </div>
+            )}
+
+            {/* Internet Status Indicator - only show when not in edit mode and enabled in config */}
+            {!editMode && showInternetStatus && (
+                <div
+                    onPointerDownCapture={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <Tooltip
+                        title={internetStatus === 'online' ? 'Internet Connected' : internetStatus === 'offline' ? 'No Internet Connection' : 'Checking Internet...'}
+                        arrow
+                        placement='left'
+                        open={internetTooltipOpen}
+                        onClose={() => {
+                            // Add a small delay to prevent immediate closing
+                            setTimeout(() => setInternetTooltipOpen(false), 100);
+                        }}
+                        disableHoverListener
+                        disableFocusListener
+                        disableTouchListener
+                        PopperProps={{
+                            disablePortal: true,
+                        }}
+                        slotProps={{
+                            tooltip: {
+                                sx: {
+                                    fontSize: 14,
+                                },
+                            },
+                        }}
+                    >
+                        <IconButton
+                            sx={{
+                                position: 'absolute',
+                                top: isDualWidget ? (isBottomWidget ? 0 : -5) : -5,
+                                right: -5,
+                                zIndex: 99
+                            }}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setInternetTooltipOpen(!internetTooltipOpen);
+                            }}
+                        >
+                            {internetStatus === 'online' ? (
+                                <PiGlobeSimple style={{ color: theme.palette.text.primary, fontSize: '1.4rem' }} />
+                            ) : internetStatus === 'offline' ? (
+                                <PiGlobeSimpleX style={{ color: theme.palette.text.primary, fontSize: '1.4rem' }} />
+                            ) : (
+                                <PiGlobeSimple style={{ color: 'gray', fontSize: '1.4rem' }} />
+                            )}
+                        </IconButton>
+                    </Tooltip>
+                </div>
+            )}
 
             <Grid container
                 gap={gapSize}
@@ -511,20 +587,25 @@ export const SystemMonitorWidget = ({ config }: SystemMonitorWidgetProps) => {
                 ))}
             </Grid>
             <Box p={1} width={'92%'} mt={isDualWidget ? -2 : -1}>
-                <DiskUsageBar totalSpace={diskInformation?.totalSpace ? diskInformation?.totalSpace : 0} usedSpace={diskInformation?.usedSpace ? diskInformation?.usedSpace : 0} usedPercentage={diskInformation?.usedPercentage ? diskInformation?.usedPercentage : 0}/>
+                {showDiskUsage && <DiskUsageBar totalSpace={diskInformation?.totalSpace ? diskInformation?.totalSpace : 0} usedSpace={diskInformation?.usedSpace ? diskInformation?.usedSpace : 0} usedPercentage={diskInformation?.usedPercentage ? diskInformation?.usedPercentage : 0}/>}
             </Box>
             <CenteredModal open={openSystemModal} handleClose={() => setOpenSystemModal(false)} title='System Information' width={isMobile ? '90vw' :'30vw'} height='60vh'>
                 <Box component={Paper} p={2} sx={{ backgroundColor: COLORS.GRAY }} elevation={0}>
-                    <Typography><b>Processor:</b> {systemInformation?.cpu?.physicalCores} Core {systemInformation?.cpu?.manufacturer} {systemInformation?.cpu?.brand}</Typography>
-                    <Typography><b>Architecture:</b> {systemInformation?.system?.arch} </Typography>
-                    <Typography><b>Memory:</b> {`${systemInformation?.memory?.totalInstalled} GB`} </Typography>
-                    <Typography><b>OS:</b> {systemInformation?.system?.distro} {systemInformation?.system?.codename} {systemInformation?.system?.release}</Typography>
-                    <Typography><b>Kernel:</b> {systemInformation?.system?.kernel}</Typography>
-                    <Typography><b>Uptime:</b> {convertSecondsToUptime(systemInformation?.system?.uptime)}</Typography>
-                    <Typography><b>CPU Temperature:</b> {systemInformation?.cpu?.main ? formatTemperature(systemInformation?.cpu?.main) : 0}°{isFahrenheit ? 'F' : 'C'}</Typography>
-                    <Typography><b>Disk Mount:</b> {diskInformation?.mount}</Typography>
-                    <Typography><b>Disk Usage:</b> {`${diskInformation?.usedPercentage?.toFixed(0)}%`}</Typography>
-                    <Typography><b>Disk Total:</b> {`${diskInformation?.totalSpace} GB`}</Typography>
+                    {showSystemInfo && (
+                        <>
+                            <Typography><b>Processor:</b> {systemInformation?.cpu?.physicalCores} Core {systemInformation?.cpu?.manufacturer} {systemInformation?.cpu?.brand}</Typography>
+                            <Typography><b>Architecture:</b> {systemInformation?.system?.arch} </Typography>
+                            <Typography><b>Memory:</b> {`${systemInformation?.memory?.totalInstalled} GB`} </Typography>
+                            <Typography><b>OS:</b> {systemInformation?.system?.distro} {systemInformation?.system?.codename} {systemInformation?.system?.release}</Typography>
+                            <Typography><b>Kernel:</b> {systemInformation?.system?.kernel}</Typography>
+                            <Typography><b>Uptime:</b> {convertSecondsToUptime(systemInformation?.system?.uptime)}</Typography>
+                            <Typography><b>CPU Temperature:</b> {systemInformation?.cpu?.main ? formatTemperature(systemInformation?.cpu?.main) : 0}°{isFahrenheit ? 'F' : 'C'}</Typography>
+                            <Typography><b>Internet Status:</b> {internetStatus === 'online' ? 'Connected' : internetStatus === 'offline' ? 'Disconnected' : '⏳ Checking...'}</Typography>
+                            <Typography><b>Disk Mount:</b> {diskInformation?.mount}</Typography>
+                            <Typography><b>Disk Usage:</b> {`${diskInformation?.usedPercentage?.toFixed(0)}%`}</Typography>
+                            <Typography><b>Disk Total:</b> {`${diskInformation?.totalSpace} GB`}</Typography>
+                        </>
+                    )}
                     {systemInformation?.network && (
                         <>
                             <Typography><b>Network Interface:</b> {systemInformation.network.iface}</Typography>

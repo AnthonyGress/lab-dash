@@ -5,6 +5,7 @@ import shortid from 'shortid';
 
 import { AppContext } from './AppContext';
 import { DashApi } from '../api/dash-api';
+import { ToastManager } from '../components/toast/ToastManager';
 import { initialItems } from '../constants/constants';
 import { theme } from '../theme/theme';
 import { Config, DashboardItem, DashboardLayout, NewItem, Page } from '../types';
@@ -427,6 +428,15 @@ export const AppContextProvider = ({ children }: Props) => {
             }) || [];
 
             await DashApi.saveConfig({ pages: updatedPages });
+
+            // Update the config state with the new pages data
+            setConfig(prevConfig => ({
+                ...prevConfig!,
+                pages: updatedPages
+            }));
+
+            // Update pages state as well
+            setPages(updatedPages);
             return;
         }
 
@@ -443,6 +453,12 @@ export const AppContextProvider = ({ children }: Props) => {
         }
 
         await DashApi.saveConfig(updatedLayout);
+
+        // Update the config state with the new layout data
+        setConfig(prevConfig => ({
+            ...prevConfig!,
+            layout: updatedLayout.layout
+        }));
     };
 
     const refreshDashboard = async () => {
@@ -730,7 +746,7 @@ export const AppContextProvider = ({ children }: Props) => {
                     // Use existing config state instead of fetching again
                     if (!config) {
                         console.error('No config available for deleting page');
-                        PopupManager.failure('Failed to delete page. Please try again.');
+                        ToastManager.error('Failed to delete page. Please try again.');
                         return;
                     }
 
@@ -746,10 +762,10 @@ export const AppContextProvider = ({ children }: Props) => {
                         await refreshDashboard();
                     }
 
-                    PopupManager.success(`Page "${pageName}" deleted successfully`);
+                    ToastManager.success(`Page "${pageName}" deleted successfully`);
                 } catch (error) {
                     console.error('Failed to delete page:', error);
-                    PopupManager.failure('Failed to delete page. Please try again.');
+                    ToastManager.error('Failed to delete page. Please try again.');
                 }
             }
         });
@@ -1026,7 +1042,6 @@ export const AppContextProvider = ({ children }: Props) => {
             // Use getLayout() which already fetches config and updates state
             await getLayout();
 
-            const { ToastManager } = await import('../components/toast/ToastManager');
             const targetName = targetPageId === null ? 'Home' : pages.find(p => p.id === targetPageId)?.name || 'Unknown Page';
             const itemName = itemToMove?.label || itemToMove?.type || 'Item';
 
@@ -1052,7 +1067,6 @@ export const AppContextProvider = ({ children }: Props) => {
 
         } catch (error) {
             console.error('Failed to move item:', error);
-            const { ToastManager } = await import('../components/toast/ToastManager');
             ToastManager.error('Failed to move item. Please try again.');
         } finally {
             // Clear move in progress flag

@@ -1,7 +1,7 @@
 import { Add } from '@mui/icons-material';
 import CloseIcon from '@mui/icons-material/Close';
 import MenuIcon from '@mui/icons-material/Menu';
-import { Avatar, Badge, Button, Divider, Drawer, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, styled } from '@mui/material';
+import { Avatar, Badge, Button, CircularProgress, Divider, Drawer, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, styled } from '@mui/material';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
@@ -10,12 +10,14 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { nanoid } from 'nanoid';
 import React, { useEffect, useState } from 'react';
-import { FaEdit, FaInfoCircle, FaSync } from 'react-icons/fa';
+import { FaEdit, FaHeart, FaInfoCircle, FaSync } from 'react-icons/fa';
 import { FaArrowRightFromBracket, FaGear, FaHouse, FaTrashCan, FaUser } from 'react-icons/fa6';
+import { PiGlobeSimple, PiGlobeSimpleX } from 'react-icons/pi';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 
 import { DashApi } from '../../api/dash-api';
 import { useAppContext } from '../../context/useAppContext';
+import { useInternetStatus } from '../../hooks/useInternetStatus';
 import { COLORS, styles } from '../../theme/styles';
 import { theme } from '../../theme/theme';
 import { ITEM_TYPE } from '../../types';
@@ -48,6 +50,10 @@ export const ResponsiveAppBar = ({ children }: Props) => {
     const [openUpdateModal, setOpenUpdateModal] = useState(false);
     const [openVersionModal, setOpenVersionModal] = useState(false);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const [internetTooltipOpen, setInternetTooltipOpen] = useState(false);
+
+    const { internetStatus } = useInternetStatus();
+
     const {
         dashboardLayout,
         saveLayout,
@@ -72,9 +78,33 @@ export const ResponsiveAppBar = ({ children }: Props) => {
         deletePage
     } = useAppContext();
 
+    const showInternetIndicator = config?.showInternetIndicator !== false;
+
     const location = useLocation();
     const navigate = useNavigate();
     const currentPath = location.pathname;
+
+    // Close internet tooltip when clicking outside
+    useEffect(() => {
+        const handleClickOutside = () => {
+            if (internetTooltipOpen) {
+                setInternetTooltipOpen(false);
+            }
+        };
+
+        if (internetTooltipOpen) {
+            document.addEventListener('click', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('click', handleClickOutside);
+        };
+    }, [internetTooltipOpen]);
+
+    // Reset internet tooltip when edit mode changes
+    useEffect(() => {
+        setInternetTooltipOpen(false);
+    }, [editMode]);
 
     const handleClose = () => setOpenAddModal(false);
     const handleCloseEditPage = () => {
@@ -278,13 +308,53 @@ export const ResponsiveAppBar = ({ children }: Props) => {
 
                         <Box sx={{ display: 'flex' }}>
                             <Box sx={{ display: 'flex', width: { md: '300px', lg: '350px' }, flexGrow: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
-                                {editMode &&
-                                <Tooltip title='Add Item' placement='left'>
-                                    <IconButton onClick={() => setOpenAddModal(true)}>
-                                        <Add sx={{ color: 'white', fontSize: '2rem' }}/>
-                                    </IconButton>
-                                </Tooltip>
-                                }
+                                {editMode ? (
+                                    <Tooltip title='Add Item' placement='left' arrow>
+                                        <IconButton onClick={() => setOpenAddModal(true)}>
+                                            <Add sx={{ color: 'white', fontSize: '2rem' }}/>
+                                        </IconButton>
+                                    </Tooltip>
+                                ) : showInternetIndicator ? (
+                                    <Tooltip
+                                        key='internet-tooltip'
+                                        title={internetStatus === 'online' ? 'Internet Connected' : internetStatus === 'offline' ? 'No Internet Connection' : 'Checking Internet...'}
+                                        placement='left'
+                                        arrow
+                                        open={Boolean(internetTooltipOpen)}
+                                        onClose={() => {
+                                            // Add a small delay to prevent immediate closing
+                                            setTimeout(() => setInternetTooltipOpen(false), 100);
+                                        }}
+                                        disableHoverListener
+                                        disableFocusListener
+                                        disableTouchListener
+                                        PopperProps={{
+                                            disablePortal: true,
+                                        }}
+                                        slotProps={{
+                                            tooltip: {
+                                                sx: {
+                                                    fontSize: 14,
+                                                },
+                                            },
+                                        }}
+                                    >
+                                        <IconButton
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setInternetTooltipOpen(!internetTooltipOpen);
+                                            }}
+                                        >
+                                            {internetStatus === 'online' ? (
+                                                <PiGlobeSimple style={{ color: 'white', fontSize: '1.7rem' }} />
+                                            ) : internetStatus === 'offline' ? (
+                                                <PiGlobeSimpleX style={{ color: 'white', fontSize: '1.7rem' }} />
+                                            ) : (
+                                                <PiGlobeSimple style={{ color: 'gray', fontSize: '1.7rem' }} />
+                                            )}
+                                        </IconButton>
+                                    </Tooltip>
+                                ) : null}
 
                                 {/* Hamburger Menu Button */}
                                 <IconButton
@@ -440,6 +510,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                     {/* Bottom */}
                                     <List sx={{ mt: 'auto', mb: 1 }}>
                                         <Divider />
+
                                         {isLoggedIn && isAdmin && (
                                             <NavLink to='/settings' style={{ width: '100%', color: 'white' }} onClick={() => {handleCloseDrawer(); setEditMode(false);}}>
                                                 <ListItem disablePadding>
@@ -452,6 +523,25 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                 </ListItem>
                                             </NavLink>
                                         )}
+
+                                        {/* Donate Option */}
+                                        <ListItem disablePadding>
+                                            <ListItemButton
+                                                onClick={() => {
+                                                    handleCloseDrawer();
+                                                    window.open('https://buymeacoffee.com/anthonygress', '_blank', 'noopener,noreferrer');
+                                                }}
+                                            >
+                                                <ListItemIcon>
+                                                    <FaHeart style={{ color: 'red', fontSize: 22 }} />
+                                                </ListItemIcon>
+                                                <ListItemText primary={'Donate'} secondary={'Support this project'} slotProps={{
+                                                    secondary: {
+                                                        color: 'text.primary'
+                                                    }
+                                                }}/>
+                                            </ListItemButton>
+                                        </ListItem>
 
                                         {/* Update Available Item */}
                                         {updateAvailable && (

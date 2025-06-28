@@ -148,10 +148,8 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
                     return;
                 }
 
-                // Use DashApi method with config from context to avoid fetching config
-                const blockingData = appConfig
-                    ? await DashApi.getPiholeBlockingStatusWithConfig(id, appConfig)
-                    : await DashApi.getPiholeBlockingStatus(id);
+                // Use direct DashApi method to avoid stale frontend config during duplication
+                const blockingData = await DashApi.getPiholeBlockingStatus(id);
 
                 // Update isBlocking state based on status
                 const newIsBlocking = blockingData.status === 'enabled';
@@ -227,6 +225,16 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
                     // Handle timeout errors
                     console.warn('Pi-hole timeout error, will retry on next interval:', statusError.message);
                     return; // Exit early but don't set permanent error
+                } else if (statusError.message?.includes('Item not found in configuration')) {
+                    // Handle "Item not found" errors - this might be a timing issue during duplication
+                    console.log('🔄 Pi-hole: Status check failed, retrying in 2s (duplication timing)');
+                    // Schedule a retry after a short delay instead of setting permanent error
+                    setTimeout(() => {
+                        if (isMountedRef.current && !error && !authFailed) {
+                            checkPiholeStatus();
+                        }
+                    }, 2000); // Retry after 2 seconds
+                    return; // Exit without setting error state
                 }
             }
 
@@ -240,9 +248,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
                     console.error('Widget ID is required for Pi-hole stats');
                     return;
                 }
-                const piholeStats = appConfig
-                    ? await DashApi.getPiholeStatsWithConfig(id, appConfig)
-                    : await DashApi.getPiholeStats(id);
+                const piholeStats = await DashApi.getPiholeStats(id);
 
                 // Reset auth failed flag on successful fetch
                 setAuthFailed(false);
@@ -307,6 +313,16 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
                     // Network errors like timeouts or connection refused - don't set permanent error for temporary issues
                     console.warn('Pi-hole network error, will retry:', err.message);
                     return; // Exit without setting permanent error state
+                } else if (err.message?.includes('Item not found in configuration')) {
+                    // Handle "Item not found" errors - this might be a timing issue during duplication
+                    console.log('🔄 Pi-hole: Item not found, retrying in 2s (duplication timing)');
+                    // Schedule a retry after a short delay instead of setting permanent error
+                    setTimeout(() => {
+                        if (isMountedRef.current && !error && !authFailed) {
+                            checkPiholeStatus();
+                        }
+                    }, 2000); // Retry after 2 seconds
+                    return; // Exit without setting error state
                 } else if (err.message) {
                     setAuthFailed(true); // Use authFailed to prevent further requests for all other error types
                     setError(err.message);
@@ -420,7 +436,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
 
         const newConfig = {
             host: config.host || 'pi.hole',
-            port: config.port || '80',
+            port: config.port !== undefined ? config.port : (piholeConfig.port || '80'),
             ssl: config.ssl || false,
             _hasApiToken: config._hasApiToken || false,
             _hasPassword: config._hasPassword || false,
@@ -587,10 +603,8 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
                 throw new Error('Widget ID is required for Pi-hole disable');
             }
 
-            // Call the backend API to disable blocking
-            const result = appConfig
-                ? await DashApi.disablePiholeWithConfig(id, appConfig, seconds || undefined)
-                : await DashApi.disablePihole(id, seconds || undefined);
+            // Call the backend API to disable blocking - use direct method to avoid stale config
+            const result = await DashApi.disablePihole(id, seconds || undefined);
 
             if (result) {
                 // Only update UI after successful API call
@@ -708,12 +722,8 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
                 throw new Error('Widget ID is required for Pi-hole enable');
             }
 
-            // Call API first, don't update UI state optimistically
-            if (appConfig) {
-                await DashApi.enablePiholeWithConfig(id, appConfig);
-            } else {
-                await DashApi.enablePihole(id);
-            }
+            // Call API first, don't update UI state optimistically - use direct method to avoid stale config
+            await DashApi.enablePihole(id);
 
             // Only update UI after successful API call
             setIsBlocking(true);
@@ -857,12 +867,10 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
         // For v6, direct links won't work without authentication, so just open the main admin page
         const isV6 = !!piholeConfig._hasPassword && !piholeConfig._hasApiToken;
         if (isV6) {
-            // For v6, just go to main admin page since direct links require authentication
-            window.open(baseUrl, '_blank');
+            window.open(`${baseUrl}/queries`, '_blank');
             return;
         }
 
-        // For v5, we can deep link directly
         const queriesUrl = `${baseUrl}/queries.php`;
         window.open(queriesUrl, '_blank');
     };
@@ -872,15 +880,12 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
         const baseUrl = getBaseUrl();
         if (!baseUrl) return;
 
-        // For v6, direct links won't work without authentication, so just open the main admin page
         const isV6 = !!piholeConfig._hasPassword && !piholeConfig._hasApiToken;
         if (isV6) {
-            // For v6, just go to main admin page since direct links require authentication
-            window.open(baseUrl, '_blank');
+            window.open(`${baseUrl}/queries?upstream=blocklist`, '_blank');
             return;
         }
 
-        // For v5, we can deep link directly
         const blockedUrl = `${baseUrl}/queries.php?forwarddest=blocked`;
         window.open(blockedUrl, '_blank');
     };
@@ -890,11 +895,9 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
         const baseUrl = getBaseUrl();
         if (!baseUrl) return;
 
-        // For v6, direct links won't work without authentication, so just open the main admin page
         const isV6 = !!piholeConfig._hasPassword && !piholeConfig._hasApiToken;
         if (isV6) {
-            // For v6, just go to main admin page since direct links require authentication
-            window.open(baseUrl, '_blank');
+            window.open(`${baseUrl}/network`, '_blank');
             return;
         }
 
@@ -908,15 +911,12 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
         const baseUrl = getBaseUrl();
         if (!baseUrl) return;
 
-        // For v6, direct links won't work without authentication, so just open the main admin page
         const isV6 = !!piholeConfig._hasPassword && !piholeConfig._hasApiToken;
         if (isV6) {
-            // For v6, just go to main admin page since direct links require authentication
-            window.open(baseUrl, '_blank');
+            window.open(`${baseUrl}/groups-lists`, '_blank');
             return;
         }
 
-        // For v5, we can deep link directly
         const adlistsUrl = `${baseUrl}/groups-adlists.php`;
         window.open(adlistsUrl, '_blank');
     };

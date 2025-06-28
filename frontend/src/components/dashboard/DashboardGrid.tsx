@@ -17,22 +17,29 @@ import { Box, Grid2 as Grid, useMediaQuery } from '@mui/material';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import shortid from 'shortid';
 
-import { SortableDeluge } from './sortable-items/widgets/SortableDeluge';
-import { SortableTransmission } from './sortable-items/widgets/SortableTransmission';
+import { SortableSabnzbd } from './sortable-items/widgets/SortableSabnzbd';
 import { useAppContext } from '../../context/useAppContext';
-import { DashboardItem, ITEM_TYPE, TORRENT_CLIENT_TYPE } from '../../types';
+import { DashboardItem, DOWNLOAD_CLIENT_TYPE, ITEM_TYPE, TORRENT_CLIENT_TYPE } from '../../types';
 import { AddEditForm } from '../forms/AddEditForm';
 import { CenteredModal } from '../modals/CenteredModal';
 import { ConfirmationOptions, PopupManager } from '../modals/PopupManager';
 import { BlankAppShortcut } from './base-items/apps/BlankAppShortcut';
 import { BlankWidget } from './base-items/widgets/BlankWidget';
 import { SortableAppShortcut } from './sortable-items/apps/SortableAppShortcut';
+import { SortableAdGuard } from './sortable-items/widgets/SortableAdGuard';
 import { SortableDateTimeWidget } from './sortable-items/widgets/SortableDateTime';
+import { SortableDeluge } from './sortable-items/widgets/SortableDeluge';
+import { SortableDiskMonitor } from './sortable-items/widgets/SortableDiskMonitor';
 import { SortableDualWidget } from './sortable-items/widgets/SortableDualWidget';
 import { SortableGroupWidget } from './sortable-items/widgets/SortableGroupWidget';
+import { SortableMediaRequestManager } from './sortable-items/widgets/SortableMediaRequestManager';
+import { SortableMediaServer } from './sortable-items/widgets/SortableMediaServer';
 import { SortablePihole } from './sortable-items/widgets/SortablePihole';
 import { SortableQBittorrent } from './sortable-items/widgets/SortableQBittorrent';
+import { SortableRadarr } from './sortable-items/widgets/SortableRadarr';
+import { SortableSonarr } from './sortable-items/widgets/SortableSonarr';
 import { SortableSystemMonitorWidget } from './sortable-items/widgets/SortableSystemMonitor';
+import { SortableTransmission } from './sortable-items/widgets/SortableTransmission';
 import { SortableWeatherWidget } from './sortable-items/widgets/SortableWeather';
 import { theme } from '../../theme/theme';
 
@@ -435,7 +442,7 @@ export const DashboardGrid: React.FC = () => {
 
     const handleDelete = (id: string) => {
         const itemToDelete = dashboardLayout.find(item => item.id === id);
-        const itemName = itemToDelete?.label || 'Item';
+        const itemName = itemToDelete?.label || itemToDelete?.config?.displayName || 'Item';
 
         const options: ConfirmationOptions = {
             title: 'Delete Item?',
@@ -458,31 +465,70 @@ export const DashboardGrid: React.FC = () => {
         setOpenEditModal(true);
     };
 
-    const handleDuplicate = (item: DashboardItem) => {
+    const handleDuplicate = async (item: DashboardItem) => {
         // Deep clone the item
         const duplicatedItem: DashboardItem = JSON.parse(JSON.stringify(item));
 
         // Generate a new unique ID for the main item
-        const newGroupId = shortid.generate();
-        duplicatedItem.id = newGroupId;
+        const newItemId = shortid.generate();
+        duplicatedItem.id = newItemId;
 
-        // If this is a group widget, generate new IDs for each item inside it
-        if (item.type === ITEM_TYPE.GROUP_WIDGET && item.config?.items) {
+        // Helper function to preserve sensitive data flags for any config
+        const preserveSensitiveDataFlags = (config: any) => {
+            if (!config) return config;
 
-            // Ensure config exists
-            if (!duplicatedItem.config) {
-                duplicatedItem.config = {};
+            const preservedConfig = { ...config };
+
+            // Preserve Pi-hole sensitive data flags
+            if (config._hasApiToken) {
+                preservedConfig._hasApiToken = true;
+            }
+            if (config._hasPassword) {
+                preservedConfig._hasPassword = true;
             }
 
-            // Ensure each item in the group gets a new ID
-            duplicatedItem.config.items = item.config.items.map((groupItem: any) => {
-                const newItemId = shortid.generate();
+            // Preserve AdGuard Home sensitive data flags
+            if (config._hasUsername) {
+                preservedConfig._hasUsername = true;
+            }
 
-                return {
-                    ...groupItem,
-                    id: newItemId // New ID for each group item
-                };
-            });
+            return preservedConfig;
+        };
+
+        // Add duplication metadata to help backend copy credentials
+        if (duplicatedItem.config) {
+            duplicatedItem.config._duplicatedFrom = item.id;
+        } else {
+            duplicatedItem.config = { _duplicatedFrom: item.id };
+        }
+
+        // Handle different widget types with sensitive data
+        if (duplicatedItem.config) {
+            // Handle regular widgets with sensitive data
+            duplicatedItem.config = preserveSensitiveDataFlags(duplicatedItem.config);
+
+            // Handle dual widgets with sensitive data
+            if (item.type === ITEM_TYPE.DUAL_WIDGET && duplicatedItem.config) {
+                if (duplicatedItem.config.topWidget?.config) {
+                    duplicatedItem.config.topWidget.config = preserveSensitiveDataFlags(duplicatedItem.config.topWidget.config);
+                }
+                if (duplicatedItem.config.bottomWidget?.config) {
+                    duplicatedItem.config.bottomWidget.config = preserveSensitiveDataFlags(duplicatedItem.config.bottomWidget.config);
+                }
+            }
+
+            // Handle group widgets
+            if (item.type === ITEM_TYPE.GROUP_WIDGET && duplicatedItem.config?.items && item.config?.items) {
+                // Ensure each item in the group gets a new ID
+                duplicatedItem.config.items = item.config.items.map((groupItem: any) => {
+                    const newGroupItemId = shortid.generate();
+
+                    return {
+                        ...groupItem,
+                        id: newGroupItemId // New ID for each group item
+                    };
+                });
+            }
         }
 
         // Find the item's position in the layout
@@ -491,9 +537,18 @@ export const DashboardGrid: React.FC = () => {
         // Insert the duplicated item after the original
         const updatedLayout = [...dashboardLayout];
         updatedLayout.splice(index + 1, 0, duplicatedItem);
+
         // Update the dashboard
         setDashboardLayout(updatedLayout);
-        saveLayout(updatedLayout);
+
+        // Save layout and refresh config to ensure backend processing is complete
+        await saveLayout(updatedLayout);
+
+        // Refresh the dashboard to get the updated config with processed credentials
+        await refreshDashboard();
+
+        // Add a longer delay to ensure config propagates to all widgets and backend processing is complete
+        await new Promise(resolve => setTimeout(resolve, 500));
     };
 
     useEffect(() => {
@@ -568,6 +623,54 @@ export const DashboardGrid: React.FC = () => {
         };
     };
 
+    // Helper function to render download client components
+    const renderDownloadClient = (item: any, isOverlay = false) => {
+        const clientType = item.config?.clientType;
+        const key = item.id;
+        const commonProps = {
+            id: item.id,
+            editMode,
+            config: item.config,
+            onDelete: () => handleDelete(item.id),
+            onEdit: () => handleEdit(item),
+            onDuplicate: () => handleDuplicate(item),
+            ...(isOverlay && { isOverlay })
+        };
+
+        // Handle all download client types for DOWNLOAD_CLIENT
+        if (item.type === ITEM_TYPE.DOWNLOAD_CLIENT) {
+            if (clientType === DOWNLOAD_CLIENT_TYPE.DELUGE) {
+                return <SortableDeluge key={key} {...commonProps} />;
+            }
+            if (clientType === DOWNLOAD_CLIENT_TYPE.TRANSMISSION) {
+                return <SortableTransmission key={key} {...commonProps} />;
+            }
+            if (clientType === DOWNLOAD_CLIENT_TYPE.SABNZBD) {
+                return <SortableSabnzbd key={key} {...commonProps} />;
+            }
+            // Default to qBittorrent for DOWNLOAD_CLIENT
+            return <SortableQBittorrent key={key} {...commonProps} />;
+        }
+
+        // Handle legacy TORRENT_CLIENT - only torrent clients (no SABnzbd)
+        if (item.type === ITEM_TYPE.TORRENT_CLIENT) {
+            if (clientType === TORRENT_CLIENT_TYPE.DELUGE) {
+                return <SortableDeluge key={key} {...commonProps} />;
+            }
+            if (clientType === TORRENT_CLIENT_TYPE.TRANSMISSION) {
+                return <SortableTransmission key={key} {...commonProps} />;
+            }
+            if (clientType === TORRENT_CLIENT_TYPE.QBITTORRENT) {
+                return <SortableQBittorrent key={key} {...commonProps} />;
+            }
+            // Default to qBittorrent for legacy torrent client
+            return <SortableQBittorrent key={key} {...commonProps} />;
+        }
+
+        // Fallback
+        return <SortableQBittorrent key={key} {...commonProps} />;
+    };
+
     // Render a single item
     const renderItem = (item: any) => {
         switch (item.type) {
@@ -577,14 +680,16 @@ export const DashboardGrid: React.FC = () => {
             return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} config={createDateTimeConfig(item.config)} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
         case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
             return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
+        case ITEM_TYPE.DISK_MONITOR_WIDGET:
+            return <SortableDiskMonitor key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)} />;
         case ITEM_TYPE.PIHOLE_WIDGET:
             return <SortablePihole key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
+        case ITEM_TYPE.ADGUARD_WIDGET:
+            return <SortableAdGuard key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
+        case ITEM_TYPE.DOWNLOAD_CLIENT:
+            return renderDownloadClient(item);
         case ITEM_TYPE.TORRENT_CLIENT:
-            return item.config?.clientType === TORRENT_CLIENT_TYPE.DELUGE
-                ? <SortableDeluge key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>
-                : item.config?.clientType === TORRENT_CLIENT_TYPE.TRANSMISSION
-                    ? <SortableTransmission key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>
-                    : <SortableQBittorrent key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
+            return renderDownloadClient(item);
         case ITEM_TYPE.DUAL_WIDGET: {
             // Transform the existing config to the correct structure
             const dualWidgetConfig = {
@@ -607,6 +712,46 @@ export const DashboardGrid: React.FC = () => {
                 id={item.id}
                 editMode={editMode}
                 label={item.label}
+                config={item.config}
+                onDelete={() => handleDelete(item.id)}
+                onEdit={() => handleEdit(item)}
+                onDuplicate={() => handleDuplicate(item)}
+            />;
+        case ITEM_TYPE.MEDIA_SERVER_WIDGET:
+            return <SortableMediaServer
+                key={item.id}
+                id={item.id}
+                editMode={editMode}
+                config={item.config}
+                onDelete={() => handleDelete(item.id)}
+                onEdit={() => handleEdit(item)}
+                onDuplicate={() => handleDuplicate(item)}
+            />;
+        case ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET:
+            return <SortableMediaRequestManager
+                key={item.id}
+                id={item.id}
+                editMode={editMode}
+                config={item.config}
+                onDelete={() => handleDelete(item.id)}
+                onEdit={() => handleEdit(item)}
+                onDuplicate={() => handleDuplicate(item)}
+            />;
+        case ITEM_TYPE.SONARR_WIDGET:
+            return <SortableSonarr
+                key={item.id}
+                id={item.id}
+                editMode={editMode}
+                config={item.config}
+                onDelete={() => handleDelete(item.id)}
+                onEdit={() => handleEdit(item)}
+                onDuplicate={() => handleDuplicate(item)}
+            />;
+        case ITEM_TYPE.RADARR_WIDGET:
+            return <SortableRadarr
+                key={item.id}
+                id={item.id}
+                editMode={editMode}
                 config={item.config}
                 onDelete={() => handleDelete(item.id)}
                 onEdit={() => handleEdit(item)}
@@ -747,15 +892,15 @@ export const DashboardGrid: React.FC = () => {
                                     }
                                     case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
                                         return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
+                                    case ITEM_TYPE.DISK_MONITOR_WIDGET:
+                                        return <SortableDiskMonitor key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay />;
                                     case ITEM_TYPE.PIHOLE_WIDGET:
                                         return <SortablePihole key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
-                                    case ITEM_TYPE.TORRENT_CLIENT: {
-                                        return item.config?.clientType === TORRENT_CLIENT_TYPE.DELUGE
-                                            ? <SortableDeluge key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>
-                                            : item.config?.clientType === TORRENT_CLIENT_TYPE.TRANSMISSION
-                                                ? <SortableTransmission key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>
-                                                : <SortableQBittorrent key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
-                                    }
+                                    case ITEM_TYPE.ADGUARD_WIDGET:
+                                        return <SortableAdGuard key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
+                                    case ITEM_TYPE.DOWNLOAD_CLIENT:
+                                    case ITEM_TYPE.TORRENT_CLIENT:
+                                        return renderDownloadClient(item, true);
                                     case ITEM_TYPE.DUAL_WIDGET: {
                                         // Transform the existing config to the correct structure
                                         const dualWidgetConfig = {
@@ -775,6 +920,38 @@ export const DashboardGrid: React.FC = () => {
                                             key={item.id}
                                             id={item.id}
                                             label={item.label}
+                                            editMode={editMode}
+                                            config={item.config}
+                                            isOverlay
+                                        />;
+                                    case ITEM_TYPE.MEDIA_SERVER_WIDGET:
+                                        return <SortableMediaServer
+                                            key={item.id}
+                                            id={item.id}
+                                            editMode={editMode}
+                                            config={item.config}
+                                            isOverlay
+                                        />;
+                                    case ITEM_TYPE.SONARR_WIDGET:
+                                        return <SortableSonarr
+                                            key={item.id}
+                                            id={item.id}
+                                            editMode={editMode}
+                                            config={item.config}
+                                            isOverlay
+                                        />;
+                                    case ITEM_TYPE.RADARR_WIDGET:
+                                        return <SortableRadarr
+                                            key={item.id}
+                                            id={item.id}
+                                            editMode={editMode}
+                                            config={item.config}
+                                            isOverlay
+                                        />;
+                                    case ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET:
+                                        return <SortableMediaRequestManager
+                                            key={item.id}
+                                            id={item.id}
                                             editMode={editMode}
                                             config={item.config}
                                             isOverlay

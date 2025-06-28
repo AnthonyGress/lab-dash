@@ -31,6 +31,7 @@ type FormValues = {
     search: boolean;
     searchProviderId: string;
     searchProvider?: SearchProvider;
+    showInternetIndicator: boolean;
     configFile?: File | null;
     appIconFiles?: File[] | null;
 }
@@ -267,6 +268,7 @@ export const SettingsForm = () => {
                         ? SEARCH_PROVIDERS.find(p => p.id === initialProviderId)?.url || ''
                         : ''
             },
+            showInternetIndicator: config?.showInternetIndicator !== false, // Default to true
             configFile: null,
             appIconFiles: null
         }
@@ -278,6 +280,7 @@ export const SettingsForm = () => {
     const title = formContext.watch('title', '');
     const searchProviderName = formContext.watch('searchProvider.name', '');
     const searchProviderUrl = formContext.watch('searchProvider.url', '');
+    const showInternetIndicator = formContext.watch('showInternetIndicator', true);
     const configFile = formContext.watch('configFile', null);
     const appIconFiles = formContext.watch('appIconFiles', null);
 
@@ -327,6 +330,9 @@ export const SettingsForm = () => {
             // Search enabled change
             if (searchEnabled !== (config?.search || false)) return true;
 
+            // Internet indicator change
+            if (showInternetIndicator !== (config?.showInternetIndicator !== false)) return true;
+
             // Search provider changes
             if (searchEnabled) {
                 if (searchProviderId === 'custom') {
@@ -367,6 +373,7 @@ export const SettingsForm = () => {
         searchProviderId,
         searchProviderName,
         searchProviderUrl,
+        showInternetIndicator,
         config
     ]);
 
@@ -392,6 +399,10 @@ export const SettingsForm = () => {
 
             if (data.search !== undefined) {
                 updatedConfig.search = data.search;
+            }
+
+            if (data.showInternetIndicator !== undefined) {
+                updatedConfig.showInternetIndicator = data.showInternetIndicator;
             }
 
             // Handle search provider if search is enabled
@@ -516,6 +527,7 @@ export const SettingsForm = () => {
                         name: refreshedConfig?.searchProvider?.name || '',
                         url: refreshedConfig?.searchProvider?.url || ''
                     },
+                    showInternetIndicator: refreshedConfig?.showInternetIndicator !== false,
                     appIconFiles: null
                 });
             }
@@ -710,6 +722,17 @@ export const SettingsForm = () => {
                                     />
                                 </Box>
 
+                                <Typography variant='body1' sx={{
+                                    alignSelf: 'center',
+                                    fontSize: { xs: '0.875rem', sm: '1rem' }
+                                }}>Show Internet Indicator</Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                    <CheckboxElement
+                                        name='showInternetIndicator'
+                                        sx={{ color: 'text.primary' }}
+                                    />
+                                </Box>
+
                                 {searchEnabled && (
                                     <>
                                         <Typography variant='body1' sx={{
@@ -822,7 +845,8 @@ export const SettingsForm = () => {
                                                     title: 'Lab Dash',
                                                     backgroundImage: '',
                                                     search: false,
-                                                    searchProvider: undefined
+                                                    searchProvider: undefined,
+                                                    showInternetIndicator: true
                                                 });
                                                 await refreshDashboard();
                                                 PopupManager.success('All settings have been reset', () => navigate('/'));

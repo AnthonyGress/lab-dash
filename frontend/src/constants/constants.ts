@@ -15,3 +15,5 @@ export const BACKEND_URL = import.meta.env.PROD ? '' : 'http://localhost:5000';
 
 export const FIFTEEN_MIN_IN_MS = 900000;
 export const TWO_MIN_IN_MS = 120000;
+export const THIRTY_SEC_IN_MS = 30000;
+export const TWENTY_SEC_IN_MS = 20000;

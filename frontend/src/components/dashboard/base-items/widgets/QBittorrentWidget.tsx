@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { TorrentClientWidget } from './TorrentClientWidget';
+import { DownloadClientWidget } from './DownloadClientWidget';
 import { DashApi } from '../../../../api/dash-api';
+import { THIRTY_SEC_IN_MS, TWO_MIN_IN_MS } from '../../../../constants/constants';
 
 type QBittorrentWidgetConfig = {
     host?: string;
@@ -37,13 +38,13 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig; id?
     // Update credentials when config changes
     useEffect(() => {
         if (config) {
-            setLoginCredentials({
+            setLoginCredentials(prev => ({
                 host: config.host || '',
-                port: config.port || '8080',
+                port: config.port !== undefined ? config.port : (prev.port || '8080'),
                 ssl: config.ssl || false,
                 username: config.username || '',
                 password: '' // Password is handled on backend, not sent to frontend
-            });
+            }));
             // Reset attempt counter and failed flag when credentials change
             loginAttemptsRef.current = 0;
             setLoginAttemptFailed(false);
@@ -293,7 +294,7 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig; id?
     }, [loginCredentials, fetchTorrents]);
 
     return (
-        <TorrentClientWidget
+        <DownloadClientWidget
             clientName='qBittorrent'
             isLoading={isLoading}
             isAuthenticated={isAuthenticated}

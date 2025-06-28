@@ -1,9 +1,10 @@
-import { Box, Grid2 as Grid, Tab, Tabs, TextField } from '@mui/material';
+import { Box, Grid2 as Grid, Tab, Tabs, TextField, Typography } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { CheckboxElement, SelectElement, TextFieldElement } from 'react-hook-form-mui';
 
 import { DateTimeWidgetConfig } from './DateTimeWidgetConfig';
+import { DiskMonitorWidgetConfig } from './DiskMonitorWidgetConfig';
 import { DashApi } from '../../../api/dash-api';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { COLORS } from '../../../theme/styles';
@@ -16,7 +17,9 @@ const WIDGET_OPTIONS = [
     { id: ITEM_TYPE.DATE_TIME_WIDGET, label: 'Date & Time' },
     { id: ITEM_TYPE.WEATHER_WIDGET, label: 'Weather' },
     { id: ITEM_TYPE.SYSTEM_MONITOR_WIDGET, label: 'System Monitor' },
-    { id: ITEM_TYPE.PIHOLE_WIDGET, label: 'Pi-hole' }
+    { id: ITEM_TYPE.DISK_MONITOR_WIDGET, label: 'Disk Monitor' },
+    { id: ITEM_TYPE.PIHOLE_WIDGET, label: 'Pi-hole' },
+    { id: ITEM_TYPE.ADGUARD_WIDGET, label: 'AdGuard Home' }
 ];
 
 interface DualWidgetConfigProps {
@@ -52,6 +55,31 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
 
     // State to track current page - 0 for top, 1 for bottom
     const [currentPage, setCurrentPage] = useState(0);
+
+    // Track widget types using state instead of formContext.watch to prevent re-renders
+    const [topWidgetType, setTopWidgetType] = useState<string>('');
+    const [bottomWidgetType, setBottomWidgetType] = useState<string>('');
+
+    // Subscribe to widget type changes without causing re-renders
+    useEffect(() => {
+        const subscription = formContext.watch((value, { name }) => {
+            if (name === 'topWidgetType') {
+                setTopWidgetType(value.topWidgetType || '');
+            }
+            if (name === 'bottomWidgetType') {
+                setBottomWidgetType(value.bottomWidgetType || '');
+            }
+        });
+        return () => subscription.unsubscribe();
+    }, [formContext]);
+
+    // Initialize widget types from form values
+    useEffect(() => {
+        const currentTopType = formContext.getValues('topWidgetType');
+        const currentBottomType = formContext.getValues('bottomWidgetType');
+        if (currentTopType) setTopWidgetType(currentTopType);
+        if (currentBottomType) setBottomWidgetType(currentBottomType);
+    }, [formContext]);
 
     const selectStyling = {
         '& .MuiOutlinedInput-root': {
@@ -131,13 +159,31 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                         gauge1: gauges[0] || 'cpu',
                         gauge2: gauges[1] || 'temp',
                         gauge3: gauges[2] || 'ram',
-                        networkInterface: topConfig.networkInterface || ''
+                        networkInterface: topConfig.networkInterface || '',
+                        showDiskUsage: topConfig.showDiskUsage !== false,
+                        showSystemInfo: topConfig.showSystemInfo !== false,
+                        showInternetStatus: topConfig.showInternetStatus !== false
                     };
                     formContext.setValue('top_temperatureUnit', topConfig.temperatureUnit || 'fahrenheit');
                     formContext.setValue('top_gauge1', gauges[0] || 'cpu');
                     formContext.setValue('top_gauge2', gauges[1] || 'temp');
                     formContext.setValue('top_gauge3', gauges[2] || 'ram');
                     formContext.setValue('top_networkInterface', topConfig.networkInterface || '');
+                    formContext.setValue('top_showDiskUsage', topConfig.showDiskUsage !== false);
+                    formContext.setValue('top_showSystemInfo', topConfig.showSystemInfo !== false);
+                    formContext.setValue('top_showInternetStatus', topConfig.showInternetStatus !== false);
+                }
+                else if (topWidgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
+                    topWidgetFields = {
+                        selectedDisks: topConfig.selectedDisks || [],
+                        showIcons: topConfig.showIcons !== false,
+                        showName: topConfig.showName !== false,
+                        layout: '2x2' // Force 2x2 for dual widgets
+                    };
+                    formContext.setValue('top_selectedDisks', topConfig.selectedDisks || []);
+                    formContext.setValue('top_showIcons', topConfig.showIcons !== false);
+                    formContext.setValue('top_showName', topConfig.showName !== false);
+                    formContext.setValue('top_layout', '2x2');
                 }
                 else if (topWidgetType === ITEM_TYPE.PIHOLE_WIDGET) {
                     // Use masked values for sensitive fields if they exist
@@ -154,11 +200,33 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                         showLabel: topConfig.showLabel !== undefined ? topConfig.showLabel : true
                     };
                     formContext.setValue('top_piholeHost', topConfig.host || '');
-                    formContext.setValue('top_piholePort', topConfig.port || '');
+                    formContext.setValue('top_piholePort', topConfig.port !== undefined ? topConfig.port : '');
                     formContext.setValue('top_piholeSsl', topConfig.ssl || false);
                     formContext.setValue('top_piholeApiToken', maskedApiToken);
                     formContext.setValue('top_piholePassword', maskedPassword);
                     formContext.setValue('top_piholeName', topConfig.displayName || '');
+                    formContext.setValue('top_showLabel', topConfig.showLabel !== undefined ? topConfig.showLabel : true);
+                }
+                else if (topWidgetType === ITEM_TYPE.ADGUARD_WIDGET) {
+                    // Use masked values for sensitive fields if they exist
+                    const maskedUsername = topConfig._hasUsername ? '**********' : '';
+                    const maskedPassword = topConfig._hasPassword ? '**********' : '';
+
+                    topWidgetFields = {
+                        adguardHost: topConfig.host || '',
+                        adguardPort: topConfig.port || '80',
+                        adguardSsl: topConfig.ssl || false,
+                        adguardUsername: maskedUsername,
+                        adguardPassword: maskedPassword,
+                        adguardName: topConfig.displayName || '',
+                        showLabel: topConfig.showLabel !== undefined ? topConfig.showLabel : true
+                    };
+                    formContext.setValue('top_adguardHost', topConfig.host || '');
+                    formContext.setValue('top_adguardPort', topConfig.port !== undefined ? topConfig.port : '80');
+                    formContext.setValue('top_adguardSsl', topConfig.ssl || false);
+                    formContext.setValue('top_adguardUsername', maskedUsername);
+                    formContext.setValue('top_adguardPassword', maskedPassword);
+                    formContext.setValue('top_adguardName', topConfig.displayName || '');
                     formContext.setValue('top_showLabel', topConfig.showLabel !== undefined ? topConfig.showLabel : true);
                 }
             }
@@ -217,13 +285,31 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                         gauge1: gauges[0] || 'cpu',
                         gauge2: gauges[1] || 'temp',
                         gauge3: gauges[2] || 'ram',
-                        networkInterface: bottomConfig.networkInterface || ''
+                        networkInterface: bottomConfig.networkInterface || '',
+                        showDiskUsage: bottomConfig.showDiskUsage !== false,
+                        showSystemInfo: bottomConfig.showSystemInfo !== false,
+                        showInternetStatus: bottomConfig.showInternetStatus !== false
                     };
                     formContext.setValue('bottom_temperatureUnit', bottomConfig.temperatureUnit || 'fahrenheit');
                     formContext.setValue('bottom_gauge1', gauges[0] || 'cpu');
                     formContext.setValue('bottom_gauge2', gauges[1] || 'temp');
                     formContext.setValue('bottom_gauge3', gauges[2] || 'ram');
                     formContext.setValue('bottom_networkInterface', bottomConfig.networkInterface || '');
+                    formContext.setValue('bottom_showDiskUsage', bottomConfig.showDiskUsage !== false);
+                    formContext.setValue('bottom_showSystemInfo', bottomConfig.showSystemInfo !== false);
+                    formContext.setValue('bottom_showInternetStatus', bottomConfig.showInternetStatus !== false);
+                }
+                else if (bottomWidgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
+                    bottomWidgetFields = {
+                        selectedDisks: bottomConfig.selectedDisks || [],
+                        showIcons: bottomConfig.showIcons !== false,
+                        showName: bottomConfig.showName !== false,
+                        layout: '2x2' // Force 2x2 for dual widgets
+                    };
+                    formContext.setValue('bottom_selectedDisks', bottomConfig.selectedDisks || []);
+                    formContext.setValue('bottom_showIcons', bottomConfig.showIcons !== false);
+                    formContext.setValue('bottom_showName', bottomConfig.showName !== false);
+                    formContext.setValue('bottom_layout', '2x2');
                 }
                 else if (bottomWidgetType === ITEM_TYPE.PIHOLE_WIDGET) {
                     // Use masked values for sensitive fields if they exist
@@ -240,11 +326,33 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                         showLabel: bottomConfig.showLabel !== undefined ? bottomConfig.showLabel : true
                     };
                     formContext.setValue('bottom_piholeHost', bottomConfig.host || '');
-                    formContext.setValue('bottom_piholePort', bottomConfig.port || '');
+                    formContext.setValue('bottom_piholePort', bottomConfig.port !== undefined ? bottomConfig.port : '');
                     formContext.setValue('bottom_piholeSsl', bottomConfig.ssl || false);
                     formContext.setValue('bottom_piholeApiToken', maskedApiToken);
                     formContext.setValue('bottom_piholePassword', maskedPassword);
                     formContext.setValue('bottom_piholeName', bottomConfig.displayName || '');
+                    formContext.setValue('bottom_showLabel', bottomConfig.showLabel !== undefined ? bottomConfig.showLabel : true);
+                }
+                else if (bottomWidgetType === ITEM_TYPE.ADGUARD_WIDGET) {
+                    // Use masked values for sensitive fields if they exist
+                    const maskedUsername = bottomConfig._hasUsername ? '**********' : '';
+                    const maskedPassword = bottomConfig._hasPassword ? '**********' : '';
+
+                    bottomWidgetFields = {
+                        adguardHost: bottomConfig.host || '',
+                        adguardPort: bottomConfig.port || '80',
+                        adguardSsl: bottomConfig.ssl || false,
+                        adguardUsername: maskedUsername,
+                        adguardPassword: maskedPassword,
+                        adguardName: bottomConfig.displayName || '',
+                        showLabel: bottomConfig.showLabel !== undefined ? bottomConfig.showLabel : true
+                    };
+                    formContext.setValue('bottom_adguardHost', bottomConfig.host || '');
+                    formContext.setValue('bottom_adguardPort', bottomConfig.port !== undefined ? bottomConfig.port : '80');
+                    formContext.setValue('bottom_adguardSsl', bottomConfig.ssl || false);
+                    formContext.setValue('bottom_adguardUsername', maskedUsername);
+                    formContext.setValue('bottom_adguardPassword', maskedPassword);
+                    formContext.setValue('bottom_adguardName', bottomConfig.displayName || '');
                     formContext.setValue('bottom_showLabel', bottomConfig.showLabel !== undefined ? bottomConfig.showLabel : true);
                 }
             }
@@ -320,6 +428,22 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 formContext.setValue(getFieldName(position, 'networkInterface'), fields.networkInterface);
             }
         }
+        else if (widgetType && widgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
+            if (fields.selectedDisks !== undefined) {
+                formContext.setValue(getFieldName(position, 'selectedDisks'), fields.selectedDisks);
+            }
+
+            if (fields.showIcons !== undefined) {
+                formContext.setValue(getFieldName(position, 'showIcons'), fields.showIcons);
+            }
+
+            if (fields.showName !== undefined) {
+                formContext.setValue(getFieldName(position, 'showName'), fields.showName);
+            }
+
+            // Always force 2x2 layout for dual widgets
+            formContext.setValue(getFieldName(position, 'layout'), '2x2');
+        }
         else if (widgetType && widgetType === ITEM_TYPE.PIHOLE_WIDGET) {
             if (fields.piholeHost !== undefined) {
                 formContext.setValue(getFieldName(position, 'piholeHost'), fields.piholeHost);
@@ -349,9 +473,38 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 formContext.setValue(getFieldName(position, 'showLabel'), fields.showLabel);
             }
         }
+        else if (widgetType && widgetType === ITEM_TYPE.ADGUARD_WIDGET) {
+            if (fields.adguardHost !== undefined) {
+                formContext.setValue(getFieldName(position, 'adguardHost'), fields.adguardHost);
+            }
 
-        // Trigger form validation
-        formContext.trigger();
+            if (fields.adguardPort !== undefined) {
+                formContext.setValue(getFieldName(position, 'adguardPort'), fields.adguardPort);
+            }
+
+            if (fields.adguardSsl !== undefined) {
+                formContext.setValue(getFieldName(position, 'adguardSsl'), fields.adguardSsl);
+            }
+
+            if (fields.adguardUsername !== undefined) {
+                formContext.setValue(getFieldName(position, 'adguardUsername'), fields.adguardUsername);
+            }
+
+            if (fields.adguardPassword !== undefined) {
+                formContext.setValue(getFieldName(position, 'adguardPassword'), fields.adguardPassword);
+            }
+
+            if (fields.adguardName !== undefined) {
+                formContext.setValue(getFieldName(position, 'adguardName'), fields.adguardName);
+            }
+
+            if (fields.showLabel !== undefined) {
+                formContext.setValue(getFieldName(position, 'showLabel'), fields.showLabel);
+            }
+        }
+
+        // Don't trigger validation here as it can cause flashing
+        // formContext.trigger();
     };
 
     // Reset form fields to defaults for a position
@@ -384,13 +537,31 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 gauge1: 'cpu',
                 gauge2: 'temp',
                 gauge3: 'ram',
-                networkInterface: ''
+                networkInterface: '',
+                showDiskUsage: true,
+                showSystemInfo: true,
+                showInternetStatus: true
             };
             formContext.setValue(getFieldName(position, 'temperatureUnit'), 'fahrenheit');
             formContext.setValue(getFieldName(position, 'gauge1'), 'cpu');
             formContext.setValue(getFieldName(position, 'gauge2'), 'temp');
             formContext.setValue(getFieldName(position, 'gauge3'), 'ram');
             formContext.setValue(getFieldName(position, 'networkInterface'), '');
+            formContext.setValue(getFieldName(position, 'showDiskUsage'), true);
+            formContext.setValue(getFieldName(position, 'showSystemInfo'), true);
+            formContext.setValue(getFieldName(position, 'showInternetStatus'), true);
+        }
+        else if (widgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
+            defaultFields = {
+                selectedDisks: [],
+                showIcons: true,
+                showName: true,
+                layout: '2x2'
+            };
+            formContext.setValue(getFieldName(position, 'selectedDisks'), []);
+            formContext.setValue(getFieldName(position, 'showIcons'), true);
+            formContext.setValue(getFieldName(position, 'showName'), true);
+            formContext.setValue(getFieldName(position, 'layout'), '2x2');
         }
         else if (widgetType === ITEM_TYPE.PIHOLE_WIDGET) {
             defaultFields = {
@@ -410,6 +581,24 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
             formContext.setValue(getFieldName(position, 'piholeName'), '');
             formContext.setValue(getFieldName(position, 'showLabel'), true);
         }
+        else if (widgetType === ITEM_TYPE.ADGUARD_WIDGET) {
+            defaultFields = {
+                adguardHost: '',
+                adguardPort: '80',
+                adguardSsl: false,
+                adguardUsername: '',
+                adguardPassword: '',
+                adguardName: '',
+                showLabel: true
+            };
+            formContext.setValue(getFieldName(position, 'adguardHost'), '');
+            formContext.setValue(getFieldName(position, 'adguardPort'), '80');
+            formContext.setValue(getFieldName(position, 'adguardSsl'), false);
+            formContext.setValue(getFieldName(position, 'adguardUsername'), '');
+            formContext.setValue(getFieldName(position, 'adguardPassword'), '');
+            formContext.setValue(getFieldName(position, 'adguardName'), '');
+            formContext.setValue(getFieldName(position, 'showLabel'), true);
+        }
 
         // Update widget state with default fields
         setWidgetState(prevState => ({
@@ -417,8 +606,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
             [`${position}WidgetFields`]: { ...defaultFields }
         }));
 
-        // Ensure form is validated
-        formContext.trigger();
+        // Don't trigger validation here as it can cause flashing
+        // formContext.trigger();
     };
 
     // Capture form values to state based on widget type
@@ -494,6 +683,15 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
             fields.gauge2 = formContext.getValues(getFieldName(position, 'gauge2'));
             fields.gauge3 = formContext.getValues(getFieldName(position, 'gauge3'));
             fields.networkInterface = formContext.getValues(getFieldName(position, 'networkInterface'));
+            fields.showDiskUsage = formContext.getValues(getFieldName(position, 'showDiskUsage'));
+            fields.showSystemInfo = formContext.getValues(getFieldName(position, 'showSystemInfo'));
+            fields.showInternetStatus = formContext.getValues(getFieldName(position, 'showInternetStatus'));
+        }
+        else if (widgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
+            fields.selectedDisks = formContext.getValues(getFieldName(position, 'selectedDisks'));
+            fields.showIcons = formContext.getValues(getFieldName(position, 'showIcons'));
+            fields.showName = formContext.getValues(getFieldName(position, 'showName'));
+            fields.layout = '2x2'; // Always 2x2 for dual widgets
         }
         else if (widgetType === ITEM_TYPE.PIHOLE_WIDGET) {
             fields.piholeHost = formContext.getValues(getFieldName(position, 'piholeHost'));
@@ -502,6 +700,15 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
             fields.piholeApiToken = formContext.getValues(getFieldName(position, 'piholeApiToken'));
             fields.piholePassword = formContext.getValues(getFieldName(position, 'piholePassword'));
             fields.piholeName = formContext.getValues(getFieldName(position, 'piholeName'));
+            fields.showLabel = formContext.getValues(getFieldName(position, 'showLabel'));
+        }
+        else if (widgetType === ITEM_TYPE.ADGUARD_WIDGET) {
+            fields.adguardHost = formContext.getValues(getFieldName(position, 'adguardHost'));
+            fields.adguardPort = formContext.getValues(getFieldName(position, 'adguardPort'));
+            fields.adguardSsl = formContext.getValues(getFieldName(position, 'adguardSsl'));
+            fields.adguardUsername = formContext.getValues(getFieldName(position, 'adguardUsername'));
+            fields.adguardPassword = formContext.getValues(getFieldName(position, 'adguardPassword'));
+            fields.adguardName = formContext.getValues(getFieldName(position, 'adguardName'));
             fields.showLabel = formContext.getValues(getFieldName(position, 'showLabel'));
         }
 
@@ -523,7 +730,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
             const currentPosition = currentPage === 0 ? 'top' : 'bottom';
 
             // Explicitly check for timezone values before switching tabs
-            if (formContext.watch(`${currentPosition}WidgetType`) === ITEM_TYPE.DATE_TIME_WIDGET) {
+            const currentWidgetType = currentPosition === 'top' ? topWidgetType : bottomWidgetType;
+            if (currentWidgetType === ITEM_TYPE.DATE_TIME_WIDGET) {
                 const timezoneFieldName = getFieldName(currentPosition, 'timezone');
                 const timezone = formContext.getValues(timezoneFieldName);
 
@@ -563,8 +771,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 // Apply the fields
                 applyWidgetFieldsToForm(newPosition, fields);
 
-                // Trigger form validation
-                formContext.trigger();
+                // Don't trigger validation during tab changes as it can cause flashing
+                // formContext.trigger();
             }, 50);
         }
     };
@@ -587,31 +795,30 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
         }
     }, [currentPage]); // Only depend on currentPage, not on widgetState which changes frequently
 
-    // Watch for changes to widget types
+    // Watch for changes to widget types - use separate subscriptions to avoid triggering on every form change
     useEffect(() => {
-        const topWidgetType = formContext.watch('topWidgetType');
-        const bottomWidgetType = formContext.watch('bottomWidgetType');
-
-        if (currentPage === 0 && topWidgetType) {
-            // When top widget type changes, apply default values
-            if (Object.keys(widgetState.topWidgetFields).length === 0) {
-                resetFormFields('top');
+        const subscription = formContext.watch((value, { name }) => {
+            if (name === 'topWidgetType' && currentPage === 0 && value.topWidgetType) {
+                // When top widget type changes, apply default values
+                if (Object.keys(widgetState.topWidgetFields).length === 0) {
+                    resetFormFields('top');
+                }
             }
-        }
 
-        if (currentPage === 1 && bottomWidgetType) {
-            // When bottom widget type changes, apply default values
-            if (Object.keys(widgetState.bottomWidgetFields).length === 0) {
-                resetFormFields('bottom');
+            if (name === 'bottomWidgetType' && currentPage === 1 && value.bottomWidgetType) {
+                // When bottom widget type changes, apply default values
+                if (Object.keys(widgetState.bottomWidgetFields).length === 0) {
+                    resetFormFields('bottom');
+                }
             }
-        }
+        });
 
-        formContext.trigger();
-    }, [formContext.watch('topWidgetType'), formContext.watch('bottomWidgetType')]);
+        return () => subscription.unsubscribe();
+    }, [currentPage, widgetState.topWidgetFields, widgetState.bottomWidgetFields]);
 
     // Save final configurations when form is submitted
     useEffect(() => {
-        const handleFormSubmit = () => {
+        const handleFormSubmit = async () => {
             // Capture widget types immediately before they can be lost
             const topWidgetType = formContext.getValues('topWidgetType');
             const bottomWidgetType = formContext.getValues('bottomWidgetType');
@@ -625,8 +832,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
             captureFormValuesToState('bottom');
 
             // Build individual widget configs using captured types
-            const topWidget = topWidgetType ? buildWidgetConfigWithType('top', topWidgetType) : undefined;
-            const bottomWidget = bottomWidgetType ? buildWidgetConfigWithType('bottom', bottomWidgetType) : undefined;
+            const topWidget = topWidgetType ? await buildWidgetConfigWithType('top', topWidgetType) : undefined;
+            const bottomWidget = bottomWidgetType ? await buildWidgetConfigWithType('bottom', bottomWidgetType) : undefined;
 
             // Create the final dual widget config
             const dualWidgetConfig = {
@@ -646,29 +853,29 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 formElement.removeEventListener('submit', handleFormSubmit);
             };
         }
-    }, [formContext, widgetState, currentPage]);
+    }, [formContext, currentPage]); // Removed widgetState dependency to prevent unnecessary re-renders
 
     // Build widget config with explicit widget type (to avoid form reset issues)
-    const buildWidgetConfigWithType = (position: 'top' | 'bottom', widgetType: string) => {
+    const buildWidgetConfigWithType = async (position: 'top' | 'bottom', widgetType: string) => {
         if (!widgetType) {
             return undefined;
         }
 
-        return buildWidgetConfigInternal(position, widgetType);
+        return await buildWidgetConfigInternal(position, widgetType);
     };
 
     // Update buildWidgetConfig to not depend on active position state
-    const buildWidgetConfig = (position: 'top' | 'bottom') => {
+    const buildWidgetConfig = async (position: 'top' | 'bottom') => {
         const widgetType = formContext.getValues(`${position}WidgetType`);
         if (!widgetType) {
             return undefined;
         }
 
-        return buildWidgetConfigInternal(position, widgetType);
+        return await buildWidgetConfigInternal(position, widgetType);
     };
 
     // Internal function to build widget config with given type
-    const buildWidgetConfigInternal = (position: 'top' | 'bottom', widgetType: string) => {
+    const buildWidgetConfigInternal = async (position: 'top' | 'bottom', widgetType: string) => {
 
         const fields = position === 'top' ?
             widgetState.topWidgetFields :
@@ -752,6 +959,9 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
             const gauge2 = formContext.getValues(getFieldName(position, 'gauge2'));
             const gauge3 = formContext.getValues(getFieldName(position, 'gauge3'));
             const networkInterface = formContext.getValues(getFieldName(position, 'networkInterface'));
+            const showDiskUsage = formContext.getValues(getFieldName(position, 'showDiskUsage'));
+            const showSystemInfo = formContext.getValues(getFieldName(position, 'showSystemInfo'));
+            const showInternetStatus = formContext.getValues(getFieldName(position, 'showInternetStatus'));
 
             config = {
                 temperatureUnit: temperatureUnit || 'fahrenheit',
@@ -760,7 +970,10 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                     gauge2 || fields.gauge2 || 'temp',
                     gauge3 || fields.gauge3 || 'ram'
                 ],
-                networkInterface: networkInterface || fields.networkInterface || ''
+                networkInterface: networkInterface || fields.networkInterface || '',
+                showDiskUsage: showDiskUsage !== false,
+                showSystemInfo: showSystemInfo !== false,
+                showInternetStatus: showInternetStatus !== false
             };
         }
         else if (widgetType === ITEM_TYPE.PIHOLE_WIDGET) {
@@ -808,22 +1021,143 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 showLabel: showLabel !== undefined ? showLabel : true
             };
 
-            // Only include apiToken if it's not the masked value
-            if (apiToken && apiToken !== '**********') {
-                configObj.apiToken = apiToken;
+            // Handle credential encryption - only encrypt if not masked
+            let encryptedApiToken = '';
+            let encryptedPassword = '';
+
+            // Only process API token if it's not the masked value
+            if (apiToken && typeof apiToken === 'string' && apiToken !== '**********') {
+                try {
+                    encryptedApiToken = await DashApi.encryptPiholeToken(apiToken);
+                } catch (error) {
+                    console.error('Error encrypting Pi-hole API token:', error);
+                }
+            }
+
+            // Only process password if it's not the masked value
+            if (password && typeof password === 'string' && password !== '**********') {
+                try {
+                    encryptedPassword = await DashApi.encryptPiholePassword(password);
+                } catch (error) {
+                    console.error('Error encrypting Pi-hole password:', error);
+                }
+            }
+
+            // Include encrypted credentials if they were provided
+            if (encryptedApiToken) {
+                configObj.apiToken = encryptedApiToken;
             } else if (hasExistingApiToken) {
                 // If we have an existing API token but no new token provided, set the flag
                 configObj._hasApiToken = true;
             }
 
-            // Only include password if it's not the masked value
-            if (password && password !== '**********') {
-                configObj.password = password;
+            if (encryptedPassword) {
+                configObj.password = encryptedPassword;
             } else if (hasExistingPassword) {
                 // If we have an existing password but no new password provided, set the flag
                 configObj._hasPassword = true;
             }
             config = configObj;
+        }
+        else if (widgetType === ITEM_TYPE.ADGUARD_WIDGET) {
+            // Get values directly from form for critical fields
+            const host = formContext.getValues(getFieldName(position, 'adguardHost'));
+            const port = formContext.getValues(getFieldName(position, 'adguardPort'));
+            const ssl = formContext.getValues(getFieldName(position, 'adguardSsl'));
+            const username = formContext.getValues(getFieldName(position, 'adguardUsername'));
+            const password = formContext.getValues(getFieldName(position, 'adguardPassword'));
+            const displayName = formContext.getValues(getFieldName(position, 'adguardName'));
+            const showLabel = formContext.getValues(getFieldName(position, 'showLabel'));
+
+            // Check if we have existing sensitive data from the original config
+            let hasExistingUsername = false;
+            let hasExistingPassword = false;
+
+            // For dual widgets, we need to check the position-specific config
+            if (existingItem && existingItem.config) {
+                const dualConfig = existingItem.config;
+                const positionWidget = position === 'top' ? dualConfig.topWidget : dualConfig.bottomWidget;
+                if (positionWidget?.config) {
+                    hasExistingUsername = !!positionWidget.config._hasUsername;
+                    hasExistingPassword = !!positionWidget.config._hasPassword;
+                }
+            }
+
+            // Also check if the current form values are masked (indicating existing data)
+            if (username === '**********') {
+                hasExistingUsername = true;
+            }
+            if (password === '**********') {
+                hasExistingPassword = true;
+            }
+
+            // Handle credential encryption - only encrypt if not masked
+            let encryptedUsername = '';
+            let encryptedPassword = '';
+
+            // Only process username if it's not the masked value
+            if (username && typeof username === 'string' && username !== '**********') {
+                try {
+                    encryptedUsername = await DashApi.encryptAdGuardUsername(username);
+                } catch (error) {
+                    console.error('Error encrypting AdGuard username:', error);
+                }
+            }
+
+            // Only process password if it's not the masked value
+            if (password && typeof password === 'string' && password !== '**********') {
+                try {
+                    encryptedPassword = await DashApi.encryptAdGuardPassword(password);
+                } catch (error) {
+                    console.error('Error encrypting AdGuard password:', error);
+                }
+            }
+
+            // Base configuration
+            const configObj: any = {
+                host: host || '',
+                port: port || '80',
+                ssl: ssl || false,
+                displayName: displayName || '',
+                showLabel: showLabel !== undefined ? showLabel : true
+            };
+
+            // Include encrypted credentials if they were provided
+            if (encryptedUsername && encryptedPassword) {
+                configObj.username = encryptedUsername;
+                configObj.password = encryptedPassword;
+            } else {
+                // If we have existing credentials but no new ones provided, set the flags
+                if (hasExistingUsername) {
+                    configObj._hasUsername = true;
+                }
+                if (hasExistingPassword) {
+                    configObj._hasPassword = true;
+                }
+            }
+            config = configObj;
+        }
+        else if (widgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
+            // Get values directly from form for critical fields
+            const selectedDisks = formContext.getValues(getFieldName(position, 'selectedDisks')) as Array<{ mount: string; customName: string; showMountPath?: boolean }> | undefined;
+            const showIcons = formContext.getValues(getFieldName(position, 'showIcons'));
+            const showName = formContext.getValues(getFieldName(position, 'showName'));
+
+            // Validate that at least one disk is selected
+            if (!selectedDisks || !Array.isArray(selectedDisks) || selectedDisks.length === 0) {
+                formContext.setError(getFieldName(position, 'selectedDisks'), {
+                    type: 'required',
+                    message: 'At least one disk must be selected'
+                });
+                throw new Error(`At least one disk must be selected for ${position} widget`);
+            }
+
+            config = {
+                selectedDisks: selectedDisks || [],
+                showIcons: showIcons !== false,
+                showName: showName !== false,
+                layout: '2x2' // Always 2x2 for dual widgets
+            };
         }
 
         return {
@@ -1104,6 +1438,49 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                         />
                     </Box>
                 )}
+
+                {/* Display Options */}
+                <Box sx={{ mt: 3, mb: 2 }}>
+                    <Typography variant='h6' sx={{ color: 'text.primary', mb: 2 }}>
+                        Display Options
+                    </Typography>
+                </Box>
+
+                <Box sx={{ width: '100%', mb: 2 }}>
+                    <CheckboxElement
+                        label='Show Disk Usage'
+                        name={getFieldName(position, 'showDiskUsage')}
+                        sx={{
+                            ml: 1,
+                            color: 'white',
+                            '& .MuiSvgIcon-root': { fontSize: 30 }
+                        }}
+                    />
+                </Box>
+
+                <Box sx={{ width: '100%', mb: 2 }}>
+                    <CheckboxElement
+                        label='Show System Info Button'
+                        name={getFieldName(position, 'showSystemInfo')}
+                        sx={{
+                            ml: 1,
+                            color: 'white',
+                            '& .MuiSvgIcon-root': { fontSize: 30 }
+                        }}
+                    />
+                </Box>
+
+                <Box sx={{ width: '100%', mb: 2 }}>
+                    <CheckboxElement
+                        label='Show Internet Status'
+                        name={getFieldName(position, 'showInternetStatus')}
+                        sx={{
+                            ml: 1,
+                            color: 'white',
+                            '& .MuiSvgIcon-root': { fontSize: 30 }
+                        }}
+                    />
+                </Box>
             </>
         );
     };
@@ -1647,6 +2024,354 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
         );
     };
 
+    // Create a custom wrapper for AdGuardWidgetConfig to ensure username and password fields work correctly
+    const AdGuardConfigWrapper = ({ position }: { position: 'top' | 'bottom' }) => {
+        // Track field values with local state
+        const [host, setHost] = useState('');
+        const [port, setPort] = useState('');
+        const [username, setUsername] = useState('');
+        const [password, setPassword] = useState('');
+        const [formInitialized, setFormInitialized] = useState(false);
+
+        // Track if we have existing sensitive data (similar to regular AdGuardWidgetConfig)
+        const [hasExistingUsername, setHasExistingUsername] = useState(false);
+        const [hasExistingPassword, setHasExistingPassword] = useState(false);
+
+        // Field names for easier reference
+        const hostField = getFieldName(position, 'adguardHost');
+        const portField = getFieldName(position, 'adguardPort');
+        const usernameField = getFieldName(position, 'adguardUsername');
+        const passwordField = getFieldName(position, 'adguardPassword');
+
+        // Initialize masked values for existing items (similar to regular AdGuardWidgetConfig)
+        useEffect(() => {
+            if (existingItem?.config) {
+                const dualConfig = existingItem.config;
+                const positionWidget = position === 'top' ? dualConfig.topWidget : dualConfig.bottomWidget;
+
+                if (positionWidget?.config) {
+                    const config = positionWidget.config;
+
+                    // Check if existing item has sensitive data using security flags
+                    if (config._hasUsername) {
+                        setHasExistingUsername(true);
+                        // Set masked value in form if not already set
+                        const currentUsername = formContext.getValues(usernameField);
+                        if (!currentUsername) {
+                            formContext.setValue(usernameField, '**********');
+                            setUsername('**********');
+                        } else {
+                            setUsername(typeof currentUsername === 'string' ? currentUsername : '');
+                        }
+                    }
+
+                    if (config._hasPassword) {
+                        setHasExistingPassword(true);
+                        // Set masked value in form if not already set
+                        const currentPassword = formContext.getValues(passwordField);
+                        if (!currentPassword) {
+                            formContext.setValue(passwordField, '**********');
+                            setPassword('**********');
+                        } else {
+                            setPassword(typeof currentPassword === 'string' ? currentPassword : '');
+                        }
+                    }
+                }
+            }
+        }, [existingItem, position, usernameField, passwordField]);
+
+        // Initialize the component with values from the form
+        useEffect(() => {
+            if (formInitialized) return;
+
+            // Get initial values from form context
+            const initialHost = formContext.getValues(hostField);
+            const initialPort = formContext.getValues(portField);
+            const initialUsername = formContext.getValues(usernameField);
+            const initialPassword = formContext.getValues(passwordField);
+
+            // Convert to strings, handling any non-string values
+            const hostStr = typeof initialHost === 'string' ? initialHost : '';
+            const portStr = typeof initialPort === 'string' ? initialPort : '80';
+            // For sensitive fields, use the values as they are (already masked from form initialization)
+            const usernameStr = typeof initialUsername === 'string' ? initialUsername : '';
+            const passwordStr = typeof initialPassword === 'string' ? initialPassword : '';
+
+            // Set local state
+            setHost(hostStr);
+            setPort(portStr);
+            setUsername(usernameStr);
+            setPassword(passwordStr);
+
+            // Clear any validation errors since we've just loaded the values
+            formContext.clearErrors(hostField);
+            formContext.clearErrors(portField);
+            formContext.clearErrors(usernameField);
+            formContext.clearErrors(passwordField);
+
+            // Mark as initialized so we don't run this again
+            setFormInitialized(true);
+        }, [hostField, portField, usernameField, passwordField, formInitialized]);
+
+        // Handle host change
+        const handleHostChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+            const newValue = e.target.value;
+            setHost(newValue);
+            formContext.setValue(hostField, newValue, {
+                shouldValidate: false,
+                shouldDirty: true
+            });
+            formContext.clearErrors(hostField);
+        };
+
+        // Handle port change
+        const handlePortChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+            const newValue = e.target.value;
+            setPort(newValue);
+            formContext.setValue(portField, newValue, {
+                shouldValidate: false,
+                shouldDirty: true
+            });
+            formContext.clearErrors(portField);
+        };
+
+        // Handle username change
+        const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+            const newValue = e.target.value;
+            setUsername(newValue);
+            formContext.setValue(usernameField, newValue, {
+                shouldValidate: false,
+                shouldDirty: true
+            });
+            formContext.clearErrors(usernameField);
+        };
+
+        // Handle password change
+        const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+            const newValue = e.target.value;
+            setPassword(newValue);
+            formContext.setValue(passwordField, newValue, {
+                shouldValidate: false,
+                shouldDirty: true
+            });
+            formContext.clearErrors(passwordField);
+        };
+
+        // Helper function to determine if field should be required
+        const isUsernameRequired = () => {
+            // Username is required if password is provided (both are needed for Basic Auth)
+            return Boolean(password && password !== '**********') || hasExistingPassword;
+        };
+
+        const isPasswordRequired = () => {
+            // Password is required if username is provided (both are needed for Basic Auth)
+            return Boolean(username && username !== '**********') || hasExistingUsername;
+        };
+
+        // Clear validation errors when component unmounts to prevent stale errors
+        useEffect(() => {
+            return () => {
+                formContext.clearErrors(hostField);
+                formContext.clearErrors(portField);
+                formContext.clearErrors(usernameField);
+                formContext.clearErrors(passwordField);
+            };
+        }, [hostField, portField, usernameField, passwordField]);
+
+        // Return the custom form with our controlled inputs
+        return (
+            <Box sx={{ width: '100%' }}>
+                <Grid sx={{ width: '100%', mb: 2 }}>
+                    <TextField
+                        name={hostField}
+                        label='AdGuard Home Host'
+                        variant='outlined'
+                        fullWidth
+                        autoComplete='off'
+                        required
+                        value={host}
+                        onChange={handleHostChange}
+                        error={!host}
+                        helperText={!host ? 'Host is required' : ''}
+                        sx={{
+                            width: '100%',
+                            minWidth: isMobile ? '65vw' : '20vw',
+                            '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                    borderColor: 'text.primary',
+                                },
+                                '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                            },
+                            '& .MuiFormHelperText-root': {
+                                color: 'rgba(255, 0, 0, 0.7)'
+                            }
+                        }}
+                        InputLabelProps={{
+                            style: { color: theme.palette.text.primary }
+                        }}
+                    />
+                </Grid>
+                <Grid sx={{ width: '100%', mb: 2 }}>
+                    <TextField
+                        name={portField}
+                        label='Port'
+                        variant='outlined'
+                        fullWidth
+                        autoComplete='off'
+                        required
+                        value={port}
+                        onChange={handlePortChange}
+                        error={!port}
+                        helperText={!port ? 'Port is required' : ''}
+                        sx={{
+                            width: '100%',
+                            minWidth: isMobile ? '65vw' : '20vw',
+                            '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                    borderColor: 'text.primary',
+                                },
+                                '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                            },
+                            '& .MuiFormHelperText-root': {
+                                color: 'rgba(255, 0, 0, 0.7)'
+                            }
+                        }}
+                        InputLabelProps={{
+                            style: { color: theme.palette.text.primary }
+                        }}
+                    />
+                </Grid>
+                <Grid sx={{ width: '100%', mb: 2 }}>
+                    <TextFieldElement
+                        name={getFieldName(position, 'adguardName')}
+                        label='Display Name'
+                        variant='outlined'
+                        placeholder='AdGuard Home'
+                        fullWidth
+                        sx={{
+                            width: '100%',
+                            minWidth: isMobile ? '65vw' : '20vw',
+                            '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                    borderColor: 'text.primary',
+                                },
+                                '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                            },
+                        }}
+                        slotProps={{
+                            inputLabel: { style: { color: theme.palette.text.primary } }
+                        }}
+                    />
+                </Grid>
+                <Grid sx={{ width: '100%', mb: 2 }}>
+                    <TextField
+                        name={usernameField}
+                        label='Username'
+                        variant='outlined'
+                        fullWidth
+                        autoComplete='off'
+                        required={isUsernameRequired()}
+                        value={username}
+                        onChange={handleUsernameChange}
+                        error={isUsernameRequired() && !username}
+                        helperText={
+                            hasExistingUsername && username === '**********' ? 'Current username is set (shown as ********). Clear field to remove or enter new username to replace.' :
+                                'Enter your AdGuard Home admin username'
+                        }
+                        sx={{
+                            width: '100%',
+                            minWidth: isMobile ? '65vw' : '20vw',
+                            '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                    borderColor: 'text.primary',
+                                },
+                                '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                            },
+                            '& .MuiFormHelperText-root': {
+                                color: 'rgba(255, 255, 255, 0.7)'
+                            }
+                        }}
+                        InputLabelProps={{
+                            style: { color: theme.palette.text.primary }
+                        }}
+                    />
+                </Grid>
+                <Grid sx={{ width: '100%', mb: 2 }}>
+                    <TextField
+                        name={passwordField}
+                        label='Password'
+                        type='password'
+                        variant='outlined'
+                        fullWidth
+                        autoComplete='off'
+                        required={isPasswordRequired()}
+                        value={password}
+                        onChange={handlePasswordChange}
+                        error={isPasswordRequired() && !password}
+                        helperText={
+                            hasExistingPassword && password === '**********' ? 'Current password is set (shown as ********). Clear field to remove or enter new password to replace.' :
+                                'Enter your AdGuard Home admin password'
+                        }
+                        sx={{
+                            width: '100%',
+                            minWidth: isMobile ? '65vw' : '20vw',
+                            '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                    borderColor: 'text.primary',
+                                },
+                                '&:hover fieldset': { borderColor: theme.palette.primary.main },
+                                '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                            },
+                            '& .MuiFormHelperText-root': {
+                                color: 'rgba(255, 255, 255, 0.7)'
+                            }
+                        }}
+                        InputLabelProps={{
+                            style: { color: theme.palette.text.primary }
+                        }}
+                    />
+                </Grid>
+                <Grid sx={{ width: '100%', mb: 2 }}>
+                    <CheckboxElement
+                        label='Use SSL'
+                        name={getFieldName(position, 'adguardSsl')}
+                        sx={{
+                            ml: 1,
+                            color: 'white',
+                            '& .MuiSvgIcon-root': { fontSize: 30 }
+                        }}
+                    />
+                </Grid>
+                <Grid sx={{ width: '100%', mb: 2 }}>
+                    <CheckboxElement
+                        label='Show Name'
+                        name={getFieldName(position, 'showLabel')}
+                        sx={{
+                            ml: 1,
+                            color: 'white',
+                            '& .MuiSvgIcon-root': { fontSize: 30 }
+                        }}
+                    />
+                </Grid>
+            </Box>
+        );
+    };
+
+    const DiskMonitorConfigWrapper = ({ position }: { position: 'top' | 'bottom' }) => {
+        return (
+            <Box sx={{ width: '100%' }}>
+                <DiskMonitorWidgetConfig
+                    formContext={formContext as any}
+                    fieldNamePrefix={position === 'top' ? 'top_' : 'bottom_'}
+                />
+            </Box>
+        );
+    };
+
     // Render the appropriate widget config component with position-specific field names
     const renderWidgetConfig = (widgetType: string | undefined, position: 'top' | 'bottom') => {
         if (!widgetType) return null;
@@ -1681,6 +2406,10 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
             );
         case ITEM_TYPE.PIHOLE_WIDGET:
             return <PiholeConfigWrapper position={position} />;
+        case ITEM_TYPE.ADGUARD_WIDGET:
+            return <AdGuardConfigWrapper position={position} />;
+        case ITEM_TYPE.DISK_MONITOR_WIDGET:
+            return <DiskMonitorConfigWrapper position={position} />;
         default:
             return null;
         }
@@ -1762,7 +2491,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                             />
                         </Grid>
 
-                        {formContext.watch('topWidgetType') && (
+                        {topWidgetType && (
                             <Grid container sx={{
                                 marginTop: '8px',
                                 display: 'flex',
@@ -1770,7 +2499,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                                 alignItems: 'center',
                                 width: '100%'
                             }}>
-                                {renderWidgetConfig(formContext.watch('topWidgetType'), 'top')}
+                                {renderWidgetConfig(topWidgetType, 'top')}
                             </Grid>
                         )}
                     </>
@@ -1793,7 +2522,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                             />
                         </Grid>
 
-                        {formContext.watch('bottomWidgetType') && (
+                        {bottomWidgetType && (
                             <Grid container sx={{
                                 marginTop: '8px',
                                 display: 'flex',
@@ -1801,7 +2530,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                                 alignItems: 'center',
                                 width: '100%'
                             }}>
-                                {renderWidgetConfig(formContext.watch('bottomWidgetType'), 'bottom')}
+                                {renderWidgetConfig(bottomWidgetType, 'bottom')}
                             </Grid>
                         )}
                     </>

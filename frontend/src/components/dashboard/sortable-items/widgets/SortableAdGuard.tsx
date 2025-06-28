@@ -3,23 +3,20 @@ import { CSS } from '@dnd-kit/utilities';
 import { Grid2 } from '@mui/material';
 import React from 'react';
 
-import { SystemMonitorWidget } from '../../base-items/widgets/SystemMonitorWidget/SystemMonitorWidget';
+import { AdGuardWidget } from '../../base-items/widgets/AdGuardWidget/AdGuardWidget';
 import { WidgetContainer } from '../../base-items/widgets/WidgetContainer';
 
 type Props = {
     id: string;
     editMode: boolean;
     isOverlay?: boolean;
-    config?: {
-        temperatureUnit?: string;
-        [key: string]: any;
-    };
+    config?: any;
     onDelete?: () => void;
     onEdit?: () => void;
     onDuplicate?: () => void;
 };
 
-export const SortableSystemMonitorWidget: React.FC<Props> = ({ id, editMode, isOverlay = false, config, onDelete, onEdit, onDuplicate }) => {
+export const SortableAdGuard: React.FC<Props> = ({ id, editMode, isOverlay = false, config, onDelete, onEdit, onDuplicate }) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
     return (
@@ -36,7 +33,7 @@ export const SortableSystemMonitorWidget: React.FC<Props> = ({ id, editMode, isO
             }}
         >
             <WidgetContainer editMode={editMode} id={id} onDelete={onDelete} onEdit={onEdit} onDuplicate={onDuplicate}>
-                <SystemMonitorWidget config={config} editMode={editMode} />
+                <AdGuardWidget config={config} id={id} />
             </WidgetContainer>
         </Grid2>
     );

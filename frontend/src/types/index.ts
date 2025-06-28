@@ -2,8 +2,15 @@ export enum ITEM_TYPE {
     WEATHER_WIDGET = 'weather-widget',
     DATE_TIME_WIDGET = 'date-time-widget',
     SYSTEM_MONITOR_WIDGET = 'system-monitor-widget',
-    TORRENT_CLIENT = 'torrent-client',
+    DISK_MONITOR_WIDGET = 'disk-monitor-widget',
+    DOWNLOAD_CLIENT = 'download-client',
+    TORRENT_CLIENT = 'torrent-client', // Legacy support - maps to DOWNLOAD_CLIENT
     PIHOLE_WIDGET = 'pihole-widget',
+    ADGUARD_WIDGET = 'adguard-widget',
+    MEDIA_SERVER_WIDGET = 'media-server-widget',
+    MEDIA_REQUEST_MANAGER_WIDGET = 'media-request-manager-widget',
+    SONARR_WIDGET = 'sonarr-widget',
+    RADARR_WIDGET = 'radarr-widget',
     DUAL_WIDGET = 'dual-widget',
     GROUP_WIDGET = 'group-widget',
     APP_SHORTCUT = 'app-shortcut',
@@ -15,10 +22,18 @@ export enum ITEM_TYPE {
     PAGE = 'page'
 }
 
+export enum DOWNLOAD_CLIENT_TYPE {
+    QBITTORRENT = 'qbittorrent',
+    DELUGE = 'deluge',
+    TRANSMISSION = 'transmission',
+    SABNZBD = 'sabnzbd'
+}
+
+// Legacy support
 export enum TORRENT_CLIENT_TYPE {
     QBITTORRENT = 'qbittorrent',
     DELUGE = 'deluge',
-    TRANSMISSION = 'transmission'
+    TRANSMISSION = 'transmission',
 }
 
 export type NewItem = {
@@ -72,6 +87,7 @@ export type Config = {
     backgroundImage?: string;
     search?: boolean;
     searchProvider?: SearchProvider;
+    showInternetIndicator?: boolean;
     isSetupComplete?: boolean;
     lastSeenVersion?: string;
 }

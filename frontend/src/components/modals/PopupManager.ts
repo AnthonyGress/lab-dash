@@ -53,7 +53,7 @@ export class PopupManager {
         Swal.fire({
             title: `${options.title}`,
             confirmButtonText: options.confirmText ? options.confirmText : 'Yes',
-            confirmButtonColor: CONFIRM_COLOR,
+            confirmButtonColor: CONFIRM_COLOR ,
             text: options.text && options.text,
             icon: 'info',
             showDenyButton: true,

@@ -2,6 +2,7 @@ import fsSync from 'fs';
 import path from 'path';
 
 import { Config, DashboardItem } from '../types';
+import { decrypt, isEncrypted } from './crypto';
 
 const CONFIG_FILE = path.join(__dirname, '../config/config.json');
 
@@ -85,22 +86,45 @@ export const findItemById = (itemId: string): DashboardItem | null => {
 export const getConnectionInfo = (item: DashboardItem) => {
     const config = item.config || {};
 
+    // Decrypt sensitive values if they are encrypted
+    let password = config.password;
+    let apiToken = config.apiToken;
+    let apiKey = config.apiKey;
+
+    if (password && isEncrypted(password)) {
+        password = decrypt(password);
+    }
+
+    if (apiToken && isEncrypted(apiToken)) {
+        apiToken = decrypt(apiToken);
+    }
+
+    if (apiKey && isEncrypted(apiKey)) {
+        apiKey = decrypt(apiKey);
+
+        if (!apiKey) {
+            console.error(`API key decryption failed for item ${item.id}! Check if the SECRET environment variable is set correctly.`);
+        }
+    }
+
     return {
+        // Spread original config first
+        ...config,
+        // Then override with decrypted values (these will take precedence)
         host: config.host || 'localhost',
         port: config.port,
         ssl: config.ssl || false,
         username: config.username,
-        password: config.password, // This will be the actual password from stored config
-        apiToken: config.apiToken, // This will be the actual apiToken from stored config
+        password: password, // This will be the decrypted password
+        apiToken: apiToken, // This will be the decrypted apiToken
+        apiKey: apiKey, // This will be the decrypted apiKey for media servers
         // For torrent clients
         clientType: config.clientType,
         // For other services
         displayName: config.displayName,
         // Security flags (these may or may not be present depending on context)
         _hasPassword: config._hasPassword,
-        _hasApiToken: config._hasApiToken,
-        // Add other common config properties as needed
-        ...config
+        _hasApiToken: config._hasApiToken
     };
 };
 
@@ -110,6 +134,7 @@ export const getConnectionInfo = (item: DashboardItem) => {
 export const getItemConnectionInfo = (itemId: string) => {
     const item = findItemById(itemId);
     if (!item) {
+        console.error(`Item with ID ${itemId} not found in configuration`);
         throw new Error(`Item with ID ${itemId} not found`);
     }
 

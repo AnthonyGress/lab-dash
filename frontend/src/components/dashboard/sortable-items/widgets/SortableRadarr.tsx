@@ -3,23 +3,28 @@ import { CSS } from '@dnd-kit/utilities';
 import { Grid2 } from '@mui/material';
 import React from 'react';
 
-import { SystemMonitorWidget } from '../../base-items/widgets/SystemMonitorWidget/SystemMonitorWidget';
+import { RadarrWidget } from '../../base-items/widgets/RadarrWidget';
 import { WidgetContainer } from '../../base-items/widgets/WidgetContainer';
 
-type Props = {
+interface Props {
     id: string;
-    editMode: boolean;
+    editMode?: boolean;
     isOverlay?: boolean;
-    config?: {
-        temperatureUnit?: string;
-        [key: string]: any;
-    };
     onDelete?: () => void;
     onEdit?: () => void;
     onDuplicate?: () => void;
-};
+    config?: any;
+}
 
-export const SortableSystemMonitorWidget: React.FC<Props> = ({ id, editMode, isOverlay = false, config, onDelete, onEdit, onDuplicate }) => {
+export const SortableRadarr: React.FC<Props> = ({
+    id,
+    editMode = false,
+    isOverlay = false,
+    onDelete,
+    onEdit,
+    onDuplicate,
+    config
+}) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
     return (
@@ -32,11 +37,11 @@ export const SortableSystemMonitorWidget: React.FC<Props> = ({ id, editMode, isO
                 transition,
                 transform: transform ? CSS.Translate.toString(transform) : undefined,
                 opacity: isOverlay ? .6 : 1,
-                visibility: isDragging ? 'hidden' : 'visible'
+                visibility: isDragging ? 'hidden' : 'visible',
             }}
         >
             <WidgetContainer editMode={editMode} id={id} onDelete={onDelete} onEdit={onEdit} onDuplicate={onDuplicate}>
-                <SystemMonitorWidget config={config} editMode={editMode} />
+                <RadarrWidget config={config} id={id} />
             </WidgetContainer>
         </Grid2>
     );

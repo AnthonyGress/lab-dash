@@ -1,7 +1,7 @@
 import { Grid2 as Grid, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
-import { SelectElement } from 'react-hook-form-mui';
+import { CheckboxElement, SelectElement } from 'react-hook-form-mui';
 
 import { DashApi } from '../../../api/dash-api';
 import { useIsMobile } from '../../../hooks/useIsMobile';
@@ -189,6 +189,48 @@ export const SystemMonitorWidgetConfig = ({ formContext }: SystemMonitorWidgetCo
                         }}
                     />
                 )}
+            </Grid>
+
+            <Grid>
+                <Typography variant='h6' sx={{ color: 'text.primary', mb: 2, mt: 2 }}>
+                    Display Options
+                </Typography>
+            </Grid>
+
+            <Grid>
+                <CheckboxElement
+                    label='Show Disk Usage'
+                    name='showDiskUsage'
+                    sx={{
+                        ml: 1,
+                        color: 'white',
+                        '& .MuiSvgIcon-root': { fontSize: 30 }
+                    }}
+                />
+            </Grid>
+
+            <Grid>
+                <CheckboxElement
+                    label='Show System Info Button'
+                    name='showSystemInfo'
+                    sx={{
+                        ml: 1,
+                        color: 'white',
+                        '& .MuiSvgIcon-root': { fontSize: 30 }
+                    }}
+                />
+            </Grid>
+
+            <Grid>
+                <CheckboxElement
+                    label='Show Internet Status'
+                    name='showInternetStatus'
+                    sx={{
+                        ml: 1,
+                        color: 'white',
+                        '& .MuiSvgIcon-root': { fontSize: 30 }
+                    }}
+                />
             </Grid>
         </>
     );

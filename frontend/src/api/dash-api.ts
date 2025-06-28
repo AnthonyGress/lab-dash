@@ -266,17 +266,111 @@ export class DashApi {
         return null;
     }
 
-    public static async getWeather(latitude: number, longitude: number): Promise<any> {
+    // Sonarr API methods
+    public static async getSonarrQueue(itemId: string): Promise<any> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/sonarr/queue`, {
+                params: { itemId },
+                timeout: 10000
+            });
+            return res.data.data || [];
+        } catch (error) {
+            console.error('Error fetching Sonarr queue:', error);
+            throw error;
+        }
+    }
+
+    public static async removeSonarrQueueItem(itemId: string, queueItemId: string, removeFromClient: boolean = true, blocklist: boolean = false): Promise<boolean> {
+        try {
+            await axios.delete(`${BACKEND_URL}/api/sonarr/queue/${queueItemId}`, {
+                params: {
+                    itemId,
+                    removeFromClient: removeFromClient.toString(),
+                    blocklist: blocklist.toString()
+                },
+                timeout: 10000
+            });
+            return true;
+        } catch (error) {
+            console.error('Error removing Sonarr queue item:', error);
+            throw error;
+        }
+    }
+
+    public static async getSonarrStatus(itemId: string): Promise<any> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/sonarr/status`, {
+                params: { itemId },
+                timeout: 10000
+            });
+            return res.data.data || {};
+        } catch (error) {
+            console.error('Error fetching Sonarr status:', error);
+            throw error;
+        }
+    }
+
+    // Radarr API methods
+    public static async getRadarrQueue(itemId: string): Promise<any> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/radarr/queue`, {
+                params: { itemId },
+                timeout: 10000
+            });
+            return res.data.data || [];
+        } catch (error) {
+            console.error('Error fetching Radarr queue:', error);
+            throw error;
+        }
+    }
+
+    public static async removeRadarrQueueItem(itemId: string, queueItemId: string, removeFromClient: boolean = true, blocklist: boolean = false): Promise<boolean> {
+        try {
+            await axios.delete(`${BACKEND_URL}/api/radarr/queue/${queueItemId}`, {
+                params: {
+                    itemId,
+                    removeFromClient: removeFromClient.toString(),
+                    blocklist: blocklist.toString()
+                },
+                timeout: 10000
+            });
+            return true;
+        } catch (error) {
+            console.error('Error removing Radarr queue item:', error);
+            throw error;
+        }
+    }
+
+    public static async getRadarrStatus(itemId: string): Promise<any> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/radarr/status`, {
+                params: { itemId },
+                timeout: 10000
+            });
+            return res.data.data || {};
+        } catch (error) {
+            console.error('Error fetching Radarr status:', error);
+            throw error;
+        }
+    }
+
+    public static async getWeather(latitude: number, longitude: number, abortSignal?: AbortSignal): Promise<any> {
         try {
             const res = await axios.get(`${BACKEND_URL}/api/weather`, {
                 params: {
                     latitude,
                     longitude
                 },
-                timeout: 8000 // 8 second timeout
+                timeout: 8000, // 8 second timeout
+                signal: abortSignal // Add abort signal support
             });
             return res.data;
         } catch (error: any) {
+            // Don't log errors for cancelled requests
+            if (abortSignal?.aborted || error.name === 'AbortError' || error.code === 'ERR_CANCELED') {
+                throw error;
+            }
+
             // Log detailed error information
             if (error.response) {
                 // The request was made and the server responded with a status code
@@ -343,6 +437,22 @@ export class DashApi {
             return res.data.status;
         } catch (error) {
             console.error('Failed to check service health:', error);
+            return 'offline';
+        }
+    }
+
+    public static async checkInternetConnectivity(): Promise<'online' | 'offline'> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/health`, {
+                params: { url: '8.8.8.8', type: 'ping' },
+                // Don't send credentials for health checks to avoid auth issues
+                withCredentials: false,
+                // Add timeout to prevent long-running requests
+                timeout: 10000
+            });
+            return res.data.status;
+        } catch (error) {
+            console.error('Failed to check internet connectivity:', error);
             return 'offline';
         }
     }
@@ -1508,6 +1618,409 @@ export class DashApi {
             }
         } catch (error: any) {
             console.error('Pi-hole blocking status error:', error);
+            throw error;
+        }
+    }
+
+    // AdGuard Home API methods
+    public static async getAdGuardStats(itemId: string): Promise<any> {
+        try {
+            if (!itemId) {
+                throw new Error('Item ID is required for AdGuard Home stats');
+            }
+
+            const res = await axios.get(`${BACKEND_URL}/api/adguard/stats`, {
+                params: { itemId },
+                withCredentials: true
+            });
+
+            if (res.data.success) {
+                return res.data.data;
+            } else {
+                if (res.data.decryptionError) {
+                    throw new Error('Failed to decrypt AdGuard Home authentication credentials');
+                }
+                throw new Error(res.data.error || 'Failed to get AdGuard Home statistics');
+            }
+        } catch (error: any) {
+            // Check for custom error codes from our backend
+            if (error.response?.data?.code === 'ADGUARD_AUTH_ERROR') {
+                // Authentication error with AdGuard Home - create a custom error
+                const adError = new Error(error.response.data.error || 'AdGuard Home authentication failed');
+                (adError as any).response = {
+                    status: 400,  // Use 400 instead of 401 to avoid global auth interceptor
+                    data: error.response.data
+                };
+                (adError as any).adguard = {
+                    requiresReauth: true
+                };
+                throw adError;
+            }
+
+            if (error.response?.data?.code === 'ADGUARD_API_ERROR') {
+                // API error with AdGuard Home - create a custom error
+                const adError = new Error(error.response.data.error || 'AdGuard Home API error');
+                (adError as any).response = {
+                    status: 400,
+                    data: error.response.data
+                };
+                (adError as any).adguard = {
+                    requiresReauth: error.response.data.requiresReauth || false
+                };
+                throw adError;
+            }
+
+            // If we get an explicit 401 from the server, throw with an authentication message
+            if (error.response?.status === 401) {
+                console.error('AdGuard authentication failed:', error.response.data);
+                const errorMsg = error.response.data?.error || 'Authentication failed';
+                const err = new Error(errorMsg);
+                (err as any).response = error.response;
+                throw err;
+            }
+
+            console.error('AdGuard Home stats error:', {
+                message: error.message,
+                status: error.response?.status,
+                data: error.response?.data,
+                stack: error.stack
+            });
+
+            if (error.message?.includes('ECONNREFUSED')) {
+                throw new Error('Connection refused. Please check if AdGuard Home is running at the specified host and port.');
+            } else if (error.message?.includes('timeout')) {
+                throw new Error('Connection timed out. Please check your network connection and AdGuard Home configuration.');
+            } else if (error.message?.includes('Network Error')) {
+                throw new Error('Network error. Please check your network connection and AdGuard Home configuration.');
+            }
+
+            throw error;
+        }
+    }
+
+    public static async encryptAdGuardUsername(username: string): Promise<string> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/adguard/encrypt-username`,
+                { username },
+                { withCredentials: true }
+            );
+            return res.data.encryptedUsername;
+        } catch (error) {
+            console.error('Failed to encrypt AdGuard username:', error);
+            throw error;
+        }
+    }
+
+    public static async encryptAdGuardPassword(password: string): Promise<string> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/adguard/encrypt-password`,
+                { password },
+                { withCredentials: true }
+            );
+            return res.data.encryptedPassword;
+        } catch (error) {
+            console.error('Failed to encrypt AdGuard password:', error);
+            throw error;
+        }
+    }
+
+    public static async disableAdGuard(itemId: string, seconds?: number): Promise<boolean> {
+        try {
+            if (!itemId) {
+                throw new Error('Item ID is required for AdGuard Home disable');
+            }
+
+            const params: any = { itemId };
+
+            if (seconds !== undefined && seconds !== null) {
+                params.seconds = seconds;
+            }
+
+            const res = await axios.post(`${BACKEND_URL}/api/adguard/disable`, {}, {
+                params,
+                withCredentials: true
+            });
+
+            return res.data.success === true;
+        } catch (error: any) {
+            // Handle custom error codes from our backend
+            if (error.response?.data?.code) {
+                console.error(`AdGuard disable error (${error.response.data.code}):`, error.response.data);
+
+                const adError = new Error(error.response.data.error || 'Failed to disable AdGuard Home');
+                (adError as any).response = {
+                    status: 400,
+                    data: error.response.data
+                };
+                (adError as any).adguard = {
+                    requiresReauth: error.response.data.requiresReauth || false
+                };
+                throw adError;
+            }
+
+            console.error('Failed to disable AdGuard Home:', error);
+            throw error;
+        }
+    }
+
+    public static async enableAdGuard(itemId: string): Promise<boolean> {
+        try {
+            if (!itemId) {
+                throw new Error('Item ID is required for AdGuard Home enable');
+            }
+
+            const res = await axios.post(`${BACKEND_URL}/api/adguard/enable`, {}, {
+                params: { itemId },
+                withCredentials: true
+            });
+
+            return res.data.success === true;
+        } catch (error: any) {
+            // Handle custom error codes from our backend
+            if (error.response?.data?.code) {
+                console.error(`AdGuard enable error (${error.response.data.code}):`, error.response.data);
+
+                const adError = new Error(error.response.data.error || 'Failed to enable AdGuard Home');
+                (adError as any).response = {
+                    status: 400,
+                    data: error.response.data
+                };
+                (adError as any).adguard = {
+                    requiresReauth: error.response.data.requiresReauth || false
+                };
+                throw adError;
+            }
+
+            console.error('Failed to enable AdGuard Home:', error);
+            throw error;
+        }
+    }
+
+    public static async getAdGuardProtectionStatus(itemId: string): Promise<any> {
+        try {
+            if (!itemId) {
+                throw new Error('Item ID is required for AdGuard Home protection status');
+            }
+
+            const res = await axios.get(`${BACKEND_URL}/api/adguard/protection-status`, {
+                params: { itemId },
+                withCredentials: true
+            });
+
+            if (res.data.success) {
+                return res.data.data;
+            } else {
+                throw new Error(res.data.error || 'Failed to get AdGuard Home protection status');
+            }
+        } catch (error: any) {
+            console.error('AdGuard Home protection status error:', error);
+            throw error;
+        }
+    }
+
+    // SABnzbd API methods
+    public static async sabnzbdLogin(itemId: string): Promise<boolean> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/sabnzbd/login`, {}, {
+                params: { itemId },
+                withCredentials: true
+            });
+            return res.data.success;
+        } catch (error: any) {
+            console.error('SABnzbd login error:', error);
+            if (error.response?.status === 401) {
+                throw new Error('Invalid API key');
+            }
+            return false;
+        }
+    }
+
+    public static async sabnzbdGetStats(itemId: string): Promise<any> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/sabnzbd/stats`, {
+                params: { itemId },
+                withCredentials: true
+            });
+            return res.data;
+        } catch (error: any) {
+            console.error('Error getting SABnzbd stats:', error);
+            throw error;
+        }
+    }
+
+    public static async sabnzbdGetDownloads(itemId: string): Promise<any[]> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/sabnzbd/downloads`, {
+                params: { itemId },
+                withCredentials: true
+            });
+            return res.data;
+        } catch (error: any) {
+            console.error('Error getting SABnzbd downloads:', error);
+            throw error;
+        }
+    }
+
+    public static async sabnzbdLogout(itemId: string): Promise<boolean> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/sabnzbd/logout`, {}, {
+                params: { itemId },
+                withCredentials: true
+            });
+            return res.data.success;
+        } catch (error: any) {
+            console.error('SABnzbd logout error:', error);
+            return false;
+        }
+    }
+
+    public static async sabnzbdResumeDownload(itemId: string, nzoId: string): Promise<boolean> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/sabnzbd/resume/${nzoId}`, {}, {
+                params: { itemId },
+                withCredentials: true
+            });
+            return res.data.success;
+        } catch (error: any) {
+            console.error('SABnzbd resume download error:', error);
+            return false;
+        }
+    }
+
+    public static async sabnzbdPauseDownload(itemId: string, nzoId: string): Promise<boolean> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/sabnzbd/pause/${nzoId}`, {}, {
+                params: { itemId },
+                withCredentials: true
+            });
+            return res.data.success;
+        } catch (error: any) {
+            console.error('SABnzbd pause download error:', error);
+            return false;
+        }
+    }
+
+    public static async sabnzbdDeleteDownload(itemId: string, nzoId: string, deleteFiles: boolean = false): Promise<boolean> {
+        try {
+            const res = await axios.delete(`${BACKEND_URL}/api/sabnzbd/delete/${nzoId}`, {
+                params: { itemId, deleteFiles: deleteFiles.toString() },
+                withCredentials: true
+            });
+            return res.data.success;
+        } catch (error: any) {
+            console.error('SABnzbd delete download error:', error);
+            return false;
+        }
+    }
+
+    public static async encryptSabnzbdPassword(password: string): Promise<string> {
+        try {
+            const res = await axios.post(
+                `${BACKEND_URL}/api/sabnzbd/encrypt-password`,
+                { password },
+                { withCredentials: true }
+            );
+            return res.data.encryptedPassword;
+        } catch (error: any) {
+            throw new Error(error.response?.data?.message || 'Failed to encrypt password');
+        }
+    }
+
+    // Media server (Jellyfin) endpoints
+    static async getJellyfinSessions(itemId: string) {
+        try {
+            const res = await axios.get(
+                `${BACKEND_URL}/api/jellyfin/sessions`,
+                {
+                    params: { itemId },
+                    withCredentials: true
+                }
+            );
+            return res.data;
+        } catch (error: any) {
+            throw new Error(error.response?.data?.error || 'Failed to fetch Jellyfin sessions');
+        }
+    }
+
+    // Jellyseerr methods
+    public static async jellyseerrSearch(itemId: string, query: string): Promise<any> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/jellyseerr/search`, {
+                params: { itemId, query },
+                withCredentials: false
+            });
+            return res.data;
+        } catch (error) {
+            console.error('Jellyseerr search error:', error);
+            throw error;
+        }
+    }
+
+    public static async jellyseerrGetRequests(itemId: string, status: string = 'pending'): Promise<any> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/jellyseerr/requests`, {
+                params: { itemId, status },
+                withCredentials: false
+            });
+            return res.data;
+        } catch (error) {
+            console.error('Jellyseerr requests error:', error);
+            throw error;
+        }
+    }
+
+    public static async jellyseerrCreateRequest(itemId: string, mediaType: string, mediaId: string, seasons?: number[]): Promise<any> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/jellyseerr/request`, {
+                mediaType,
+                mediaId,
+                seasons
+            }, {
+                params: { itemId },
+                withCredentials: false
+            });
+            return res.data;
+        } catch (error) {
+            console.error('Jellyseerr create request error:', error);
+            throw error;
+        }
+    }
+
+    public static async jellyseerrApproveRequest(itemId: string, requestId: string): Promise<any> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/jellyseerr/request/${requestId}/approve`, {}, {
+                params: { itemId },
+                withCredentials: false
+            });
+            return res.data;
+        } catch (error) {
+            console.error('Jellyseerr approve request error:', error);
+            throw error;
+        }
+    }
+
+    public static async jellyseerrDeclineRequest(itemId: string, requestId: string): Promise<any> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/jellyseerr/request/${requestId}/decline`, {}, {
+                params: { itemId },
+                withCredentials: false
+            });
+            return res.data;
+        } catch (error) {
+            console.error('Jellyseerr decline request error:', error);
+            throw error;
+        }
+    }
+
+    public static async jellyseerrGetStatus(itemId: string): Promise<any> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/jellyseerr/status`, {
+                params: { itemId },
+                withCredentials: false
+            });
+            return res.data;
+        } catch (error) {
+            console.error('Jellyseerr status error:', error);
             throw error;
         }
     }

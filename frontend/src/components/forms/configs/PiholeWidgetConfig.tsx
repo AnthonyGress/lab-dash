@@ -21,10 +21,6 @@ export const PiholeWidgetConfig = ({ formContext, existingItem }: PiholeWidgetCo
     const [hasExistingApiToken, setHasExistingApiToken] = useState(false);
     const [hasExistingPassword, setHasExistingPassword] = useState(false);
 
-    // Track if user has modified the masked fields
-    const [apiTokenModified, setApiTokenModified] = useState(false);
-    const [passwordModified, setPasswordModified] = useState(false);
-
     const textFieldSx = {
         width: '100%',
         minWidth: isMobile ? '65vw' : '20vw',
@@ -63,27 +59,19 @@ export const PiholeWidgetConfig = ({ formContext, existingItem }: PiholeWidgetCo
 
     // Handle API token changes
     const handleApiTokenChange = (value: string) => {
-        if (hasExistingApiToken && value !== MASKED_VALUE) {
-            setApiTokenModified(true);
-        }
 
-        // Clear password if API token is being set
+
         if (value && value !== MASKED_VALUE) {
             formContext.setValue('piholePassword', '');
-            setPasswordModified(false);
         }
     };
 
     // Handle password changes
     const handlePasswordChange = (value: string) => {
-        if (hasExistingPassword && value !== MASKED_VALUE) {
-            setPasswordModified(true);
-        }
 
         // Clear API token if password is being set
         if (value && value !== MASKED_VALUE) {
             formContext.setValue('piholeApiToken', '');
-            setApiTokenModified(false);
         }
     };
 
@@ -108,7 +96,6 @@ export const PiholeWidgetConfig = ({ formContext, existingItem }: PiholeWidgetCo
         // Only enforce mutual exclusivity for non-masked values
         if (piholeApiToken && piholeApiToken !== MASKED_VALUE && piholePassword && piholePassword !== MASKED_VALUE) {
             formContext.setValue('piholePassword', '');
-            setPasswordModified(false);
         }
     }, [formContext.watch('piholeApiToken')]);
 
@@ -119,7 +106,6 @@ export const PiholeWidgetConfig = ({ formContext, existingItem }: PiholeWidgetCo
         // Only enforce mutual exclusivity for non-masked values
         if (piholePassword && piholePassword !== MASKED_VALUE && piholeApiToken && piholeApiToken !== MASKED_VALUE) {
             formContext.setValue('piholeApiToken', '');
-            setApiTokenModified(false);
         }
     }, [formContext.watch('piholePassword')]);
 

@@ -1,7 +1,9 @@
 import { Box, Divider, Typography, useMediaQuery } from '@mui/material';
 import React from 'react';
 
+import { AdGuardWidget } from './AdGuardWidget/AdGuardWidget';
 import { DateTimeWidget } from './DateTimeWidget';
+import { DiskMonitorWidget } from './DiskMonitorWidget';
 import { DualWidgetContainer } from './DualWidgetContainer';
 import { PiholeWidget } from './PiholeWidget/PiholeWidget';
 import { SystemMonitorWidget } from './SystemMonitorWidget/SystemMonitorWidget';
@@ -67,14 +69,30 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
             case ITEM_TYPE.DATE_TIME_WIDGET:
                 return <DateTimeWidget config={widgetConfig.config} />;
             case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
-                return <SystemMonitorWidget config={{
-                    ...widgetConfig.config,
-                    dualWidgetPosition: position
-                }} />;
+                return <SystemMonitorWidget
+                    config={{
+                        ...widgetConfig.config,
+                        dualWidgetPosition: position
+                    }}
+                    editMode={editMode}
+                />;
             case ITEM_TYPE.PIHOLE_WIDGET:
                 return <PiholeWidget
                     config={widgetConfig.config}
                     id={id ? `${id}-${position}` : undefined}
+                />;
+            case ITEM_TYPE.ADGUARD_WIDGET:
+                return <AdGuardWidget
+                    config={widgetConfig.config}
+                    id={id ? `${id}-${position}` : undefined}
+                />;
+            case ITEM_TYPE.DISK_MONITOR_WIDGET:
+                return <DiskMonitorWidget
+                    config={{
+                        ...widgetConfig.config,
+                        dualWidgetPosition: position
+                    }}
+                    editMode={editMode}
                 />;
             default:
                 return (
@@ -86,7 +104,7 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
                             justifyContent: 'center'
                         }}
                     >
-                        <Typography variant='body2' color='text.secondary'>
+                        <Typography variant='body2' color='text.primary'>
                             Unknown widget type: {widgetConfig.type}
                         </Typography>
                     </Box>

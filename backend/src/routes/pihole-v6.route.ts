@@ -1,10 +1,16 @@
 import axios from 'axios';
 import { Request, Response, Router } from 'express';
+import https from 'https';
 
 import { getItemConnectionInfo } from '../utils/config-lookup';
 import { decrypt, encrypt, isEncrypted } from '../utils/crypto';
 
 export const piholeV6Route = Router();
+
+// Configure HTTPS agent to allow self-signed certificates for Pi-hole connections
+const httpsAgent = new https.Agent({
+    rejectUnauthorized: false // Allow self-signed certificates
+});
 
 // Session cache to store active SIDs and avoid creating too many sessions
 interface SessionInfo {
@@ -208,7 +214,8 @@ async function authenticatePihole(baseUrl: string, password: string): Promise<{ 
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                timeout: 10000 // Increased timeout for authentication
+                timeout: 10000, // Increased timeout for authentication
+                httpsAgent: httpsAgent // Allow self-signed certificates
             }
         );
 
@@ -325,7 +332,8 @@ async function handleApiWith401Retry(
         const config = {
             params: { sid: authInfo.sid },
             headers: { 'X-FTL-CSRF': authInfo.csrf, 'Content-Type': 'application/json' },
-            timeout: 5000 // Increased from 2000ms to 5000ms for better reliability
+            timeout: 5000, // Increased from 2000ms to 5000ms for better reliability
+            httpsAgent: httpsAgent // Allow self-signed certificates
         };
 
         // Make the API request based on the method
@@ -957,7 +965,8 @@ async function logoutPiholeSession(baseUrl: string, sid: string, csrf: string): 
                 'X-FTL-CSRF': csrf,
                 'Content-Type': 'application/json'
             },
-            timeout: 1000
+            timeout: 1000,
+            httpsAgent: httpsAgent // Allow self-signed certificates
         });
 
         console.log(`Successfully logged out Pi-hole session from ${baseUrl}`);

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { TorrentClientWidget } from './TorrentClientWidget';
+import { DownloadClientWidget } from './DownloadClientWidget';
 import { DashApi } from '../../../../api/dash-api';
 
 type DelugeWidgetConfig = {
@@ -41,7 +41,7 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig; id?: string }
             // Only update if there are actual changes to credentials
             const newCredentials = {
                 host: config.host || '',
-                port: config.port || '8112',
+                port: config.port !== undefined ? config.port : (loginCredentials.port || '8112'),
                 ssl: config.ssl || false,
                 username: config.username || '',
                 password: '' // Password is handled on backend, not sent to frontend
@@ -325,7 +325,7 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig; id?: string }
     }, [loginCredentials, fetchTorrents]);
 
     return (
-        <TorrentClientWidget
+        <DownloadClientWidget
             clientName='Deluge'
             isLoading={isLoading}
             isAuthenticated={isAuthenticated}

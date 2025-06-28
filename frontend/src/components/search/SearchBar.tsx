@@ -176,13 +176,13 @@ export const SearchBar = ({
                                     WebkitBackdropFilter: { xs: 'blur(6px)', md: 'none' },
                                 },
                                 '& .MuiOutlinedInput-notchedOutline': {
-                                    border: `1px solid ${COLORS.BORDER} !important`,
+                                    border: '1px solid rgba(255, 255, 255, 0.3) !important',
                                 },
                                 '&:hover .MuiOutlinedInput-notchedOutline': {
-                                    border: `1px solid ${COLORS.BORDER}  !important`,
+                                    border: '1px solid rgba(255, 255, 255, 0.5) !important',
                                 },
                                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                    border: `1px solid ${COLORS.BORDER}  !important`,
+                                    border: '1px solid rgba(255, 255, 255, 0.7) !important',
                                 },
                                 borderRadius: 2,
                                 display: 'flex',

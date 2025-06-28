@@ -9,7 +9,7 @@ import { useAppContext } from '../../../../context/useAppContext';
 import { theme } from '../../../../theme/theme';
 import { TORRENT_CLIENT_TYPE } from '../../../../types';
 
-export type TorrentClientStats = {
+export type DownloadClientStats = {
     dl_info_speed: number;
     dl_info_data: number;
     up_info_speed: number;
@@ -23,7 +23,7 @@ export type TorrentClientStats = {
     };
 };
 
-export type TorrentInfo = {
+export type DownloadInfo = {
     hash: string;
     name: string;
     state: string;  // Common states: 'downloading', 'seeding', 'pausedDL', 'pausedUP', 'stopped', 'error', etc.
@@ -34,19 +34,17 @@ export type TorrentInfo = {
     eta?: number; // ETA in seconds
 };
 
-export type TorrentClientWidgetProps = {
+export type DownloadClientWidgetProps = {
     clientName: string;
     isLoading: boolean;
     isAuthenticated: boolean;
     authError: string;
-    stats: TorrentClientStats | null;
-    torrents: TorrentInfo[];
+    stats: DownloadClientStats | null;
+    torrents: DownloadInfo[];
     loginCredentials: {
         host: string;
         port: string;
         ssl: boolean;
-        username: string;
-        password: string;
     };
     handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     handleLogin: () => void;
@@ -93,6 +91,24 @@ const formatEta = (seconds?: number): string => {
     }
 };
 
+// Format status text for tooltip display
+const formatStatusText = (state: string): string => {
+    switch (state) {
+    case 'downloading': return 'Downloading';
+    case 'uploading': return 'Uploading';
+    case 'seeding': return 'Seeding';
+    case 'pausedDL': return 'Paused (Download)';
+    case 'pausedUP': return 'Paused (Upload)';
+    case 'stalledDL': return 'Stalled (Download)';
+    case 'stalledUP': return 'Stalled (Upload)';
+    case 'completed': return 'Completed';
+    case 'checkingUP': return 'Checking';
+    case 'stopped': return 'Stopped';
+    case 'error': return 'Error';
+    default: return state.charAt(0).toUpperCase() + state.slice(1);
+    }
+};
+
 // Get status icon based on torrent state
 const getStatusIcon = (state: string) => {
     switch (state) {
@@ -111,8 +127,8 @@ const getStatusIcon = (state: string) => {
     }
 };
 
-interface TorrentItemProps {
-    torrent: TorrentInfo;
+interface DownloadItemProps {
+    torrent: DownloadInfo;
     clientName: string;
     isAdmin: boolean;
     onResume?: (hash: string) => Promise<boolean>;
@@ -120,7 +136,7 @@ interface TorrentItemProps {
     onDelete?: (hash: string, deleteFiles: boolean) => Promise<boolean>;
 }
 
-const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin, onResume, onPause, onDelete }) => {
+const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmin, onResume, onPause, onDelete }) => {
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
     const [isActionLoading, setIsActionLoading] = useState(false);
@@ -229,7 +245,22 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin,
             boxSizing: 'border-box'
         }}>
             <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                <Tooltip
+                    title={formatStatusText(torrent.state)}
+                    placement='top'
+                    enterDelay={500}
+                    arrow
+                >
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 {getStatusIcon(torrent.state)}
+                    </Box>
+                </Tooltip>
+                <Tooltip
+                    title={torrent.name}
+                    placement='top'
+                    enterDelay={1000}
+                    arrow
+                >
                 <Typography
                     variant='caption'
                     noWrap
@@ -239,11 +270,13 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         color: 'white',
-                        fontSize: isMobile ? '0.7rem' : '.8rem'
+                            fontSize: isMobile ? '0.7rem' : '.8rem',
+                            cursor: 'default'
                     }}
                 >
                     {torrent.name}
                 </Typography>
+                </Tooltip>
                 <Typography
                     variant='caption'
                     sx={{
@@ -317,6 +350,33 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin,
                                 >
                                     <Stop fontSize='small' sx={{ mr: 1 }} />
                                     Stop
+                                </MenuItem>
+                            )}
+                        </>
+                    ) : clientName === 'SABnzbd' ? (
+                        // For SABnzbd: Use Resume/Pause terminology with SABnzbd-specific states
+                        <>
+                            {/* Show Resume option for non-downloading SABnzbd items */}
+                            {(torrent.state !== 'downloading' && torrent.state !== 'active') && (
+                                <MenuItem
+                                    onClick={handleResume}
+                                    disabled={!onResume}
+                                    sx={{ fontSize: '0.9rem', py: 1 }}
+                                >
+                                    <PlayArrow fontSize='small' sx={{ mr: 1 }} />
+                                    Resume
+                                </MenuItem>
+                            )}
+
+                            {/* Show Pause option for active SABnzbd items */}
+                            {(torrent.state === 'downloading' || torrent.state === 'active') && (
+                                <MenuItem
+                                    onClick={handlePause}
+                                    disabled={!onPause}
+                                    sx={{ fontSize: '0.9rem', py: 1 }}
+                                >
+                                    <Pause fontSize='small' sx={{ mr: 1 }} />
+                                    Pause
                                 </MenuItem>
                             )}
                         </>
@@ -409,7 +469,7 @@ const TorrentItem: React.FC<TorrentItemProps> = ({ torrent, clientName, isAdmin,
     );
 };
 
-export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
+export const DownloadClientWidget: React.FC<DownloadClientWidgetProps> = ({
     clientName,
     isLoading,
     isAuthenticated,
@@ -479,7 +539,7 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
                     {showLabel && (
                         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 1 }}>
                             <img
-                                src={`${BACKEND_URL}/icons/${clientName.toLowerCase().includes('qbittorrent') ? 'qbittorrent.svg' : clientName.toLowerCase().includes('transmission') ? 'transmission.svg' : 'deluge.svg'}`}
+                                src={`${BACKEND_URL}/icons/${clientName.toLowerCase().includes('qbittorrent') ? 'qbittorrent.svg' : clientName.toLowerCase().includes('transmission') ? 'transmission.svg' : clientName.toLowerCase().includes('sabnzbd') ? 'sabnzbd.svg' : 'deluge.svg'}`}
                                 alt={clientName}
                                 style={{
                                     width: '24px',
@@ -559,7 +619,7 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
                             onClick={handleOpenWebUI}
                         >
                             <img
-                                src={`${BACKEND_URL}/icons/${clientName.toLowerCase().includes('qbittorrent') ? 'qbittorrent.svg' : clientName.toLowerCase().includes('transmission') ? 'transmission.svg' : 'deluge.svg'}`}
+                                src={`${BACKEND_URL}/icons/${clientName.toLowerCase().includes('qbittorrent') ? 'qbittorrent.svg' : clientName.toLowerCase().includes('transmission') ? 'transmission.svg' : clientName.toLowerCase().includes('sabnzbd') ? 'sabnzbd.svg' : 'deluge.svg'}`}
                                 alt={clientName}
                                 style={{
                                     width: '24px',
@@ -618,7 +678,7 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
                             }}>
                                 {torrents.length > 0 ? (
                                     torrents.map((torrent) => (
-                                        <TorrentItem
+                                        <DownloadItem
                                             key={torrent.hash}
                                             torrent={torrent}
                                             clientName={clientName}
@@ -692,9 +752,9 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
                                                     </Typography>
                                                 </Box>
                                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.2 }}>
-                                                    <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white', minWidth: '100px' }}>
+                                                    <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary', minWidth: '100px' }}>
                                                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                            <ArrowDownward sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
+                                                            <ArrowDownward sx={{ color: 'text.primary', fontSize: '0.75rem', mr: 0.3 }} />
                                                             <span>3.2 MB/s</span>
                                                         </Box>
                                                     </Typography>
@@ -715,43 +775,45 @@ export const TorrentClientWidget: React.FC<TorrentClientWidgetProps> = ({
                         <Box sx={{ mt: 'auto', pt: 1, borderTop: '1px solid rgba(255,255,255,0.1)', width: '100%' }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
                                 <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                                    <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)', mb: 0.5 }}>
+                                    <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary', mb: 0.5 }}>
                                         Current:
                                     </Typography>
-                                    <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)' }}>
-                                        Session:
+                                    <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary' }}>
+                                        {clientName === 'SABnzbd' ? 'This month:' : 'Session:'}
                                     </Typography>
                                 </Box>
 
                                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                                        <ArrowDownward sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
-                                        <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white', minWidth: '65px', textAlign: 'right' }}>
+                                        <ArrowDownward sx={{ color: 'text.primary', fontSize: '0.75rem', mr: 0.3 }} />
+                                        <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary', minWidth: '65px', textAlign: 'right' }}>
                                             {formatBytes(stats.dl_info_speed)}/s
                                         </Typography>
                                     </Box>
                                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <ArrowDownward sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
-                                        <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white', minWidth: '65px', textAlign: 'right' }}>
+                                        <ArrowDownward sx={{ color: 'text.primary', fontSize: '0.75rem', mr: 0.3 }} />
+                                        <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary', minWidth: '65px', textAlign: 'right' }}>
                                             {formatBytes(stats.dl_info_data || 0)}
                                         </Typography>
                                     </Box>
                                 </Box>
 
-                                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                                        <ArrowUpward sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
-                                        <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white', minWidth: '65px', textAlign: 'right' }}>
-                                            {formatBytes(stats.up_info_speed)}/s
-                                        </Typography>
+                                {clientName !== 'SABnzbd' && (
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                                            <ArrowUpward sx={{ color: 'text.primary', fontSize: '0.75rem', mr: 0.3 }} />
+                                            <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary', minWidth: '65px', textAlign: 'right' }}>
+                                                {formatBytes(stats.up_info_speed)}/s
+                                            </Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                            <ArrowUpward sx={{ color: 'text.primary', fontSize: '0.75rem', mr: 0.3 }} />
+                                            <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary', minWidth: '65px', textAlign: 'right' }}>
+                                                {formatBytes(stats.up_info_data || 0)}
+                                            </Typography>
+                                        </Box>
                                     </Box>
-                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <ArrowUpward sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
-                                        <Typography variant='caption' sx={{ fontSize: '0.7rem', color: 'white', minWidth: '65px', textAlign: 'right' }}>
-                                            {formatBytes(stats.up_info_data || 0)}
-                                        </Typography>
-                                    </Box>
-                                </Box>
+                                )}
                             </Box>
                         </Box>
                     </Box>

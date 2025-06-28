@@ -1,13 +1,19 @@
 import { Router } from 'express';
 
+import { adguardRoute } from './adguard.route';
 import { appShortcutRoute } from './app-shortcut.route';
 import { authRoute } from './auth.route';
 import { configRoute } from './config.route';
 import { delugeRoute } from './deluge.route';
 import { healthRoute } from './health.route';
+import { jellyfinRoute } from './jellyfin.route';
+import { jellyseerrRoute } from './jellyseerr.route';
 import { piholeV6Route } from './pihole-v6.route';
 import { piholeRoute } from './pihole.route';
 import { qbittorrentRoute } from './qbittorrent.route';
+import { radarrRoute } from './radarr.route';
+import { sabnzbdRoute } from './sabnzbd.route';
+import { sonarrRoute } from './sonarr.route';
 import { systemRoute } from './system.route';
 import { timezoneRoute } from './timezone.route';
 import { transmissionRoute } from './transmission.route';
@@ -50,14 +56,32 @@ router.use('/uploads', apiLimiter, uploadsRoute);
 router.use('/qbittorrent', torrentApiLimiter, qbittorrentRoute);
 router.use('/transmission', torrentApiLimiter, transmissionRoute);
 
+// NZB client routes
+router.use('/sabnzbd', torrentApiLimiter, sabnzbdRoute);
+
 // Pi-hole routes
 router.use('/pihole', apiLimiter, piholeRoute);
 
 // Pi-hole v6 routes (separate to maintain backward compatibility)
 router.use('/pihole/v6', apiLimiter, piholeV6Route);
 
+// AdGuard Home routes
+router.use('/adguard', apiLimiter, adguardRoute);
+
 // Deluge routes
 router.use('/deluge', torrentApiLimiter, delugeRoute);
+
+// Jellyfin routes
+router.use('/jellyfin', apiLimiter, jellyfinRoute);
+
+// Jellyseerr routes
+router.use('/jellyseerr', apiLimiter, jellyseerrRoute);
+
+// Sonarr routes
+router.use('/sonarr', apiLimiter, sonarrRoute);
+
+// Radarr routes
+router.use('/radarr', apiLimiter, radarrRoute);
 
 router.use('/auth', authLimiter, authRoute);
 

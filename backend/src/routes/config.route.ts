@@ -130,10 +130,46 @@ const filterSensitiveData = (config: any): any => {
                 delete newConfig.password;
             }
 
-            // Handle torrent client sensitive data
-            if (item.type === 'torrent-client' && newConfig.password) {
+            // Handle AdGuard Home widget sensitive data
+            if (item.type === 'adguard-widget') {
+                if (newConfig.username) {
+                    newConfig._hasUsername = true;
+                    delete newConfig.username;
+                }
+                if (newConfig.password) {
+                    newConfig._hasPassword = true;
+                    delete newConfig.password;
+                }
+            }
+
+            // Handle download client (torrent/NZB) sensitive data
+            if ((item.type === 'download-client' || item.type === 'torrent-client') && newConfig.password) {
                 newConfig._hasPassword = true;
                 delete newConfig.password;
+            }
+
+            // Handle media server widget sensitive data
+            if (item.type === 'media-server-widget' && newConfig.apiKey) {
+                newConfig._hasApiKey = true;
+                delete newConfig.apiKey;
+            }
+
+            // Handle Sonarr widget sensitive data
+            if (item.type === 'sonarr-widget' && newConfig.apiKey) {
+                newConfig._hasApiKey = true;
+                delete newConfig.apiKey;
+            }
+
+            // Handle Radarr widget sensitive data
+            if (item.type === 'radarr-widget' && newConfig.apiKey) {
+                newConfig._hasApiKey = true;
+                delete newConfig.apiKey;
+            }
+
+            // Handle Media Request Manager widget sensitive data
+            if (item.type === 'media-request-manager-widget' && newConfig.apiKey) {
+                newConfig._hasApiKey = true;
+                delete newConfig.apiKey;
             }
 
             // Handle dual widget sensitive data
@@ -147,6 +183,11 @@ const filterSensitiveData = (config: any): any => {
                         newConfig.topWidget.config._hasPassword = true;
                         delete newConfig.topWidget.config.password;
                     }
+                    // Handle AdGuard Home username in dual widget
+                    if (newConfig.topWidget.config.username) {
+                        newConfig.topWidget.config._hasUsername = true;
+                        delete newConfig.topWidget.config.username;
+                    }
                 }
                 if (newConfig.bottomWidget?.config) {
                     if (newConfig.bottomWidget.config.apiToken) {
@@ -156,6 +197,11 @@ const filterSensitiveData = (config: any): any => {
                     if (newConfig.bottomWidget.config.password) {
                         newConfig.bottomWidget.config._hasPassword = true;
                         delete newConfig.bottomWidget.config.password;
+                    }
+                    // Handle AdGuard Home username in dual widget
+                    if (newConfig.bottomWidget.config.username) {
+                        newConfig.bottomWidget.config._hasUsername = true;
+                        delete newConfig.bottomWidget.config.username;
                     }
                 }
             }
@@ -233,9 +279,110 @@ const restoreSensitiveData = (newConfig: any, existingConfig: any): any => {
     const globalExistingItemsMap = createGlobalItemMap(existingConfig);
 
     const restoreItemSensitiveData = (newItem: any, existingItem: any): any => {
-        if (!newItem.config || !existingItem.config) return newItem;
+        if (!newItem.config) return newItem;
 
         const restoredItemConfig = { ...newItem.config };
+
+        // Handle duplication: if this is a duplicated item, copy credentials from source item
+        if (newItem.config._duplicatedFrom) {
+            const sourceItem = globalExistingItemsMap.get(newItem.config._duplicatedFrom);
+            if (sourceItem?.config) {
+                console.log(`Copying credentials from source item ${newItem.config._duplicatedFrom} to duplicated item ${newItem.id}`);
+
+                // Copy encrypted credentials directly from source item
+                if (sourceItem.config.apiToken) {
+                    restoredItemConfig.apiToken = sourceItem.config.apiToken;
+                }
+                if (sourceItem.config.password) {
+                    restoredItemConfig.password = sourceItem.config.password;
+                }
+                if (sourceItem.config.username) {
+                    restoredItemConfig.username = sourceItem.config.username;
+                }
+                if (sourceItem.config.apiKey) {
+                    restoredItemConfig.apiKey = sourceItem.config.apiKey;
+                }
+
+                // Handle dual widget credential copying
+                if (newItem.type === 'dual-widget' && sourceItem.config.topWidget?.config) {
+                    if (restoredItemConfig.topWidget?.config) {
+                        if (sourceItem.config.topWidget.config.apiToken) {
+                            restoredItemConfig.topWidget.config.apiToken = sourceItem.config.topWidget.config.apiToken;
+                        }
+                        if (sourceItem.config.topWidget.config.password) {
+                            restoredItemConfig.topWidget.config.password = sourceItem.config.topWidget.config.password;
+                        }
+                        if (sourceItem.config.topWidget.config.username) {
+                            restoredItemConfig.topWidget.config.username = sourceItem.config.topWidget.config.username;
+                        }
+                        if (sourceItem.config.topWidget.config.apiKey) {
+                            restoredItemConfig.topWidget.config.apiKey = sourceItem.config.topWidget.config.apiKey;
+                        }
+                    }
+                }
+                if (newItem.type === 'dual-widget' && sourceItem.config.bottomWidget?.config) {
+                    if (restoredItemConfig.bottomWidget?.config) {
+                        if (sourceItem.config.bottomWidget.config.apiToken) {
+                            restoredItemConfig.bottomWidget.config.apiToken = sourceItem.config.bottomWidget.config.apiToken;
+                        }
+                        if (sourceItem.config.bottomWidget.config.password) {
+                            restoredItemConfig.bottomWidget.config.password = sourceItem.config.bottomWidget.config.password;
+                        }
+                        if (sourceItem.config.bottomWidget.config.username) {
+                            restoredItemConfig.bottomWidget.config.username = sourceItem.config.bottomWidget.config.username;
+                        }
+                        if (sourceItem.config.bottomWidget.config.apiKey) {
+                            restoredItemConfig.bottomWidget.config.apiKey = sourceItem.config.bottomWidget.config.apiKey;
+                        }
+                    }
+                }
+
+                // Clean up and return early since we've copied everything we need
+                delete restoredItemConfig._hasApiToken;
+                delete restoredItemConfig._hasApiKey;
+                delete restoredItemConfig._hasPassword;
+                delete restoredItemConfig._hasUsername;
+                delete restoredItemConfig._duplicatedFrom;
+                if (restoredItemConfig.topWidget?.config) {
+                    delete restoredItemConfig.topWidget.config._hasApiToken;
+                    delete restoredItemConfig.topWidget.config._hasApiKey;
+                    delete restoredItemConfig.topWidget.config._hasPassword;
+                    delete restoredItemConfig.topWidget.config._hasUsername;
+                }
+                if (restoredItemConfig.bottomWidget?.config) {
+                    delete restoredItemConfig.bottomWidget.config._hasApiToken;
+                    delete restoredItemConfig.bottomWidget.config._hasApiKey;
+                    delete restoredItemConfig.bottomWidget.config._hasPassword;
+                    delete restoredItemConfig.bottomWidget.config._hasUsername;
+                }
+
+                return { ...newItem, config: restoredItemConfig };
+            }
+        }
+
+        if (!existingItem?.config) {
+            // Even if no existing item, we still need to clean up security flags
+            // Clean up security flags and duplication metadata (they're only for communication, not storage)
+            delete restoredItemConfig._hasApiToken;
+            delete restoredItemConfig._hasApiKey;
+            delete restoredItemConfig._hasPassword;
+            delete restoredItemConfig._hasUsername;
+            delete restoredItemConfig._duplicatedFrom;
+            if (restoredItemConfig.topWidget?.config) {
+                delete restoredItemConfig.topWidget.config._hasApiToken;
+                delete restoredItemConfig.topWidget.config._hasApiKey;
+                delete restoredItemConfig.topWidget.config._hasPassword;
+                delete restoredItemConfig.topWidget.config._hasUsername;
+            }
+            if (restoredItemConfig.bottomWidget?.config) {
+                delete restoredItemConfig.bottomWidget.config._hasApiToken;
+                delete restoredItemConfig.bottomWidget.config._hasApiKey;
+                delete restoredItemConfig.bottomWidget.config._hasPassword;
+                delete restoredItemConfig.bottomWidget.config._hasUsername;
+            }
+
+            return { ...newItem, config: restoredItemConfig };
+        }
 
         // Handle group widget items (recursively)
         if (newItem.type === 'group-widget' && restoredItemConfig.items && existingItem.config.items) {
@@ -250,10 +397,48 @@ const restoreSensitiveData = (newConfig: any, existingConfig: any): any => {
             restoredItemConfig.password = existingItem.config.password;
         }
 
-        // Handle torrent client sensitive data
-        if (newItem.type === 'torrent-client') {
+        // Handle AdGuard Home sensitive data
+        if (newItem.type === 'adguard-widget') {
+            if (newItem.config._hasUsername && !newItem.config.username && existingItem.config.username) {
+                restoredItemConfig.username = existingItem.config.username;
+            }
             if (newItem.config._hasPassword && !newItem.config.password && existingItem.config.password) {
                 restoredItemConfig.password = existingItem.config.password;
+            }
+        }
+
+        // Handle download client (torrent/NZB) sensitive data
+        if (newItem.type === 'download-client' || newItem.type === 'torrent-client') {
+            if (newItem.config._hasPassword && !newItem.config.password && existingItem.config.password) {
+                restoredItemConfig.password = existingItem.config.password;
+            }
+        }
+
+        // Handle media server widget sensitive data
+        if (newItem.type === 'media-server-widget') {
+            if (newItem.config._hasApiKey && !newItem.config.apiKey && existingItem.config.apiKey) {
+                restoredItemConfig.apiKey = existingItem.config.apiKey;
+            }
+        }
+
+        // Handle Sonarr widget sensitive data
+        if (newItem.type === 'sonarr-widget') {
+            if (newItem.config._hasApiKey && !newItem.config.apiKey && existingItem.config.apiKey) {
+                restoredItemConfig.apiKey = existingItem.config.apiKey;
+            }
+        }
+
+        // Handle Radarr widget sensitive data
+        if (newItem.type === 'radarr-widget') {
+            if (newItem.config._hasApiKey && !newItem.config.apiKey && existingItem.config.apiKey) {
+                restoredItemConfig.apiKey = existingItem.config.apiKey;
+            }
+        }
+
+        // Handle Media Request Manager widget sensitive data
+        if (newItem.type === 'media-request-manager-widget') {
+            if (newItem.config._hasApiKey && !newItem.config.apiKey && existingItem.config.apiKey) {
+                restoredItemConfig.apiKey = existingItem.config.apiKey;
             }
         }
 
@@ -266,6 +451,10 @@ const restoreSensitiveData = (newConfig: any, existingConfig: any): any => {
                 if (restoredItemConfig.topWidget.config._hasPassword && !restoredItemConfig.topWidget.config.password && existingItem.config.topWidget.config.password) {
                     restoredItemConfig.topWidget.config.password = existingItem.config.topWidget.config.password;
                 }
+                // Handle AdGuard Home username restoration in dual widget
+                if (restoredItemConfig.topWidget.config._hasUsername && !restoredItemConfig.topWidget.config.username && existingItem.config.topWidget.config.username) {
+                    restoredItemConfig.topWidget.config.username = existingItem.config.topWidget.config.username;
+                }
             }
             if (restoredItemConfig.bottomWidget?.config && existingItem.config.bottomWidget?.config) {
                 if (restoredItemConfig.bottomWidget.config._hasApiToken && !restoredItemConfig.bottomWidget.config.apiToken && existingItem.config.bottomWidget.config.apiToken) {
@@ -274,19 +463,30 @@ const restoreSensitiveData = (newConfig: any, existingConfig: any): any => {
                 if (restoredItemConfig.bottomWidget.config._hasPassword && !restoredItemConfig.bottomWidget.config.password && existingItem.config.bottomWidget.config.password) {
                     restoredItemConfig.bottomWidget.config.password = existingItem.config.bottomWidget.config.password;
                 }
+                // Handle AdGuard Home username restoration in dual widget
+                if (restoredItemConfig.bottomWidget.config._hasUsername && !restoredItemConfig.bottomWidget.config.username && existingItem.config.bottomWidget.config.username) {
+                    restoredItemConfig.bottomWidget.config.username = existingItem.config.bottomWidget.config.username;
+                }
             }
         }
 
-        // Clean up security flags (they're only for communication, not storage)
+        // Clean up security flags and duplication metadata (they're only for communication, not storage)
         delete restoredItemConfig._hasApiToken;
+        delete restoredItemConfig._hasApiKey;
         delete restoredItemConfig._hasPassword;
+        delete restoredItemConfig._hasUsername;
+        delete restoredItemConfig._duplicatedFrom;
         if (restoredItemConfig.topWidget?.config) {
             delete restoredItemConfig.topWidget.config._hasApiToken;
+            delete restoredItemConfig.topWidget.config._hasApiKey;
             delete restoredItemConfig.topWidget.config._hasPassword;
+            delete restoredItemConfig.topWidget.config._hasUsername;
         }
         if (restoredItemConfig.bottomWidget?.config) {
             delete restoredItemConfig.bottomWidget.config._hasApiToken;
+            delete restoredItemConfig.bottomWidget.config._hasApiKey;
             delete restoredItemConfig.bottomWidget.config._hasPassword;
+            delete restoredItemConfig.bottomWidget.config._hasUsername;
         }
 
         return { ...newItem, config: restoredItemConfig };
@@ -304,7 +504,9 @@ const restoreSensitiveData = (newConfig: any, existingConfig: any): any => {
                 existingItem = globalExistingItemsMap.get(newItem.id);
             }
 
-            return existingItem ? restoreItemSensitiveData(newItem, existingItem) : newItem;
+            // Always call restoreItemSensitiveData, even if no existing item found
+            // This ensures duplication logic and cleanup always runs
+            return restoreItemSensitiveData(newItem, existingItem);
         });
     };
 
