@@ -367,9 +367,6 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
         }
     };
 
-    // Function to check internet connectivity
-
-
     // Function to fetch system information
     const fetchSystemInfo = async () => {
         try {
