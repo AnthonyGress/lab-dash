@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Request, response, Response, Router } from 'express';
+import { Request, Response, Router } from 'express';
 import https from 'https';
 
 import { getItemConnectionInfo } from '../utils/config-lookup';

@@ -975,6 +975,9 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             } else if (data.widgetType === ITEM_TYPE.RADARR_WIDGET) {
                 // Radarr widget configuration
                 config = await createWidgetConfig(ITEM_TYPE.RADARR_WIDGET, data);
+            } else if (data.widgetType === ITEM_TYPE.GROUP_WIDGET) {
+                // Group widget configuration
+                config = await createWidgetConfig(ITEM_TYPE.GROUP_WIDGET, data);
             } else if (data.widgetType === ITEM_TYPE.DUAL_WIDGET) {
                 // Check if DualWidgetConfig component has already built the config
                 const existingConfig = (formContext as any).getValues('config');
@@ -1656,6 +1659,12 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                     }
                 };
             }
+        } else if (widgetType === ITEM_TYPE.GROUP_WIDGET) {
+            return {
+                maxItems: data.maxItems || '3', // Default to 3 items layout
+                showLabel: data.showLabel !== undefined ? data.showLabel : true, // Default to showing label
+                items: existingItem?.config?.items || [] // Preserve existing items or start with empty array
+            };
         }
 
         return {};

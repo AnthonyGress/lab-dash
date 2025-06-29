@@ -129,14 +129,14 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
 
         // Extract top widget configuration
         if (existingConfig.topWidget?.config) {
-            const topWidgetType = existingConfig.topWidget.type;
+            const existingTopWidgetType = existingConfig.topWidget.type;
             const topConfig = existingConfig.topWidget.config;
 
-            if (topWidgetType) {
-                formContext.setValue('topWidgetType', topWidgetType);
+            if (existingTopWidgetType) {
+                formContext.setValue('topWidgetType', existingTopWidgetType);
 
                 // Map configuration based on widget type
-                if (topWidgetType === ITEM_TYPE.WEATHER_WIDGET) {
+                if (existingTopWidgetType === ITEM_TYPE.WEATHER_WIDGET) {
                     topWidgetFields = {
                         temperatureUnit: topConfig.temperatureUnit || 'fahrenheit',
                         location: topConfig.location || null
@@ -144,7 +144,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                     formContext.setValue('top_temperatureUnit', topConfig.temperatureUnit || 'fahrenheit');
                     formContext.setValue('top_location', topConfig.location || null);
                 }
-                else if (topWidgetType === ITEM_TYPE.DATE_TIME_WIDGET) {
+                else if (existingTopWidgetType === ITEM_TYPE.DATE_TIME_WIDGET) {
                     topWidgetFields = {
                         location: topConfig.location || null,
                         timezone: topConfig.timezone || ''
@@ -152,7 +152,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                     formContext.setValue('top_location', topConfig.location || null);
                     formContext.setValue('top_timezone', topConfig.timezone || '');
                 }
-                else if (topWidgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET) {
+                else if (existingTopWidgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET) {
                     const gauges = topConfig.gauges || ['cpu', 'temp', 'ram'];
                     topWidgetFields = {
                         temperatureUnit: topConfig.temperatureUnit || 'fahrenheit',
@@ -173,7 +173,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                     formContext.setValue('top_showSystemInfo', topConfig.showSystemInfo !== false);
                     formContext.setValue('top_showInternetStatus', topConfig.showInternetStatus !== false);
                 }
-                else if (topWidgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
+                else if (existingTopWidgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
                     topWidgetFields = {
                         selectedDisks: topConfig.selectedDisks || [],
                         showIcons: topConfig.showIcons !== false,
@@ -185,7 +185,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                     formContext.setValue('top_showName', topConfig.showName !== false);
                     formContext.setValue('top_layout', '2x2');
                 }
-                else if (topWidgetType === ITEM_TYPE.PIHOLE_WIDGET) {
+                else if (existingTopWidgetType === ITEM_TYPE.PIHOLE_WIDGET) {
                     // Use masked values for sensitive fields if they exist
                     const maskedApiToken = topConfig._hasApiToken ? '**********' : '';
                     const maskedPassword = topConfig._hasPassword ? '**********' : '';
@@ -207,7 +207,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                     formContext.setValue('top_piholeName', topConfig.displayName || '');
                     formContext.setValue('top_showLabel', topConfig.showLabel !== undefined ? topConfig.showLabel : true);
                 }
-                else if (topWidgetType === ITEM_TYPE.ADGUARD_WIDGET) {
+                else if (existingTopWidgetType === ITEM_TYPE.ADGUARD_WIDGET) {
                     // Use masked values for sensitive fields if they exist
                     const maskedUsername = topConfig._hasUsername ? '**********' : '';
                     const maskedPassword = topConfig._hasPassword ? '**********' : '';
@@ -234,15 +234,15 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
 
         // Extract bottom widget configuration
         if (existingConfig.bottomWidget?.config) {
-            const bottomWidgetType = existingConfig.bottomWidget.type;
+            const existingBottomWidgetType = existingConfig.bottomWidget.type;
             const bottomConfig = existingConfig.bottomWidget.config;
 
-            if (bottomWidgetType) {
+            if (existingBottomWidgetType) {
                 // Set the bottomWidgetType directly
-                formContext.setValue('bottomWidgetType', bottomWidgetType);
+                formContext.setValue('bottomWidgetType', existingBottomWidgetType);
 
                 // Map configuration based on widget type
-                if (bottomWidgetType === ITEM_TYPE.WEATHER_WIDGET) {
+                if (existingBottomWidgetType === ITEM_TYPE.WEATHER_WIDGET) {
                     const temperatureUnit = bottomConfig.temperatureUnit || 'fahrenheit';
                     const location = bottomConfig.location || null;
 
@@ -260,7 +260,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                         formContext.setValue('bottom_location', null);
                     }
                 }
-                else if (bottomWidgetType === ITEM_TYPE.DATE_TIME_WIDGET) {
+                else if (existingBottomWidgetType === ITEM_TYPE.DATE_TIME_WIDGET) {
                     const location = bottomConfig.location || null;
                     const timezone = bottomConfig.timezone || '';
 
@@ -278,7 +278,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
 
                     formContext.setValue('bottom_timezone', timezone);
                 }
-                else if (bottomWidgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET) {
+                else if (existingBottomWidgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET) {
                     const gauges = bottomConfig.gauges || ['cpu', 'temp', 'ram'];
                     bottomWidgetFields = {
                         temperatureUnit: bottomConfig.temperatureUnit || 'fahrenheit',
@@ -299,7 +299,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                     formContext.setValue('bottom_showSystemInfo', bottomConfig.showSystemInfo !== false);
                     formContext.setValue('bottom_showInternetStatus', bottomConfig.showInternetStatus !== false);
                 }
-                else if (bottomWidgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
+                else if (existingBottomWidgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
                     bottomWidgetFields = {
                         selectedDisks: bottomConfig.selectedDisks || [],
                         showIcons: bottomConfig.showIcons !== false,
@@ -311,7 +311,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                     formContext.setValue('bottom_showName', bottomConfig.showName !== false);
                     formContext.setValue('bottom_layout', '2x2');
                 }
-                else if (bottomWidgetType === ITEM_TYPE.PIHOLE_WIDGET) {
+                else if (existingBottomWidgetType === ITEM_TYPE.PIHOLE_WIDGET) {
                     // Use masked values for sensitive fields if they exist
                     const maskedApiToken = bottomConfig._hasApiToken ? '**********' : '';
                     const maskedPassword = bottomConfig._hasPassword ? '**********' : '';
@@ -333,7 +333,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                     formContext.setValue('bottom_piholeName', bottomConfig.displayName || '');
                     formContext.setValue('bottom_showLabel', bottomConfig.showLabel !== undefined ? bottomConfig.showLabel : true);
                 }
-                else if (bottomWidgetType === ITEM_TYPE.ADGUARD_WIDGET) {
+                else if (existingBottomWidgetType === ITEM_TYPE.ADGUARD_WIDGET) {
                     // Use masked values for sensitive fields if they exist
                     const maskedUsername = bottomConfig._hasUsername ? '**********' : '';
                     const maskedPassword = bottomConfig._hasPassword ? '**********' : '';
@@ -820,8 +820,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
     useEffect(() => {
         const handleFormSubmit = async () => {
             // Capture widget types immediately before they can be lost
-            const topWidgetType = formContext.getValues('topWidgetType');
-            const bottomWidgetType = formContext.getValues('bottomWidgetType');
+            const currentTopWidgetType = formContext.getValues('topWidgetType');
+            const currentBottomWidgetType = formContext.getValues('bottomWidgetType');
 
             // Grab the current page's state first
             const currentPosition = currentPage === 0 ? 'top' : 'bottom';
@@ -832,8 +832,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
             captureFormValuesToState('bottom');
 
             // Build individual widget configs using captured types
-            const topWidget = topWidgetType ? await buildWidgetConfigWithType('top', topWidgetType) : undefined;
-            const bottomWidget = bottomWidgetType ? await buildWidgetConfigWithType('bottom', bottomWidgetType) : undefined;
+            const topWidget = currentTopWidgetType ? await buildWidgetConfigWithType('top', currentTopWidgetType) : undefined;
+            const bottomWidget = currentBottomWidgetType ? await buildWidgetConfigWithType('bottom', currentBottomWidgetType) : undefined;
 
             // Create the final dual widget config
             const dualWidgetConfig = {

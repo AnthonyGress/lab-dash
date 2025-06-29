@@ -75,7 +75,8 @@ export const SortableGroupWidget: React.FC<Props> = ({
 
     // Handle item changes (reordering within the group)
     const handleItemsChange = useCallback(async (newItems: GroupItem[]) => {
-        if (!config) return;
+        // Ensure config exists with defaults for new groups
+        const safeConfig = config || { maxItems: '3', showLabel: true, items: [] };
 
         // Update the group widget config directly using saveLayout instead of updateItem
         // to avoid triggering any unexpected state changes
@@ -84,7 +85,8 @@ export const SortableGroupWidget: React.FC<Props> = ({
                 return {
                     ...layoutItem,
                     config: {
-                        ...layoutItem.config,
+                        ...safeConfig, // Use safeConfig which includes defaults
+                        ...layoutItem.config, // Preserve any existing config
                         items: newItems
                     }
                 };
@@ -97,7 +99,7 @@ export const SortableGroupWidget: React.FC<Props> = ({
 
         // Update local state to reflect the change
         setDashboardLayout(updatedLayout);
-    }, [id, config, dashboardLayout, saveLayout, setDashboardLayout]);
+    }, [id, dashboardLayout, saveLayout, setDashboardLayout, config]);
 
     // Get a group item as a dashboard item for editing
     const getItemAsDashboardItem = useCallback((itemId: string): DashboardItem | null => {
@@ -150,7 +152,9 @@ export const SortableGroupWidget: React.FC<Props> = ({
 
     // Function to update a group item after it has been edited
     const updateGroupItem = useCallback(async (itemId: string, updatedItem: DashboardItem) => {
-        if (!config?.items) return;
+        // Ensure config exists with defaults for new groups
+        const safeConfig = config || { maxItems: '3', showLabel: true, items: [] };
+        const currentItems = safeConfig.items || [];
 
         // Create an updated GroupItem from the updated DashboardItem
         const updatedGroupItem: GroupItem = {
@@ -176,7 +180,7 @@ export const SortableGroupWidget: React.FC<Props> = ({
         }
 
         // Replace the item in the group's items array
-        const updatedItems = config.items.map(item =>
+        const updatedItems = currentItems.map(item =>
             item.id === itemId ? updatedGroupItem : item
         );
 
@@ -187,7 +191,8 @@ export const SortableGroupWidget: React.FC<Props> = ({
                 return {
                     ...layoutItem,
                     config: {
-                        ...layoutItem.config,
+                        ...safeConfig, // Use safeConfig which includes defaults
+                        ...layoutItem.config, // Preserve any existing config
                         items: updatedItems
                     }
                 };
@@ -200,7 +205,7 @@ export const SortableGroupWidget: React.FC<Props> = ({
 
         // Update local state to reflect the change
         setDashboardLayout(updatedLayout);
-    }, [config, id, dashboardLayout, saveLayout, setDashboardLayout]);
+    }, [id, dashboardLayout, saveLayout, setDashboardLayout, config]);
 
     // Function to notify about dragging a group item
     const notifyGroupItemDrag = useCallback((isDragging: boolean, itemId?: string) => {
@@ -320,17 +325,22 @@ export const SortableGroupWidget: React.FC<Props> = ({
 
     // Add an app shortcut to the group
     const addAppShortcutToGroup = useCallback((shortcutItem: DashboardItem) => {
-        if (!config || !dashboardLayout) {
-            console.error('Missing config or dashboardLayout');
+        if (!dashboardLayout) {
+            console.error('Missing dashboardLayout');
             return;
         }
 
+        // Ensure config exists with defaults for new groups
+        const safeConfig = config || { maxItems: '3', showLabel: true, items: [] };
+
         // Use the configured maxItems or parse from the special format strings
-        const maxItemsStr = String(config.maxItems || 3);
+        const maxItemsStr = String(safeConfig.maxItems || 3);
         let MAX_ITEMS = 3;
 
         if (maxItemsStr === '6_2x3' || maxItemsStr === '6_3x2') {
             MAX_ITEMS = 6;
+        } else if (maxItemsStr === '8_4x2') {
+            MAX_ITEMS = 8;
         } else {
             MAX_ITEMS = parseInt(maxItemsStr, 10) || 3;
         }
@@ -400,7 +410,8 @@ export const SortableGroupWidget: React.FC<Props> = ({
         }
 
         updatedGroupWidget.config = {
-            ...updatedGroupWidget.config,
+            ...safeConfig, // Use safeConfig which includes defaults
+            ...updatedGroupWidget.config, // Preserve any existing config
             items: updatedItems
         };
 
@@ -411,7 +422,7 @@ export const SortableGroupWidget: React.FC<Props> = ({
 
         // Save to server
         saveLayout(updatedLayout);
-    }, [dashboardLayout, config, id, ensureItems, setDashboardLayout, saveLayout]);
+    }, [dashboardLayout, id, ensureItems, setDashboardLayout, saveLayout, config]);
 
     // Get maximum items allowed in the group
     const getMaxItems = useCallback(() => {

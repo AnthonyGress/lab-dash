@@ -15,9 +15,10 @@ type Props = {
     editMode?: boolean;
     config?: any;
     isPreview?: boolean;
+    size?: 'small' | 'medium' | 'large';
 }
 
-export const AppShortcut = ({ url, name, iconName, showLabel, editMode, config, isPreview }: Props) => {
+export const AppShortcut = ({ url, name, iconName, showLabel, editMode, config, isPreview, size = 'medium' }: Props) => {
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const isWolShortcut = config?.isWol === true;
 
@@ -32,6 +33,14 @@ export const AppShortcut = ({ url, name, iconName, showLabel, editMode, config, 
 
         return isMobile ? '.9rem' : '1rem';
     }, [name, isMobile]);
+
+    // Calculate text width based on size prop to prevent overlap with status icons
+    const textWidth = useMemo(() => {
+        if (size === 'small') {
+            return '70%'; // Narrower for 4x2 layout to prevent overlap
+        }
+        return '80%'; // Default width for other layouts
+    }, [size]);
 
     const handleWakeOnLan = useCallback(async (e: React.MouseEvent) => {
         e.preventDefault();
@@ -125,7 +134,7 @@ export const AppShortcut = ({ url, name, iconName, showLabel, editMode, config, 
                             WebkitLineClamp: 1,
                             WebkitBoxOrient: 'vertical',
                             wordBreak: 'break-word',
-                            width: '80%',
+                            width: textWidth,
                             lineHeight: 1.2,
                             mt: 1
                         }}
