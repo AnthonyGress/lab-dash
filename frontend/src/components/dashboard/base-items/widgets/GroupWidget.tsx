@@ -122,6 +122,9 @@ const SortableGroupItem: React.FC<SortableGroupItemProps> = ({
                 opacity: isDragging ? 0.5 : 1,
                 position: 'relative',
                 touchAction: 'none', // Ensure touch events are captured properly on mobile
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center'
             }}
             data-item-id={item.id}
             data-group-id={groupId}
@@ -647,12 +650,13 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                         sx={{
                             flex: 1,
                             display: 'grid',
-                            gridTemplateColumns: layout === '2x3' ? 'repeat(2, 1fr)' : layout === '4x2' ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)',
+                            gridTemplateColumns: layout === '2x3' ? 'repeat(2, minmax(100px, 160px))' : layout === '4x2' ? 'repeat(4, minmax(70px, 115px))' : 'repeat(3, minmax(90px, 150px))',
                             gridTemplateRows: layout === '2x3' ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)',
-                            gap: 1,
+                            gap: 3,
                             gridAutoFlow: 'row', // Fill row by row (left to right, top to bottom)
                             justifyItems: 'stretch', // Items fill their grid cells
                             alignItems: 'stretch',
+                            justifyContent: 'center', // Center the grid content horizontally
                             overflowY: 'hidden',
                             overflowX: 'hidden',
                             p: { lg: 2 },
