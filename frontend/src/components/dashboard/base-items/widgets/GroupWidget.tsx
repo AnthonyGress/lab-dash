@@ -647,10 +647,12 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                         sx={{
                             flex: 1,
                             display: 'grid',
-                            gridTemplateColumns: layout === '2x3' ? 'repeat(2, 1fr)' : layout === '4x2' ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)', // Explicit grid columns
-                            gap: 1, // 8px gap between items
-                            justifyItems: 'center',
-                            alignItems: 'center',
+                            gridTemplateColumns: layout === '2x3' ? 'repeat(2, 1fr)' : layout === '4x2' ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)',
+                            gridTemplateRows: layout === '2x3' ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)',
+                            gap: 1,
+                            gridAutoFlow: 'row', // Fill row by row (left to right, top to bottom)
+                            justifyItems: 'stretch', // Items fill their grid cells
+                            alignItems: 'stretch',
                             overflowY: 'hidden',
                             overflowX: 'hidden',
                             p: { lg: 2 },
@@ -664,8 +666,10 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                                     sx={{
                                         display: 'flex',
                                         justifyContent: 'center',
+                                        alignItems: 'center',
                                         maxWidth: gridSettings.maxWidth,
-                                        width: '100%'
+                                        width: '100%',
+                                        height: '100%'
                                     }}
                                 >
                                     <SortableGroupItem
@@ -727,8 +731,10 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                                 sx={{
                                     display: 'flex',
                                     justifyContent: 'center',
+                                    alignItems: 'center',
                                     maxWidth: gridSettings.maxWidth,
-                                    width: '100%'
+                                    width: '100%',
+                                    height: '100%'
                                 }}
                             >
                                 <Box
