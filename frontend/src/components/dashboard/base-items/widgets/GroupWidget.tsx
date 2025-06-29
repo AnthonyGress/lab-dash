@@ -148,6 +148,7 @@ const SortableGroupItem: React.FC<SortableGroupItemProps> = ({
                     iconName={item.icon || ''}
                     showLabel={true}
                     editMode={isEditing}
+                    size={itemSize}
                     config={{
                         isWol: item.isWol,
                         macAddress: item.macAddress,
@@ -262,7 +263,7 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
             // 4x2 grid layout (8 items in 2 rows of 4 items each)
             return {
                 width: '22%', // Even narrower items, 4 per row
-                maxWidth: '120px', // Max width for larger screens
+                maxWidth: '180px', // Max width for larger screens
                 rows: 2,
                 cols: 4,
                 height: DUAL_WIDGET_CONTAINER_HEIGHT,
@@ -473,14 +474,6 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
         }
     }, [items, onItemsChange, onItemDelete]);
 
-    // Handle click on add button - opens the group edit modal
-    const handleAddClick = useCallback(() => {
-        if (isEditing && items.length < MAX_ITEMS) {
-            // Open the group edit modal
-            onEdit?.();
-        }
-    }, [isEditing, items.length, onEdit, MAX_ITEMS]);
-
     // Cleanup effects for mobile
     useEffect(() => {
         // Cleanup function to ensure we don't leave lingering event listeners
@@ -650,16 +643,22 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                         sx={{
                             flex: 1,
                             display: 'grid',
-                            gridTemplateColumns: layout === '2x3' ? 'repeat(2, minmax(100px, 160px))' : layout === '4x2' ? 'repeat(4, minmax(70px, 115px))' : 'repeat(3, minmax(90px, 150px))',
-                            gridTemplateRows: layout === '2x3' ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)',
-                            gap: 3,
+                            gridTemplateColumns: layout === '2x3'
+                                ? { xs: 'repeat(2, minmax(110px, 180px))', sm: 'repeat(2, minmax(90px, 160px))' }
+                                : layout === '4x2'
+                                    ? { xs: 'repeat(4, minmax(70px, 110px))', sm: 'repeat(4, minmax(75px, 140px))', md: 'repeat(4, minmax(85px, 160px))', lg: 'repeat(4, minmax(95px, 180px))' }
+                                    : { xs: 'repeat(3, minmax(95px, 160px))', sm: 'repeat(3, minmax(85px, 150px))' },
+                            gridTemplateRows: layout === '2x3' ? 'repeat(3, auto)' : layout === '4x2' ? 'repeat(2, auto)' : 'repeat(1, auto)',
+                            rowGap: layout === '4x2' ? { xs: 3, sm: 4 } : { xs: 4, sm: 4 },
+                            columnGap: layout === '4x2' ? { xs: 1, sm: 2 } : { xs: 2, sm: 4 },
                             gridAutoFlow: 'row', // Fill row by row (left to right, top to bottom)
-                            justifyItems: 'stretch', // Items fill their grid cells
-                            alignItems: 'stretch',
+                            justifyItems: layout === '4x2' ? 'stretch' : 'center', // Stretch 4x2 items to fill grid cells, center others
+                            alignItems: 'center', // Center items vertically within their grid cells
                             justifyContent: 'center', // Center the grid content horizontally
+                            alignContent: 'center', // Center the entire grid vertically
                             overflowY: 'hidden',
                             overflowX: 'hidden',
-                            p: { lg: 2 },
+                            p: 1,
                             m: 0
                         }}
                     >
@@ -671,7 +670,7 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                                         display: 'flex',
                                         justifyContent: 'center',
                                         alignItems: 'center',
-                                        maxWidth: gridSettings.maxWidth,
+                                        maxWidth: layout === '4x2' ? 'none' : gridSettings.maxWidth,
                                         width: '100%',
                                         height: '100%'
                                     }}
@@ -736,7 +735,7 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                                     display: 'flex',
                                     justifyContent: 'center',
                                     alignItems: 'center',
-                                    maxWidth: gridSettings.maxWidth,
+                                    maxWidth: layout === '4x2' ? 'none' : gridSettings.maxWidth,
                                     width: '100%',
                                     height: '100%'
                                 }}
@@ -756,7 +755,6 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                                             backgroundColor: 'rgba(255, 255, 255, 0.05)'
                                         }
                                     }}
-                                    onClick={handleAddClick}
                                     title='Edit group to add items'
                                 >
                                     <AddIcon fontSize='medium' />
