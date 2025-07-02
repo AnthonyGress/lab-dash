@@ -34,7 +34,7 @@ services:
       container_name: lab-dash
       image: ghcr.io/anthonygress/lab-dash:latest
       privileged: true
-      network_mode: host # for monitoring network usage stats
+      #network_mode: host # for monitoring network usage stats. run `sudo ufw allow 2022/tcp` on ubuntu to allow access through firewall
       ports:
         - 2022:2022
       environment:
