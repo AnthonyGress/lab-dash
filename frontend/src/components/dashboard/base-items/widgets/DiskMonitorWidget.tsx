@@ -285,10 +285,10 @@ export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) 
                         sx={{
                             fontSize: '0.65rem',
                             color: 'white',
-                            minWidth: '80px'
+                            minWidth: isMobile ? '60px' : '80px'
                         }}
                     >
-                    Free: {formatSpace(displayFreeSpace)}
+                        {isMobile ? 'F:' : 'Free:'} {formatSpace(displayFreeSpace)}
                     </Typography>
                     <Typography
                         variant='caption'
@@ -296,11 +296,11 @@ export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) 
                             ml: 'auto',
                             color: 'white',
                             fontSize: '0.65rem',
-                            minWidth: '80px',
+                            minWidth: isMobile ? '60px' : '80px',
                             textAlign: 'right'
                         }}
                     >
-                    Total: {formatSpace(totalSpace)}
+                        {isMobile ? 'T:' : 'Total:'} {formatSpace(totalSpace)}
                     </Typography>
                 </Box>
             </Box>
