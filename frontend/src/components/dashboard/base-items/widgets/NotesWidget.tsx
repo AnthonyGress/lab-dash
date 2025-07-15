@@ -181,13 +181,22 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
         const now = new Date();
-        const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
 
-        if (diffInHours < 24) {
+        // Get the start of today (midnight)
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const startOfNoteDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+        // Calculate the difference in days
+        const diffInDays = Math.floor((startOfToday.getTime() - startOfNoteDate.getTime()) / (1000 * 60 * 60 * 24));
+
+        if (diffInDays === 0) {
+            // Today - show only time
             return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        } else if (diffInHours < 24 * 7) {
+        } else if (diffInDays < 7) {
+            // Within this week - show day and time
             return date.toLocaleDateString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' });
         } else {
+            // Older than a week - show month and day
             return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
         }
     };
@@ -506,7 +515,7 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
                                             onClick={handleNewNote}
                                             sx={{ color: 'white', opacity: 0.8, '&:hover': { opacity: 1 } }}
                                         >
-                                            <Add fontSize='small' />
+                                            <Add fontSize='medium' />
                                         </IconButton>
                                     </Tooltip>
                                 )}
@@ -517,7 +526,7 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
                                             onClick={handleListClick}
                                             sx={{ color: 'white', opacity: 0.8, '&:hover': { opacity: 1 } }}
                                         >
-                                            <List fontSize='small' />
+                                            <List fontSize='medium' />
                                         </IconButton>
                                     </Tooltip>
                                 )}
@@ -528,7 +537,7 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
                                             onClick={handleCancel}
                                             sx={{ color: 'white', opacity: 0.8, '&:hover': { opacity: 1 } }}
                                         >
-                                            <Close fontSize='small' />
+                                            <Close fontSize='medium' />
                                         </IconButton>
                                     </Tooltip>
                                 )}
