@@ -158,6 +158,18 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
         setMenuAnchorEl(null);
     };
 
+    const handleCancel = () => {
+        if (isNewNote) {
+            // If creating a new note, go back to list
+            setViewMode('list');
+            setSelectedNote(null);
+            setIsNewNote(false);
+        } else {
+            // If editing existing note, go back to view mode
+            setViewMode('view');
+        }
+    };
+
     const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
         setMenuAnchorEl(event.currentTarget);
     };
@@ -249,7 +261,7 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
     const renderContent = () => {
         if (error) {
             return (
-                <Box sx={{ textAlign: 'center', color: 'rgba(255,255,255,0.7)' }}>
+                <Box sx={{ textAlign: 'center', color: 'rgba(255,255,255,0.7)', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Typography variant='body2'>{error}</Typography>
                 </Box>
             );
@@ -257,100 +269,69 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
 
         if (viewMode === 'view' && selectedNote) {
             return (
-                <Box sx={{
-                    px: 1.5,
-                    pt: 1.5,
-                    pb: 1,
-                    overflowY: 'auto',
-                    height: '280px',
-                    maxHeight: '280px',
-                    width: '100%',
-                    minWidth: '100%',
-                    flex: '1 1 auto',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '4px',
-                    backgroundColor: 'rgba(0,0,0,0.1)',
-                    '&::-webkit-scrollbar': {
-                        width: '4px',
-                    },
-                    '&::-webkit-scrollbar-track': {
-                        background: 'rgba(255,255,255,0.05)',
-                    },
-                    '&::-webkit-scrollbar-thumb': {
-                        background: 'rgba(255,255,255,0.2)',
-                        borderRadius: '2px',
-                    },
-                    '&::-webkit-scrollbar-thumb:hover': {
-                        background: 'rgba(255,255,255,0.3)',
-                    },
-                    display: 'flex',
-                    flexDirection: 'column',
-                    boxSizing: 'border-box',
-                    position: 'relative'
-                }}>
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
-                        <Typography
-                            variant='h6'
-                            sx={{
-                                color: 'white',
-                                fontSize: isMobile ? '1rem' : '1.1rem',
-                                fontWeight: 600,
-                                wordBreak: 'break-word',
-                                flex: 1
-                            }}
-                        >
-                            {selectedNote.title}
-                        </Typography>
-                        {isLoggedIn && isAdmin && !dashboardEditMode && (
-                            <Box sx={{ ml: 1 }}>
-                                <IconButton
-                                    size='small'
-                                    onClick={handleMenuOpen}
-                                    sx={{ color: 'white', opacity: 0.8, '&:hover': { opacity: 1 } }}
-                                >
-                                    <MoreVert fontSize='small' />
-                                </IconButton>
-                                <Menu
-                                    anchorEl={menuAnchorEl}
-                                    open={Boolean(menuAnchorEl)}
-                                    onClose={handleMenuClose}
+                <Box sx={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <Typography
+                        variant='h6'
+                        sx={{
+                            color: 'white',
+                            fontSize: isMobile ? '1rem' : '1.1rem',
+                            fontWeight: 600,
+                            wordBreak: 'break-word',
+                            mb: 1,
+                            pr: 5 // Add padding to avoid overlap with menu
+                        }}
+                    >
+                        {selectedNote.title}
+                    </Typography>
+                    {isLoggedIn && isAdmin && !dashboardEditMode && (
+                        <Box sx={{ position: 'absolute', top: 0, right: 0, zIndex: 1 }}>
+                            <IconButton
+                                size='small'
+                                onClick={handleMenuOpen}
+                                sx={{ color: 'white', opacity: 0.8, '&:hover': { opacity: 1 } }}
+                            >
+                                <MoreVert fontSize='small' />
+                            </IconButton>
+                            <Menu
+                                anchorEl={menuAnchorEl}
+                                open={Boolean(menuAnchorEl)}
+                                onClose={handleMenuClose}
+                                sx={{
+                                    '& .MuiPaper-root': {
+                                        bgcolor: '#2A2A2A',
+                                        color: 'white',
+                                        borderRadius: 1,
+                                        boxShadow: 4
+                                    }
+                                }}
+                            >
+                                <MenuItem
+                                    onClick={handleEditClick}
                                     sx={{
-                                        '& .MuiPaper-root': {
-                                            bgcolor: '#2A2A2A',
-                                            color: 'white',
-                                            borderRadius: 1,
-                                            boxShadow: 4
-                                        }
+                                        py: 1,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 1
                                     }}
                                 >
-                                    <MenuItem
-                                        onClick={handleEditClick}
-                                        sx={{
-                                            py: 1,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 1
-                                        }}
-                                    >
-                                        <FaEdit size={14} />
-                                        Edit
-                                    </MenuItem>
-                                    <MenuItem
-                                        onClick={() => selectedNote && handleDeleteNote(selectedNote.id)}
-                                        sx={{
-                                            py: 1,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 1
-                                        }}
-                                    >
-                                        <FaTrashCan size={14} />
-                                        Delete
-                                    </MenuItem>
-                                </Menu>
-                            </Box>
-                        )}
-                    </Box>
+                                    <FaEdit size={14} />
+                                    Edit
+                                </MenuItem>
+                                <MenuItem
+                                    onClick={() => selectedNote && handleDeleteNote(selectedNote.id)}
+                                    sx={{
+                                        py: 1,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 1
+                                    }}
+                                >
+                                    <FaTrashCan size={14} />
+                                    Delete
+                                </MenuItem>
+                            </Menu>
+                        </Box>
+                    )}
                     <Typography
                         variant='body2'
                         sx={{
@@ -370,37 +351,7 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
 
         if (viewMode === 'edit') {
             return (
-                <Box sx={{
-                    px: 1.5,
-                    pt: 1.5,
-                    pb: 1.5,
-                    overflowY: 'auto',
-                    height: '280px',
-                    maxHeight: '280px',
-                    width: '100%',
-                    minWidth: '100%',
-                    flex: '1 1 auto',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '4px',
-                    backgroundColor: 'rgba(0,0,0,0.1)',
-                    '&::-webkit-scrollbar': {
-                        width: '4px',
-                    },
-                    '&::-webkit-scrollbar-track': {
-                        background: 'rgba(255,255,255,0.05)',
-                    },
-                    '&::-webkit-scrollbar-thumb': {
-                        background: 'rgba(255,255,255,0.2)',
-                        borderRadius: '2px',
-                    },
-                    '&::-webkit-scrollbar-thumb:hover': {
-                        background: 'rgba(255,255,255,0.3)',
-                    },
-                    display: 'flex',
-                    flexDirection: 'column',
-                    boxSizing: 'border-box',
-                    position: 'relative'
-                }}>
+                <>
                     <TextField
                         fullWidth
                         variant='outlined'
@@ -457,6 +408,24 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
                         }}
                     />
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+                        <Tooltip title='Cancel'>
+                            <IconButton
+                                size='small'
+                                onClick={handleCancel}
+                                sx={{
+                                    color: 'white',
+                                    opacity: 0.8,
+                                    backgroundColor: 'rgba(255,255,255,0.1)',
+                                    mr: 1,
+                                    '&:hover': {
+                                        opacity: 1,
+                                        backgroundColor: 'rgba(255,255,255,0.2)'
+                                    }
+                                }}
+                            >
+                                <Close fontSize='small' />
+                            </IconButton>
+                        </Tooltip>
                         <Tooltip title='Save note'>
                             <IconButton
                                 size='small'
@@ -475,7 +444,7 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
                             </IconButton>
                         </Tooltip>
                     </Box>
-                </Box>
+                </>
             );
         }
 
@@ -502,7 +471,18 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
                 {/* Header */}
                 {showLabel && (
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, width: '100%' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1,
+                                cursor: (editMode || dashboardEditMode) ? 'grab' : 'pointer',
+                                '&:hover': {
+                                    opacity: (editMode || dashboardEditMode) ? 1 : 0.8
+                                }
+                            }}
+                            onClick={editMode || dashboardEditMode ? undefined : handleTitleClick}
+                        >
                             <FaStickyNote
                                 style={{
                                     color: 'white',
@@ -511,26 +491,10 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
                             />
                             <Typography
                                 variant={isMobile ? 'subtitle1' : 'h6'}
-                                sx={{
-                                    color: 'white',
-                                    cursor: viewMode !== 'list' ? 'pointer' : 'default',
-                                    '&:hover': viewMode !== 'list' ? { opacity: 0.8 } : {}
-                                }}
-                                onClick={handleTitleClick}
+                                sx={{ color: 'white' }}
                             >
                                 {displayName}
                             </Typography>
-                            {viewMode !== 'list' && isLoggedIn && isAdmin && !dashboardEditMode && (
-                                <Tooltip title='Back to list'>
-                                    <IconButton
-                                        size='small'
-                                        onClick={handleListClick}
-                                        sx={{ color: 'white', opacity: 0.8, '&:hover': { opacity: 1 } }}
-                                    >
-                                        <List fontSize='small' />
-                                    </IconButton>
-                                </Tooltip>
-                            )}
                         </Box>
 
                         {!editMode && isLoggedIn && isAdmin && !dashboardEditMode && (
@@ -546,11 +510,22 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
                                         </IconButton>
                                     </Tooltip>
                                 )}
+                                {viewMode === 'view' && (
+                                    <Tooltip title='List' placement='left'>
+                                        <IconButton
+                                            size='small'
+                                            onClick={handleListClick}
+                                            sx={{ color: 'white', opacity: 0.8, '&:hover': { opacity: 1 } }}
+                                        >
+                                            <List fontSize='small' />
+                                        </IconButton>
+                                    </Tooltip>
+                                )}
                                 {viewMode === 'edit' && (
                                     <Tooltip title='Cancel'>
                                         <IconButton
                                             size='small'
-                                            onClick={handleListClick}
+                                            onClick={handleCancel}
                                             sx={{ color: 'white', opacity: 0.8, '&:hover': { opacity: 1 } }}
                                         >
                                             <Close fontSize='small' />
@@ -564,93 +539,102 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
 
                 {/* Subtitle */}
                 {showLabel && (
-                    <Typography variant='caption' sx={{ px: 1, mb: 0.5, color: 'white' }}>
-                        Notebook ({notes.length})
+                    <Typography variant='caption' sx={{
+                        px: 1,
+                        mb: 0.5,
+                        color: viewMode === 'list' ? 'white' : 'transparent',
+                        opacity: viewMode === 'list' ? 1 : 0,
+                        position: 'relative',
+                        zIndex: 'auto',
+                        pointerEvents: 'none',
+                        userSelect: 'none',
+                        display: 'block'
+                    }}>
+                        {viewMode === 'list' ? `Notes (${notes.length})` : 'Notes (0)'}
                     </Typography>
                 )}
 
                 {/* Content */}
                 <Box sx={{ flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', width: '100%' }}>
-                    {viewMode === 'list' ? (
-                        <>
-                            <Box sx={{
-                                px: 1.5,
-                                pt: 1.5,
-                                pb: 1,
-                                overflowY: 'auto',
-                                height: '280px',
-                                maxHeight: '280px',
-                                width: '100%',
-                                minWidth: '100%',
-                                flex: '1 1 auto',
-                                border: '1px solid rgba(255,255,255,0.1)',
-                                borderRadius: '4px',
-                                backgroundColor: 'rgba(0,0,0,0.1)',
-                                '&::-webkit-scrollbar': {
-                                    width: '4px',
-                                },
-                                '&::-webkit-scrollbar-track': {
-                                    background: 'rgba(255,255,255,0.05)',
-                                },
-                                '&::-webkit-scrollbar-thumb': {
-                                    background: 'rgba(255,255,255,0.2)',
-                                    borderRadius: '2px',
-                                },
-                                '&::-webkit-scrollbar-thumb:hover': {
-                                    background: 'rgba(255,255,255,0.3)',
-                                },
-                                display: 'block',
-                                boxSizing: 'border-box',
-                                position: 'relative'
-                            }}>
-                                {error ? (
-                                    <Box sx={{
-                                        display: 'flex',
-                                        justifyContent: 'center',
-                                        alignItems: 'center',
-                                        height: '100%',
-                                        width: '100%',
-                                        color: 'rgba(255,255,255,0.7)',
-                                        fontSize: '0.85rem',
-                                        position: 'absolute',
-                                        top: 0,
-                                        left: 0,
-                                        right: 0,
-                                        bottom: 0,
-                                        zIndex: 1
-                                    }}>
-                                        {error}
-                                    </Box>
-                                ) : notes.length > 0 ? (
-                                    notes.map(note => (
-                                        <NoteItem key={note.id} note={note} />
-                                    ))
-                                ) : (
-                                    <Box sx={{
-                                        display: 'flex',
-                                        justifyContent: 'center',
-                                        alignItems: 'center',
-                                        height: '100%',
-                                        width: '100%',
-                                        color: 'rgba(255,255,255,0.5)',
-                                        fontSize: '0.85rem',
-                                        position: 'absolute',
-                                        top: 0,
-                                        left: 0,
-                                        right: 0,
-                                        bottom: 0,
-                                        zIndex: 1
-                                    }}>
-                                        {isLoading ? 'Loading notes...' : 'No notes yet'}
-                                    </Box>
-                                )}
-                            </Box>
-                        </>
-                    ) : (
-                        <Box sx={{ flex: 1, overflow: 'hidden' }}>
-                            {renderContent()}
-                        </Box>
-                    )}
+                    {/* Static container that remains consistent across all view modes */}
+                    <Box sx={{
+                        px: 1.5,
+                        pt: 1.5,
+                        pb: 1.5,
+                        overflowY: 'auto',
+                        height: '280px',
+                        maxHeight: '280px',
+                        width: '100%',
+                        minWidth: '100%',
+                        flex: '1 1 auto',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: '4px',
+                        backgroundColor: 'rgba(0,0,0,0.1)',
+                        '&::-webkit-scrollbar': {
+                            width: '4px',
+                        },
+                        '&::-webkit-scrollbar-track': {
+                            background: 'rgba(255,255,255,0.05)',
+                        },
+                        '&::-webkit-scrollbar-thumb': {
+                            background: 'rgba(255,255,255,0.2)',
+                            borderRadius: '2px',
+                        },
+                        '&::-webkit-scrollbar-thumb:hover': {
+                            background: 'rgba(255,255,255,0.3)',
+                        },
+                        display: 'flex',
+                        flexDirection: 'column',
+                        boxSizing: 'border-box',
+                        position: 'relative'
+                    }}>
+                        {/* Content inside the static container changes based on view mode */}
+                        {viewMode === 'list' ? (
+                            error ? (
+                                <Box sx={{
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    height: '100%',
+                                    width: '100%',
+                                    color: 'rgba(255,255,255,0.7)',
+                                    fontSize: '0.85rem',
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    bottom: 0,
+                                    zIndex: 1
+                                }}>
+                                    {error}
+                                </Box>
+                            ) : notes.length > 0 ? (
+                                notes.map(note => (
+                                    <NoteItem key={note.id} note={note} />
+                                ))
+                            ) : (
+                                <Box sx={{
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    height: '100%',
+                                    width: '100%',
+                                    color: 'rgba(255,255,255,0.5)',
+                                    fontSize: '0.85rem',
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    bottom: 0,
+                                    zIndex: 1
+                                }}>
+                                    {isLoading ? 'Loading notes...' : 'No notes yet'}
+                                </Box>
+                            )
+                        ) : (
+                            renderContent()
+                        )}
+                    </Box>
                 </Box>
             </Box>
         </CardContent>

@@ -119,6 +119,7 @@ export type FormValues = {
 
     // Notes widget
     maxDisplayedNotes?: string;
+    displayName?: string;
 
     // Torrent client widget
     torrentClient?: string;
@@ -283,7 +284,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                   existingItem?.type === ITEM_TYPE.NOTES_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.SONARR_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.RADARR_WIDGET)
-            ? (existingItem?.showLabel !== undefined ? existingItem.showLabel : true)
+            ? (existingItem?.config?.showLabel !== undefined ? existingItem.config.showLabel : true)
             : (existingItem?.showLabel !== undefined ? existingItem.showLabel : false);
 
         // Initialize other component state
@@ -423,6 +424,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
 
             // Notes widget values
             maxDisplayedNotes: existingItem?.type === ITEM_TYPE.NOTES_WIDGET ? String(existingItem?.config?.maxDisplayedNotes || 10) : '10',
+            displayName: existingItem?.type === ITEM_TYPE.NOTES_WIDGET ? (existingItem?.config?.displayName || 'Notes') : 'Notes',
 
             location: location,
             gauge1: systemMonitorGauges[0] || 'cpu',
@@ -1683,7 +1685,8 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
         } else if (widgetType === ITEM_TYPE.NOTES_WIDGET) {
             return {
                 maxDisplayedNotes: data.maxDisplayedNotes ? parseInt(data.maxDisplayedNotes) : 10,
-                showLabel: data.showLabel !== undefined ? data.showLabel : true
+                showLabel: data.showLabel !== undefined ? data.showLabel : true,
+                displayName: data.displayName || 'Notes'
             };
         }
 

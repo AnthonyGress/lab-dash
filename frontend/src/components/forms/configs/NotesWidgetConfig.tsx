@@ -10,11 +10,11 @@ interface NotesWidgetConfigProps {
 
 export const NotesWidgetConfig = ({ formContext }: NotesWidgetConfigProps) => {
     return (
-        <Grid container spacing={2}>
-            <Grid xs={12}>
+        <Grid container spacing={2} direction='column'>
+            <Grid>
                 <TextFieldElement
                     name='displayName'
-                    label='Widget Title'
+                    label='Display Name'
                     placeholder='Notes'
                     fullWidth
                     sx={{
@@ -36,9 +36,9 @@ export const NotesWidgetConfig = ({ formContext }: NotesWidgetConfigProps) => {
                     }}
                 />
             </Grid>
-            <Grid xs={12}>
+            <Grid>
                 <CheckboxElement
-                    label='Show Widget Label'
+                    label='Show Label'
                     name='showLabel'
                     sx={{
                         ml: 1,
