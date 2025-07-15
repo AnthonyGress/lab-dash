@@ -11,10 +11,12 @@ import {
     Box,
     Button,
     CardContent,
+    Checkbox,
     Chip,
     CircularProgress,
     ClickAwayListener,
     Divider,
+    FormControlLabel,
     IconButton,
     InputAdornment,
     List,
@@ -38,6 +40,7 @@ import { DUAL_WIDGET_CONTAINER_HEIGHT } from '../../../../constants/widget-dimen
 import { useAppContext } from '../../../../context/useAppContext';
 import { COLORS } from '../../../../theme/styles';
 import { theme } from '../../../../theme/theme';
+import { CenteredModal } from '../../../modals/CenteredModal';
 import { PopupManager } from '../../../modals/PopupManager';
 
 export interface MediaRequestManagerWidgetProps {
@@ -114,6 +117,9 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
     const [loading, setLoading] = useState(true);
     const [confirmationItem, setConfirmationItem] = useState<SearchResult | null>(null);
     const [previousSearchQuery, setPreviousSearchQuery] = useState<string>('');
+    const [tvShowDetails, setTvShowDetails] = useState<any>(null);
+    const [selectedSeasons, setSelectedSeasons] = useState<number[]>([]);
+    const [loadingTvDetails, setLoadingTvDetails] = useState(false);
 
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const { editMode, isAdmin, isLoggedIn } = useAppContext();
@@ -133,7 +139,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
 
             try {
                 const allResponse = await DashApi.jellyseerrGetRequests(id, 'all');
-                if (allResponse.success) {
+                if (allResponse.success && allResponse.data && allResponse.data.results) {
                     allResults = allResponse.data.results || [];
                 }
             } catch (allError) {
@@ -145,19 +151,19 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                     DashApi.jellyseerrGetRequests(id, 'available')
                 ]);
 
-                if (pendingResponse.status === 'fulfilled' && pendingResponse.value.success) {
+                if (pendingResponse.status === 'fulfilled' && pendingResponse.value.success && pendingResponse.value.data && pendingResponse.value.data.results) {
                     allResults.push(...(pendingResponse.value.data.results || []));
                 }
-                if (approvedResponse.status === 'fulfilled' && approvedResponse.value.success) {
+                if (approvedResponse.status === 'fulfilled' && approvedResponse.value.success && approvedResponse.value.data && approvedResponse.value.data.results) {
                     allResults.push(...(approvedResponse.value.data.results || []));
                 }
-                if (availableResponse.status === 'fulfilled' && availableResponse.value.success) {
+                if (availableResponse.status === 'fulfilled' && availableResponse.value.success && availableResponse.value.data && availableResponse.value.data.results) {
                     allResults.push(...(availableResponse.value.data.results || []));
                 }
             }
 
             // Remove duplicates based on request ID
-            const uniqueResults = allResults.filter((request, index, self) =>
+            const uniqueResults = (allResults || []).filter((request, index, self) =>
                 index === self.findIndex(r => r.id === request.id)
             );
 
@@ -208,14 +214,68 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
         return () => clearTimeout(timeoutId);
     }, [searchQuery, handleSearch]);
 
-    const handleRequest = async (item: SearchResult) => {
+    const handleItemClick = async (item: SearchResult) => {
+        setConfirmationItem(item);
+        setSelectedSeasons([]);
+        setTvShowDetails(null);
+
+        // If it's a TV show, fetch details including seasons
+        if (item.mediaType === 'tv' && id && _hasApiKey) {
+            setLoadingTvDetails(true);
+            try {
+                const response = await DashApi.jellyseerrGetTVDetails(id, item.id.toString());
+
+                if (response.success) {
+                    setTvShowDetails(response.data);
+                    // Don't pre-select any seasons - let the user choose
+                    setSelectedSeasons([]);
+                }
+            } catch (tvDetailsError) {
+                console.error('Failed to fetch TV show details:', tvDetailsError);
+            } finally {
+                setLoadingTvDetails(false);
+            }
+        }
+    };
+
+    // Helper function to check if a season is already available or partially available
+    const isSeasonAvailable = (season: any) => {
+        if (!tvShowDetails?.mediaInfo?.seasons) return false;
+
+        // Check if this specific season exists in the mediaInfo.seasons array
+        const seasonStatus = tvShowDetails.mediaInfo.seasons.find((s: any) => s.seasonNumber === season.seasonNumber);
+
+        if (seasonStatus) {
+            // Season is available if it has status 4 (available) or 3 (partially available)
+            return seasonStatus.status === 4 || seasonStatus.status === 3;
+        }
+
+        return false;
+    };
+
+    // Helper function to get available seasons count for "All" checkbox logic
+    const getAvailableSeasons = (seasons: any[]) => {
+        return seasons.filter((season: any) => season.seasonNumber > 0 && !isSeasonAvailable(season));
+    };
+
+    const handleRequest = async (item: SearchResult, seasons?: number[]) => {
         if (!id || !_hasApiKey) return;
 
         try {
+            // Filter out already available seasons before sending the request
+            let seasonsToRequest = seasons;
+            if (item.mediaType === 'tv' && seasons && tvShowDetails) {
+                seasonsToRequest = seasons.filter(seasonNumber => {
+                    const season = tvShowDetails.seasons?.find((s: any) => s.seasonNumber === seasonNumber);
+                    return season && !isSeasonAvailable(season);
+                });
+            }
+
             const response = await DashApi.jellyseerrCreateRequest(
                 id,
                 item.mediaType,
-                item.id.toString()
+                item.id.toString(),
+                seasonsToRequest
             );
             if (response.success) {
                 // Refresh requests after creating one
@@ -223,6 +283,8 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                 // Clear search results and query
                 setSearchResults([]);
                 setSearchQuery('');
+            } else {
+                console.error('Request creation failed:', response.error);
             }
         } catch (requestError) {
             console.error('Request creation error:', requestError);
@@ -458,7 +520,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                                 onChange={(_, newValue) => {
                                     if (newValue && typeof newValue !== 'string') {
                                         setPreviousSearchQuery(searchQuery); // Save current search query
-                                        setConfirmationItem(newValue);
+                                        handleItemClick(newValue);
                                         setSearchQuery(''); // Clear search after selection
                                     }
                                 }}
@@ -877,42 +939,24 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
             </Box>
 
             {/* Confirmation Modal */}
-            {confirmationItem && (
-                <Box
-                    sx={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
-                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        zIndex: 10000, // Higher than autocomplete dropdown
-                    }}
-                    onClick={() => {
-                        setConfirmationItem(null);
-                        // Restore the previous search query to reopen autocomplete
-                        if (previousSearchQuery) {
-                            setSearchQuery(previousSearchQuery);
-                            setPreviousSearchQuery('');
-                        }
-                    }}
-                >
-                    <Box
-                        sx={{
-                            backgroundColor: 'background.paper',
-                            borderRadius: 2,
-                            p: 3,
-                            maxWidth: '400px',
-                            width: '90%',
-                            maxHeight: '80%',
-                            overflow: 'auto',
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 2 }}>
+            <CenteredModal
+                open={!!confirmationItem}
+                handleClose={() => {
+                    setConfirmationItem(null);
+                    setTvShowDetails(null);
+                    setSelectedSeasons([]);
+                    // Restore the previous search query to reopen autocomplete
+                    if (previousSearchQuery) {
+                        setSearchQuery(previousSearchQuery);
+                        setPreviousSearchQuery('');
+                    }
+                }}
+                title={confirmationItem ? `Request ${getTitle(confirmationItem)}` : ''}
+                width='400px'
+            >
+                {confirmationItem && (
+                    <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                             <Avatar
                                 src={getPosterUrl(confirmationItem.posterPath) || undefined}
                                 sx={{ width: 60, height: 90 }}
@@ -949,11 +993,164 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                             </Typography>
                         )}
 
+                        {/* Season Selection for TV Shows */}
+                        {confirmationItem.mediaType === 'tv' && (
+                            <Box sx={{ mb: 2 }}>
+                                <Typography variant='h6' sx={{ color: 'white', mb: 1 }}>
+                                    Select Seasons:
+                                </Typography>
+
+                                {loadingTvDetails ? (
+                                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+                                        <CircularProgress size={24} sx={{ color: 'white' }} />
+                                    </Box>
+                                ) : tvShowDetails && tvShowDetails.seasons ? (
+                                    <Box>
+                                        <Box sx={{ mb: 1 }}>
+                                            <FormControlLabel
+                                                control={
+                                                    <Checkbox
+                                                        checked={
+                                                            selectedSeasons.length > 0 &&
+                                                            selectedSeasons.length === getAvailableSeasons(tvShowDetails.seasons).length
+                                                        }
+                                                        indeterminate={
+                                                            selectedSeasons.length > 0 &&
+                                                            selectedSeasons.length < getAvailableSeasons(tvShowDetails.seasons).length
+                                                        }
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                const availableSeasons = getAvailableSeasons(tvShowDetails.seasons)
+                                                                    .map((season: any) => season.seasonNumber);
+                                                                setSelectedSeasons(availableSeasons);
+                                                            } else {
+                                                                setSelectedSeasons([]);
+                                                            }
+                                                        }}
+                                                        sx={{
+                                                            color: 'rgba(255,255,255,0.7)',
+                                                            '&.Mui-checked': {
+                                                                color: 'primary.main'
+                                                            }
+                                                        }}
+                                                    />
+                                                }
+                                                label='All'
+                                                sx={{
+                                                    color: 'white',
+                                                    '& .MuiFormControlLabel-label': {
+                                                        fontSize: '0.95rem',
+                                                        fontWeight: 500
+                                                    }
+                                                }}
+                                            />
+                                        </Box>
+
+                                        <Box sx={{
+                                            display: 'grid',
+                                            gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                                            gap: 1,
+                                            maxHeight: '200px',
+                                            overflowY: 'auto'
+                                        }}>
+                                            {tvShowDetails.seasons
+                                                .filter((season: any) => season.seasonNumber > 0)
+                                                .sort((a: any, b: any) => a.seasonNumber - b.seasonNumber)
+                                                .map((season: any) => {
+                                                    const seasonAvailable = isSeasonAvailable(season);
+                                                    const isSelected = selectedSeasons.includes(season.seasonNumber);
+
+                                                    return (
+                                                        <FormControlLabel
+                                                            key={season.seasonNumber}
+                                                            control={
+                                                                <Checkbox
+                                                                    checked={seasonAvailable ? true : isSelected}
+                                                                    disabled={seasonAvailable}
+                                                                    onChange={() => {
+                                                                        if (!seasonAvailable) {
+                                                                            setSelectedSeasons(prev =>
+                                                                                prev.includes(season.seasonNumber)
+                                                                                    ? prev.filter(s => s !== season.seasonNumber)
+                                                                                    : [...prev, season.seasonNumber]
+                                                                            );
+                                                                        }
+                                                                    }}
+                                                                    sx={{
+                                                                        color: seasonAvailable ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.7)',
+                                                                        '&.Mui-checked': {
+                                                                            color: seasonAvailable ? 'success.main' : 'primary.main'
+                                                                        },
+                                                                        '&.Mui-disabled': {
+                                                                            color: 'rgba(255,255,255,0.3)'
+                                                                        },
+                                                                        '&.Mui-disabled.Mui-checked': {
+                                                                            color: 'success.main'
+                                                                        }
+                                                                    }}
+                                                                />
+                                                            }
+                                                            label={
+                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                                    <Typography
+                                                                        sx={{
+                                                                            fontSize: '0.9rem',
+                                                                            color: seasonAvailable ? 'rgba(255,255,255,0.5)' : 'white'
+                                                                        }}
+                                                                    >
+                                                                        Season {season.seasonNumber}
+                                                                    </Typography>
+                                                                    {seasonAvailable && (
+                                                                        <Chip
+                                                                            label={season.status === 4 ? 'Available' : 'Partial'}
+                                                                            size='small'
+                                                                            sx={{
+                                                                                fontSize: '0.6rem',
+                                                                                height: '1rem',
+                                                                                backgroundColor: 'success.dark',
+                                                                                color: 'success.contrastText'
+                                                                            }}
+                                                                        />
+                                                                    )}
+                                                                </Box>
+                                                            }
+                                                            sx={{
+                                                                color: 'white',
+                                                                display: 'flex',
+                                                                margin: 0,
+                                                                opacity: seasonAvailable ? 0.6 : 1
+                                                            }}
+                                                        />
+                                                    );
+                                                })
+                                            }
+                                        </Box>
+
+                                        {getAvailableSeasons(tvShowDetails.seasons).length === 0 ? (
+                                            <Typography variant='body2' sx={{ color: 'rgba(255,255,255,0.7)', mt: 1 }}>
+                                                All seasons are already available or requested
+                                            </Typography>
+                                        ) : selectedSeasons.length === 0 ? (
+                                            <Typography variant='body2' sx={{ color: 'error.main', mt: 1 }}>
+                                                Please select at least one season to request
+                                            </Typography>
+                                        ) : null}
+                                    </Box>
+                                ) : (
+                                    <Typography variant='body2' sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                                        Failed to load season information
+                                    </Typography>
+                                )}
+                            </Box>
+                        )}
+
                         <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
                             <Button
                                 variant='outlined'
                                 onClick={() => {
                                     setConfirmationItem(null);
+                                    setTvShowDetails(null);
+                                    setSelectedSeasons([]);
                                     // Restore the previous search query to reopen autocomplete
                                     if (previousSearchQuery) {
                                         setSearchQuery(previousSearchQuery);
@@ -967,11 +1164,16 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                             <Button
                                 variant='contained'
                                 onClick={() => {
-                                    handleRequest(confirmationItem);
+                                    const seasonsToRequest = confirmationItem.mediaType === 'tv' ? selectedSeasons : undefined;
+                                    handleRequest(confirmationItem, seasonsToRequest);
                                     setConfirmationItem(null);
                                     setPreviousSearchQuery(''); // Clear saved search since request was made
                                 }}
-                                disabled={confirmationItem.status?.status === 4}
+                                disabled={
+                                    confirmationItem.status?.status === 4 ||
+                                    (confirmationItem.mediaType === 'tv' && selectedSeasons.length === 0) ||
+                                    (confirmationItem.mediaType === 'tv' && tvShowDetails && getAvailableSeasons(tvShowDetails.seasons).length === 0)
+                                }
                                 sx={{
                                     backgroundColor: 'primary.main',
                                     '&:hover': { backgroundColor: 'primary.dark' }
@@ -981,8 +1183,8 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                             </Button>
                         </Box>
                     </Box>
-                </Box>
-            )}
+                )}
+            </CenteredModal>
 
         </CardContent>
     );

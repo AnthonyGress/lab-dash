@@ -11,6 +11,7 @@ export { DateTimeWidgetConfig } from './DateTimeWidgetConfig';
 export { GroupWidgetConfig } from './GroupWidgetConfig';
 export { MediaServerWidgetConfig } from './MediaServerWidgetConfig';
 export { MediaRequestManagerWidgetConfig } from './MediaRequestManagerWidgetConfig';
+export { NotesWidgetConfig } from './NotesWidgetConfig';
 export { PlaceholderConfig } from './PlaceholderConfig';
 export { QueueManagementWidgetConfig } from './QueueManagementWidgetConfig';
 export { RadarrWidgetConfig } from './RadarrWidgetConfig';

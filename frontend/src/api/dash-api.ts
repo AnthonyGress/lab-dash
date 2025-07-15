@@ -119,6 +119,7 @@ export class DashApi {
                     !originalRequest.url?.includes('api/pihole/v6') &&
                     !originalRequest.url?.includes('api/qbittorrent') &&
                     !originalRequest.url?.includes('api/deluge') &&
+                    !originalRequest.url?.includes('api/notes') &&
                     // Ensure we're only handling 401s from our own API
                     originalRequest.url?.includes(BACKEND_URL)) {
 
@@ -1986,6 +1987,19 @@ export class DashApi {
         }
     }
 
+    public static async jellyseerrGetTVDetails(itemId: string, tmdbId: string): Promise<any> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/jellyseerr/tv/${tmdbId}`, {
+                params: { itemId },
+                withCredentials: false
+            });
+            return res.data;
+        } catch (error) {
+            console.error('Jellyseerr TV details error:', error);
+            throw error;
+        }
+    }
+
     public static async jellyseerrApproveRequest(itemId: string, requestId: string): Promise<any> {
         try {
             const res = await axios.post(`${BACKEND_URL}/api/jellyseerr/request/${requestId}/approve`, {}, {
@@ -2021,6 +2035,56 @@ export class DashApi {
             return res.data;
         } catch (error) {
             console.error('Jellyseerr status error:', error);
+            throw error;
+        }
+    }
+
+
+
+    // Notes methods
+    public static async getNotes(): Promise<any[]> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/notes`);
+            return res.data;
+        } catch (error) {
+            console.error('Error fetching notes:', error);
+            throw error;
+        }
+    }
+
+    public static async createNote(note: { title: string; content: string }): Promise<any> {
+        // Import shortid dynamically to avoid issues
+        const shortid = await import('shortid');
+
+        try {
+            const noteWithId = {
+                ...note,
+                id: shortid.generate()
+            };
+
+            const res = await axios.post(`${BACKEND_URL}/api/notes`, noteWithId);
+            return res.data;
+        } catch (error) {
+            console.error('Error creating note:', error);
+            throw error;
+        }
+    }
+
+    public static async updateNote(noteId: string, note: { title: string; content: string }): Promise<any> {
+        try {
+            const res = await axios.put(`${BACKEND_URL}/api/notes/${noteId}`, note);
+            return res.data;
+        } catch (error) {
+            console.error('Error updating note:', error);
+            throw error;
+        }
+    }
+
+    public static async deleteNote(noteId: string): Promise<void> {
+        try {
+            await axios.delete(`${BACKEND_URL}/api/notes/${noteId}`);
+        } catch (error) {
+            console.error('Error deleting note:', error);
             throw error;
         }
     }

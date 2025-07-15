@@ -5,7 +5,7 @@ import https from 'https';
 import { getItemConnectionInfo } from '../utils/config-lookup';
 import { decrypt, isEncrypted } from '../utils/crypto';
 
-export const jellyseerrRoute = Router();
+export const jellyseerRoute = Router();
 
 // Configure HTTPS agent to allow self-signed certificates
 const httpsAgent = new https.Agent({
@@ -53,7 +53,7 @@ const getApiKey = (req: Request): string | null => {
 };
 
 // Search for movies and TV shows
-jellyseerrRoute.get('/search', async (req: Request, res: Response) => {
+jellyseerRoute.get('/search', async (req: Request, res: Response) => {
     console.log('Jellyseerr search request');
     try {
         const baseUrl = getBaseUrl(req);
@@ -76,12 +76,6 @@ jellyseerrRoute.get('/search', async (req: Request, res: Response) => {
             return;
         }
 
-        console.log('Jellyseerr search request:', {
-            baseUrl,
-            query,
-            hasApiKey: !!apiKey
-        });
-
         // Simple search call without pagination for now
         const encodedQuery = encodeURIComponent(query.trim());
         const response = await axios.get(`${baseUrl}/api/v1/search?query=${encodedQuery}`, {
@@ -92,9 +86,6 @@ jellyseerrRoute.get('/search', async (req: Request, res: Response) => {
             httpsAgent: httpsAgent
         });
 
-        console.log('Jellyseerr search response status:', response.status);
-        console.log('Jellyseerr search results count:', response.data?.results?.length || 0);
-
         res.json({
             success: true,
             data: response.data
@@ -104,13 +95,13 @@ jellyseerrRoute.get('/search', async (req: Request, res: Response) => {
         console.error('Jellyseerr search error:', error.message);
         res.status(error.response?.status || 500).json({
             success: false,
-            error: error.response?.data?.message || error.message || 'Failed to search Jellyseerr'
+            error: error.response?.data?.message || error.message || 'Failed to search'
         });
     }
 });
 
 // Get pending requests
-jellyseerrRoute.get('/requests', async (req: Request, res: Response) => {
+jellyseerRoute.get('/requests', async (req: Request, res: Response) => {
     console.log('Jellyseerr requests request');
     try {
         const baseUrl = getBaseUrl(req);
@@ -189,7 +180,7 @@ jellyseerrRoute.get('/requests', async (req: Request, res: Response) => {
 });
 
 // Request a movie or TV show
-jellyseerrRoute.post('/request', async (req: Request, res: Response) => {
+jellyseerRoute.post('/request', async (req: Request, res: Response) => {
     console.log('Jellyseerr request creation');
     try {
         const baseUrl = getBaseUrl(req);
@@ -218,9 +209,17 @@ jellyseerrRoute.post('/request', async (req: Request, res: Response) => {
         };
 
         // Add seasons for TV shows
-        if (mediaType === 'tv' && seasons) {
-            requestBody.seasons = seasons;
+        if (mediaType === 'tv') {
+            if (seasons && seasons.length > 0) {
+                requestBody.seasons = seasons;
+            } else {
+                // If no seasons specified, don't include the seasons field
+                // This will let Jellyseerr handle the default behavior
+                console.warn('No seasons specified for TV show request');
+            }
         }
+
+        console.log('Jellyseerr API URL:', `${baseUrl}/api/v1/request`);
 
         const response = await axios.post(`${baseUrl}/api/v1/request`, requestBody, {
             headers: {
@@ -238,6 +237,7 @@ jellyseerrRoute.post('/request', async (req: Request, res: Response) => {
 
     } catch (error: any) {
         console.error('Jellyseerr request creation error:', error.message);
+        console.error('Error response status:', error.response?.status);
         res.status(error.response?.status || 500).json({
             success: false,
             error: error.response?.data?.message || error.message || 'Failed to create request'
@@ -246,7 +246,7 @@ jellyseerrRoute.post('/request', async (req: Request, res: Response) => {
 });
 
 // Approve a request
-jellyseerrRoute.post('/request/:id/approve', async (req: Request, res: Response) => {
+jellyseerRoute.post('/request/:id/approve', async (req: Request, res: Response) => {
     console.log('Jellyseerr request approval');
     try {
         const baseUrl = getBaseUrl(req);
@@ -285,7 +285,7 @@ jellyseerrRoute.post('/request/:id/approve', async (req: Request, res: Response)
 });
 
 // Decline a request
-jellyseerrRoute.post('/request/:id/decline', async (req: Request, res: Response) => {
+jellyseerRoute.post('/request/:id/decline', async (req: Request, res: Response) => {
     console.log('Jellyseerr request decline');
     try {
         const baseUrl = getBaseUrl(req);
@@ -323,8 +323,54 @@ jellyseerrRoute.post('/request/:id/decline', async (req: Request, res: Response)
     }
 });
 
+// Get TV show details including seasons
+jellyseerRoute.get('/tv/:tmdbId', async (req: Request, res: Response) => {
+    console.log('Jellyseerr TV show details request');
+    try {
+        const baseUrl = getBaseUrl(req);
+        const apiKey = getApiKey(req);
+        const { tmdbId } = req.params;
+
+        if (!apiKey) {
+            res.status(400).json({
+                success: false,
+                error: 'API key is required or could not be decrypted'
+            });
+            return;
+        }
+
+        if (!tmdbId) {
+            res.status(400).json({
+                success: false,
+                error: 'tmdbId parameter is required'
+            });
+            return;
+        }
+
+        const response = await axios.get(`${baseUrl}/api/v1/tv/${tmdbId}`, {
+            headers: {
+                'X-Api-Key': apiKey
+            },
+            timeout: 10000,
+            httpsAgent: httpsAgent
+        });
+
+        res.json({
+            success: true,
+            data: response.data
+        });
+
+    } catch (error: any) {
+        console.error('Jellyseerr TV show details error:', error.message);
+        res.status(error.response?.status || 500).json({
+            success: false,
+            error: error.response?.data?.message || error.message || 'Failed to get TV show details'
+        });
+    }
+});
+
 // Get system status
-jellyseerrRoute.get('/status', async (req: Request, res: Response) => {
+jellyseerRoute.get('/status', async (req: Request, res: Response) => {
     console.log('Jellyseerr status request');
     try {
         const baseUrl = getBaseUrl(req);

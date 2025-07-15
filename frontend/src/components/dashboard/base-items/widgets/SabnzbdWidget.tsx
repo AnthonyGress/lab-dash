@@ -209,25 +209,13 @@ export const SabnzbdWidget = (props: { config?: SabnzbdWidgetConfig; id?: string
                 size: download.size,
                 dlspeed: download.dlspeed,
                 upspeed: 0, // SABnzbd doesn't upload
-                eta: download.timeleft // SABnzbd uses 'timeleft' instead of 'eta'
+                eta: download.eta // Backend already processes timeleft into eta in seconds
             }));
 
-            // Sort by progress (downloading first) then by name
-            const sortedDownloads = convertedDownloads.sort((a, b) => {
-                // Prioritize downloading items
-                if (a.state === 'downloading' && b.state !== 'downloading') return -1;
-                if (a.state !== 'downloading' && b.state === 'downloading') return 1;
-
-                // Then by progress (least complete first)
-                if (a.progress !== b.progress) return a.progress - b.progress;
-
-                // Then alphabetically
-                return a.name.localeCompare(b.name);
-            });
-
-            // Limit the number of downloads displayed
-            const maxDownloads = config?.maxDisplayedDownloads || 5;
-            setDownloads(sortedDownloads.slice(0, maxDownloads));
+            // For SABnzbd, keep the original order from the API (which reflects SABnzbd's queue order)
+            // The active download should already be first in the queue from SABnzbd
+            // No sorting needed - maintain SABnzbd's original queue order
+            setDownloads(convertedDownloads);
         } catch (error) {
             console.error('Error fetching SABnzbd downloads:', error);
             if ((error as any)?.response?.status === 401 || (error as any)?.response?.status === 403) {
@@ -237,7 +225,7 @@ export const SabnzbdWidget = (props: { config?: SabnzbdWidgetConfig; id?: string
                 setLoginAttemptFailed(false);
             }
         }
-    }, [isAuthenticated, loginAttemptFailed, config?.maxDisplayedDownloads, id]);
+    }, [isAuthenticated, loginAttemptFailed, id]);
 
     // Handle input changes
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
