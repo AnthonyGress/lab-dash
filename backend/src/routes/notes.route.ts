@@ -5,7 +5,7 @@ import path from 'path';
 import { authenticateToken } from '../middleware/auth.middleware';
 import { Note } from '../types';
 
-const router = express.Router();
+export const notesRoute = express.Router();
 
 // Path to the config file
 const CONFIG_FILE = path.join(__dirname, '../config/config.json');
@@ -64,7 +64,7 @@ const writeNotes = (notes: Note[]): void => {
 };
 
 // GET /api/notes - Get all notes
-router.get('/', authenticateToken, (req: Request, res: Response) => {
+notesRoute.get('/', (req: Request, res: Response) => {
     try {
         const notes = readNotes();
         // Sort by updatedAt descending (most recent first)
@@ -77,7 +77,7 @@ router.get('/', authenticateToken, (req: Request, res: Response) => {
 });
 
 // POST /api/notes - Create a new note
-router.post('/', authenticateToken, (req: Request, res: Response) => {
+notesRoute.post('/', authenticateToken, (req: Request, res: Response) => {
     try {
         const { id, title, content } = req.body;
 
@@ -120,7 +120,7 @@ router.post('/', authenticateToken, (req: Request, res: Response) => {
 });
 
 // PUT /api/notes/:id - Update an existing note
-router.put('/:id', authenticateToken, (req: Request, res: Response) => {
+notesRoute.put('/:id', authenticateToken, (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const { title, content } = req.body;
@@ -156,7 +156,7 @@ router.put('/:id', authenticateToken, (req: Request, res: Response) => {
 });
 
 // DELETE /api/notes/:id - Delete a note
-router.delete('/:id', authenticateToken, (req: Request, res: Response) => {
+notesRoute.delete('/:id', authenticateToken, (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const notes = readNotes();
@@ -176,5 +176,3 @@ router.delete('/:id', authenticateToken, (req: Request, res: Response) => {
         res.status(500).json({ error: 'Failed to delete note' });
     }
 });
-
-export default router;

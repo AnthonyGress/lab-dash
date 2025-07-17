@@ -42,7 +42,7 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
     const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
 
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-    const { isLoggedIn, isAdmin, editMode: dashboardEditMode } = useAppContext();
+    const { isLoggedIn, isAdmin } = useAppContext();
 
     const showLabel = config?.showLabel !== false;
     const displayName = config?.displayName || 'Notes';
@@ -228,7 +228,7 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         color: 'white',
-                        fontSize: isMobile ? '0.7rem' : '0.8rem',
+                        fontSize: isMobile ? '0.9rem' : '1rem',
                         fontWeight: 500
                     }}
                 >
@@ -237,7 +237,7 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
                 <Typography
                     variant='caption'
                     sx={{
-                        fontSize: isMobile ? '0.6rem' : '0.7rem',
+                        fontSize: '0.7rem',
                         ml: 'auto',
                         color: 'rgba(255,255,255,0.7)',
                         minWidth: '60px',
@@ -251,7 +251,7 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
                 <Typography
                     variant='caption'
                     sx={{
-                        fontSize: isMobile ? '0.6rem' : '0.65rem',
+                        fontSize: isMobile ? '0.7rem' : '0.8rem',
                         color: 'rgba(255,255,255,0.6)',
                         display: '-webkit-box',
                         WebkitLineClamp: 1,
@@ -292,7 +292,7 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
                     >
                         {selectedNote.title}
                     </Typography>
-                    {isLoggedIn && isAdmin && !dashboardEditMode && (
+                    {isLoggedIn && isAdmin && !editMode && (
                         <Box sx={{ position: 'absolute', top: 0, right: 0, zIndex: 1 }}>
                             <IconButton
                                 size='small'
@@ -485,12 +485,12 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: 1,
-                                cursor: (editMode || dashboardEditMode) ? 'grab' : 'pointer',
+                                cursor: (editMode ) ? 'grab' : 'pointer',
                                 '&:hover': {
-                                    opacity: (editMode || dashboardEditMode) ? 1 : 0.8
+                                    opacity: (editMode) ? 1 : 0.8
                                 }
                             }}
-                            onClick={editMode || dashboardEditMode ? undefined : handleTitleClick}
+                            onClick={editMode ? undefined : handleTitleClick}
                         >
                             <FaStickyNote
                                 style={{
@@ -506,9 +506,9 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
                             </Typography>
                         </Box>
 
-                        {!editMode && isLoggedIn && isAdmin && !dashboardEditMode && (
+                        {!editMode && (
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                {viewMode === 'list' && (
+                                {viewMode === 'list' && isLoggedIn && isAdmin ? (
                                     <Tooltip title='New note'>
                                         <IconButton
                                             size='small'
@@ -518,7 +518,15 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
                                             <Add fontSize='medium' />
                                         </IconButton>
                                     </Tooltip>
-                                )}
+                                )
+                                    : // placsholder for spacing
+                                    <IconButton
+                                        size='small'
+                                        sx={{ opacity: 0, cursor: 'default' }}
+                                    >
+                                        <Add fontSize='medium' />
+                                    </IconButton>
+                                }
                                 {viewMode === 'view' && (
                                     <Tooltip title='List' placement='left'>
                                         <IconButton

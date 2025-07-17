@@ -8,7 +8,7 @@ import { delugeRoute } from './deluge.route';
 import { healthRoute } from './health.route';
 import { jellyfinRoute } from './jellyfin.route';
 import { jellyseerRoute } from './jellyseerr.route';
-import notesRoute from './notes.route';
+import { notesRoute } from './notes.route';
 import { piholeV6Route } from './pihole-v6.route';
 import { piholeRoute } from './pihole.route';
 import { qbittorrentRoute } from './qbittorrent.route';

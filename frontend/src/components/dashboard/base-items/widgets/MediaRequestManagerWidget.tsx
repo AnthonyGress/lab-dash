@@ -240,6 +240,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
 
     // Helper function to check if a season is already available or partially available
     const isSeasonAvailable = (season: any) => {
+        // TODO: Fix not working for fully available seasons
         if (!tvShowDetails?.mediaInfo?.seasons) return false;
 
         // Check if this specific season exists in the mediaInfo.seasons array
