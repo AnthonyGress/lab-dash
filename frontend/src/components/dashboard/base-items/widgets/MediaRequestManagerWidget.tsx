@@ -238,17 +238,25 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
         }
     };
 
-    // Helper function to check if a season is already available or partially available
+    // Helper function to check if a season should not be re-requested (has status 2, 3, 4, 5, or 6)
     const isSeasonAvailable = (season: any) => {
-        // TODO: Fix not working for fully available seasons
-        if (!tvShowDetails?.mediaInfo?.seasons) return false;
+        // First check if the season itself has status information
+        // Status 2 = PENDING, Status 3 = PROCESSING, Status 4 = PARTIALLY_AVAILABLE, Status 5 = AVAILABLE, Status 6 = DELETED
+        if (season.status === 2 || season.status === 3 || season.status === 4 || season.status === 5 || season.status === 6) {
+            return true;
+        }
+
+        // Then check mediaInfo.seasons for status information
+        if (!tvShowDetails?.mediaInfo?.seasons) {
+            return false;
+        }
 
         // Check if this specific season exists in the mediaInfo.seasons array
         const seasonStatus = tvShowDetails.mediaInfo.seasons.find((s: any) => s.seasonNumber === season.seasonNumber);
 
         if (seasonStatus) {
-            // Season is available if it has status 4 (available) or 3 (partially available)
-            return seasonStatus.status === 4 || seasonStatus.status === 3;
+            // Season is unavailable for re-request if it has status 2, 3, 4, 5, or 6
+            return seasonStatus.status === 2 || seasonStatus.status === 3 || seasonStatus.status === 4 || seasonStatus.status === 5 || seasonStatus.status === 6;
         }
 
         return false;
@@ -1036,9 +1044,12 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                                                         }}
                                                     />
                                                 }
-                                                label='All'
+                                                label={`All (${tvShowDetails.seasons.filter((season: any) => season.seasonNumber > 0).length})`}
                                                 sx={{
                                                     color: 'white',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    margin: 0,
                                                     '& .MuiFormControlLabel-label': {
                                                         fontSize: '0.95rem',
                                                         fontWeight: 500
@@ -1080,13 +1091,13 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                                                                     sx={{
                                                                         color: seasonAvailable ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.7)',
                                                                         '&.Mui-checked': {
-                                                                            color: seasonAvailable ? 'success.main' : 'primary.main'
+                                                                            color: 'primary.main'
                                                                         },
                                                                         '&.Mui-disabled': {
                                                                             color: 'rgba(255,255,255,0.3)'
                                                                         },
                                                                         '&.Mui-disabled.Mui-checked': {
-                                                                            color: 'success.main'
+                                                                            color: 'primary.main'
                                                                         }
                                                                     }}
                                                                 />
@@ -1103,13 +1114,52 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                                                                     </Typography>
                                                                     {seasonAvailable && (
                                                                         <Chip
-                                                                            label={season.status === 4 ? 'Available' : 'Partial'}
+                                                                            label={(() => {
+                                                                                // Check season status first
+                                                                                if (season.status === 2) return 'Pending';
+                                                                                if (season.status === 3) return 'Processing';
+                                                                                if (season.status === 4) return 'Partial';
+                                                                                if (season.status === 5) return 'Available';
+                                                                                if (season.status === 6) return 'Deleted';
+
+                                                                                // Check mediaInfo.seasons status
+                                                                                const seasonStatus = tvShowDetails?.mediaInfo?.seasons?.find((s: any) => s.seasonNumber === season.seasonNumber);
+                                                                                if (seasonStatus) {
+                                                                                    if (seasonStatus.status === 2) return 'Pending';
+                                                                                    if (seasonStatus.status === 3) return 'Processing';
+                                                                                    if (seasonStatus.status === 4) return 'Partial';
+                                                                                    if (seasonStatus.status === 5) return 'Available';
+                                                                                    if (seasonStatus.status === 6) return 'Deleted';
+                                                                                }
+
+                                                                                return 'Unavailable'; // fallback
+                                                                            })()}
                                                                             size='small'
                                                                             sx={{
                                                                                 fontSize: '0.6rem',
                                                                                 height: '1rem',
-                                                                                backgroundColor: 'success.dark',
-                                                                                color: 'success.contrastText'
+                                                                                backgroundColor: (() => {
+                                                                                    const status = season.status || tvShowDetails?.mediaInfo?.seasons?.find((s: any) => s.seasonNumber === season.seasonNumber)?.status;
+                                                                                    switch (status) {
+                                                                                    case 2: return 'warning.dark'; // Pending
+                                                                                    case 3: return 'info.dark'; // Processing
+                                                                                    case 4: return 'success.dark'; // Partial - changed to green
+                                                                                    case 5: return 'success.dark'; // Available
+                                                                                    case 6: return 'error.dark'; // Deleted
+                                                                                    default: return 'success.dark';
+                                                                                    }
+                                                                                })(),
+                                                                                color: (() => {
+                                                                                    const status = season.status || tvShowDetails?.mediaInfo?.seasons?.find((s: any) => s.seasonNumber === season.seasonNumber)?.status;
+                                                                                    switch (status) {
+                                                                                    case 2: return 'warning.contrastText'; // Pending
+                                                                                    case 3: return 'info.contrastText'; // Processing
+                                                                                    case 4: return 'success.contrastText'; // Partial - changed to green
+                                                                                    case 5: return 'success.contrastText'; // Available
+                                                                                    case 6: return 'error.contrastText'; // Deleted
+                                                                                    default: return 'success.contrastText';
+                                                                                    }
+                                                                                })()
                                                                             }}
                                                                         />
                                                                     )}
@@ -1118,6 +1168,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                                                             sx={{
                                                                 color: 'white',
                                                                 display: 'flex',
+                                                                alignItems: 'center',
                                                                 margin: 0,
                                                                 opacity: seasonAvailable ? 0.6 : 1
                                                             }}
@@ -1130,10 +1181,6 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                                         {getAvailableSeasons(tvShowDetails.seasons).length === 0 ? (
                                             <Typography variant='body2' sx={{ color: 'rgba(255,255,255,0.7)', mt: 1 }}>
                                                 All seasons are already available or requested
-                                            </Typography>
-                                        ) : selectedSeasons.length === 0 ? (
-                                            <Typography variant='body2' sx={{ color: 'error.main', mt: 1 }}>
-                                                Please select at least one season to request
                                             </Typography>
                                         ) : null}
                                     </Box>
