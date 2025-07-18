@@ -1143,7 +1143,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                                                                                     switch (status) {
                                                                                     case 2: return 'warning.dark'; // Pending
                                                                                     case 3: return 'info.dark'; // Processing
-                                                                                    case 4: return 'success.dark'; // Partial - changed to green
+                                                                                    case 4: return 'success.dark'; // Partial
                                                                                     case 5: return 'success.dark'; // Available
                                                                                     case 6: return 'error.dark'; // Deleted
                                                                                     default: return 'success.dark';
@@ -1154,7 +1154,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                                                                                     switch (status) {
                                                                                     case 2: return 'warning.contrastText'; // Pending
                                                                                     case 3: return 'info.contrastText'; // Processing
-                                                                                    case 4: return 'success.contrastText'; // Partial - changed to green
+                                                                                    case 4: return 'success.contrastText'; // Partial
                                                                                     case 5: return 'success.contrastText'; // Available
                                                                                     case 6: return 'error.contrastText'; // Deleted
                                                                                     default: return 'success.contrastText';
