@@ -35,6 +35,7 @@ const WIDGET_OPTIONS = [
     { id: ITEM_TYPE.DOWNLOAD_CLIENT, label: 'Download Client' },
     { id: ITEM_TYPE.MEDIA_SERVER_WIDGET, label: 'Media Server' },
     { id: ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET, label: 'Media Request Manager' },
+    { id: ITEM_TYPE.NOTES_WIDGET, label: 'Notes' },
     { id: ITEM_TYPE.SONARR_WIDGET, label: 'Sonarr' },
     { id: ITEM_TYPE.RADARR_WIDGET, label: 'Radarr' },
     { id: ITEM_TYPE.DUAL_WIDGET, label: 'Dual Widget' },
@@ -115,6 +116,10 @@ export type FormValues = {
     mediaRequestManagerPort?: string;
     mediaRequestManagerSsl?: boolean;
     mediaRequestManagerApiKey?: string;
+
+    // Notes widget
+    maxDisplayedNotes?: string;
+    displayName?: string;
 
     // Torrent client widget
     torrentClient?: string;
@@ -233,6 +238,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                existingItem?.type === ITEM_TYPE.TORRENT_CLIENT || // Legacy support
                                existingItem?.type === ITEM_TYPE.MEDIA_SERVER_WIDGET ||
                                existingItem?.type === ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET ||
+                               existingItem?.type === ITEM_TYPE.NOTES_WIDGET ||
                                existingItem?.type === ITEM_TYPE.SONARR_WIDGET ||
                                existingItem?.type === ITEM_TYPE.RADARR_WIDGET ||
                                existingItem?.type === ITEM_TYPE.DUAL_WIDGET ||
@@ -260,6 +266,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                   existingItem?.type === ITEM_TYPE.TORRENT_CLIENT || // Legacy support - map to DOWNLOAD_CLIENT
                                   existingItem?.type === ITEM_TYPE.MEDIA_SERVER_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET ||
+                                  existingItem?.type === ITEM_TYPE.NOTES_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.SONARR_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.RADARR_WIDGET
             ? (existingItem?.type === ITEM_TYPE.TORRENT_CLIENT ? ITEM_TYPE.DOWNLOAD_CLIENT : existingItem?.type)
@@ -274,9 +281,10 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                   existingItem?.type === ITEM_TYPE.ADGUARD_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.MEDIA_SERVER_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET ||
+                                  existingItem?.type === ITEM_TYPE.NOTES_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.SONARR_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.RADARR_WIDGET)
-            ? (existingItem?.showLabel !== undefined ? existingItem.showLabel : true)
+            ? (existingItem?.config?.showLabel !== undefined ? existingItem.config.showLabel : true)
             : (existingItem?.showLabel !== undefined ? existingItem.showLabel : false);
 
         // Initialize other component state
@@ -413,6 +421,10 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             mediaRequestManagerPort: existingItem?.type === ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET ? (existingItem?.config?.port || '5055') : '5055',
             mediaRequestManagerSsl: existingItem?.type === ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET ? (existingItem?.config?.ssl || false) : false,
             mediaRequestManagerApiKey: existingItem?.type === ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET ? (existingItem?.config?._hasApiKey ? '**********' : '') : '',
+
+            // Notes widget values
+            maxDisplayedNotes: existingItem?.type === ITEM_TYPE.NOTES_WIDGET ? String(existingItem?.config?.maxDisplayedNotes || 10) : '10',
+            displayName: existingItem?.type === ITEM_TYPE.NOTES_WIDGET ? (existingItem?.config?.displayName || 'Notes') : 'Notes',
 
             location: location,
             gauge1: systemMonitorGauges[0] || 'cpu',
@@ -645,6 +657,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                 selectedWidgetType === ITEM_TYPE.DOWNLOAD_CLIENT ||
                 selectedWidgetType === ITEM_TYPE.MEDIA_SERVER_WIDGET ||
                 selectedWidgetType === ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET ||
+                selectedWidgetType === ITEM_TYPE.NOTES_WIDGET ||
                 selectedWidgetType === ITEM_TYPE.SONARR_WIDGET ||
                 selectedWidgetType === ITEM_TYPE.RADARR_WIDGET ||
                 selectedWidgetType === ITEM_TYPE.DUAL_WIDGET
@@ -654,6 +667,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                     selectedWidgetType === ITEM_TYPE.DOWNLOAD_CLIENT ||
                     selectedWidgetType === ITEM_TYPE.MEDIA_SERVER_WIDGET ||
                     selectedWidgetType === ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET ||
+                    selectedWidgetType === ITEM_TYPE.NOTES_WIDGET ||
                     selectedWidgetType === ITEM_TYPE.SONARR_WIDGET ||
                     selectedWidgetType === ITEM_TYPE.RADARR_WIDGET ||
                     selectedWidgetType === ITEM_TYPE.DUAL_WIDGET) {
@@ -969,6 +983,9 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             } else if (data.widgetType === ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET) {
                 // Media request widget configuration
                 config = await createWidgetConfig(ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET, data);
+            } else if (data.widgetType === ITEM_TYPE.NOTES_WIDGET) {
+                // Notes widget configuration
+                config = await createWidgetConfig(ITEM_TYPE.NOTES_WIDGET, data);
             } else if (data.widgetType === ITEM_TYPE.SONARR_WIDGET) {
                 // Sonarr widget configuration
                 config = await createWidgetConfig(ITEM_TYPE.SONARR_WIDGET, data);
@@ -1665,6 +1682,12 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                 showLabel: data.showLabel !== undefined ? data.showLabel : true, // Default to showing label
                 items: existingItem?.config?.items || [] // Preserve existing items or start with empty array
             };
+        } else if (widgetType === ITEM_TYPE.NOTES_WIDGET) {
+            return {
+                maxDisplayedNotes: data.maxDisplayedNotes ? parseInt(data.maxDisplayedNotes) : 10,
+                showLabel: data.showLabel !== undefined ? data.showLabel : true,
+                displayName: data.displayName || 'Notes'
+            };
         }
 
         return {};
@@ -1720,6 +1743,8 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             msPort: '8096',
             msSsl: false,
             msApiKey: '',
+            // Notes widget fields
+            maxDisplayedNotes: '10',
             location: null,
             gauge1: 'cpu',
             gauge2: 'temp',

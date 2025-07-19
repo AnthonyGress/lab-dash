@@ -9,6 +9,7 @@ export enum ITEM_TYPE {
     ADGUARD_WIDGET = 'adguard-widget',
     MEDIA_SERVER_WIDGET = 'media-server-widget',
     MEDIA_REQUEST_MANAGER_WIDGET = 'media-request-manager-widget',
+    NOTES_WIDGET = 'notes-widget',
     SONARR_WIDGET = 'sonarr-widget',
     RADARR_WIDGET = 'radarr-widget',
     DUAL_WIDGET = 'dual-widget',

@@ -168,9 +168,8 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig; id?
                 return a.name.localeCompare(b.name);
             });
 
-            // Limit the number of torrents displayed
-            const maxTorrents = config?.maxDisplayedTorrents || 5;
-            setTorrents(sortedTorrents.slice(0, maxTorrents));
+            // No limit on torrents - show all torrents
+            setTorrents(sortedTorrents);
         } catch (error) {
             console.error('Error fetching qBittorrent torrents:', error);
             if ((error as any)?.response?.status === 401) {
@@ -178,7 +177,7 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig; id?
                 setAuthError('Session expired. Please login again.');
             }
         }
-    }, [loginCredentials, config?.maxDisplayedTorrents, isAuthenticated]);
+    }, [loginCredentials, isAuthenticated]);
 
     // Handle input changes
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

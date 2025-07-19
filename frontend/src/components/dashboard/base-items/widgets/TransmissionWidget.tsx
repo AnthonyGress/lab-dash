@@ -220,9 +220,8 @@ export const TransmissionWidget = (props: { config?: TransmissionWidgetConfig; i
                 return a.name.localeCompare(b.name);
             });
 
-            // Limit the number of torrents displayed
-            const maxTorrents = config?.maxDisplayedTorrents || 5;
-            setTorrents(sortedTorrents.slice(0, maxTorrents));
+            // No limit on torrents - show all torrents
+            setTorrents(sortedTorrents);
         } catch (error) {
             console.error('Error fetching Transmission torrents:', error);
             if ((error as any)?.response?.status === 401) {
@@ -230,7 +229,7 @@ export const TransmissionWidget = (props: { config?: TransmissionWidgetConfig; i
                 setAuthError('Session expired. Please login again.');
             }
         }
-    }, [loginCredentials, config?.maxDisplayedTorrents, isAuthenticated]);
+    }, [loginCredentials, isAuthenticated]);
 
     // Handle input changes
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

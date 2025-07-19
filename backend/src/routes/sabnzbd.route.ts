@@ -278,16 +278,48 @@ sabnzbdRoute.get('/downloads', async (req: Request, res: Response) => {
 
         const queueData = response.data.queue;
 
-        const downloads = (queueData.slots || []).map((item: any) => {
+        const downloads = (queueData.slots || []).map((item: any, index: number) => {
+            // Calculate progress with fallback methods
+            let progress = 0;
+            const percentage = parseFloat(item.percentage || '0');
+
+            if (percentage > 0) {
+                // Use percentage if available and valid
+                progress = percentage / 100;
+            } else {
+                // Fallback: calculate from size fields
+                const totalMB = parseFloat(item.mb || '0');
+                const leftMB = parseFloat(item.mbleft || '0');
+
+                // Calculate progress if we have valid size data
+                if (totalMB > 0) {
+                    // If mbleft is defined and valid, calculate actual progress
+                    if (item.mbleft !== undefined && item.mbleft !== null && item.mbleft !== '' && !isNaN(leftMB)) {
+                        progress = Math.max(0, Math.min(1, (totalMB - leftMB) / totalMB));
+                        // Show actual progress only - don't add artificial 1% for queued items
+                    } else {
+                        // If mbleft is not available, keep progress as 0 (queued)
+                        progress = 0;
+                    }
+                }
+            }
+
+            // SABnzb typically downloads one item at a time
+            // Only show download speed for the first item in "Downloading" state
+            const isActiveDownload = index === 0 && item.status && item.status.toLowerCase() === 'downloading';
+            const downloadSpeed = isActiveDownload ? parseFloat(queueData.kbpersec || '0') * 1024 : 0;
+
+
+
             return {
                 hash: item.nzo_id, // Use nzo_id as hash equivalent
                 name: item.filename || 'Unknown',
                 state: (item.status || 'unknown').toLowerCase(), // 'downloading', 'paused', etc.
-                progress: parseFloat(item.percentage || '0') / 100, // Convert percentage to decimal
+                progress: progress,
                 size: parseFloat(item.mb || '0') * 1024 * 1024, // Convert MB to bytes
-                dlspeed: parseFloat(queueData.kbpersec || '0') * 1024, // Use global speed from queue
+                dlspeed: downloadSpeed, // Only show speed for active download
                 upspeed: 0, // SABnzbd doesn't upload
-                eta: item.timeleft === '0:00:00' ? 0 : parseTimeLeft(item.timeleft || '0:00:00')
+                eta: parseTimeLeft(item.timeleft || '0:00:00')
             };
         });
 
@@ -401,16 +433,29 @@ sabnzbdRoute.post('/logout', async (req: Request, res: Response) => {
     }
 });
 
-// Helper function to parse SABnzbd time format (HH:MM:SS) to seconds
-function parseTimeLeft(timeStr: string): number {
-    if (!timeStr || timeStr === '0:00:00') return 0;
+// Helper function to parse SABnzbd time format (HH:MM:SS or DD:HH:MM:SS) to seconds
+function parseTimeLeft(timeStr: string): number | undefined {
+    if (!timeStr || timeStr === '0:00:00') return undefined;
 
     const parts = timeStr.split(':');
-    if (parts.length !== 3) return 0;
+    if (parts.length !== 3 && parts.length !== 4) return undefined;
 
-    const hours = parseInt(parts[0]) || 0;
-    const minutes = parseInt(parts[1]) || 0;
-    const seconds = parseInt(parts[2]) || 0;
+    let totalSeconds = 0;
 
-    return hours * 3600 + minutes * 60 + seconds;
+    if (parts.length === 3) {
+        // Format: HH:MM:SS
+        const hours = parseInt(parts[0]) || 0;
+        const minutes = parseInt(parts[1]) || 0;
+        const seconds = parseInt(parts[2]) || 0;
+        totalSeconds = hours * 3600 + minutes * 60 + seconds;
+    } else if (parts.length === 4) {
+        // Format: DD:HH:MM:SS
+        const days = parseInt(parts[0]) || 0;
+        const hours = parseInt(parts[1]) || 0;
+        const minutes = parseInt(parts[2]) || 0;
+        const seconds = parseInt(parts[3]) || 0;
+        totalSeconds = days * 86400 + hours * 3600 + minutes * 60 + seconds;
+    }
+
+    return totalSeconds > 0 ? totalSeconds : undefined;
 }

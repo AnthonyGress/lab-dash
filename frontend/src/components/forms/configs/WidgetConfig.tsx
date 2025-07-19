@@ -9,6 +9,7 @@ import { DualWidgetConfig } from './DualWidgetConfig';
 import { GroupWidgetConfig } from './GroupWidgetConfig';
 import { MediaRequestManagerWidgetConfig } from './MediaRequestManagerWidgetConfig';
 import { MediaServerWidgetConfig } from './MediaServerWidgetConfig';
+import { NotesWidgetConfig } from './NotesWidgetConfig';
 import { PiholeWidgetConfig } from './PiholeWidgetConfig';
 import { RadarrWidgetConfig } from './RadarrWidgetConfig';
 import { SonarrWidgetConfig } from './SonarrWidgetConfig';
@@ -48,6 +49,8 @@ export const WidgetConfig = ({ formContext, widgetType, existingItem }: WidgetCo
         return <MediaServerWidgetConfig formContext={formContext} />;
     case ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET:
         return <MediaRequestManagerWidgetConfig formContext={formContext} />;
+    case ITEM_TYPE.NOTES_WIDGET:
+        return <NotesWidgetConfig formContext={formContext} />;
     case ITEM_TYPE.SONARR_WIDGET:
         return <SonarrWidgetConfig formContext={formContext} />;
     case ITEM_TYPE.RADARR_WIDGET:

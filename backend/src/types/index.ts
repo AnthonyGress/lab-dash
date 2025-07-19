@@ -37,6 +37,15 @@ export type Config = {
     searchProvider?: string;
     isSetupComplete?: boolean;
     lastSeenVersion?: string;
+    notes?: Note[];
+}
+
+export type Note = {
+    id: string;
+    title: string;
+    content: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export type DashboardLayout = {
