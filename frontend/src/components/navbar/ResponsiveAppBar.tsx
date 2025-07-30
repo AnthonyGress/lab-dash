@@ -200,6 +200,15 @@ export const ResponsiveAppBar = ({ children }: Props) => {
         handleCloseDrawer();
     };
 
+    const handleSetEditMode = (value: boolean) => {
+        setEditMode(value);
+        handleCloseDrawer();
+
+        if (window.location.pathname.includes('/settings')) {
+            navigate('/');
+        }
+    };
+
     const handlePageUpdate = async (updatedItem: any) => {
         if (!selectedPageForEdit || !config) return;
 
@@ -446,7 +455,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                         {isLoggedIn && isAdmin && (
                                             <ListItem disablePadding>
                                                 <ListItemButton onClick={() => {
-                                                    setEditMode(true);
+                                                    handleSetEditMode(true);
                                                     handleCloseDrawer();
                                                 }}>
                                                     <ListItemIcon>
