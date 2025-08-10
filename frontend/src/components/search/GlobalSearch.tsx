@@ -1,5 +1,5 @@
 import { Box, useMediaQuery } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import { SearchBar } from './SearchBar';
@@ -22,6 +22,7 @@ export const GlobalSearch = () => {
     const location = useLocation();
     const isHomePage = location.pathname === '/';
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const inputRef = useRef<HTMLInputElement | null>(null);
 
     useEffect(() => {
         const processItemsFromLayout = (layout: DashboardItem[]): SearchOption[] => {
@@ -108,6 +109,18 @@ export const GlobalSearch = () => {
         setSearchOptions(allOptions);
     }, [dashboardLayout, isHomePage, config, pages, isMobile]);
 
+    // Additional focus trigger for route changes
+    useEffect(() => {
+        // Small delay to ensure DOM is ready after route change
+        const focusTimer = setTimeout(() => {
+            if (inputRef.current) {
+                inputRef.current.focus();
+            }
+        }, 250);
+
+        return () => clearTimeout(focusTimer);
+    }, [location.pathname]);
+
     return (
         <Box sx={{ width: '100%' }}>
             <SearchBar
@@ -115,6 +128,7 @@ export const GlobalSearch = () => {
                 searchValue={searchValue}
                 setSearchValue={setSearchValue}
                 autocompleteOptions={searchOptions}
+                inputRef={inputRef}
             />
         </Box>
     );

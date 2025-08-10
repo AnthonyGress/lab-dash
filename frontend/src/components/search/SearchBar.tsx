@@ -1,7 +1,7 @@
 import CloseIcon from '@mui/icons-material/Close';
 import { Autocomplete, Box, InputAdornment, TextField, Typography } from '@mui/material';
 import { nanoid } from 'nanoid';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { Dispatch, RefObject, SetStateAction, useEffect, useState } from 'react';
 import { FaSearch } from 'react-icons/fa';
 
 import { useAppContext } from '../../context/useAppContext';
@@ -18,13 +18,15 @@ type Props = {
   searchValue: string;
   setSearchValue: Dispatch<SetStateAction<string>>;
   autocompleteOptions?: SearchOption[];
+  inputRef?: RefObject<HTMLInputElement>;
 };
 
 export const SearchBar = ({
     placeholder,
     searchValue,
     setSearchValue,
-    autocompleteOptions = []
+    autocompleteOptions = [],
+    inputRef
 }: Props) => {
     const { config } = useAppContext();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -149,6 +151,7 @@ export const SearchBar = ({
                     <Box sx={{ width: '100%', ...styles.center }}>
                         <TextField
                             {...params}
+                            inputRef={inputRef}
                             placeholder={placeholder || `Search with ${searchProvider.name}`}
                             InputProps={{
                                 ...params.InputProps,
