@@ -42,6 +42,7 @@ import { COLORS } from '../../../../theme/styles';
 import { theme } from '../../../../theme/theme';
 import { CenteredModal } from '../../../modals/CenteredModal';
 import { PopupManager } from '../../../modals/PopupManager';
+import { ToastManager } from '../../../toast/ToastManager';
 
 export interface MediaRequestManagerWidgetProps {
     id: string;
@@ -273,6 +274,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
         try {
             // Filter out already available seasons before sending the request
             let seasonsToRequest = seasons;
+            const title = item.title || item.name;
             if (item.mediaType === 'tv' && seasons && tvShowDetails) {
                 seasonsToRequest = seasons.filter(seasonNumber => {
                     const season = tvShowDetails.seasons?.find((s: any) => s.seasonNumber === seasonNumber);
@@ -286,17 +288,21 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                 item.id.toString(),
                 seasonsToRequest
             );
+
             if (response.success) {
                 // Refresh requests after creating one
                 fetchRequests();
                 // Clear search results and query
                 setSearchResults([]);
                 setSearchQuery('');
+                ToastManager.success(`Successfully requested ${title}`);
             } else {
                 console.error('Request creation failed:', response.error);
+                ToastManager.error(`Failed to request ${title}`);
             }
         } catch (requestError) {
             console.error('Request creation error:', requestError);
+            ToastManager.error('An error occured while requesting');
         }
     };
 
