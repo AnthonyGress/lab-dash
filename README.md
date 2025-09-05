@@ -21,7 +21,7 @@ You can easily customize your dashboard by:
 ### Privacy & Data Control
 You have complete control over your data and dashboard configuration.
 - All data is stored & used on your own device
-- Sensitive data is encrypted locally using [AES-256-CBC](https://docs.anchormydata.com/docs/what-is-aes-256-cbc)
+- Sensitive data is encrypted locally using [AES-256-CBC](https://www.kiteworks.com/risk-compliance-glossary/aes-256-encryption/)
 - Only administrator accounts can make changes
 - Configurations can be easily backed up and restored
 
