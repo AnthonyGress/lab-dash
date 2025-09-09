@@ -65,6 +65,11 @@ const SortableGroupItem: React.FC<SortableGroupItemProps> = ({
             originalItem: item,
             parentId: groupId
         },
+        animateLayoutChanges: ({ isSorting, wasDragging, isDragging: isCurrentlyDragging }) => {
+            if (isSorting && isCurrentlyDragging) return true;
+            if (wasDragging && !isCurrentlyDragging) return false;
+            return true;
+        },
         disabled: !isEditing // Only allow dragging in edit mode
     });
 
@@ -119,7 +124,7 @@ const SortableGroupItem: React.FC<SortableGroupItemProps> = ({
                 cursor: isEditing ? 'grab' : 'pointer',
                 transform: transform ? CSS.Translate.toString(transform) : undefined,
                 transition,
-                opacity: isDragging ? 0.5 : 1,
+                opacity: isDragging ? 0.6 : 1,
                 position: 'relative',
                 touchAction: 'none', // Ensure touch events are captured properly on mobile
                 display: 'flex',
@@ -297,6 +302,11 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
 
     // Modified function to check if an item is clearly outside the group area (with margins)
     const isRectOutsideGroup = (activeRect: any, containerRect: any) => {
+        // Check for null or undefined rects
+        if (!activeRect || !containerRect) {
+            return false;
+        }
+
         // Add some margin to consider the item "inside" the group if it's near the border
         const margin = 30; // pixels
 
@@ -323,6 +333,9 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
         // Get the positions
         const containerRect = groupContainer.getBoundingClientRect();
         const activeRect = active.rect.current.translated;
+
+        // Add null check for activeRect
+        if (!activeRect) return;
 
         // Check if the active item is clearly outside the group container
         const isOutside = isRectOutsideGroup(activeRect, containerRect);
