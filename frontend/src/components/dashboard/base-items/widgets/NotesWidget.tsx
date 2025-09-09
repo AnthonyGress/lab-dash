@@ -279,7 +279,7 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
 
         if (viewMode === 'view' && selectedNote) {
             return (
-                <Box sx={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <Box sx={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', userSelect: 'auto' }}>
                     <Typography
                         variant='h6'
                         sx={{
@@ -288,7 +288,12 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
                             fontWeight: 600,
                             wordBreak: 'break-word',
                             mb: 1,
-                            pr: 5 // Add padding to avoid overlap with menu
+                            pr: 5, // Add padding to avoid overlap with menu
+                            userSelect: 'text',
+                            cursor: 'text',
+                            '&:hover': {
+                                backgroundColor: 'rgba(255,255,255,0.05)'
+                            }
                         }}
                     >
                         {selectedNote.title}
@@ -348,6 +353,8 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
                         lineHeight: 1.5,
                         wordBreak: 'break-word',
                         flex: 1,
+                        userSelect: 'text',
+                        cursor: 'text',
                         '& ul, & ol': {
                             margin: '0.3em 0',
                             paddingLeft: '1.2em',
@@ -513,6 +520,7 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
             padding: 2,
             maxWidth: '100%',
             width: '100%',
+            userSelect: 'auto', // Ensure text selection is allowed
             ...(isMobile ? {} : {
                 minHeight: DUAL_WIDGET_CONTAINER_HEIGHT.sm
             })
@@ -522,7 +530,8 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
                 flexDirection: 'column',
                 height: '100%',
                 color: 'white',
-                width: '100%'
+                width: '100%',
+                userSelect: 'auto' // Ensure text selection is allowed
             }}>
                 {/* Header */}
                 {showLabel && (

@@ -868,22 +868,6 @@ export const SettingsForm = () => {
                                 <Button
                                     variant='contained'
                                     color='error'
-                                    onClick={async () => {
-                                        try {
-                                            const response = await DashApi.clearIconCache();
-                                            ToastManager.success(response.message || 'Icon cache cleared successfully');
-                                        } catch (error) {
-                                            console.error('Error clearing icon cache:', error);
-                                            ToastManager.error('Failed to clear icon cache');
-                                        }
-                                    }}
-                                    sx={{ minWidth: { xs: 'auto', sm: '200px' } }}
-                                >
-                                    Clear Icon Cache
-                                </Button>
-                                <Button
-                                    variant='contained'
-                                    color='error'
                                     onClick={() => {
                                         PopupManager.deleteConfirmation({
                                             title: 'Reset All Settings',
@@ -983,8 +967,26 @@ export const SettingsForm = () => {
                             <Box sx={{
                                 gridColumn: { xs: '1', sm: '1 / -1' },
                                 justifySelf: 'start',
-                                mt: 2
+                                mt: 2,
+                                display: 'flex',
+                                gap: 2,
+                                flexDirection: { xs: 'column', sm: 'row' }
                             }}>
+                                <Button
+                                    variant='contained'
+                                    color='error'
+                                    onClick={async () => {
+                                        try {
+                                            const response = await DashApi.clearIconCache();
+                                            ToastManager.success(response.message || 'Icon cache cleared successfully');
+                                        } catch (error) {
+                                            console.error('Error clearing icon cache:', error);
+                                            ToastManager.error('Failed to clear icon cache');
+                                        }
+                                    }}
+                                >
+                                    Clear Icon Cache
+                                </Button>
                                 <Button variant='contained' onClick={resetBackground} color='error'>
                                         Reset Background
                                 </Button>
