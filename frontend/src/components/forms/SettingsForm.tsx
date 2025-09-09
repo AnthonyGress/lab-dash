@@ -1,9 +1,9 @@
 import CloseIcon from '@mui/icons-material/Close';
 import { Box, Button, Tab, Tabs, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material';
-import { SyntheticEvent, useEffect, useState } from 'react';
+import React, { SyntheticEvent, useEffect, useMemo, useState } from 'react';
 import { CheckboxElement, FormContainer, SelectElement, TextFieldElement, useForm } from 'react-hook-form-mui';
 import { FaCog } from 'react-icons/fa';
-import { FaClockRotateLeft, FaImage, FaTrashCan } from 'react-icons/fa6';
+import { FaClockRotateLeft, FaImage, FaKeyboard, FaTrashCan } from 'react-icons/fa6';
 import { useNavigate } from 'react-router-dom';
 
 import { FileInput } from './FileInput';
@@ -195,13 +195,41 @@ const ImagePreviewCard = ({ image, onDelete, formatFileSize }: {
 export const SettingsForm = () => {
     const [isCustomProvider, setIsCustomProvider] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
-    const { config, updateConfig, refreshDashboard } = useAppContext();
+    const { config, updateConfig, refreshDashboard, pages } = useAppContext();
     const [tabValue, setTabValue] = useState(0);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const navigate = useNavigate();
     const [uploadedImages, setUploadedImages] = useState<any[]>([]);
     const [loadingImages, setLoadingImages] = useState(false);
+
+    // Detect user's OS for appropriate command key display
+    const isMac = useMemo(() => {
+        return typeof navigator !== 'undefined' &&
+               (navigator.platform.indexOf('Mac') > -1 || navigator.userAgent.indexOf('Mac') > -1);
+    }, []);
+
+    const commandKey = isMac ? '⌘' : 'Ctrl';
+
+    // Reusable key badge component
+    const KeyBadge = ({ children }: { children: React.ReactNode }) => (
+        <Box sx={{
+            px: 1,
+            py: 0.5,
+            bgcolor: 'rgba(255, 255, 255, 0.1)',
+            borderRadius: 0.5,
+            fontSize: children === '⌘' ? { xs: '1.125rem', sm: '1.25rem' } : { xs: '0.875rem', sm: '1rem' },
+            fontFamily: 'monospace',
+            minWidth: '24px',
+            height: '28px',
+            textAlign: 'center',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+        }}>
+            {children}
+        </Box>
+    );
     // Add custom styling for menu items
     useEffect(() => {
         // Create a style element
@@ -683,6 +711,7 @@ export const SettingsForm = () => {
                         <Tab icon={<FaCog style={{ fontSize: '1.2rem' }} />} label='General' {...a11yProps(0)} />
                         <Tab icon={<FaImage style={{ fontSize: '1.2rem' }} />} label='Appearance' {...a11yProps(1)} />
                         <Tab icon={<FaClockRotateLeft style={{ fontSize: '1.2rem' }} />} label='Backup' {...a11yProps(2)} />
+                        <Tab icon={<FaKeyboard style={{ fontSize: '1.2rem' }} />} label='Hotkeys' {...a11yProps(3)} />
                     </Tabs>
 
                     <TabPanel value={tabValue} index={0}>
@@ -1078,6 +1107,116 @@ export const SettingsForm = () => {
                                     >
                                         Copy Desktop Layout to Mobile
                                     </Button>
+                                </Box>
+                            </Box>
+                        </Box>
+                    </TabPanel>
+
+                    <TabPanel value={tabValue} index={3}>
+                        <Box sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 3
+                        }}>
+                            <Typography variant='h6'>Keyboard Shortcuts</Typography>
+                            <Typography variant='body1' sx={{ mb: 2 }}>
+                                Use these keyboard shortcuts to quickly navigate and control your dashboard.
+                            </Typography>
+
+                            <Box sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 2
+                            }}>
+                                {/* Search Hotkeys */}
+                                <Box>
+                                    <Typography variant='subtitle1' sx={{ mb: 1, fontWeight: 600 }}>
+                                        Search
+                                    </Typography>
+                                    <Box sx={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: 1
+                                    }}>
+                                        <Box sx={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            p: 1.5,
+                                            bgcolor: 'background.paper',
+                                            borderRadius: 1,
+                                            border: '1px solid rgba(255, 255, 255, 0.12)'
+                                        }}>
+                                            <Typography variant='body1'>Focus search bar</Typography>
+                                            <Box sx={{
+                                                display: 'flex',
+                                                gap: 0.5,
+                                                alignItems: 'center'
+                                            }}>
+                                                <KeyBadge>{commandKey}</KeyBadge>
+                                                <Typography variant='body1'>+</Typography>
+                                                <KeyBadge>K</KeyBadge>
+                                            </Box>
+                                        </Box>
+                                    </Box>
+                                </Box>
+
+                                {/* Page Navigation Hotkeys */}
+                                <Box>
+                                    <Typography variant='subtitle1' sx={{ mb: 1, fontWeight: 600 }}>
+                                        Page Navigation
+                                    </Typography>
+                                    <Box sx={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: 1
+                                    }}>
+                                        {/* Home page shortcut */}
+                                        <Box sx={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            p: 1.5,
+                                            bgcolor: 'background.paper',
+                                            borderRadius: 1,
+                                            border: '1px solid rgba(255, 255, 255, 0.12)'
+                                        }}>
+                                            <Typography variant='body1'>Go to Home page</Typography>
+                                            <Box sx={{
+                                                display: 'flex',
+                                                gap: 0.5,
+                                                alignItems: 'center'
+                                            }}>
+                                                <KeyBadge>{commandKey}</KeyBadge>
+                                                <Typography variant='body1'>+</Typography>
+                                                <KeyBadge>1</KeyBadge>
+                                            </Box>
+                                        </Box>
+
+                                        {/* Custom pages shortcuts */}
+                                        {pages && pages.length > 0 && pages.map((page, index) => (
+                                            <Box key={page.id} sx={{
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center',
+                                                p: 1.5,
+                                                bgcolor: 'background.paper',
+                                                borderRadius: 1,
+                                                border: '1px solid rgba(255, 255, 255, 0.12)'
+                                            }}>
+                                                <Typography variant='body1'>Go to {page.name}</Typography>
+                                                <Box sx={{
+                                                    display: 'flex',
+                                                    gap: 0.5,
+                                                    alignItems: 'center'
+                                                }}>
+                                                    <KeyBadge>{commandKey}</KeyBadge>
+                                                    <Typography variant='body1'>+</Typography>
+                                                    <KeyBadge>{index + 2}</KeyBadge>
+                                                </Box>
+                                            </Box>
+                                        ))}
+                                    </Box>
                                 </Box>
                             </Box>
                         </Box>
