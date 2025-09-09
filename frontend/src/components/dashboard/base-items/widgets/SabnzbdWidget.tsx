@@ -246,21 +246,50 @@ export const SabnzbdWidget = (props: { config?: SabnzbdWidgetConfig; id?: string
         }
     }, [config, handleLogin, isAuthenticated, loginAttemptFailed]);
 
-    // Refresh stats and downloads periodically
+    // Add ref to track current downloads without causing re-renders
+    const downloadsRef = useRef<any[]>([]);
+
+    // Update ref when downloads change
+    useEffect(() => {
+        downloadsRef.current = downloads;
+    }, [downloads]);
+
+    // Refresh stats and downloads periodically with dynamic intervals
     useEffect(() => {
         if (!isAuthenticated) return;
+
+        let timeoutId: ReturnType<typeof setTimeout>;
+
+        const scheduleNext = () => {
+            // Check if there are any active downloads using ref to avoid dependency issues
+            const hasActiveDownloads = downloadsRef.current.some(download => 
+                download.state === 'downloading' || 
+                download.state === 'active' ||
+                download.state === 'extracting'
+            );
+
+            // Use 2 seconds if there are active downloads, otherwise 20 seconds
+            const interval = hasActiveDownloads ? 2000 : 20000;
+            
+            timeoutId = setTimeout(() => {
+                Promise.all([fetchStats(), fetchDownloads()]).then(() => {
+                    scheduleNext(); // Schedule the next fetch
+                });
+            }, interval);
+        };
 
         // Initial fetch
         fetchStats();
         fetchDownloads();
+        
+        // Start the dynamic polling
+        scheduleNext();
 
-        // Simple fixed interval to avoid dependency loops - same as qBittorrent
-        const interval = setInterval(() => {
-            fetchStats();
-            fetchDownloads();
-        }, 20000); // Fixed 20 seconds - same as qBittorrent
-
-        return () => clearInterval(interval);
+        return () => {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+        };
     }, [isAuthenticated, fetchStats, fetchDownloads]);
 
     // Download management functions

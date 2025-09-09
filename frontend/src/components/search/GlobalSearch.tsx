@@ -121,6 +121,29 @@ export const GlobalSearch = () => {
         return () => clearTimeout(focusTimer);
     }, [location.pathname]);
 
+    // Global hotkey listener for Ctrl+K / Cmd+K
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            // Check for Ctrl+K (Windows/Linux) or Cmd+K (Mac)
+            if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
+                event.preventDefault();
+                if (inputRef.current) {
+                    inputRef.current.focus();
+                    // Clear any existing selection
+                    inputRef.current.select();
+                }
+            }
+        };
+
+        // Add event listener to document
+        document.addEventListener('keydown', handleKeyDown);
+
+        // Cleanup
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, []);
+
     return (
         <Box sx={{ width: '100%' }}>
             <SearchBar

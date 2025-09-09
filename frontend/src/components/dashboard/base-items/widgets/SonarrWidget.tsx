@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { QueueItem, QueueManagementWidget } from './QueueManagementWidget';
 import { DashApi } from '../../../../api/dash-api';
@@ -53,6 +53,14 @@ export const SonarrWidget: React.FC<SonarrWidgetProps> = ({ id, config }) => {
         }
     }, [id, config?.host, config?._hasApiKey]);
 
+    // Add ref to track current queue items without causing re-renders
+    const queueItemsRef = useRef<QueueItem[]>([]);
+
+    // Update ref when queue items change
+    useEffect(() => {
+        queueItemsRef.current = queueItems;
+    }, [queueItems]);
+
     useEffect(() => {
         // Only fetch if we have the required configuration
         if (!id || !config?.host || !config?._hasApiKey) {
@@ -61,22 +69,40 @@ export const SonarrWidget: React.FC<SonarrWidgetProps> = ({ id, config }) => {
             return;
         }
 
+        let timeoutId: ReturnType<typeof setTimeout>;
+
+        const scheduleNext = () => {
+            // Check if there are any active downloads using ref to avoid dependency issues
+            const hasActiveDownloads = queueItemsRef.current.some((item: QueueItem) => 
+                item.state === 'downloading' || 
+                item.state === 'active'
+            );
+
+            // Use 2 seconds if there are active downloads, otherwise 20 seconds
+            const interval = hasActiveDownloads ? 2000 : TWENTY_SEC_IN_MS;
+            
+            timeoutId = setTimeout(() => {
+                // Double-check config is still available before each fetch
+                if (id && config?.host && config?._hasApiKey) {
+                    fetchQueueData().then(() => {
+                        scheduleNext(); // Schedule the next fetch
+                    });
+                }
+            }, interval);
+        };
+
         // Add a small delay to ensure config is fully loaded after duplication
         const initialFetchTimeout = setTimeout(() => {
             fetchQueueData();
+            // Start the dynamic polling after initial fetch
+            scheduleNext();
         }, 100);
-
-        // Fixed 20-second interval like download client widgets
-        const interval = setInterval(() => {
-            // Double-check config is still available before each fetch
-            if (id && config?.host && config?._hasApiKey) {
-                fetchQueueData();
-            }
-        }, TWENTY_SEC_IN_MS);
 
         return () => {
             clearTimeout(initialFetchTimeout);
-            clearInterval(interval);
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
         };
     }, [id, config?.host, config?._hasApiKey, fetchQueueData]);
 

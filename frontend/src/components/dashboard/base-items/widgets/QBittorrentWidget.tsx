@@ -197,21 +197,50 @@ export const QBittorrentWidget = (props: { config?: QBittorrentWidgetConfig; id?
 
 
 
-    // Refresh stats and torrents periodically
+    // Add ref to track current torrents without causing re-renders
+    const torrentsRef = useRef<any[]>([]);
+
+    // Update ref when torrents change
+    useEffect(() => {
+        torrentsRef.current = torrents;
+    }, [torrents]);
+
+    // Refresh stats and torrents periodically with dynamic intervals
     useEffect(() => {
         if (!isAuthenticated) return;
+
+        let timeoutId: ReturnType<typeof setTimeout>;
+
+        const scheduleNext = () => {
+            // Check if there are any active downloads using ref to avoid dependency issues
+            const hasActiveDownloads = torrentsRef.current.some(torrent =>
+                torrent.state === 'downloading' ||
+                torrent.state === 'checking' ||
+                torrent.state === 'metaDl'
+            );
+
+            // Use 2 seconds if there are active downloads, otherwise 20 seconds
+            const interval = hasActiveDownloads ? 2000 : 20000;
+
+            timeoutId = setTimeout(() => {
+                Promise.all([fetchStats(), fetchTorrents()]).then(() => {
+                    scheduleNext(); // Schedule the next fetch
+                });
+            }, interval);
+        };
 
         // Initial fetch
         fetchStats();
         fetchTorrents();
 
-        // Simple fixed interval to avoid dependency loops
-        const interval = setInterval(() => {
-            fetchStats();
-            fetchTorrents();
-        }, 20000); // Fixed 20 seconds - compromise between 15 and 30
+        // Start the dynamic polling
+        scheduleNext();
 
-        return () => clearInterval(interval);
+        return () => {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+        };
     }, [isAuthenticated, fetchStats, fetchTorrents]);
 
     // Torrent actions

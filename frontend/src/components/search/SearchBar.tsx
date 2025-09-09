@@ -1,7 +1,7 @@
 import CloseIcon from '@mui/icons-material/Close';
 import { Autocomplete, Box, InputAdornment, TextField, Typography } from '@mui/material';
 import { nanoid } from 'nanoid';
-import { Dispatch, RefObject, SetStateAction, useEffect, useState } from 'react';
+import React, { Dispatch, RefObject, SetStateAction, useEffect, useState } from 'react';
 import { FaSearch } from 'react-icons/fa';
 
 import { useAppContext } from '../../context/useAppContext';
@@ -83,6 +83,33 @@ export const SearchBar = ({
         setSearchValue('');
     };
 
+    const handleKeyDown = (event: React.KeyboardEvent) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            
+            // Filter options based on current search value
+            const filteredOptions = autocompleteOptions.filter((option) =>
+                option.label.toLowerCase().includes(searchValue.toLowerCase())
+            );
+
+            // If there are filtered results and search value is not empty, use the first result
+            if (filteredOptions.length > 0 && searchValue.trim() !== '') {
+                const firstOption = filteredOptions[0];
+                if (firstOption.url) {
+                    window.open(firstOption.url, '_blank', 'noopener,noreferrer');
+                    setSearchValue('');
+                    return;
+                }
+            }
+
+            // Fallback to search provider if no autocomplete results or empty search
+            if (searchValue.trim() !== '') {
+                window.open(getSearchUrl(searchValue), '_blank', 'noopener,noreferrer');
+                setSearchValue('');
+            }
+        }
+    };
+
     return (
         <Box sx={styles.center}>
             <Autocomplete
@@ -153,6 +180,7 @@ export const SearchBar = ({
                             {...params}
                             inputRef={inputRef}
                             placeholder={placeholder || `Search with ${searchProvider.name}`}
+                            onKeyDown={handleKeyDown}
                             InputProps={{
                                 ...params.InputProps,
                                 startAdornment: (
