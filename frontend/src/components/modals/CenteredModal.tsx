@@ -1,5 +1,5 @@
 import CloseIcon from '@mui/icons-material/Close';
-import { AppBar, Backdrop, Box, Modal, styled, Toolbar, Tooltip, Typography, useMediaQuery } from '@mui/material';
+import { AppBar, Backdrop, Box, IconButton, Modal, styled, Toolbar, Tooltip, Typography, useMediaQuery } from '@mui/material';
 import { ReactNode, useEffect } from 'react';
 
 import { useWindowDimensions } from '../../hooks/useWindowDimensions';
@@ -77,9 +77,11 @@ export const CenteredModal = ({ open, handleClose, children, width, height, titl
                             sx={styles.vcenter}
                         >
                             <Tooltip title='Close' placement='top'>
-                                <Box height={'100%'} sx={styles.vcenter}>
-                                    <CloseIcon sx={{ fontSize: 28, cursor: 'pointer' }} onClick={handleClose} />
-                                </Box>
+                                <IconButton onClick={handleClose}>
+                                    <Box height={'100%'} sx={styles.vcenter}>
+                                        <CloseIcon sx={{ fontSize: 28, color: 'white' }} />
+                                    </Box>
+                                </IconButton>
                             </Tooltip>
                         </Box>
                     </Toolbar>
