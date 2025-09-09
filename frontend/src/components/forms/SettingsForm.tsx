@@ -1216,6 +1216,27 @@ export const SettingsForm = () => {
                                                 </Box>
                                             </Box>
                                         ))}
+                                        {/* Settings page shortcut */}
+                                        <Box sx={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            p: 1.5,
+                                            bgcolor: 'background.paper',
+                                            borderRadius: 1,
+                                            border: '1px solid rgba(255, 255, 255, 0.12)'
+                                        }}>
+                                            <Typography variant='body1'>Go to Settings page</Typography>
+                                            <Box sx={{
+                                                display: 'flex',
+                                                gap: 0.5,
+                                                alignItems: 'center'
+                                            }}>
+                                                <KeyBadge>{commandKey}</KeyBadge>
+                                                <Typography variant='body1'>+</Typography>
+                                                <KeyBadge>0</KeyBadge>
+                                            </Box>
+                                        </Box>
                                     </Box>
                                 </Box>
                             </Box>

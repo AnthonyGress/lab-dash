@@ -15,7 +15,6 @@ import {
 } from '@dnd-kit/sortable';
 import { Box, Grid2 as Grid, useMediaQuery } from '@mui/material';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import shortid from 'shortid';
 
 import { SortableSabnzbd } from './sortable-items/widgets/SortableSabnzbd';
@@ -215,8 +214,7 @@ export const DashboardGrid: React.FC = () => {
     const [activeData, setActiveData] = useState<any>(null);
     const [selectedItem, setSelectedItem] = useState<DashboardItem | null>(null);
     const [openEditModal, setOpenEditModal] = useState(false);
-    const { dashboardLayout, setDashboardLayout, refreshDashboard, editMode, isAdmin, isLoggedIn, saveLayout, pages, setCurrentPageId } = useAppContext();
-    const navigate = useNavigate();
+    const { dashboardLayout, setDashboardLayout, refreshDashboard, editMode, isAdmin, isLoggedIn, saveLayout } = useAppContext();
     const isMed = useMediaQuery(theme.breakpoints.down('md'));
     const containerRef = useRef<HTMLDivElement | null>(null);
     const [dragPlaceholder, setDragPlaceholder] = useState<{
@@ -571,42 +569,6 @@ export const DashboardGrid: React.FC = () => {
             document.removeEventListener('touchmove', disableScroll);
         };
     }, [isDragging]);
-
-        // Global hotkey listener for Ctrl+1-9 / Cmd+1-9 to switch pages
-    useEffect(() => {
-        const handleKeyDown = (event: KeyboardEvent) => {
-            // Check for Ctrl+Number (Windows/Linux) or Cmd+Number (Mac)
-            if ((event.ctrlKey || event.metaKey) && event.key >= '1' && event.key <= '9') {
-                event.preventDefault();
-                event.stopPropagation(); // Prevent other listeners from interfering
-                
-                const keyNumber = parseInt(event.key, 10);
-                
-                if (keyNumber === 1) {
-                    // Cmd+1 always goes to Home page
-                    navigate('/');
-                } else {
-                    // Cmd+2+ goes to custom pages (pages[0], pages[1], etc.)
-                    const pageIndex = keyNumber - 2;
-                    
-                    if (pages && pages.length > pageIndex) {
-                        const targetPage = pages[pageIndex];
-                        // Convert page name to URL-friendly format: lowercase, spaces to hyphens
-                        const pageSlug = targetPage.name.toLowerCase().replace(/\s+/g, '-');
-                        navigate(`/${pageSlug}`);
-                    }
-                }
-            }
-        };
-
-        // Add event listener to document with capture to handle it early
-        document.addEventListener('keydown', handleKeyDown, true);
-
-        // Cleanup
-        return () => {
-            document.removeEventListener('keydown', handleKeyDown, true);
-        };
-    }, [pages, navigate]);
 
     // Find the group widget's index
     const getGroupPosition = useCallback((groupId: string) => {

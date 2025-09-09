@@ -2,7 +2,7 @@ import './theme/App.css';
 import { GlobalStyles } from '@mui/material';
 import { Box, Paper } from '@mui/material';
 import { useEffect } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, useNavigate } from 'react-router-dom';
 
 import { DashApi } from './api/dash-api';
 import { SetupForm } from './components/forms/SetupForm';
@@ -46,8 +46,11 @@ export const App = () => {
         setSetupComplete,
         refreshDashboard,
         checkLoginStatus,
-        isLoggedIn
+        isLoggedIn,
+        pages
     } = useAppContext();
+    
+    const navigate = useNavigate();
 
     // Check if setup is complete based on the config
     useEffect(() => {
@@ -65,6 +68,45 @@ export const App = () => {
             document.title = 'Lab Dash';
         }
     }, [config?.title]);
+
+    // Global hotkey listener for Ctrl+0-9 / Cmd+0-9 to switch pages
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            // Check for Ctrl+Number (Windows/Linux) or Cmd+Number (Mac)
+            if ((event.ctrlKey || event.metaKey) && (event.key >= '0' && event.key <= '9')) {
+                event.preventDefault();
+                event.stopPropagation(); // Prevent other listeners from interfering
+                
+                const keyNumber = parseInt(event.key, 10);
+                
+                if (keyNumber === 0) {
+                    // Cmd+0 goes to Settings page
+                    navigate('/settings');
+                } else if (keyNumber === 1) {
+                    // Cmd+1 always goes to Home page
+                    navigate('/');
+                } else {
+                    // Cmd+2+ goes to custom pages (pages[0], pages[1], etc.)
+                    const pageIndex = keyNumber - 2;
+                    
+                    if (pages && pages.length > pageIndex) {
+                        const targetPage = pages[pageIndex];
+                        // Convert page name to URL-friendly format: lowercase, spaces to hyphens
+                        const pageSlug = targetPage.name.toLowerCase().replace(/\s+/g, '-');
+                        navigate(`/${pageSlug}`);
+                    }
+                }
+            }
+        };
+
+        // Add event listener to document with capture to handle it early
+        document.addEventListener('keydown', handleKeyDown, true);
+
+        // Cleanup
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown, true);
+        };
+    }, [pages, navigate]);
 
     const backgroundImage = config?.backgroundImage
         ? `url('${BACKEND_URL}/uploads/${config?.backgroundImage}')`
