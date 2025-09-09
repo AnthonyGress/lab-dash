@@ -1,9 +1,10 @@
 import { Add, Close, Delete, Edit, List, MoreVert, Save } from '@mui/icons-material';
 import { Box, CardContent, IconButton, Menu, MenuItem, TextField, Tooltip, Typography, useMediaQuery } from '@mui/material';
-import { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { FaEdit } from 'react-icons/fa';
 import { FaStickyNote } from 'react-icons/fa';
 import { FaTrashCan } from 'react-icons/fa6';
+import ReactMarkdown from 'react-markdown';
 
 import { DashApi } from '../../../../api/dash-api';
 import { DUAL_WIDGET_CONTAINER_HEIGHT } from '../../../../constants/widget-dimensions';
@@ -261,7 +262,7 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
                         mt: 0.5
                     }}
                 >
-                    {note.content}
+                    {note.content.replace(/[#*`>\-+]/g, '').trim()}
                 </Typography>
             )}
         </Box>
@@ -341,19 +342,65 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
                             </Menu>
                         </Box>
                     )}
-                    <Typography
-                        variant='body2'
-                        sx={{
-                            color: 'rgba(255,255,255,0.9)',
-                            fontSize: isMobile ? '0.8rem' : '0.85rem',
-                            lineHeight: 1.5,
-                            whiteSpace: 'pre-wrap',
-                            wordBreak: 'break-word',
-                            flex: 1
-                        }}
-                    >
-                        {selectedNote.content || 'No content'}
-                    </Typography>
+                    <Box sx={{
+                        color: 'rgba(255,255,255,0.9)',
+                        fontSize: isMobile ? '0.8rem' : '0.85rem',
+                        lineHeight: 1.5,
+                        wordBreak: 'break-word',
+                        flex: 1,
+                        '& ul, & ol': {
+                            margin: '0.3em 0',
+                            paddingLeft: '1.2em',
+                            color: 'rgba(255,255,255,0.9)'
+                        },
+                        '& li': {
+                            margin: '0.1em 0'
+                        },
+                        '& code': {
+                            backgroundColor: 'rgba(255,255,255,0.1)',
+                            padding: '0.1em 0.3em',
+                            borderRadius: '3px',
+                            fontSize: '0.9em',
+                            color: 'rgba(255,255,255,0.95)'
+                        },
+                        '& pre': {
+                            backgroundColor: 'rgba(255,255,255,0.05)',
+                            padding: '0.5em',
+                            borderRadius: '4px',
+                            overflow: 'auto',
+                            fontSize: '0.85em'
+                        },
+                        '& pre code': {
+                            backgroundColor: 'transparent',
+                            padding: 0,
+                            borderRadius: 0,
+                            fontSize: 'inherit',
+                            color: 'inherit'
+                        },
+                        '& blockquote': {
+                            borderLeft: '3px solid rgba(255,255,255,0.3)',
+                            paddingLeft: '0.8em',
+                            margin: '0.3em 0',
+                            color: 'rgba(255,255,255,0.8)',
+                            fontStyle: 'italic'
+                        },
+                        '& a': {
+                            color: theme.palette.primary.main,
+                            textDecoration: 'underline'
+                        },
+                        '& strong': {
+                            fontWeight: 600,
+                            color: 'white'
+                        },
+                        '& em': {
+                            fontStyle: 'italic',
+                            color: 'rgba(255,255,255,0.9)'
+                        }
+                    }}>
+                        <ReactMarkdown>
+                            {selectedNote.content || 'No content'}
+                        </ReactMarkdown>
+                    </Box>
                 </Box>
             );
         }
