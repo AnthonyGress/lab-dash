@@ -791,7 +791,13 @@ export const AppContextProvider = ({ children }: Props) => {
 
                     const updatedPages = (config.pages || []).filter(page => page.id !== pageId);
 
+                    // Update the full config with the new pages array
+                    const updatedConfig = { ...config, pages: updatedPages };
+                    
                     await DashApi.saveConfig({ pages: updatedPages });
+                    
+                    // Update both config and pages state to ensure synchronization
+                    setConfig(updatedConfig);
                     setPages(updatedPages);
 
                     // If we're currently on the deleted page, switch to main dashboard
