@@ -73,14 +73,14 @@ export const SonarrWidget: React.FC<SonarrWidgetProps> = ({ id, config }) => {
 
         const scheduleNext = () => {
             // Check if there are any active downloads using ref to avoid dependency issues
-            const hasActiveDownloads = queueItemsRef.current.some((item: QueueItem) => 
-                item.state === 'downloading' || 
+            const hasActiveDownloads = queueItemsRef.current.some((item: QueueItem) =>
+                item.state === 'downloading' ||
                 item.state === 'active'
             );
 
             // Use 2 seconds if there are active downloads, otherwise 20 seconds
             const interval = hasActiveDownloads ? 2000 : TWENTY_SEC_IN_MS;
-            
+
             timeoutId = setTimeout(() => {
                 // Double-check config is still available before each fetch
                 if (id && config?.host && config?._hasApiKey) {

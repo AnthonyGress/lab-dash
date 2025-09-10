@@ -86,7 +86,7 @@ export const SearchBar = ({
     const handleKeyDown = (event: React.KeyboardEvent) => {
         if (event.key === 'Enter') {
             event.preventDefault();
-            
+
             // Filter options based on current search value
             const filteredOptions = autocompleteOptions.filter((option) =>
                 option.label.toLowerCase().includes(searchValue.toLowerCase())

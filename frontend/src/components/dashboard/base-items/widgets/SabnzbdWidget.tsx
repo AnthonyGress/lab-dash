@@ -262,15 +262,15 @@ export const SabnzbdWidget = (props: { config?: SabnzbdWidgetConfig; id?: string
 
         const scheduleNext = () => {
             // Check if there are any active downloads using ref to avoid dependency issues
-            const hasActiveDownloads = downloadsRef.current.some(download => 
-                download.state === 'downloading' || 
+            const hasActiveDownloads = downloadsRef.current.some(download =>
+                download.state === 'downloading' ||
                 download.state === 'active' ||
                 download.state === 'extracting'
             );
 
             // Use 2 seconds if there are active downloads, otherwise 20 seconds
             const interval = hasActiveDownloads ? 2000 : 20000;
-            
+
             timeoutId = setTimeout(() => {
                 Promise.all([fetchStats(), fetchDownloads()]).then(() => {
                     scheduleNext(); // Schedule the next fetch
@@ -281,7 +281,7 @@ export const SabnzbdWidget = (props: { config?: SabnzbdWidgetConfig; id?: string
         // Initial fetch
         fetchStats();
         fetchDownloads();
-        
+
         // Start the dynamic polling
         scheduleNext();
 

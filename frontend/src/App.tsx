@@ -49,7 +49,7 @@ export const App = () => {
         isLoggedIn,
         pages
     } = useAppContext();
-    
+
     const navigate = useNavigate();
 
     // Check if setup is complete based on the config
@@ -76,9 +76,9 @@ export const App = () => {
             if ((event.ctrlKey || event.metaKey) && (event.key >= '0' && event.key <= '9')) {
                 event.preventDefault();
                 event.stopPropagation(); // Prevent other listeners from interfering
-                
+
                 const keyNumber = parseInt(event.key, 10);
-                
+
                 if (keyNumber === 0) {
                     // Cmd+0 goes to Settings page
                     navigate('/settings');
@@ -88,7 +88,7 @@ export const App = () => {
                 } else {
                     // Cmd+2+ goes to custom pages (pages[0], pages[1], etc.)
                     const pageIndex = keyNumber - 2;
-                    
+
                     if (pages && pages.length > pageIndex) {
                         const targetPage = pages[pageIndex];
                         // Convert page name to URL-friendly format: lowercase, spaces to hyphens

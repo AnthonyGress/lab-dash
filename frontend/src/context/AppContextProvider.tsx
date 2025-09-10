@@ -793,9 +793,9 @@ export const AppContextProvider = ({ children }: Props) => {
 
                     // Update the full config with the new pages array
                     const updatedConfig = { ...config, pages: updatedPages };
-                    
+
                     await DashApi.saveConfig({ pages: updatedPages });
-                    
+
                     // Update both config and pages state to ensure synchronization
                     setConfig(updatedConfig);
                     setPages(updatedPages);

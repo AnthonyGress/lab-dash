@@ -3,8 +3,8 @@ import { StatusCodes } from 'http-status-codes';
 
 import { BACKEND_URL } from '../constants/constants';
 import { Config, DashboardItem, Icon, UploadImageResponse } from '../types';
-import { GroupItem } from '../types/group';
 import { type BulkIconResponse, type BulkWidgetResponse, type CacheClearResponse, type CacheStatsResponse } from '../types/bulk-loading';
+import { GroupItem } from '../types/group';
 
 interface SignupResponse {
   message: string;
@@ -191,7 +191,7 @@ export class DashApi {
                     if (item.icon?.path) {
                         iconPaths.add(item.icon.path);
                     }
-                    
+
                     // Handle group widget items (items inside groups)
                     if ((item.type === 'GROUP_WIDGET' || item.type === 'group-widget') && item.config?.items) {
                         item.config.items.forEach((groupItem: GroupItem) => {
@@ -200,12 +200,12 @@ export class DashApi {
                             }
                         });
                     }
-                    
+
                     // Handle app shortcuts that might have icons in their config
                     if (item.type === 'APP_SHORTCUT' && item.config?.icon) {
                         iconPaths.add(item.config.icon);
                     }
-                    
+
                     // Handle any other widget types that might have icons in their config
                     if (item.config?.icon) {
                         iconPaths.add(item.config.icon);
@@ -222,7 +222,7 @@ export class DashApi {
             }
 
             const response = await this.bulkLoadIcons(iconPathsArray);
-            
+
             // Log cache stats for debugging
             if (response.cacheStats) {
                 console.log('Icon cache stats:', response.cacheStats);
