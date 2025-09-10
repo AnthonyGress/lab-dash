@@ -1,6 +1,5 @@
 import { UseFormReturn } from 'react-hook-form';
 
-import { FormValues } from '../AddEditForm';
 import { AdGuardWidgetConfig } from './AdGuardWidgetConfig';
 import { DateTimeWidgetConfig } from './DateTimeWidgetConfig';
 import { DiskMonitorWidgetConfig } from './DiskMonitorWidgetConfig';
@@ -16,6 +15,7 @@ import { SonarrWidgetConfig } from './SonarrWidgetConfig';
 import { SystemMonitorWidgetConfig } from './SystemMonitorWidgetConfig';
 import { WeatherWidgetConfig } from './WeatherWidgetConfig';
 import { DashboardItem, ITEM_TYPE } from '../../../types';
+import { FormValues } from '../AddEditForm/types';
 
 interface WidgetConfigProps {
     formContext: UseFormReturn<FormValues>;

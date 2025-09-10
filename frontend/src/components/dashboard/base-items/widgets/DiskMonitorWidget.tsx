@@ -1,7 +1,6 @@
 import { Box, CardContent, Grid2 as Grid, Tooltip, Typography, useMediaQuery } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
-import { HiOutlineServer } from 'react-icons/hi';
-import { PiHardDrivesFill } from 'react-icons/pi';
+import { FaHdd } from 'react-icons/fa';
 
 import { DashApi } from '../../../../api/dash-api';
 import { DUAL_WIDGET_CONTAINER_HEIGHT } from '../../../../constants/widget-dimensions';
@@ -166,7 +165,7 @@ export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) 
                     <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
                         {showIcons && (
                             <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
-                                <PiHardDrivesFill size={16} color='white' />
+                                <FaHdd size={16} color='white' />
                             </Box>
                         )}
                         <Box sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -345,7 +344,7 @@ export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) 
                             gap: 0.5
                         }}
                     >
-                        <PiHardDrivesFill size={18} color='white' />
+                        <FaHdd size={18} color='white' />
                         <Typography
                             variant='h6'
                             sx={{

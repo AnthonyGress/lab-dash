@@ -5,7 +5,7 @@ import { CheckboxElement, SelectElement, TextFieldElement } from 'react-hook-for
 
 import { COLORS } from '../../../theme/styles';
 import { theme } from '../../../theme/theme';
-import { FormValues } from '../AddEditForm';
+import { FormValues } from '../AddEditForm/types';
 import { IconSearch } from '../IconSearch';
 
 const HEALTH_CHECK_TYPES = [

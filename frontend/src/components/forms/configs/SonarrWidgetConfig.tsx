@@ -1,7 +1,7 @@
 import { UseFormReturn } from 'react-hook-form';
 
-import { FormValues } from '../AddEditForm';
 import { QueueManagementWidgetConfig } from './QueueManagementWidgetConfig';
+import { FormValues } from '../AddEditForm/types';
 
 interface SonarrWidgetConfigProps {
     formContext: UseFormReturn<FormValues>;

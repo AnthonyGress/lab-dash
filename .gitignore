@@ -25,6 +25,7 @@ dist-ssr
 build
 backend/src/config/config.json
 backend/src/config/users.json
+backend/src/config/backups
 backend/src/public/uploads
 backend/public/uploads/*
 package-lock.json

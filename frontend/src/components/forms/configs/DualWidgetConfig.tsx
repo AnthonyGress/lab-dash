@@ -1,17 +1,17 @@
-import { Box, Grid2 as Grid, Tab, Tabs, TextField, Typography } from '@mui/material';
+import { Box, FormControlLabel, Grid2 as Grid, Radio, RadioGroup, Tab, Tabs, TextField, Typography } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { CheckboxElement, SelectElement, TextFieldElement } from 'react-hook-form-mui';
 
 import { DateTimeWidgetConfig } from './DateTimeWidgetConfig';
 import { DiskMonitorWidgetConfig } from './DiskMonitorWidgetConfig';
+import { WeatherWidgetConfig } from './WeatherWidgetConfig';
 import { DashApi } from '../../../api/dash-api';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { COLORS } from '../../../theme/styles';
 import { theme } from '../../../theme/theme';
-import { FormValues } from '../AddEditForm';
-import { WeatherWidgetConfig } from './WeatherWidgetConfig';
 import { ITEM_TYPE } from '../../../types';
+import { FormValues } from '../AddEditForm/types';
 
 const WIDGET_OPTIONS = [
     { id: ITEM_TYPE.DATE_TIME_WIDGET, label: 'Date & Time' },
@@ -1264,6 +1264,13 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
         const gauge2FieldName = getFieldName(position, 'gauge2');
         const gauge3FieldName = getFieldName(position, 'gauge3');
         const networkInterfaceFieldName = getFieldName(position, 'networkInterface');
+        const temperatureUnitFieldName = getFieldName(position, 'temperatureUnit');
+
+        // Watch the temperature unit directly from the form
+        const watchedTemperatureUnit = formContext.watch(temperatureUnitFieldName);
+        const [temperatureUnit, setTemperatureUnit] = useState<string>(
+            watchedTemperatureUnit || formContext.getValues(temperatureUnitFieldName) || 'fahrenheit'
+        );
 
         // State for network interfaces
         const [networkInterfaces, setNetworkInterfaces] = useState<Array<{id: string, label: string}>>([]);
@@ -1357,6 +1364,64 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
 
         return (
             <>
+                {/* Temperature Unit Radio Buttons */}
+                <Box sx={{ mb: 2, mt: 1 }}>
+                    <Typography
+                        variant='body2'
+                        sx={{
+                            color: 'white',
+                            mb: 1,
+                            ml: 1
+                        }}
+                    >
+                        Temperature Unit:
+                    </Typography>
+                    <RadioGroup
+                        name={temperatureUnitFieldName}
+                        value={temperatureUnit}
+                        onChange={(e) => {
+                            setTemperatureUnit(e.target.value);
+                            formContext.setValue(temperatureUnitFieldName, e.target.value);
+                        }}
+                        sx={{
+                            flexDirection: 'row',
+                            ml: 1,
+                            '& .MuiFormControlLabel-label': {
+                                color: 'white'
+                            }
+                        }}
+                    >
+                        <FormControlLabel
+                            value='fahrenheit'
+                            control={
+                                <Radio
+                                    sx={{
+                                        color: 'white',
+                                        '&.Mui-checked': {
+                                            color: theme.palette.primary.main
+                                        }
+                                    }}
+                                />
+                            }
+                            label='Fahrenheit (°F)'
+                        />
+                        <FormControlLabel
+                            value='celsius'
+                            control={
+                                <Radio
+                                    sx={{
+                                        color: 'white',
+                                        '&.Mui-checked': {
+                                            color: theme.palette.primary.main
+                                        }
+                                    }}
+                                />
+                            }
+                            label='Celsius (°C)'
+                        />
+                    </RadioGroup>
+                </Box>
+
                 <Box sx={{ mt: 2 }}>
                     <SelectElement
                         label='Left Gauge'
@@ -1555,48 +1620,59 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
 
         return (
             <Box sx={{ width: '100%' }}>
-                {/* Our own temperature unit selector */}
-                <Box sx={{ width: '100%', mb: 2 }}>
-                    <SelectElement
-                        label='Temperature Unit'
-                        name={getFieldName(position, 'temperatureUnit')}
-                        options={[
-                            { id: 'fahrenheit', label: 'Fahrenheit (°F)' },
-                            { id: 'celsius', label: 'Celsius (°C)' }
-                        ]}
-                        required
-                        fullWidth
+                {/* Our own temperature unit selector using radio buttons */}
+                <Box sx={{ mb: 2, mt: 1 }}>
+                    <Typography
+                        variant='body2'
                         sx={{
-                            '& .MuiOutlinedInput-root': {
-                                '& fieldset': {
-                                    borderColor: 'text.primary',
-                                },
-                                '.MuiSvgIcon-root ': {
-                                    fill: theme.palette.text.primary,
-                                },
-                                '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                                '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
-                            },
-                            width: '100%',
-                            minWidth: isMobile ? '50vw' : '20vw',
-                            '& .MuiMenuItem-root:hover': {
-                                backgroundColor: `${COLORS.LIGHT_GRAY_HOVER} !important`,
-                            },
-                            '& .MuiMenuItem-root.Mui-selected': {
-                                backgroundColor: `${theme.palette.primary.main} !important`,
-                                color: 'white',
-                            },
-                            '& .MuiMenuItem-root.Mui-selected:hover': {
-                                backgroundColor: `${theme.palette.primary.main} !important`,
-                                color: 'white',
-                            }
+                            color: 'white',
+                            mb: 1,
+                            ml: 1
                         }}
-                        slotProps={{
-                            inputLabel: { style: { color: theme.palette.text.primary } }
-                        }}
+                    >
+                        Temperature Unit:
+                    </Typography>
+                    <RadioGroup
+                        name={getFieldName(position, 'temperatureUnit')}
                         value={tempUnit}
                         onChange={handleTempUnitChange}
-                    />
+                        sx={{
+                            flexDirection: 'row',
+                            ml: 1,
+                            '& .MuiFormControlLabel-label': {
+                                color: 'white'
+                            }
+                        }}
+                    >
+                        <FormControlLabel
+                            value='fahrenheit'
+                            control={
+                                <Radio
+                                    sx={{
+                                        color: 'white',
+                                        '&.Mui-checked': {
+                                            color: theme.palette.primary.main
+                                        }
+                                    }}
+                                />
+                            }
+                            label='Fahrenheit (°F)'
+                        />
+                        <FormControlLabel
+                            value='celsius'
+                            control={
+                                <Radio
+                                    sx={{
+                                        color: 'white',
+                                        '&.Mui-checked': {
+                                            color: theme.palette.primary.main
+                                        }
+                                    }}
+                                />
+                            }
+                            label='Celsius (°C)'
+                        />
+                    </RadioGroup>
                 </Box>
 
                 {/* Pass only the location handling to WeatherWidgetConfig */}
@@ -2385,21 +2461,6 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
         case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
             return (
                 <Box sx={{ width: '100%' }}>
-                    <SelectElement
-                        label='Temperature Unit'
-                        name={getFieldName(position, 'temperatureUnit')}
-                        options={[
-                            { id: 'fahrenheit', label: 'Fahrenheit (°F)' },
-                            { id: 'celsius', label: 'Celsius (°C)' }
-                        ]}
-                        required
-                        fullWidth
-                        sx={selectStyling}
-                        slotProps={{
-                            inputLabel: { style: { color: theme.palette.text.primary } }
-                        }}
-                    />
-
                     {/* Use the custom component for system monitor fields */}
                     <SystemMonitorFields position={position} />
                 </Box>

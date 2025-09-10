@@ -29,7 +29,7 @@ export const CenteredModal = ({ open, handleClose, children, width, height, titl
             return '92vw';
         }
 
-        return '40vw';
+        return '50vw';
     };
 
     const style = {

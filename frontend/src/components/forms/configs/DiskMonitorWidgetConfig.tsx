@@ -8,7 +8,7 @@ import { DashApi } from '../../../api/dash-api';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { COLORS } from '../../../theme/styles';
 import { theme } from '../../../theme/theme';
-import { FormValues } from '../AddEditForm';
+import { FormValues } from '../AddEditForm/types';
 
 interface DiskInfo {
     fs: string;

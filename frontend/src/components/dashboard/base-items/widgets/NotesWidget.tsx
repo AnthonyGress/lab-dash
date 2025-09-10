@@ -25,12 +25,11 @@ interface NotesWidgetProps {
         showLabel?: boolean;
         displayName?: string;
     };
-    editMode?: boolean;
     onEdit?: () => void;
     onDelete?: () => void;
 }
 
-export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetProps) => {
+export const NotesWidget = ({ config, onEdit, onDelete }: NotesWidgetProps) => {
     const [notes, setNotes] = useState<Note[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -39,8 +38,8 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
     const [editTitle, setEditTitle] = useState('');
     const [editContent, setEditContent] = useState('');
     const [isNewNote, setIsNewNote] = useState(false);
-    const [scrollPosition, setScrollPosition] = useState(0);
     const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+    const { editMode } = useAppContext();
 
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const { isLoggedIn, isAdmin } = useAppContext();
@@ -445,7 +444,7 @@ export const NotesWidget = ({ config, editMode, onEdit, onDelete }: NotesWidgetP
                         fullWidth
                         multiline
                         variant='outlined'
-                        placeholder='Write your note here...'
+                        placeholder='Write your note here... Markdown is supported'
                         value={editContent}
                         onChange={(e) => setEditContent(e.target.value)}
                         sx={{

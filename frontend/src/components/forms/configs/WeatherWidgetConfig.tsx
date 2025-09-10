@@ -1,13 +1,11 @@
 import ClearIcon from '@mui/icons-material/Clear';
-import { Autocomplete, Grid2 as Grid, TextField, Typography } from '@mui/material';
+import { Autocomplete, Box, FormControlLabel, Grid2 as Grid, Radio, RadioGroup, TextField, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
-import { SelectElement } from 'react-hook-form-mui';
 
 import { useIsMobile } from '../../../hooks/useIsMobile';
-import { COLORS } from '../../../theme/styles';
 import { theme } from '../../../theme/theme';
-import { FormValues } from '../AddEditForm';
+import { FormValues } from '../AddEditForm/types';
 
 const TEMPERATURE_UNIT_OPTIONS = [
     { id: 'fahrenheit', label: 'Fahrenheit (°F)' },
@@ -31,6 +29,12 @@ export const WeatherWidgetConfig = ({ formContext }: WeatherWidgetConfigProps) =
     const [locationOptions, setLocationOptions] = useState<LocationOption[]>([]);
     const [selectedLocation, setSelectedLocation] = useState<LocationOption | null>(null);
     const [isSearching, setIsSearching] = useState(false);
+    
+    // Watch the temperature unit directly from the form
+    const watchedTemperatureUnit = formContext.watch('temperatureUnit');
+    const [temperatureUnit, setTemperatureUnit] = useState<string>(
+        watchedTemperatureUnit || formContext.getValues('temperatureUnit') || 'fahrenheit'
+    );
 
     // Initialize location state if it exists in form values
     useEffect(() => {
@@ -108,41 +112,51 @@ export const WeatherWidgetConfig = ({ formContext }: WeatherWidgetConfigProps) =
     return (
         <>
             <Grid>
-                <SelectElement
-                    label='Temperature Unit'
-                    name='temperatureUnit'
-                    options={TEMPERATURE_UNIT_OPTIONS}
-                    required
-                    fullWidth
-                    sx={{
-                        '& .MuiOutlinedInput-root': {
-                            '& fieldset': {
-                                borderColor: 'text.primary',
-                            },
-                            '.MuiSvgIcon-root ': {
-                                fill: theme.palette.text.primary,
-                            },
-                            '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                            '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
-                        },
-                        width: '100%',
-                        minWidth: isMobile ? '65vw' : '20vw',
-                        '& .MuiMenuItem-root:hover': {
-                            backgroundColor: `${COLORS.LIGHT_GRAY_HOVER} !important`,
-                        },
-                        '& .MuiMenuItem-root.Mui-selected': {
-                            backgroundColor: `${theme.palette.primary.main} !important`,
+                <Box sx={{ mb: 2, mt: 1 }}>
+                    <Typography
+                        variant='body2'
+                        sx={{
                             color: 'white',
-                        },
-                        '& .MuiMenuItem-root.Mui-selected:hover': {
-                            backgroundColor: `${theme.palette.primary.main} !important`,
-                            color: 'white',
-                        }
-                    }}
-                    slotProps={{
-                        inputLabel: { style: { color: theme.palette.text.primary } }
-                    }}
-                />
+                            mb: 1,
+                            ml: 1
+                        }}
+                    >
+                        Temperature Unit:
+                    </Typography>
+                    <RadioGroup
+                        name='temperatureUnit'
+                        value={temperatureUnit}
+                        onChange={(e) => {
+                            setTemperatureUnit(e.target.value);
+                            formContext.setValue('temperatureUnit', e.target.value);
+                        }}
+                        sx={{
+                            flexDirection: 'row',
+                            ml: 1,
+                            '& .MuiFormControlLabel-label': {
+                                color: 'white'
+                            }
+                        }}
+                    >
+                        {TEMPERATURE_UNIT_OPTIONS.map((option) => (
+                            <FormControlLabel
+                                key={option.id}
+                                value={option.id}
+                                control={
+                                    <Radio
+                                        sx={{
+                                            color: 'white',
+                                            '&.Mui-checked': {
+                                                color: theme.palette.primary.main
+                                            }
+                                        }}
+                                    />
+                                }
+                                label={option.label}
+                            />
+                        ))}
+                    </RadioGroup>
+                </Box>
             </Grid>
             <Grid>
                 <Autocomplete

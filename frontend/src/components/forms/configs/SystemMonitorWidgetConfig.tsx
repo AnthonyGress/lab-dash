@@ -1,4 +1,4 @@
-import { Grid2 as Grid, Typography } from '@mui/material';
+import { Box, FormControlLabel, Grid2 as Grid, Radio, RadioGroup, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { CheckboxElement, SelectElement } from 'react-hook-form-mui';
@@ -8,7 +8,7 @@ import { useIsMobile } from '../../../hooks/useIsMobile';
 import { COLORS } from '../../../theme/styles';
 import { theme } from '../../../theme/theme';
 import { ITEM_TYPE } from '../../../types';
-import { FormValues } from '../AddEditForm';
+import { FormValues } from '../AddEditForm/types';
 
 const TEMPERATURE_UNIT_OPTIONS = [
     { id: 'fahrenheit', label: 'Fahrenheit (°F)' },
@@ -30,6 +30,12 @@ interface SystemMonitorWidgetConfigProps {
 export const SystemMonitorWidgetConfig = ({ formContext }: SystemMonitorWidgetConfigProps) => {
     const isMobile = useIsMobile();
     const [networkInterfaces, setNetworkInterfaces] = useState<Array<{id: string, label: string}>>([]);
+
+    // Watch the temperature unit directly from the form
+    const watchedTemperatureUnit = formContext.watch('temperatureUnit');
+    const [temperatureUnit, setTemperatureUnit] = useState<string>(
+        watchedTemperatureUnit || formContext.getValues('temperatureUnit') || 'fahrenheit'
+    );
 
     const selectStyling = {
         '& .MuiOutlinedInput-root': {
@@ -117,17 +123,50 @@ export const SystemMonitorWidgetConfig = ({ formContext }: SystemMonitorWidgetCo
     return (
         <>
             <Grid>
-                <SelectElement
-                    label='Temperature Unit'
-                    name='temperatureUnit'
-                    options={TEMPERATURE_UNIT_OPTIONS}
-                    required
-                    fullWidth
-                    sx={selectStyling}
-                    slotProps={{
-                        inputLabel: { style: { color: theme.palette.text.primary } }
-                    }}
-                />
+                <Box sx={{ mb: 2, mt: 1 }}>
+                    <Typography
+                        variant='body2'
+                        sx={{
+                            mb: 1,
+                            ml: 1
+                        }}
+                    >
+                        Temperature Unit:
+                    </Typography>
+                    <RadioGroup
+                        name='temperatureUnit'
+                        value={temperatureUnit}
+                        onChange={(e) => {
+                            setTemperatureUnit(e.target.value);
+                            formContext.setValue('temperatureUnit', e.target.value);
+                        }}
+                        sx={{
+                            flexDirection: 'row',
+                            ml: 1,
+                            '& .MuiFormControlLabel-label': {
+                                color: 'white'
+                            }
+                        }}
+                    >
+                        {TEMPERATURE_UNIT_OPTIONS.map((option) => (
+                            <FormControlLabel
+                                key={option.id}
+                                value={option.id}
+                                control={
+                                    <Radio
+                                        sx={{
+                                            color: 'white',
+                                            '&.Mui-checked': {
+                                                color: theme.palette.primary.main
+                                            }
+                                        }}
+                                    />
+                                }
+                                label={option.label}
+                            />
+                        ))}
+                    </RadioGroup>
+                </Box>
             </Grid>
             <Grid>
                 <SelectElement

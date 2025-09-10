@@ -20,7 +20,7 @@ import shortid from 'shortid';
 import { SortableSabnzbd } from './sortable-items/widgets/SortableSabnzbd';
 import { useAppContext } from '../../context/useAppContext';
 import { DashboardItem, DOWNLOAD_CLIENT_TYPE, ITEM_TYPE, TORRENT_CLIENT_TYPE } from '../../types';
-import { AddEditForm } from '../forms/AddEditForm';
+import { AddEditForm } from '../forms/AddEditForm/AddEditForm';
 import { CenteredModal } from '../modals/CenteredModal';
 import { ConfirmationOptions, PopupManager } from '../modals/PopupManager';
 import { BlankAppShortcut } from './base-items/apps/BlankAppShortcut';

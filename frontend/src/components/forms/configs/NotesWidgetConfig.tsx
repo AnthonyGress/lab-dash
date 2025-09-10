@@ -2,7 +2,7 @@ import { Grid2 as Grid } from '@mui/material';
 import { UseFormReturn } from 'react-hook-form';
 import { CheckboxElement, TextFieldElement } from 'react-hook-form-mui';
 
-import { FormValues } from '../AddEditForm';
+import { FormValues } from '../AddEditForm/types';
 
 interface NotesWidgetConfigProps {
     formContext: UseFormReturn<FormValues>;
