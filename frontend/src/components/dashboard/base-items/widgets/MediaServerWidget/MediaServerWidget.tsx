@@ -1,6 +1,6 @@
 import { ArrowDownward, Movie, MusicNote, Pause, Person, PlayArrow, Schedule, Tv } from '@mui/icons-material';
 import { Box, CardContent, CircularProgress, Typography, useMediaQuery } from '@mui/material';
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { DashApi } from '../../../../../api/dash-api';
 import { BACKEND_URL, FIFTEEN_MIN_IN_MS } from '../../../../../constants/constants';

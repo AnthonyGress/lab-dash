@@ -193,7 +193,7 @@ jellyfinRoute.get('/library-stats', async (req: Request, res: Response) => {
         const makeLibraryRequest = (itemType: string): Promise<any[]> => {
             return new Promise((resolve, reject) => {
                 const libraryUrl = `${baseUrl}/Items?IncludeItemTypes=${itemType}&Recursive=true&Fields=BasicSyncInfo`;
-                
+
                 const options = {
                     headers: {
                         'Authorization': `MediaBrowser Token="${apiKey}"`,

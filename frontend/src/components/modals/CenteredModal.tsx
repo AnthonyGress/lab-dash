@@ -1,6 +1,6 @@
 import CloseIcon from '@mui/icons-material/Close';
-import { AppBar, Backdrop, Box, IconButton, Modal, styled, Toolbar, Tooltip, Typography, useMediaQuery } from '@mui/material';
-import { ReactNode, useEffect } from 'react';
+import { AppBar, Box, IconButton, Modal, Toolbar, Tooltip, Typography, useMediaQuery } from '@mui/material';
+import { ReactNode } from 'react';
 
 import { useWindowDimensions } from '../../hooks/useWindowDimensions';
 import { styles } from '../../theme/styles';
@@ -13,9 +13,10 @@ type Props = {
     children: ReactNode;
     width?: string
     height?: string
+    fullWidthContent?: boolean
 }
 
-export const CenteredModal = ({ open, handleClose, children, width, height, title }: Props) => {
+export const CenteredModal = ({ open, handleClose, children, width, height, title, fullWidthContent = false }: Props) => {
     const windowDimensions = useWindowDimensions();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -38,10 +39,11 @@ export const CenteredModal = ({ open, handleClose, children, width, height, titl
         left: '50%',
         transform: 'translate(-50%, -50%)',
         width: setWidth(),
+        height: height || 'auto',
         bgcolor: 'background.paper',
         borderRadius: '8px',
         boxShadow: 24,
-        maxHeight: '90vh', // Limit the maximum height to 90% of viewport height
+        maxHeight: height ? height : '90vh', // Use provided height or default to 90vh
         display: 'flex',
         flexDirection: 'column'
     };
@@ -93,11 +95,11 @@ export const CenteredModal = ({ open, handleClose, children, width, height, titl
                         flex: 1, // Take remaining space
                         overflowY: 'auto', // Enable scrolling
                         overflowX: 'hidden', // Prevent horizontal scrolling
-                        py: 4,
+                        py: 3,
                         px: 2,
                         display: 'flex',
                         flexDirection: 'column',
-                        alignItems: 'center',
+                        alignItems: fullWidthContent ? 'stretch' : 'center',
                         width: '100%',
                         '&::-webkit-scrollbar': {
                             width: '8px',
