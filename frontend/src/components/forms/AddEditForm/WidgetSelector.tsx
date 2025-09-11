@@ -1,4 +1,4 @@
-import { Box, Grid2 as Grid, Paper, Typography } from '@mui/material';
+import { Box, Grid2 as Grid, Typography } from '@mui/material';
 import { Dispatch, SetStateAction } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 
@@ -28,7 +28,7 @@ export const WidgetSelector = ({ formContext, setCurrentStep }: Props) => {
                             key={option.id}
                             size={{ xs: 6, sm: 6, md: 3 }}
                         >
-                            <Paper
+                            <Box
                                 onClick={() => handleWidgetTypeSelect(option.id)}
                                 sx={{
                                     py: 2.5,
@@ -44,10 +44,14 @@ export const WidgetSelector = ({ formContext, setCurrentStep }: Props) => {
                                     border: `1px solid ${COLORS.LIGHT_GRAY_TRANSPARENT}`,
                                     boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                                     transition: 'all 0.2s ease',
-                                    '&:hover': {
-                                        backgroundColor: COLORS.LIGHT_GRAY_HOVER,
-                                        boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
-                                    }
+                                    // Hover effects for mouse users
+                                    '@media (pointer: fine)': {
+                                        '&:hover': {
+                                            backgroundColor: COLORS.LIGHT_GRAY_HOVER,
+                                            boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
+                                        },
+                                    },
+
                                 }}
                             >
                                 <IconComponent
@@ -85,7 +89,7 @@ export const WidgetSelector = ({ formContext, setCurrentStep }: Props) => {
                                         {option.description}
                                     </Typography>
                                 </Box>
-                            </Paper>
+                            </Box>
                         </Grid>
                     );
                 })}
