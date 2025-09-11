@@ -1,10 +1,15 @@
 import { FormValues } from './types';
 import { DashApi } from '../../../api/dash-api';
-import { DOWNLOAD_CLIENT_TYPE, ITEM_TYPE } from '../../../types';
+import { DashboardItem, DOWNLOAD_CLIENT_TYPE, ITEM_TYPE } from '../../../types';
 import { isEncrypted } from '../../../utils/utils';
 
 // Helper function to create widget configuration based on widget type
-export const createWidgetConfig = async (widgetType: string, data: FormValues): Promise<any> => {
+export const createWidgetConfig = async (
+    widgetType: string, 
+    data: FormValues, 
+    existingItem?: DashboardItem | null,
+    formContext?: any
+): Promise<any> => {
     if (widgetType === ITEM_TYPE.WEATHER_WIDGET) {
         // Get the location data and ensure it's properly structured
         const location = data.location || null;
@@ -450,8 +455,8 @@ export const createWidgetConfig = async (widgetType: string, data: FormValues): 
                 showLabel: data.bottom_showLabel
             };
 
-            const topConfig: any = await createWidgetConfig(data.topWidgetType || '', topWidgetData);
-            const bottomConfig: any = await createWidgetConfig(data.bottomWidgetType || '', bottomWidgetData);
+            const topConfig: any = await createWidgetConfig(data.topWidgetType || '', topWidgetData, existingItem, formContext);
+            const bottomConfig: any = await createWidgetConfig(data.bottomWidgetType || '', bottomWidgetData, existingItem, formContext);
 
             return {
                 topWidget: {

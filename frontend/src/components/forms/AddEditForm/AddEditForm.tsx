@@ -376,22 +376,22 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                 }
             } else if (data.widgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
                 // Disk monitor widget configuration
-                config = await createWidgetConfig(ITEM_TYPE.DISK_MONITOR_WIDGET, data);
+                config = await createWidgetConfig(ITEM_TYPE.DISK_MONITOR_WIDGET, data, existingItem, formContext);
             } else if (data.widgetType === ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET) {
                 // Media request widget configuration
-                config = await createWidgetConfig(ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET, data);
+                config = await createWidgetConfig(ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET, data, existingItem, formContext);
             } else if (data.widgetType === ITEM_TYPE.NOTES_WIDGET) {
                 // Notes widget configuration
-                config = await createWidgetConfig(ITEM_TYPE.NOTES_WIDGET, data);
+                config = await createWidgetConfig(ITEM_TYPE.NOTES_WIDGET, data, existingItem, formContext);
             } else if (data.widgetType === ITEM_TYPE.SONARR_WIDGET) {
                 // Sonarr widget configuration
-                config = await createWidgetConfig(ITEM_TYPE.SONARR_WIDGET, data);
+                config = await createWidgetConfig(ITEM_TYPE.SONARR_WIDGET, data, existingItem, formContext);
             } else if (data.widgetType === ITEM_TYPE.RADARR_WIDGET) {
                 // Radarr widget configuration
-                config = await createWidgetConfig(ITEM_TYPE.RADARR_WIDGET, data);
+                config = await createWidgetConfig(ITEM_TYPE.RADARR_WIDGET, data, existingItem, formContext);
             } else if (data.widgetType === ITEM_TYPE.GROUP_WIDGET) {
                 // Group widget configuration
-                config = await createWidgetConfig(ITEM_TYPE.GROUP_WIDGET, data);
+                config = await createWidgetConfig(ITEM_TYPE.GROUP_WIDGET, data, existingItem, formContext);
             } else if (data.widgetType === ITEM_TYPE.DUAL_WIDGET) {
                 // Check if DualWidgetConfig component has already built the config
                 const existingConfig = (formContext as any).getValues('config');
@@ -480,8 +480,8 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                         showLabel: data.bottom_showLabel
                     };
 
-                    const topConfig: any = await createWidgetConfig(data.topWidgetType || '', topWidgetData);
-                    const bottomConfig: any = await createWidgetConfig(data.bottomWidgetType || '', bottomWidgetData);
+                    const topConfig: any = await createWidgetConfig(data.topWidgetType || '', topWidgetData, existingItem, formContext);
+                    const bottomConfig: any = await createWidgetConfig(data.bottomWidgetType || '', bottomWidgetData, existingItem, formContext);
 
                     config = {
                         topWidget: {
