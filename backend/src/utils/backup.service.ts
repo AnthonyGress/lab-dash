@@ -82,7 +82,7 @@ export class BackupService {
         try {
             const metadata = await this.loadBackupMetadata();
             const currentTime = Date.now();
-            
+
             // If no previous backup or it's been more than a week, perform backup
             return !metadata.lastBackupTime || (currentTime >= metadata.nextBackupTime);
         } catch {
@@ -181,7 +181,7 @@ export class BackupService {
             }
         }, 60 * 60 * 1000); // Check every hour
 
-        console.log('Backup schedule started - checking every hour for weekly backup needs');
+        console.log('Backup schedule started');
     }
 
     /**

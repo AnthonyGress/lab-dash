@@ -152,3 +152,116 @@ jellyfinRoute.get('/sessions', async (req: Request, res: Response) => {
         });
     }
 });
+
+/**
+ * Get Jellyfin library statistics
+ */
+jellyfinRoute.get('/library-stats', async (req: Request, res: Response) => {
+    try {
+        const itemId = validateItemId(req);
+        const connectionInfo = getItemConnectionInfo(itemId);
+
+        if (!connectionInfo) {
+            res.status(400).json({
+                tvShows: 0,
+                movies: 0,
+                error: 'Widget configuration not found'
+            });
+            return;
+        }
+
+        const { host, port, ssl, apiKey } = connectionInfo;
+
+        if (!host || !apiKey) {
+            res.status(400).json({
+                tvShows: 0,
+                movies: 0,
+                error: 'Missing required configuration: host and apiKey'
+            });
+            return;
+        }
+
+        console.log('Jellyfin library stats request');
+
+        const protocol = ssl ? 'https' : 'http';
+        const actualPort = port || '8096';
+        const baseUrl = `${protocol}://${host}:${actualPort}`;
+
+        const httpModule = ssl ? https : http;
+
+        // Get library items
+        const makeLibraryRequest = (itemType: string): Promise<any[]> => {
+            return new Promise((resolve, reject) => {
+                const libraryUrl = `${baseUrl}/Items?IncludeItemTypes=${itemType}&Recursive=true&Fields=BasicSyncInfo`;
+                
+                const options = {
+                    headers: {
+                        'Authorization': `MediaBrowser Token="${apiKey}"`,
+                        'X-MediaBrowser-Token': apiKey,
+                        'Accept': 'application/json',
+                        'User-Agent': 'Lab-Dash/1.0'
+                    },
+                    timeout: 15000,
+                    rejectUnauthorized: false
+                };
+
+                const request = httpModule.get(libraryUrl, options, (response) => {
+                    let data = '';
+
+                    response.on('data', (chunk) => {
+                        data += chunk;
+                    });
+
+                    response.on('end', () => {
+                        try {
+                            if (response.statusCode !== 200) {
+                                reject(new Error(`HTTP ${response.statusCode}: ${response.statusMessage}`));
+                                return;
+                            }
+
+                            const result = JSON.parse(data);
+                            resolve(result.Items || []);
+                        } catch (parseError) {
+                            reject(new Error('Failed to parse Jellyfin response'));
+                        }
+                    });
+                });
+
+                request.on('error', (error) => {
+                    reject(new Error(`Request failed: ${error.message}`));
+                });
+
+                request.on('timeout', () => {
+                    reject(new Error('Request timeout'));
+                });
+
+                request.setTimeout(15000);
+            });
+        };
+
+        // Fetch both TV shows and movies
+        const [tvShows, movies] = await Promise.all([
+            makeLibraryRequest('Series'),
+            makeLibraryRequest('Movie')
+        ]);
+
+        res.json({
+            tvShows: tvShows.length,
+            movies: movies.length
+        });
+
+    } catch (error) {
+        console.error('Jellyfin library stats error:', error);
+
+        let errorMessage = 'Unknown error occurred';
+        if (error instanceof Error) {
+            errorMessage = error.message;
+        }
+
+        res.status(500).json({
+            tvShows: 0,
+            movies: 0,
+            error: errorMessage
+        });
+    }
+});

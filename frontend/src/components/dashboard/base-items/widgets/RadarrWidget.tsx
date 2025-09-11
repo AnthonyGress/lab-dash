@@ -22,6 +22,15 @@ export const RadarrWidget: React.FC<RadarrWidgetProps> = ({ id, config }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [queueItems, setQueueItems] = useState<QueueItem[]>([]);
     const [error, setError] = useState<string | null>(null);
+    const [statistics, setStatistics] = useState<{
+        totalItems: number;
+        monitoredItems: number;
+        isLoading: boolean;
+    }>({
+        totalItems: 0,
+        monitoredItems: 0,
+        isLoading: true
+    });
 
     const fetchQueueData = useCallback(async () => {
         // Check for required configuration and valid ID
@@ -50,6 +59,30 @@ export const RadarrWidget: React.FC<RadarrWidgetProps> = ({ id, config }) => {
             setQueueItems([]);
         } finally {
             setIsLoading(false);
+        }
+    }, [id, config?.host, config?._hasApiKey]);
+
+    const fetchStatistics = useCallback(async () => {
+        if (!id || !config?.host || !config?._hasApiKey) {
+            setStatistics(prev => ({ ...prev, isLoading: false }));
+            return;
+        }
+
+        try {
+            setStatistics(prev => ({ ...prev, isLoading: true }));
+            const response = await DashApi.getRadarrMovies(id);
+            setStatistics({
+                totalItems: response.totalMovies || 0,
+                monitoredItems: response.monitoredMovies || 0,
+                isLoading: false
+            });
+        } catch (err) {
+            console.error('Failed to fetch Radarr movies statistics:', err);
+            setStatistics({
+                totalItems: 0,
+                monitoredItems: 0,
+                isLoading: false
+            });
         }
     }, [id, config?.host, config?._hasApiKey]);
 
@@ -94,6 +127,7 @@ export const RadarrWidget: React.FC<RadarrWidgetProps> = ({ id, config }) => {
         // Add a small delay to ensure config is fully loaded after duplication
         const initialFetchTimeout = setTimeout(() => {
             fetchQueueData();
+            fetchStatistics();
             // Start the dynamic polling after initial fetch
             scheduleNext();
         }, 100);
@@ -104,7 +138,7 @@ export const RadarrWidget: React.FC<RadarrWidgetProps> = ({ id, config }) => {
                 clearTimeout(timeoutId);
             }
         };
-    }, [id, config?.host, config?._hasApiKey, fetchQueueData]);
+    }, [id, config?.host, config?._hasApiKey, fetchQueueData, fetchStatistics]);
 
     const handleRemoveItem = useCallback(async (itemId: string, removeFromClient: boolean, blocklist: boolean): Promise<boolean> => {
         try {
@@ -126,6 +160,7 @@ export const RadarrWidget: React.FC<RadarrWidgetProps> = ({ id, config }) => {
             showLabel={config?.showLabel !== false}
             onRemoveItem={handleRemoveItem}
             error={error}
+            statistics={statistics}
             connectionDetails={config?.host ? {
                 host: config.host,
                 port: config.port?.toString() || '7878',

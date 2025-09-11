@@ -51,12 +51,11 @@ app.use(errorHandler);
 // Start Server
 app.listen(PORT, '0.0.0.0', async () => {
     console.log(`Server running on port ${PORT}, accessible via LAN`);
-    
+
     // Initialize backup service
     try {
         const backupService = BackupService.getInstance();
         await backupService.initialize();
-        console.log('Backup service initialized');
     } catch (error) {
         console.error('Failed to initialize backup service:', error);
     }

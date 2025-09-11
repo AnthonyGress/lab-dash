@@ -285,6 +285,49 @@ sonarrRoute.get('/status', async (req: Request, res: Response) => {
     }
 });
 
+// Get Sonarr series for statistics
+sonarrRoute.get('/series', async (req: Request, res: Response) => {
+    console.log('Sonarr series request');
+    try {
+        const baseUrl = getBaseUrl(req);
+        const apiKey = getApiKey(req);
+
+        if (!apiKey) {
+            res.status(400).json({
+                success: false,
+                error: 'API key is required or could not be decrypted'
+            });
+            return;
+        }
+
+        const response = await axios.get(`${baseUrl}/api/v3/series`, {
+            headers: {
+                'X-Api-Key': apiKey
+            },
+            timeout: 10000,
+            httpsAgent: httpsAgent
+        });
+
+        const series = response.data || [];
+        const monitoredSeries = series.filter((s: any) => s.monitored);
+
+        res.json({
+            success: true,
+            data: {
+                totalSeries: series.length,
+                monitoredSeries: monitoredSeries.length
+            }
+        });
+
+    } catch (error: any) {
+        console.error('Sonarr series error:', error.message);
+        res.status(error.response?.status || 500).json({
+            success: false,
+            error: error.response?.data?.message || error.message || 'Failed to get Sonarr series'
+        });
+    }
+});
+
 // Utility functions
 function getStateFromStatus(status: string, trackedDownloadStatus: string, trackedDownloadState: string): string {
     // Map Sonarr statuses to common download states

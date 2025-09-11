@@ -223,11 +223,6 @@ export class DashApi {
 
             const response = await this.bulkLoadIcons(iconPathsArray);
 
-            // Log cache stats for debugging
-            if (response.cacheStats) {
-                console.log('Icon cache stats:', response.cacheStats);
-            }
-
             return response.icons || {};
         } catch (error) {
             console.error('Error fetching icons in bulk:', error);
@@ -399,6 +394,19 @@ export class DashApi {
         }
     }
 
+    public static async getSonarrSeries(itemId: string): Promise<any> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/sonarr/series`, {
+                params: { itemId },
+                timeout: 10000
+            });
+            return res.data.data || [];
+        } catch (error) {
+            console.error('Error fetching Sonarr series:', error);
+            throw error;
+        }
+    }
+
     // Radarr API methods
     public static async getRadarrQueue(itemId: string): Promise<any> {
         try {
@@ -439,6 +447,19 @@ export class DashApi {
             return res.data.data || {};
         } catch (error) {
             console.error('Error fetching Radarr status:', error);
+            throw error;
+        }
+    }
+
+    public static async getRadarrMovies(itemId: string): Promise<any> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/radarr/movies`, {
+                params: { itemId },
+                timeout: 10000
+            });
+            return res.data.data || [];
+        } catch (error) {
+            console.error('Error fetching Radarr movies:', error);
             throw error;
         }
     }
@@ -2028,6 +2049,21 @@ export class DashApi {
             return res.data;
         } catch (error: any) {
             throw new Error(error.response?.data?.error || 'Failed to fetch Jellyfin sessions');
+        }
+    }
+
+    static async getJellyfinLibraryStats(itemId: string) {
+        try {
+            const res = await axios.get(
+                `${BACKEND_URL}/api/jellyfin/library-stats`,
+                {
+                    params: { itemId },
+                    withCredentials: true
+                }
+            );
+            return res.data;
+        } catch (error: any) {
+            throw new Error(error.response?.data?.error || 'Failed to fetch Jellyfin library stats');
         }
     }
 

@@ -29,7 +29,7 @@ export const WeatherWidgetConfig = ({ formContext }: WeatherWidgetConfigProps) =
     const [locationOptions, setLocationOptions] = useState<LocationOption[]>([]);
     const [selectedLocation, setSelectedLocation] = useState<LocationOption | null>(null);
     const [isSearching, setIsSearching] = useState(false);
-    
+
     // Watch the temperature unit directly from the form
     const watchedTemperatureUnit = formContext.watch('temperatureUnit');
     const [temperatureUnit, setTemperatureUnit] = useState<string>(
