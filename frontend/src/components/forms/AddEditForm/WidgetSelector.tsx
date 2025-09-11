@@ -31,8 +31,9 @@ export const WidgetSelector = ({ formContext, setCurrentStep }: Props) => {
                             <Paper
                                 onClick={() => handleWidgetTypeSelect(option.id)}
                                 sx={{
-                                    p: 2.5,
-                                    height: '160px',
+                                    py: 2.5,
+                                    px: .25,
+                                    height: { xs: '180px', sm: '160px' },
                                     display: 'flex',
                                     flexDirection: 'column',
                                     alignItems: 'center',
@@ -75,7 +76,7 @@ export const WidgetSelector = ({ formContext, setCurrentStep }: Props) => {
                                             lineHeight: 1.1,
                                             px: 0.5,
                                             display: '-webkit-box',
-                                            WebkitLineClamp: 3,
+                                            WebkitLineClamp: { xs: 4, sm: 3 },
                                             WebkitBoxOrient: 'vertical',
                                             overflow: 'hidden',
                                             textOverflow: 'ellipsis'

@@ -1,6 +1,6 @@
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import { Box, Button, Grid2 as Grid, Paper, Typography, useMediaQuery } from '@mui/material';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { CheckboxElement, FormContainer, SelectElement, TextFieldElement } from 'react-hook-form-mui';
 import { useNavigate } from 'react-router-dom';
@@ -87,6 +87,35 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
 
     const handleCustomIconSelect = (file: File | null) => {
         setCustomIconFile(file);
+    };
+
+    // Helper function to scroll to top of form
+    const scrollToTop = () => {
+        // Use a small delay to ensure the step has rendered
+        setTimeout(() => {
+            // Find the scrollable div with MuiBox-root css-i0qe32 classes
+            const scrollableDiv = document.querySelector('.MuiBox-root.css-i0qe32');
+            if (scrollableDiv && scrollableDiv.scrollTo) {
+                scrollableDiv.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+                // Fallback: try to find any scrollable element in the modal
+                const modalContent = document.querySelector('[role="dialog"] [style*="overflow"]');
+                if (modalContent && modalContent.scrollTo) {
+                    modalContent.scrollTo({ top: 0, behavior: 'smooth' });
+                } else {
+                    // Last fallback to window scroll
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            }
+        }, 100);
+    };
+
+    // Enhanced step change function
+    const handleStepChange = (newStep: React.SetStateAction<'select' | 'widget-select' | 'configure'>) => {
+        // Handle both direct values and function updates
+        const resolvedStep = typeof newStep === 'function' ? newStep(currentStep) : newStep;
+        setCurrentStep(resolvedStep);
+        scrollToTop();
     };
 
     const handleSubmit = async (data: FormValues) => {
@@ -644,7 +673,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                         <Grid container spacing={2} sx={styles.vcenter}>
                             {currentStep === 'select' && (
                                 <Grid>
-                                    <ItemTypeSelector formContext={formContext} setCurrentStep={setCurrentStep}/>
+                                    <ItemTypeSelector formContext={formContext} setCurrentStep={handleStepChange}/>
                                 </Grid>
                             )}
 
@@ -661,7 +690,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                     }}>
                                         <Button
                                             variant='outlined'
-                                            onClick={() => setCurrentStep('select')}
+                                            onClick={() => handleStepChange('select')}
                                             sx={{
                                                 color: 'text.primary',
                                                 borderColor: 'text.primary',
@@ -688,7 +717,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                     </Grid>
 
                                     <Grid>
-                                        <WidgetSelector formContext={formContext} setCurrentStep={setCurrentStep}/>
+                                        <WidgetSelector formContext={formContext} setCurrentStep={handleStepChange}/>
                                     </Grid>
                                 </>
                             )}
@@ -708,9 +737,9 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                             variant='outlined'
                                             onClick={() => {
                                                 if (selectedItemType === 'widget') {
-                                                    setCurrentStep('widget-select');
+                                                    handleStepChange('widget-select');
                                                 } else {
-                                                    setCurrentStep('select');
+                                                    handleStepChange('select');
                                                 }
                                             }}
                                             sx={{

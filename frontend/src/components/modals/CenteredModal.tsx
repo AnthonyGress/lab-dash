@@ -52,8 +52,9 @@ export const CenteredModal = ({ open, handleClose, children, width, height, titl
         <Modal
             open={open}
             aria-labelledby='modal'
-            disableEnforceFocus
-            disableAutoFocus
+            disableEnforceFocus={true}
+            disableAutoFocus={true}
+            disableRestoreFocus={true}
             // keepMounted
             disableScrollLock={false}
         >
