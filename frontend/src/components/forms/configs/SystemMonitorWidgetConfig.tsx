@@ -33,9 +33,26 @@ export const SystemMonitorWidgetConfig = ({ formContext }: SystemMonitorWidgetCo
 
     // Watch the temperature unit directly from the form
     const watchedTemperatureUnit = formContext.watch('temperatureUnit');
-    const [temperatureUnit, setTemperatureUnit] = useState<string>(
-        watchedTemperatureUnit || formContext.getValues('temperatureUnit') || 'fahrenheit'
-    );
+    const [temperatureUnit, setTemperatureUnit] = useState<string>(() => {
+        const currentValue = formContext.getValues('temperatureUnit');
+        return typeof currentValue === 'string' ? currentValue : 'fahrenheit';
+    });
+
+    // Sync local state with form value when it changes
+    useEffect(() => {
+        if (typeof watchedTemperatureUnit === 'string') {
+            setTemperatureUnit(watchedTemperatureUnit);
+        }
+    }, [watchedTemperatureUnit]);
+
+    // Initialize temperature unit with default value if not set
+    useEffect(() => {
+        const currentValue = formContext.getValues('temperatureUnit');
+        if (!currentValue || typeof currentValue !== 'string') {
+            formContext.setValue('temperatureUnit', 'fahrenheit');
+            setTemperatureUnit('fahrenheit');
+        }
+    }, [formContext]);
 
     const selectStyling = {
         '& .MuiOutlinedInput-root': {

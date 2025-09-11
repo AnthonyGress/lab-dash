@@ -1268,9 +1268,17 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
 
         // Watch the temperature unit directly from the form
         const watchedTemperatureUnit = formContext.watch(temperatureUnitFieldName);
-        const [temperatureUnit, setTemperatureUnit] = useState<string>(
-            watchedTemperatureUnit || formContext.getValues(temperatureUnitFieldName) || 'fahrenheit'
-        );
+        const [temperatureUnit, setTemperatureUnit] = useState<string>(() => {
+            const currentValue = formContext.getValues(temperatureUnitFieldName);
+            return typeof currentValue === 'string' ? currentValue : 'fahrenheit';
+        });
+
+        // Sync local state with form value when it changes
+        useEffect(() => {
+            if (typeof watchedTemperatureUnit === 'string') {
+                setTemperatureUnit(watchedTemperatureUnit);
+            }
+        }, [watchedTemperatureUnit]);
 
         // State for network interfaces
         const [networkInterfaces, setNetworkInterfaces] = useState<Array<{id: string, label: string}>>([]);
