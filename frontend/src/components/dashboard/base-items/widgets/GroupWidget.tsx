@@ -659,7 +659,7 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                             gridTemplateColumns: layout === '2x3'
                                 ? { xs: 'repeat(2, minmax(110px, 180px))', sm: 'repeat(2, minmax(90px, 160px))' }
                                 : layout === '4x2'
-                                    ? { xs: 'repeat(4, minmax(70px, 110px))', sm: 'repeat(4, minmax(75px, 140px))', md: 'repeat(4, 1fr)', lg: 'repeat(4, 1fr)' }
+                                    ? { xs: 'repeat(4, minmax(70px, 110px))', sm: 'repeat(4, minmax(65px, 120px))', md: 'repeat(4, 1fr)', lg: 'repeat(4, 1fr)' }
                                     : { xs: 'repeat(3, minmax(95px, 160px))', sm: 'repeat(3, minmax(85px, 150px))' },
                             gridTemplateRows: layout === '2x3' ? 'repeat(3, auto)' : layout === '4x2' ? 'repeat(2, auto)' : 'repeat(1, auto)',
                             rowGap: layout === '4x2' ? { xs: 3, sm: 4 } : { xs: 4, sm: 4 },

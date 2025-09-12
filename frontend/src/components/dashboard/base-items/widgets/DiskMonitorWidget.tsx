@@ -38,7 +38,7 @@ export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) 
     const [diskData, setDiskData] = useState<DiskInfo[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
     // Get config options with defaults
     const selectedDisks = config?.selectedDisks || [];
