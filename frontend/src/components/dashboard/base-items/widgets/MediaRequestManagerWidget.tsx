@@ -15,16 +15,9 @@ import {
     Chip,
     CircularProgress,
     ClickAwayListener,
-    Divider,
     FormControlLabel,
     IconButton,
     InputAdornment,
-    List,
-    ListItem,
-    ListItemAvatar,
-    ListItemText,
-    Paper,
-    Popper,
     TextField,
     Tooltip,
     Typography,
@@ -362,7 +355,9 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
         case 1: return 'warning'; // Pending
         case 2: return 'success'; // Approved
         case 3: return 'error'; // Declined
-        case 4: return 'success'; // Available
+        case 4: return 'success'; // Partially Available
+        case 5: return 'success'; // Available
+        case 6: return 'error'; // Failed
         default: return 'default';
         }
     };
@@ -372,8 +367,10 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
         case 1: return { backgroundColor: 'warning.dark', color: 'warning.contrastText' }; // Pending
         case 2: return { backgroundColor: 'success.dark', color: 'success.contrastText' }; // Approved
         case 3: return { backgroundColor: 'error.dark', color: 'error.contrastText' }; // Declined
-        case 4: return { backgroundColor: 'success.dark', color: 'success.contrastText' }; // Available
-        default: return {};
+        case 4: return { backgroundColor: 'success.dark', color: 'success.contrastText' }; // Partially Available
+        case 5: return { backgroundColor: 'success.dark', color: 'success.contrastText' }; // Available
+        case 6: return { backgroundColor: 'error.dark', color: 'error.contrastText' }; // Failed
+        default: return { backgroundColor: 'grey.dark', color: 'grey.contrastText' };
         }
     };
 
@@ -382,8 +379,10 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
         case 1: return 'Pending';
         case 2: return 'Approved';
         case 3: return 'Declined';
-        case 4: return 'Available';
-        default: return 'Unknown';
+        case 4: return 'Partial';
+        case 5: return 'Available';
+        case 6: return 'Failed';
+        default: return `Status ${status}`;
         }
     };
 

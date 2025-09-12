@@ -1,6 +1,6 @@
 {
   "name": "lab-dash",
-  "version": "1.3.0-beta2",
+  "version": "1.3.0-beta3",
   "description": "This is an open-source user interface designed to manage your server and homelab",
   "main": "index.js",
   "scripts": {
