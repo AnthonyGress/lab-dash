@@ -195,7 +195,7 @@ export const SearchBar = ({
                                 width: { xs: '100%',
                                     sm: '50%',
                                     md: '80%',
-                                    lg: '65%',
+                                    lg: '75%',
                                     xl: '50%'
                                 },
                                 height: '60px',

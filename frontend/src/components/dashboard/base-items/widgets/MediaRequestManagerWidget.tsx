@@ -533,9 +533,33 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                                 }}
                                 onChange={(_, newValue) => {
                                     if (newValue && typeof newValue !== 'string') {
+                                        // Dismiss keyboard on mobile
+                                        const activeElement = document.activeElement as HTMLElement;
+                                        if (activeElement && activeElement.blur) {
+                                            activeElement.blur();
+                                        }
+                                        
                                         setPreviousSearchQuery(searchQuery); // Save current search query
                                         handleItemClick(newValue);
                                         setSearchQuery(''); // Clear search after selection
+                                    }
+                                }}
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Enter' && searchResults.length > 0 && !searchLoading) {
+                                        event.preventDefault();
+                                        // Select the first item in the search results
+                                        const firstItem = searchResults[0];
+                                        if (firstItem) {
+                                            // Dismiss keyboard
+                                            const activeElement = document.activeElement as HTMLElement;
+                                            if (activeElement && activeElement.blur) {
+                                                activeElement.blur();
+                                            }
+                                            
+                                            setPreviousSearchQuery(searchQuery);
+                                            handleItemClick(firstItem);
+                                            setSearchQuery('');
+                                        }
                                     }
                                 }}
                                 loading={searchLoading}
