@@ -111,6 +111,14 @@ export const GlobalSearch = () => {
 
     // Additional focus trigger for route changes
     useEffect(() => {
+        // Check if device has coarse pointer (mobile/touch devices)
+        const hasCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
+        
+        // Don't auto-focus on mobile/touch devices
+        if (hasCoarsePointer) {
+            return;
+        }
+
         // Small delay to ensure DOM is ready after route change
         const focusTimer = setTimeout(() => {
             if (inputRef.current) {
