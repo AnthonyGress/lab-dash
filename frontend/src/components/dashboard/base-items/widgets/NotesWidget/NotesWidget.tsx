@@ -81,7 +81,26 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
     const { editMode } = useAppContext();
 
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const hasCoarsePointer = useMediaQuery('(pointer: coarse)');
     const { isLoggedIn, isAdmin } = useAppContext();
+
+    // Conditional tooltip component that only shows tooltips on devices with fine pointers
+    const ConditionalTooltip = ({ title, children, placement = 'top' }: { 
+        title: string; 
+        children: React.ReactElement; 
+        placement?: 'top' | 'bottom' | 'left' | 'right';
+    }) => {
+        if (hasCoarsePointer) {
+            // On touch devices, return children without tooltip
+            return children;
+        }
+        // On devices with fine pointers, show tooltip
+        return (
+            <Tooltip title={title} placement={placement}>
+                {children}
+            </Tooltip>
+        );
+    };
 
     const showLabel = config?.showLabel !== false;
     const displayName = config?.displayName || 'Notes';
@@ -387,7 +406,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                             flexShrink: 0
                         }}>
                             {showModalButton && (
-                                <Tooltip title='Open in modal'>
+                                <ConditionalTooltip title='Open in popup'>
                                     <IconButton
                                         size='small'
                                         onClick={handleOpenModal}
@@ -395,7 +414,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                     >
                                         <FaRegWindowRestore fontSize='medium' />
                                     </IconButton>
-                                </Tooltip>
+                                </ConditionalTooltip>
                             )}
                             <IconButton
                                 size='small'
@@ -583,7 +602,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                         mt: 1,
                         flexShrink: 0, // Prevent buttons from shrinking
                     }}>
-                        <Tooltip title='Cancel'>
+                        <ConditionalTooltip title='Cancel'>
                             <IconButton
                                 size='small'
                                 onClick={handleCancel}
@@ -600,8 +619,8 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                             >
                                 <Close fontSize='small' />
                             </IconButton>
-                        </Tooltip>
-                        <Tooltip title='Save note'>
+                        </ConditionalTooltip>
+                        <ConditionalTooltip title='Save note'>
                             <IconButton
                                 size='small'
                                 onClick={handleSave}
@@ -617,7 +636,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                             >
                                 <Save fontSize='small' />
                             </IconButton>
-                        </Tooltip>
+                        </ConditionalTooltip>
                     </Box>
                 </>
             );
@@ -677,7 +696,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                         {!editMode && (
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                 {viewMode === 'list' && isLoggedIn && isAdmin ? (
-                                    <Tooltip title='New note'>
+                                    <ConditionalTooltip title='New note'>
                                         <IconButton
                                             size='small'
                                             onClick={handleNewNote}
@@ -685,7 +704,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                         >
                                             <Add fontSize='medium' />
                                         </IconButton>
-                                    </Tooltip>
+                                    </ConditionalTooltip>
                                 )
                                     : // placsholder for spacing
                                     <IconButton
@@ -696,7 +715,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                     </IconButton>
                                 }
                                 {viewMode === 'view' && (
-                                    <Tooltip title='List' placement='left'>
+                                    <ConditionalTooltip title='List' placement='left'>
                                         <IconButton
                                             size='small'
                                             onClick={handleListClick}
@@ -704,10 +723,10 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                         >
                                             <List fontSize='medium' />
                                         </IconButton>
-                                    </Tooltip>
+                                    </ConditionalTooltip>
                                 )}
                                 {viewMode === 'edit' && (
-                                    <Tooltip title='Cancel'>
+                                    <ConditionalTooltip title='Cancel'>
                                         <IconButton
                                             size='small'
                                             onClick={handleCancel}
@@ -715,7 +734,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                         >
                                             <Close fontSize='medium' />
                                         </IconButton>
-                                    </Tooltip>
+                                    </ConditionalTooltip>
                                 )}
                             </Box>
                         )}
@@ -964,7 +983,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                             mt: 1,
                             flexShrink: 0, // Prevent buttons from shrinking
                         }}>
-                            <Tooltip title='Cancel'>
+                            <ConditionalTooltip title='Cancel'>
                                 <IconButton
                                     size='small'
                                     onClick={() => setIsEditingInModal(false)}
@@ -981,8 +1000,8 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                 >
                                     <Close fontSize='small' />
                                 </IconButton>
-                            </Tooltip>
-                            <Tooltip title='Save note'>
+                            </ConditionalTooltip>
+                            <ConditionalTooltip title='Save note'>
                                 <IconButton
                                     size='small'
                                     onClick={handleSave}
@@ -998,7 +1017,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                 >
                                     <Save fontSize='small' />
                                 </IconButton>
-                            </Tooltip>
+                            </ConditionalTooltip>
                         </Box>
                     </Box>
                 ) : (
