@@ -39,6 +39,7 @@ export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) 
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+    const isLargeOrSmaller = useMediaQuery(theme.breakpoints.down('xl'));
 
     // Get config options with defaults
     const selectedDisks = config?.selectedDisks || [];
@@ -52,6 +53,16 @@ export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) 
     const formatSpace = (bytes: number): string => {
         if (bytes === 0) return '0 GB';
         const gb = bytes / (1024 ** 3);
+        
+        // For large and smaller screens, don't show decimals
+        if (isLargeOrSmaller) {
+            if (gb >= 1000) {
+                return `${Math.round(gb / 1000)} TB`;
+            }
+            return `${Math.round(gb)} GB`;
+        }
+        
+        // For XL screens, show decimals
         if (gb >= 1000) {
             return `${(gb / 1000).toFixed(1)} TB`;
         }
@@ -278,28 +289,30 @@ export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) 
                 </Box>
 
                 {/* Space Info */}
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1 }}>
                     <Typography
                         variant='caption'
                         sx={{
                             fontSize: '0.65rem',
                             color: 'white',
-                            minWidth: isMobile ? '60px' : '80px'
+                            flex: '0 1 auto',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
                         }}
                     >
-                        {isMobile ? 'F:' : 'Free:'} {formatSpace(displayFreeSpace)}
+                        {isLargeOrSmaller ? 'F:' : 'Free:'} {formatSpace(displayFreeSpace)}
                     </Typography>
                     <Typography
                         variant='caption'
                         sx={{
-                            ml: 'auto',
                             color: 'white',
                             fontSize: '0.65rem',
-                            minWidth: isMobile ? '60px' : '80px',
+                            flex: '0 0 auto',
                             textAlign: 'right'
                         }}
                     >
-                        {isMobile ? 'T:' : 'Total:'} {formatSpace(totalSpace)}
+                        {isLargeOrSmaller ? 'T:' : 'Total:'} {formatSpace(totalSpace)}
                     </Typography>
                 </Box>
             </Box>

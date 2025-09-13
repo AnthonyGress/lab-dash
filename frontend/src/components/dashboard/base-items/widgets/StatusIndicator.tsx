@@ -42,8 +42,8 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({ url, healthChe
             <Box
                 sx={{
                     position: 'absolute',
-                    bottom: 5,
-                    right: 5,
+                    bottom: 4,
+                    right: 4,
                     width: 16, // Changed to even number
                     height: 16, // Changed to even number
                     borderRadius: '50%',
