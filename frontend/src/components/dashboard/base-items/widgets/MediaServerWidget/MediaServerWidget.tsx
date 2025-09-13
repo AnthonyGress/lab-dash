@@ -98,14 +98,14 @@ const getMediaTypeDisplay = (type: string): string => {
 const getMediaIcon = (type: string) => {
     switch (type?.toLowerCase()) {
     case 'episode':
-        return <Tv sx={{ color: 'white' }} fontSize='small' />;
+        return <Tv sx={{ color: 'white', fontSize: '1rem' }} />;
     case 'movie':
-        return <Movie sx={{ color: 'white' }} fontSize='small' />;
+        return <Movie sx={{ color: 'white', fontSize: '1rem' }} />;
     case 'audio':
     case 'musicalbum':
-        return <MusicNote sx={{ color: 'white' }} fontSize='small' />;
+        return <MusicNote sx={{ color: 'white', fontSize: '1rem' }} />;
     default:
-        return <PlayArrow sx={{ color: 'white' }} fontSize='small' />;
+        return <PlayArrow sx={{ color: 'white', fontSize: '1rem' }} />;
     }
 };
 
@@ -255,7 +255,7 @@ const SessionItem: React.FC<SessionItemProps> = ({ session, clientType, config }
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'white' }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                    <Person sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
+                                    <Person sx={{ color: 'white', fontSize: '1rem', mr: 0.3 }} />
                                     <span>{session.UserName}</span>
                                 </Box>
                             </Typography>
@@ -266,7 +266,7 @@ const SessionItem: React.FC<SessionItemProps> = ({ session, clientType, config }
                                     color: 'rgba(255,255,255,0.7)',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: 0.3
+                                    gap: 0.5
                                 }}
                             >
                                 {getMediaIcon(session.NowPlayingItem?.Type || '')}
@@ -666,7 +666,7 @@ export const MediaServerWidget: React.FC<MediaServerWidgetProps> = ({
                                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.2 }}>
                                                         <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'white', minWidth: '100px' }}>
                                                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                                <Person sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
+                                                                <Person sx={{ color: 'white', fontSize: '1rem', mr: 0.3 }} />
                                                                 <span>User</span>
                                                             </Box>
                                                         </Typography>
