@@ -7,7 +7,7 @@ import { useIsMobile } from '../../../hooks/useIsMobile';
 import { COLORS } from '../../../theme/styles';
 import { theme } from '../../../theme/theme';
 import { DOWNLOAD_CLIENT_TYPE, TORRENT_CLIENT_TYPE } from '../../../types';
-import { FormValues } from '../AddEditForm';
+import { FormValues } from '../AddEditForm/types';
 
 const DOWNLOAD_CLIENT_OPTIONS = [
     { id: DOWNLOAD_CLIENT_TYPE.QBITTORRENT, label: 'qBittorrent' },
@@ -70,14 +70,16 @@ export const DownloadClientWidgetConfig = ({ formContext, existingItem }: Downlo
         if (watchedTorrentClientType) {
             setTorrentClientType(watchedTorrentClientType);
 
-            // Only update the port if there's no existing port value (for new widgets)
-            // Don't override existing port when editing
+            // Determine the default port for the selected client type
+            const defaultPort = watchedTorrentClientType === DOWNLOAD_CLIENT_TYPE.DELUGE ? '8112'
+                : watchedTorrentClientType === DOWNLOAD_CLIENT_TYPE.TRANSMISSION ? '9091'
+                    : watchedTorrentClientType === DOWNLOAD_CLIENT_TYPE.SABNZBD ? '8080'
+                        : '8080';
+
+            // For new widgets (no existingItem), always update the port to the default
+            // For existing widgets, only update if the current port is empty
             const currentPort = formContext.getValues('tcPort');
-            if (!currentPort || currentPort === '') {
-                const defaultPort = watchedTorrentClientType === DOWNLOAD_CLIENT_TYPE.DELUGE ? '8112'
-                    : watchedTorrentClientType === DOWNLOAD_CLIENT_TYPE.TRANSMISSION ? '9091'
-                        : watchedTorrentClientType === DOWNLOAD_CLIENT_TYPE.SABNZBD ? '8080'
-                            : '8080';
+            if (!existingItem || !currentPort || currentPort === '') {
                 formContext.setValue('tcPort', defaultPort);
             }
 
@@ -88,7 +90,7 @@ export const DownloadClientWidgetConfig = ({ formContext, existingItem }: Downlo
                 formContext.trigger(['tcUsername', 'tcPassword']);
             }
         }
-    }, [watchedTorrentClientType, formContext]);
+    }, [watchedTorrentClientType, formContext, existingItem]);
 
     // Watch for password field changes to track user intent
     useEffect(() => {

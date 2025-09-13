@@ -3,7 +3,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Grid2 } from '@mui/material';
 import React from 'react';
 
-import { NotesWidget } from '../../base-items/widgets/NotesWidget';
+import { NotesWidget } from '../../base-items/widgets/NotesWidget/NotesWidget';
 import { WidgetContainer } from '../../base-items/widgets/WidgetContainer';
 
 interface Props {

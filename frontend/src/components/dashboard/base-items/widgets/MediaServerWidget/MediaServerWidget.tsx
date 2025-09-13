@@ -1,6 +1,6 @@
 import { ArrowDownward, Movie, MusicNote, Pause, Person, PlayArrow, Schedule, Tv } from '@mui/icons-material';
 import { Box, CardContent, CircularProgress, Typography, useMediaQuery } from '@mui/material';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { DashApi } from '../../../../../api/dash-api';
 import { BACKEND_URL, FIFTEEN_MIN_IN_MS } from '../../../../../constants/constants';
@@ -98,14 +98,14 @@ const getMediaTypeDisplay = (type: string): string => {
 const getMediaIcon = (type: string) => {
     switch (type?.toLowerCase()) {
     case 'episode':
-        return <Tv sx={{ color: 'white' }} fontSize='small' />;
+        return <Tv sx={{ color: 'white', fontSize: '1rem' }} />;
     case 'movie':
-        return <Movie sx={{ color: 'white' }} fontSize='small' />;
+        return <Movie sx={{ color: 'white', fontSize: '1rem' }} />;
     case 'audio':
     case 'musicalbum':
-        return <MusicNote sx={{ color: 'white' }} fontSize='small' />;
+        return <MusicNote sx={{ color: 'white', fontSize: '1rem' }} />;
     default:
-        return <PlayArrow sx={{ color: 'white' }} fontSize='small' />;
+        return <PlayArrow sx={{ color: 'white', fontSize: '1rem' }} />;
     }
 };
 
@@ -255,7 +255,7 @@ const SessionItem: React.FC<SessionItemProps> = ({ session, clientType, config }
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'white' }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                    <Person sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
+                                    <Person sx={{ color: 'white', fontSize: '1rem', mr: 0.3 }} />
                                     <span>{session.UserName}</span>
                                 </Box>
                             </Typography>
@@ -266,7 +266,7 @@ const SessionItem: React.FC<SessionItemProps> = ({ session, clientType, config }
                                     color: 'rgba(255,255,255,0.7)',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: 0.3
+                                    gap: 0.5
                                 }}
                             >
                                 {getMediaIcon(session.NowPlayingItem?.Type || '')}
@@ -301,10 +301,19 @@ export const MediaServerWidget: React.FC<MediaServerWidgetProps> = ({
     const [sessions, setSessions] = useState<JellyfinSession[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [libraryStats, setLibraryStats] = useState<{
+        tvShows: number;
+        movies: number;
+        isLoading: boolean;
+    }>({
+        tvShows: 0,
+        movies: 0,
+        isLoading: true
+    });
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-    const fetchSessions = async () => {
+    const fetchSessions = useCallback(async () => {
         if (!id) {
             setError('Widget ID missing');
             setIsLoading(false);
@@ -335,7 +344,45 @@ export const MediaServerWidget: React.FC<MediaServerWidgetProps> = ({
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [id, config]);
+
+    const fetchLibraryStats = useCallback(async () => {
+        if (!id) {
+            setLibraryStats(prev => ({ ...prev, isLoading: false }));
+            return;
+        }
+
+        if (!config?.host || (!config?.apiKey && !config?._hasApiKey)) {
+            setLibraryStats(prev => ({ ...prev, isLoading: false }));
+            return;
+        }
+
+        try {
+            setLibraryStats(prev => ({ ...prev, isLoading: true }));
+            // For now, only support Jellyfin
+            if (config.clientType === 'jellyfin' || !config.clientType) {
+                const data = await DashApi.getJellyfinLibraryStats(id);
+                setLibraryStats({
+                    tvShows: data.tvShows || 0,
+                    movies: data.movies || 0,
+                    isLoading: false
+                });
+            } else {
+                setLibraryStats({
+                    tvShows: 0,
+                    movies: 0,
+                    isLoading: false
+                });
+            }
+        } catch (err) {
+            console.error('Error fetching library stats:', err);
+            setLibraryStats({
+                tvShows: 0,
+                movies: 0,
+                isLoading: false
+            });
+        }
+    }, [id, config]);
 
     useEffect(() => {
         if (!config?.host || (!config?.apiKey && !config?._hasApiKey)) {
@@ -350,6 +397,7 @@ export const MediaServerWidget: React.FC<MediaServerWidgetProps> = ({
 
         // Initial fetch
         fetchSessions();
+        fetchLibraryStats();
 
         // Set up periodic refresh every 2 minutes
         timerRef.current = setInterval(fetchSessions, 1200000);
@@ -359,7 +407,7 @@ export const MediaServerWidget: React.FC<MediaServerWidgetProps> = ({
                 clearInterval(timerRef.current);
             }
         };
-    }, [config, id]);
+    }, [config, id, fetchSessions, fetchLibraryStats]);
 
     const clientName = config?.displayName || (config?.clientType === 'plex' ? 'Plex' : 'Jellyfin');
 
@@ -618,7 +666,7 @@ export const MediaServerWidget: React.FC<MediaServerWidgetProps> = ({
                                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.2 }}>
                                                         <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'white', minWidth: '100px' }}>
                                                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                                <Person sx={{ color: 'white', fontSize: '0.75rem', mr: 0.3 }} />
+                                                                <Person sx={{ color: 'white', fontSize: '1rem', mr: 0.3 }} />
                                                                 <span>User</span>
                                                             </Box>
                                                         </Typography>
@@ -640,19 +688,19 @@ export const MediaServerWidget: React.FC<MediaServerWidgetProps> = ({
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
                                     <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                                         <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary', mb: 0.5 }}>
-                                            Total Sessions:
+                                            Total TV Shows:
                                         </Typography>
                                         <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary' }}>
-                                            Active Users:
+                                            Total Movies:
                                         </Typography>
                                     </Box>
 
                                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                                         <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary', minWidth: '65px', textAlign: 'right', mb: 0.5 }}>
-                                            {sessions.length}
+                                            {libraryStats.isLoading ? '...' : libraryStats.tvShows}
                                         </Typography>
                                         <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary', minWidth: '65px', textAlign: 'right' }}>
-                                            {new Set(sessions.map(s => s.UserId)).size}
+                                            {libraryStats.isLoading ? '...' : libraryStats.movies}
                                         </Typography>
                                     </Box>
                                 </Box>

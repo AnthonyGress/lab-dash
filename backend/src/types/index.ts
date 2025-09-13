@@ -46,6 +46,7 @@ export type Note = {
     content: string;
     createdAt: string;
     updatedAt: string;
+    fontSize?: string;
 }
 
 export type DashboardLayout = {

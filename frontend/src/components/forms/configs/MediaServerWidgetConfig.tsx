@@ -5,7 +5,7 @@ import { CheckboxElement, TextFieldElement } from 'react-hook-form-mui';
 
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { theme } from '../../../theme/theme';
-import { FormValues } from '../AddEditForm';
+import { FormValues } from '../AddEditForm/types';
 
 const MEDIA_SERVER_OPTIONS = [
     { id: 'jellyfin', label: 'Jellyfin' },

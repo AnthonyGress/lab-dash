@@ -42,36 +42,45 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({ url, healthChe
             <Box
                 sx={{
                     position: 'absolute',
-                    bottom: 5,
-                    right: 5,
-                    width: 14,
-                    height: 14,
+                    bottom: 4,
+                    right: 4,
+                    width: 16, // Changed to even number
+                    height: 16, // Changed to even number
                     borderRadius: '50%',
                     backgroundColor: dotColor,
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    // Force pixel-perfect centering
+                    lineHeight: 0,
+                    textAlign: 'center'
                 }}
             >
                 {dotColor === 'green' && (
                     <KeyboardArrowUpIcon sx={{
                         color: 'white',
-                        fontSize: 18,
+                        fontSize: 16,
                         position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)'
+                        top: 8, // Exactly half of 16px container
+                        left: 8, // Exactly half of 16px container
+                        transform: 'translate(-8px, -8px)', // Exactly half of 16px icon
+                        margin: 0,
+                        padding: 0,
+                        lineHeight: 0
                     }} />
                 )}
                 {dotColor === 'red' && (
                     <KeyboardArrowDownIcon sx={{
                         color: 'white',
-                        fontSize: 18,
+                        fontSize: 16,
                         position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)'
+                        top: 8, // Exactly half of 16px container
+                        left: 8, // Exactly half of 16px container
+                        transform: 'translate(-8px, -8px)', // Exactly half of 16px icon
+                        margin: 0,
+                        padding: 0,
+                        lineHeight: 0
                     }} />
                 )}
             </Box>

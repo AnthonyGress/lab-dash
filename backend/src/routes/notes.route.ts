@@ -67,9 +67,28 @@ const writeNotes = (notes: Note[]): void => {
 notesRoute.get('/', (req: Request, res: Response) => {
     try {
         const notes = readNotes();
+        
+        // Migration: Add fontSize to existing notes that don't have it
+        let hasUpdates = false;
+        const migratedNotes = notes.map(note => {
+            if (!note.fontSize) {
+                hasUpdates = true;
+                return {
+                    ...note,
+                    fontSize: '16px' // Default font size for existing notes
+                };
+            }
+            return note;
+        });
+        
+        // Save migrated notes if we made changes
+        if (hasUpdates) {
+            writeNotes(migratedNotes);
+        }
+        
         // Sort by updatedAt descending (most recent first)
-        notes.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-        res.json(notes);
+        migratedNotes.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+        res.json(migratedNotes);
     } catch (error) {
         console.error('Error fetching notes:', error);
         res.status(500).json({ error: 'Failed to fetch notes' });
@@ -79,7 +98,7 @@ notesRoute.get('/', (req: Request, res: Response) => {
 // POST /api/notes - Create a new note
 notesRoute.post('/', authenticateToken, (req: Request, res: Response) => {
     try {
-        const { id, title, content } = req.body;
+        const { id, title, content, fontSize } = req.body;
 
         if (!id || typeof id !== 'string') {
             res.status(400).json({ error: 'ID is required and must be a string' });
@@ -106,7 +125,8 @@ notesRoute.post('/', authenticateToken, (req: Request, res: Response) => {
             title: title.trim(),
             content: (content || '').trim(),
             createdAt: now,
-            updatedAt: now
+            updatedAt: now,
+            fontSize: fontSize || '16px' // Default font size
         };
 
         notes.push(newNote);
@@ -123,7 +143,7 @@ notesRoute.post('/', authenticateToken, (req: Request, res: Response) => {
 notesRoute.put('/:id', authenticateToken, (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { title, content } = req.body;
+        const { title, content, fontSize } = req.body;
 
         if (!title || typeof title !== 'string') {
             res.status(400).json({ error: 'Title is required and must be a string' });
@@ -142,6 +162,7 @@ notesRoute.put('/:id', authenticateToken, (req: Request, res: Response) => {
             ...notes[noteIndex],
             title: title.trim(),
             content: (content || '').trim(),
+            fontSize: fontSize || notes[noteIndex].fontSize || '16px', // Preserve existing fontSize or use default
             updatedAt: new Date().toISOString()
         };
 

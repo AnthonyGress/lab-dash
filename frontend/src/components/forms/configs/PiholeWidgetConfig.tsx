@@ -5,7 +5,8 @@ import { CheckboxElement, TextFieldElement } from 'react-hook-form-mui';
 
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { theme } from '../../../theme/theme';
-import { FormValues } from '../AddEditForm';
+import { FormValues } from '../AddEditForm/types';
+
 
 interface PiholeWidgetConfigProps {
     formContext: UseFormReturn<FormValues>;
@@ -233,7 +234,7 @@ export const PiholeWidgetConfig = ({ formContext, existingItem }: PiholeWidgetCo
                     }}
                 />
             </Grid>
-            <Grid sx={{ width: '100%', mb: 2 }}>
+            <Grid sx={{ width: '100%' }}>
                 <CheckboxElement
                     label='Use SSL'
                     name='piholeSsl'
@@ -245,7 +246,7 @@ export const PiholeWidgetConfig = ({ formContext, existingItem }: PiholeWidgetCo
                     }}
                 />
             </Grid>
-            <Grid sx={{ width: '100%', mb: 2 }}>
+            <Grid sx={{ width: '100%' }}>
                 <CheckboxElement
                     label='Show Name'
                     name='showLabel'

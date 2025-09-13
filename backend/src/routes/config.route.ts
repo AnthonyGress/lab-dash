@@ -7,6 +7,7 @@ import path from 'path';
 
 import {  authenticateToken, requireAdmin } from '../middleware/auth.middleware';
 import { Config } from '../types';
+import { BackupService } from '../utils/backup.service';
 
 export const configRoute = Router();
 
@@ -669,6 +670,52 @@ configRoute.post('/import', [authenticateToken, requireAdmin], async (req: Reque
         console.error('Error importing config:', error);
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
             message: 'Error importing configuration file',
+            error: (error as Error).message
+        });
+    }
+});
+
+// GET - Get backup status (admin only)
+configRoute.get('/backup/status', [authenticateToken, requireAdmin], async (_req: Request, res: Response): Promise<void> => {
+    try {
+        const backupService = BackupService.getInstance();
+        const status = await backupService.getBackupStatus();
+        res.status(StatusCodes.OK).json(status);
+    } catch (error) {
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            message: 'Error getting backup status',
+            error: (error as Error).message
+        });
+    }
+});
+
+// POST - Trigger manual backup (admin only)
+configRoute.post('/backup/trigger', [authenticateToken, requireAdmin], async (_req: Request, res: Response): Promise<void> => {
+    try {
+        const backupService = BackupService.getInstance();
+        await backupService.triggerManualBackup();
+        res.status(StatusCodes.OK).json({
+            message: 'Backup created successfully'
+        });
+    } catch (error) {
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            message: 'Error creating backup',
+            error: (error as Error).message
+        });
+    }
+});
+
+// POST - Restore from backup (admin only)
+configRoute.post('/backup/restore', [authenticateToken, requireAdmin], async (_req: Request, res: Response): Promise<void> => {
+    try {
+        const backupService = BackupService.getInstance();
+        await backupService.restoreFromBackup();
+        res.status(StatusCodes.OK).json({
+            message: 'Configuration restored from backup successfully'
+        });
+    } catch (error) {
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            message: 'Error restoring from backup',
             error: (error as Error).message
         });
     }

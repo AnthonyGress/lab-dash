@@ -24,14 +24,14 @@ export const AppShortcut = ({ url, name, iconName, showLabel, editMode, config, 
 
     // Calculate font size based on name length
     const fontSize = useMemo(() => {
-        if (!name) return isMobile ? '.9rem' : '1rem';
+        if (!name) return isMobile ? '0.8rem' : '0.9rem';
 
-        // Adjust font size based on text length
-        if (name.length > 20) return isMobile ? '0.6rem' : '0.7rem';
-        if (name.length > 15) return isMobile ? '0.7rem' : '0.8rem';
-        if (name.length > 10) return isMobile ? '0.8rem' : '0.9rem';
+        // Adjust font size based on text length - reduced all sizes to prevent overlap with status indicator
+        if (name.length > 20) return isMobile ? '0.55rem' : '0.65rem';
+        if (name.length > 15) return isMobile ? '0.65rem' : '0.75rem';
+        if (name.length > 10) return isMobile ? '0.75rem' : '0.85rem';
 
-        return isMobile ? '.9rem' : '1rem';
+        return isMobile ? '0.8rem' : '0.9rem';
     }, [name, isMobile]);
 
     // Calculate text width based on size prop to prevent overlap with status icons

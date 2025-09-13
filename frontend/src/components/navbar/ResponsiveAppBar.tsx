@@ -22,7 +22,7 @@ import { COLORS, styles } from '../../theme/styles';
 import { theme } from '../../theme/theme';
 import { ITEM_TYPE } from '../../types';
 import { getAppVersion } from '../../utils/version';
-import { AddEditForm } from '../forms/AddEditForm';
+import { AddEditForm } from '../forms/AddEditForm/AddEditForm';
 import { Logo } from '../Logo';
 import { CenteredModal } from '../modals/CenteredModal';
 import { UpdateModal } from '../modals/UpdateModal';

@@ -14,7 +14,7 @@ const logRateLimitHit = (req: Request, limiterName: string) => {
 // General API rate limiter - used as the default
 export const generalLimiter = rateLimit({
     windowMs: 5 * 60 * 1000, // 5 minutes
-    max: 2000,
+    max: 3000,
     standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
     handler: (req: Request, res: Response) => {
@@ -45,15 +45,15 @@ export const authLimiter = rateLimit({
 
 // Internal/External API endpoints rate limiter - to prevent overwhelming third-party services
 export const apiLimiter = rateLimit({
-    windowMs: 5 * 60 * 1000, // 5 minutes
-    max: 500,
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 1000,
     standardHeaders: true,
     legacyHeaders: false,
     handler: (req: Request, res: Response) => {
         logRateLimitHit(req, 'API');
         res.status(429).json({
             success: false,
-            message: 'Too many API requests, please try again after 5 minutes',
+            message: 'Too many API requests, please try again after 1 minutes',
             error_source: 'labdash_api'
         });
     }
@@ -110,7 +110,7 @@ export const timezoneApiLimiter = rateLimit({
 // Torrent client API limiter - prevent DDoS of torrent clients
 export const torrentApiLimiter = rateLimit({
     windowMs: 60 * 1000, // 1 minute
-    max: 100,
+    max: 1000,
     standardHeaders: true,
     legacyHeaders: false,
     handler: (req: Request, res: Response) => {

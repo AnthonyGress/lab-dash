@@ -6,6 +6,7 @@ import { authRoute } from './auth.route';
 import { configRoute } from './config.route';
 import { delugeRoute } from './deluge.route';
 import { healthRoute } from './health.route';
+import { iconsRoute } from './icons.route';
 import { jellyfinRoute } from './jellyfin.route';
 import { jellyseerRoute } from './jellyseerr.route';
 import { notesRoute } from './notes.route';
@@ -20,6 +21,7 @@ import { timezoneRoute } from './timezone.route';
 import { transmissionRoute } from './transmission.route';
 import { uploadsRoute } from './uploads.route';
 import { weatherRoute } from './weather.route';
+import { widgetsRoute } from './widgets.route';
 import {
     apiLimiter,
     authLimiter,
@@ -52,6 +54,10 @@ router.use('/app-shortcut', apiLimiter, appShortcutRoute);
 
 // Uploads management routes
 router.use('/uploads', apiLimiter, uploadsRoute);
+
+// Bulk loading routes for performance optimization
+router.use('/icons', apiLimiter, iconsRoute);
+router.use('/widgets', apiLimiter, widgetsRoute);
 
 // Notes routes
 router.use('/notes', apiLimiter, notesRoute);

@@ -9,7 +9,7 @@ import { DUAL_WIDGET_CONTAINER_HEIGHT, STANDARD_WIDGET_HEIGHT } from '../../../.
 import { useAppContext } from '../../../../context/useAppContext';
 import { DashboardItem, ITEM_TYPE } from '../../../../types';
 import { GroupItem } from '../../../../types/group';
-import { AddEditForm } from '../../../forms/AddEditForm';
+import { AddEditForm } from '../../../forms/AddEditForm/AddEditForm';
 import { CenteredModal } from '../../../modals/CenteredModal';
 import { ConfirmationOptions, PopupManager } from '../../../modals/PopupManager';
 import GroupWidget from '../../base-items/widgets/GroupWidget';
@@ -74,7 +74,7 @@ export const SortableGroupWidget: React.FC<Props> = ({
     }, [config]);
 
     // Handle item changes (reordering within the group)
-    const handleItemsChange = useCallback(async (newItems: GroupItem[]) => {
+    const handleItemsChange = useCallback((newItems: GroupItem[]) => {
         // Ensure config exists with defaults for new groups
         const safeConfig = config || { maxItems: '3', showLabel: true, items: [] };
 
@@ -85,8 +85,7 @@ export const SortableGroupWidget: React.FC<Props> = ({
                 return {
                     ...layoutItem,
                     config: {
-                        ...safeConfig, // Use safeConfig which includes defaults
-                        ...layoutItem.config, // Preserve any existing config
+                        ...safeConfig,
                         items: newItems
                     }
                 };
@@ -94,11 +93,11 @@ export const SortableGroupWidget: React.FC<Props> = ({
             return layoutItem;
         });
 
-        // Save directly to avoid any intermediate state changes
-        await saveLayout(updatedLayout);
-
         // Update local state to reflect the change
         setDashboardLayout(updatedLayout);
+
+        // Save layout in the background
+        saveLayout(updatedLayout);
     }, [id, dashboardLayout, saveLayout, setDashboardLayout, config]);
 
     // Get a group item as a dashboard item for editing
@@ -665,7 +664,12 @@ export const SortableGroupWidget: React.FC<Props> = ({
             accepts: ['app-shortcut'],
             canDrop: true,
             groupId: id
-        }
+        },
+        animateLayoutChanges: ({ isSorting, wasDragging, isDragging: isCurrentlyDragging }) => {
+            if (isSorting && isCurrentlyDragging) return true;
+            if (wasDragging && !isCurrentlyDragging) return false;
+            return true;
+        },
     });
 
     useEffect(() => {
