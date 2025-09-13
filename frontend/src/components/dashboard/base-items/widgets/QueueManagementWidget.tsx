@@ -92,12 +92,18 @@ const formatProgress = (progress: number): string => {
 
 const formatEta = (eta: number): string => {
     if (eta <= 0) return '';
+    
     const hours = Math.floor(eta / 3600);
     const minutes = Math.floor((eta % 3600) / 60);
+    const seconds = Math.floor(eta % 60);
+    
     if (hours > 0) {
         return `${hours}h ${minutes}m`;
+    } else if (minutes > 0) {
+        return `${minutes}m ${seconds}s`;
+    } else {
+        return `${seconds}s`;
     }
-    return `${minutes}m`;
 };
 
 // Get status icon based on queue item state
