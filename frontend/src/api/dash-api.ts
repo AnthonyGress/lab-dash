@@ -2239,6 +2239,16 @@ export class DashApi {
         }
     }
 
+    public static async updateAllNotesFontSize(fontSize: string): Promise<{ message: string; updatedCount: number }> {
+        try {
+            const res = await axios.put(`${BACKEND_URL}/api/notes/update-all-font-sizes`, { fontSize });
+            return res.data;
+        } catch (error) {
+            console.error('Error updating font size for all notes:', error);
+            throw error;
+        }
+    }
+
     // Bulk loading methods for performance optimization
     public static async bulkLoadIcons(iconPaths: string[]): Promise<BulkIconResponse> {
         try {

@@ -477,9 +477,9 @@ export const createWidgetConfig = async (
         };
     } else if (widgetType === ITEM_TYPE.NOTES_WIDGET) {
         return {
-            maxDisplayedNotes: data.maxDisplayedNotes ? parseInt(data.maxDisplayedNotes) : 10,
             showLabel: data.showLabel !== undefined ? data.showLabel : true,
-            displayName: data.displayName || 'Notes'
+            displayName: data.displayName || 'Notes',
+            defaultNoteFontSize: data.defaultNoteFontSize || '16px'
         };
     }
 

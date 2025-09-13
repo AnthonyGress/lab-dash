@@ -91,6 +91,7 @@ export type Config = {
     showInternetIndicator?: boolean;
     isSetupComplete?: boolean;
     lastSeenVersion?: string;
+    defaultNoteFontSize?: string;
 }
 
 export type UploadImageResponse = {

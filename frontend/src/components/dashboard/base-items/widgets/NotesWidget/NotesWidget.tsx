@@ -6,6 +6,7 @@ import { FaStickyNote } from 'react-icons/fa';
 import { FaRegWindowRestore, FaTrashCan } from 'react-icons/fa6';
 
 import { applyMarkdownFormat } from './applyMarkdownFormat';
+import { FontSizeSelector } from './FontSizeSelector';
 import { MarkdownPreview } from './MarkdownPreview';
 import { MarkdownToolbar } from './MarkdownToolbar';
 import { DashApi } from '../../../../../api/dash-api';
@@ -28,6 +29,7 @@ interface NotesWidgetProps {
     config?: {
         showLabel?: boolean;
         displayName?: string;
+        defaultNoteFontSize?: string;
     };
     onEdit?: () => void;
     onDelete?: () => void;
@@ -89,6 +91,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
     const { editMode } = useAppContext();
 
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const isSmallScreen = useMediaQuery(theme.breakpoints.down('md'));
     const hasCoarsePointer = useMediaQuery('(pointer: coarse)');
     const { isLoggedIn, isAdmin } = useAppContext();
 
@@ -139,7 +142,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
         setSelectedNote(note);
         setEditTitle(note.title);
         setEditContent(note.content);
-        setFontSize(note.fontSize || '16px');
+        setFontSize(note.fontSize || config?.defaultNoteFontSize || '16px');
         setViewMode('view');
         setIsNewNote(false);
     };
@@ -163,7 +166,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
         setViewMode('list');
         setSelectedNote(null);
         setIsNewNote(false);
-        setFontSize('16px');
+        setFontSize(config?.defaultNoteFontSize || '16px');
     };
 
     const handleTitleClick = () => {
@@ -176,7 +179,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
         setSelectedNote(null);
         setEditTitle('');
         setEditContent('');
-        setFontSize('16px');
+        setFontSize(config?.defaultNoteFontSize || '16px');
         setViewMode('edit');
         setIsNewNote(true);
         setEditTab('write');
@@ -257,7 +260,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
             setViewMode('list');
             setSelectedNote(null);
             setIsNewNote(false);
-            setFontSize('16px'); // Reset to default font size
+            setFontSize(config?.defaultNoteFontSize || '16px'); // Reset to default font size
         } else if (selectedNote) {
             // If editing existing note, revert changes and go back to view mode
             setEditTitle(selectedNote.title);
@@ -511,50 +514,114 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                         }}
                     />
 
-                    {/* Tabs for Write/Preview with inline toolbar */}
-                    <Box sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        borderBottom: '1px solid rgba(255,255,255,0.1)',
-                    }}>
-                        <Tabs
-                            value={editTab}
-                            onChange={(_, newValue) => setEditTab(newValue)}
-                            sx={{
-                                minHeight: '32px',
-                                minWidth: 'auto',
-                                '& .MuiTabs-indicator': {
-                                    backgroundColor: theme.palette.primary.main,
-                                },
-                                '& .MuiTab-root': {
-                                    color: 'rgba(255,255,255,0.7)',
-                                    minHeight: '32px',
-                                    fontSize: '0.8rem',
-                                    textTransform: 'none',
-                                    minWidth: 'auto',
-                                    padding: '6px 12px',
-                                    '&.Mui-selected': {
-                                        color: 'white',
-                                    },
-                                },
-                            }}
-                        >
-                            <Tab label='Write' value='write' />
-                            <Tab label='Preview' value='preview' />
-                        </Tabs>
+                    {/* Tabs for Write/Preview with responsive layout */}
+                    {isSmallScreen ? (
+                        // Small screens: Font size in tabs, toolbar below
+                        <>
+                            <Box sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                borderBottom: '1px solid rgba(255,255,255,0.1)',
+                            }}>
+                                <Tabs
+                                    value={editTab}
+                                    onChange={(_, newValue) => setEditTab(newValue)}
+                                    sx={{
+                                        minHeight: '32px',
+                                        minWidth: 'auto',
+                                        '& .MuiTabs-indicator': {
+                                            backgroundColor: theme.palette.primary.main,
+                                        },
+                                        '& .MuiTab-root': {
+                                            color: 'rgba(255,255,255,0.7)',
+                                            minHeight: '32px',
+                                            fontSize: '0.8rem',
+                                            textTransform: 'none',
+                                            minWidth: 'auto',
+                                            padding: '6px 12px',
+                                            '&.Mui-selected': {
+                                                color: 'white',
+                                            },
+                                        },
+                                    }}
+                                >
+                                    <Tab label='Write' value='write' />
+                                    <Tab label='Preview' value='preview' />
+                                </Tabs>
 
-                        {/* Show toolbar inline when in write mode */}
-                        {editTab === 'write' && (
-                            <Box sx={{ ml: 1, display: 'flex', alignItems: 'center' }}>
-                                <MarkdownToolbar
-                                    onFormat={handleMarkdownFormat}
-                                    isMobile={isMobile}
+                                {/* Font size selector inline with tabs */}
+                                <FontSizeSelector
                                     fontSize={fontSize}
                                     onFontSizeChange={handleFontSizeChange}
+                                    sx={{ mr: 0 }}
                                 />
                             </Box>
-                        )}
-                    </Box>
+
+                            {/* Toolbar below tabs for write mode */}
+                            {editTab === 'write' && (
+                                <Box sx={{
+                                    py: 0.5,
+                                    borderBottom: '1px solid rgba(255,255,255,0.1)',
+                                    display: 'flex',
+                                    alignItems: 'center'
+                                }}>
+                                    <MarkdownToolbar
+                                        onFormat={handleMarkdownFormat}
+                                        isMobile={isMobile}
+                                        fontSize={fontSize}
+                                        onFontSizeChange={handleFontSizeChange}
+                                        hideFontSize={true}
+                                    />
+                                </Box>
+                            )}
+                        </>
+                    ) : (
+                        // Large screens: Inline toolbar with font size
+                        <Box sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            borderBottom: '1px solid rgba(255,255,255,0.1)',
+                        }}>
+                            <Tabs
+                                value={editTab}
+                                onChange={(_, newValue) => setEditTab(newValue)}
+                                sx={{
+                                    minHeight: '32px',
+                                    minWidth: 'auto',
+                                    '& .MuiTabs-indicator': {
+                                        backgroundColor: theme.palette.primary.main,
+                                    },
+                                    '& .MuiTab-root': {
+                                        color: 'rgba(255,255,255,0.7)',
+                                        minHeight: '32px',
+                                        fontSize: '0.8rem',
+                                        textTransform: 'none',
+                                        minWidth: 'auto',
+                                        padding: '6px 12px',
+                                        '&.Mui-selected': {
+                                            color: 'white',
+                                        },
+                                    },
+                                }}
+                            >
+                                <Tab label='Write' value='write' />
+                                <Tab label='Preview' value='preview' />
+                            </Tabs>
+
+                            {/* Show toolbar inline when in write mode */}
+                            {editTab === 'write' && (
+                                <Box sx={{ ml: 1, display: 'flex', alignItems: 'center' }}>
+                                    <MarkdownToolbar
+                                        onFormat={handleMarkdownFormat}
+                                        isMobile={isMobile}
+                                        fontSize={fontSize}
+                                        onFontSizeChange={handleFontSizeChange}
+                                    />
+                                </Box>
+                            )}
+                        </Box>
+                    )}
 
                     <Box sx={{
                         flex: 1,
@@ -679,7 +746,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
             width: '100%',
             userSelect: 'auto',
             ...(isMobile ? {} : {
-                minHeight: DUAL_WIDGET_CONTAINER_HEIGHT.sm
+                maxHeight: DUAL_WIDGET_CONTAINER_HEIGHT.sm
             })
         }}>
             <Box sx={{

@@ -21,6 +21,15 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, fontS
             overflow: 'auto',
             height: '100%',
             padding: '8px',
+            '& p': {
+                margin: '0.3em 0',
+                '&:first-of-type': {
+                    marginTop: 0
+                },
+                '&:last-of-type': {
+                    marginBottom: 0
+                }
+            },
             '& ul, & ol': {
                 margin: '0.3em 0',
                 paddingLeft: '1.2em',

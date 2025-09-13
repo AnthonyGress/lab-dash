@@ -74,8 +74,8 @@ export type FormValues = {
     mediaRequestManagerApiKey?: string;
 
     // Notes widget
-    maxDisplayedNotes?: string;
     displayName?: string;
+    defaultNoteFontSize?: string;
 
     // Torrent client widget
     torrentClient?: string;

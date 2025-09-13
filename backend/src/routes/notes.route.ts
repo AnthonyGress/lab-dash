@@ -66,26 +66,28 @@ const writeNotes = (notes: Note[]): void => {
 // GET /api/notes - Get all notes
 notesRoute.get('/', (req: Request, res: Response) => {
     try {
+        const config = loadConfig();
         const notes = readNotes();
-        
+
         // Migration: Add fontSize to existing notes that don't have it
         let hasUpdates = false;
+        const globalDefaultFontSize = config.defaultNoteFontSize || '16px';
         const migratedNotes = notes.map(note => {
             if (!note.fontSize) {
                 hasUpdates = true;
                 return {
                     ...note,
-                    fontSize: '16px' // Default font size for existing notes
+                    fontSize: globalDefaultFontSize // Use global default font size for existing notes
                 };
             }
             return note;
         });
-        
+
         // Save migrated notes if we made changes
         if (hasUpdates) {
             writeNotes(migratedNotes);
         }
-        
+
         // Sort by updatedAt descending (most recent first)
         migratedNotes.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
         res.json(migratedNotes);
@@ -99,6 +101,8 @@ notesRoute.get('/', (req: Request, res: Response) => {
 notesRoute.post('/', authenticateToken, (req: Request, res: Response) => {
     try {
         const { id, title, content, fontSize } = req.body;
+        const config = loadConfig();
+        const globalDefaultFontSize = config.defaultNoteFontSize || '16px';
 
         if (!id || typeof id !== 'string') {
             res.status(400).json({ error: 'ID is required and must be a string' });
@@ -126,7 +130,7 @@ notesRoute.post('/', authenticateToken, (req: Request, res: Response) => {
             content: (content || '').trim(),
             createdAt: now,
             updatedAt: now,
-            fontSize: fontSize || '16px' // Default font size
+            fontSize: fontSize || globalDefaultFontSize // Use global default font size
         };
 
         notes.push(newNote);
@@ -139,11 +143,47 @@ notesRoute.post('/', authenticateToken, (req: Request, res: Response) => {
     }
 });
 
+// PUT /api/notes/update-all-font-sizes - Update font size for all existing notes
+notesRoute.put('/update-all-font-sizes', authenticateToken, (req: Request, res: Response) => {
+    try {
+        const { fontSize } = req.body;
+
+        if (!fontSize || typeof fontSize !== 'string') {
+            res.status(400).json({ error: 'Font size is required and must be a string' });
+            return;
+        }
+
+        const notes = readNotes();
+        let updatedCount = 0;
+
+        // Update all notes to use the new font size
+        const updatedNotes = notes.map(note => {
+            updatedCount++;
+            return {
+                ...note,
+                fontSize: fontSize
+            };
+        });
+
+        writeNotes(updatedNotes);
+
+        res.json({
+            message: `Updated font size for ${updatedCount} notes`,
+            updatedCount
+        });
+    } catch (error) {
+        console.error('Error updating font sizes for all notes:', error);
+        res.status(500).json({ error: 'Failed to update font sizes for all notes' });
+    }
+});
+
 // PUT /api/notes/:id - Update an existing note
 notesRoute.put('/:id', authenticateToken, (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const { title, content, fontSize } = req.body;
+        const config = loadConfig();
+        const globalDefaultFontSize = config.defaultNoteFontSize || '16px';
 
         if (!title || typeof title !== 'string') {
             res.status(400).json({ error: 'Title is required and must be a string' });
@@ -162,7 +202,7 @@ notesRoute.put('/:id', authenticateToken, (req: Request, res: Response) => {
             ...notes[noteIndex],
             title: title.trim(),
             content: (content || '').trim(),
-            fontSize: fontSize || notes[noteIndex].fontSize || '16px', // Preserve existing fontSize or use default
+            fontSize: fontSize || notes[noteIndex].fontSize || globalDefaultFontSize, // Preserve existing fontSize or use global default
             updatedAt: new Date().toISOString()
         };
 

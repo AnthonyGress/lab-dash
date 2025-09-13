@@ -208,8 +208,8 @@ export const useExistingItem = ({ existingItem, formContext, setCustomIconFile }
             mediaRequestManagerApiKey: existingItem?.type === ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET ? (existingItem?.config?._hasApiKey ? '**********' : '') : '',
 
             // Notes widget values
-            maxDisplayedNotes: existingItem?.type === ITEM_TYPE.NOTES_WIDGET ? String(existingItem?.config?.maxDisplayedNotes || 10) : '10',
             displayName: existingItem?.type === ITEM_TYPE.NOTES_WIDGET ? (existingItem?.config?.displayName || 'Notes') : 'Notes',
+            defaultNoteFontSize: existingItem?.type === ITEM_TYPE.NOTES_WIDGET ? (existingItem?.config?.defaultNoteFontSize || '16px') : '16px',
 
             location: location,
             gauge1: systemMonitorGauges[0] || 'cpu',

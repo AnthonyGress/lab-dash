@@ -12,18 +12,21 @@ import { Box, FormControl, IconButton, MenuItem, Select, Tooltip } from '@mui/ma
 import React from 'react';
 import { GoHeading } from 'react-icons/go';
 
+import { FONT_SIZE_SELECT_OPTIONS } from '../../../../../constants/font-sizes';
 
 interface MarkdownToolbarProps {
     onFormat: (type: string, prefix?: string, suffix?: string) => void;
     isMobile?: boolean;
     fontSize?: string;
     onFontSizeChange?: (fontSize: string) => void;
+    hideFontSize?: boolean;
 }
 
 export const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({
     onFormat,
     fontSize = '16px',
-    onFontSizeChange
+    onFontSizeChange,
+    hideFontSize = false
 }) => {
     const iconButtonStyle = {
         color: 'rgba(255,255,255,0.7)',
@@ -52,8 +55,8 @@ export const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({
             alignItems: 'center'
         }}>
             {/* Font Size Selector */}
-            {onFontSizeChange && (
-                <FormControl size='small' sx={{ minWidth: 70, mr: 1 }}>
+            {onFontSizeChange && !hideFontSize && (
+                <FormControl size='small' sx={{ minWidth: 55, mr: 1 }}>
                     <Select
                         value={fontSize}
                         onChange={(e) => onFontSizeChange(e.target.value)}
@@ -100,16 +103,11 @@ export const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({
                             }
                         }}
                     >
-                        <MenuItem value='10px'>10px</MenuItem>
-                        <MenuItem value='12px'>12px</MenuItem>
-                        <MenuItem value='14px'>14px</MenuItem>
-                        <MenuItem value='16px'>16px</MenuItem>
-                        <MenuItem value='18px'>18px</MenuItem>
-                        <MenuItem value='20px'>20px</MenuItem>
-                        <MenuItem value='22px'>22px</MenuItem>
-                        <MenuItem value='24px'>24px</MenuItem>
-                        <MenuItem value='28px'>28px</MenuItem>
-                        <MenuItem value='32px'>32px</MenuItem>
+                        {FONT_SIZE_SELECT_OPTIONS.map((option) => (
+                            <MenuItem key={option.id} value={option.id}>
+                                {option.label}
+                            </MenuItem>
+                        ))}
                     </Select>
                 </FormControl>
             )}
