@@ -8,7 +8,7 @@ import {
     FormatQuote,
     Link
 } from '@mui/icons-material';
-import { Box, IconButton, Tooltip } from '@mui/material';
+import { Box, FormControl, IconButton, MenuItem, Select, Tooltip } from '@mui/material';
 import React from 'react';
 import { GoHeading } from 'react-icons/go';
 
@@ -16,9 +16,15 @@ import { GoHeading } from 'react-icons/go';
 interface MarkdownToolbarProps {
     onFormat: (type: string, prefix?: string, suffix?: string) => void;
     isMobile?: boolean;
+    fontSize?: string;
+    onFontSizeChange?: (fontSize: string) => void;
 }
 
-export const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({ onFormat }) => {
+export const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({
+    onFormat,
+    fontSize = '16px',
+    onFontSizeChange
+}) => {
     const iconButtonStyle = {
         color: 'rgba(255,255,255,0.7)',
         '&:hover': { color: 'white' },
@@ -43,7 +49,71 @@ export const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({ onFormat }) =>
             padding: '0px',
             backgroundColor: 'transparent',
             borderRadius: '4px',
+            alignItems: 'center'
         }}>
+            {/* Font Size Selector */}
+            {onFontSizeChange && (
+                <FormControl size='small' sx={{ minWidth: 70, mr: 1 }}>
+                    <Select
+                        value={fontSize}
+                        onChange={(e) => onFontSizeChange(e.target.value)}
+                        sx={{
+                            color: 'rgba(255,255,255,0.7)',
+                            fontSize: '0.75rem',
+                            height: '28px',
+                            '& .MuiSelect-select': {
+                                padding: '4px 8px',
+                                paddingRight: '20px !important'
+                            },
+                            '& .MuiOutlinedInput-notchedOutline': {
+                                borderColor: 'rgba(255,255,255,0.3)',
+                            },
+                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                                borderColor: 'rgba(255,255,255,0.5)',
+                            },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                borderColor: 'rgba(255,255,255,0.7)',
+                            },
+                            '& .MuiSelect-icon': {
+                                color: 'rgba(255,255,255,0.7)',
+                            }
+                        }}
+                        MenuProps={{
+                            PaperProps: {
+                                sx: {
+                                    bgcolor: '#2A2A2A',
+                                    color: 'white',
+                                    '& .MuiMenuItem-root': {
+                                        fontSize: '0.75rem',
+                                        minHeight: '32px',
+                                        '&:hover': {
+                                            backgroundColor: 'rgba(255,255,255,0.1)'
+                                        },
+                                        '&.Mui-selected': {
+                                            backgroundColor: 'rgba(255,255,255,0.2)',
+                                            '&:hover': {
+                                                backgroundColor: 'rgba(255,255,255,0.3)'
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }}
+                    >
+                        <MenuItem value='10px'>10px</MenuItem>
+                        <MenuItem value='12px'>12px</MenuItem>
+                        <MenuItem value='14px'>14px</MenuItem>
+                        <MenuItem value='16px'>16px</MenuItem>
+                        <MenuItem value='18px'>18px</MenuItem>
+                        <MenuItem value='20px'>20px</MenuItem>
+                        <MenuItem value='22px'>22px</MenuItem>
+                        <MenuItem value='24px'>24px</MenuItem>
+                        <MenuItem value='28px'>28px</MenuItem>
+                        <MenuItem value='32px'>32px</MenuItem>
+                    </Select>
+                </FormControl>
+            )}
+
             <Tooltip title='Heading'>
                 <IconButton
                     size='small'

@@ -126,8 +126,11 @@ iconsRoute.post('/bulk', async (req: Request, res: Response) => {
                 // Determine the full file path
                 let fullPath: string;
 
-                if (sanitizedPath.includes('app-icons/')) {
-                    // Custom uploaded icon
+                if (iconPath.startsWith('/uploads/app-icons/')) {
+                    // Custom uploaded icon - remove leading slash and join with public
+                    fullPath = path.join('public', iconPath.substring(1));
+                } else if (sanitizedPath.includes('app-icons/')) {
+                    // Legacy handling for app-icons paths
                     fullPath = path.join('public', 'uploads', sanitizedPath);
                 } else {
                     // Standard asset icon from npm package

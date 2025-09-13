@@ -6,14 +6,14 @@ import { theme } from '../../../../../theme/theme';
 
 interface MarkdownPreviewProps {
     content: string;
-    isMobile?: boolean;
+    fontSize?: string;
 }
 
-export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, isMobile = false }) => {
+export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, fontSize = '16px' }) => {
     return (
         <Box sx={{
             color: 'rgba(255,255,255,0.9)',
-            fontSize: isMobile ? '0.8rem' : '0.85rem',
+            fontSize: fontSize, // Use dynamic font size
             lineHeight: 1.5,
             wordBreak: 'break-word',
             userSelect: 'text',

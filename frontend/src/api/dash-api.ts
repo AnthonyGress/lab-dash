@@ -2202,7 +2202,7 @@ export class DashApi {
         }
     }
 
-    public static async createNote(note: { title: string; content: string }): Promise<any> {
+    public static async createNote(note: { title: string; content: string; fontSize?: string }): Promise<any> {
         // Import shortid dynamically to avoid issues
         const shortid = await import('shortid');
 
@@ -2220,7 +2220,7 @@ export class DashApi {
         }
     }
 
-    public static async updateNote(noteId: string, note: { title: string; content: string }): Promise<any> {
+    public static async updateNote(noteId: string, note: { title: string; content: string; fontSize?: string }): Promise<any> {
         try {
             const res = await axios.put(`${BACKEND_URL}/api/notes/${noteId}`, note);
             return res.data;

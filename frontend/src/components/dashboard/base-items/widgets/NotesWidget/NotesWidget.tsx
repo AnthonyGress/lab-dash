@@ -21,6 +21,7 @@ interface Note {
     content: string;
     createdAt: string;
     updatedAt: string;
+    fontSize?: string;
 }
 
 interface NotesWidgetProps {
@@ -45,10 +46,17 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditingInModal, setIsEditingInModal] = useState(false);
     const [editTab, setEditTab] = useState<'write' | 'preview'>('write'); // New tab state
+    const [fontSize, setFontSize] = useState('16px'); // Font size state
+    const [originalFontSize, setOriginalFontSize] = useState('16px'); // Original font size before editing
 
     // Refs for text areas to handle formatting
     const textAreaRef = useRef<HTMLTextAreaElement>(null);
     const modalTextAreaRef = useRef<HTMLTextAreaElement>(null);
+
+    const handleFontSizeChange = async (newFontSize: string) => {
+        // Change global font size for the note
+        setFontSize(newFontSize);
+    };
 
     // Handler for markdown formatting
     const handleMarkdownFormat = (type: string, prefix?: string, suffix?: string) => {
@@ -131,11 +139,14 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
         setSelectedNote(note);
         setEditTitle(note.title);
         setEditContent(note.content);
+        setFontSize(note.fontSize || '16px');
         setViewMode('view');
         setIsNewNote(false);
     };
 
     const handleEditClick = () => {
+        setOriginalFontSize(fontSize);
+
         if (isModalOpen) {
             // If modal is open, edit in modal
             setIsEditingInModal(true);
@@ -152,6 +163,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
         setViewMode('list');
         setSelectedNote(null);
         setIsNewNote(false);
+        setFontSize('16px');
     };
 
     const handleTitleClick = () => {
@@ -164,9 +176,10 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
         setSelectedNote(null);
         setEditTitle('');
         setEditContent('');
+        setFontSize('16px');
         setViewMode('edit');
         setIsNewNote(true);
-        setEditTab('write'); // Default to write tab
+        setEditTab('write');
     };
 
     const handleSave = async () => {
@@ -180,13 +193,15 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
             if (isNewNote) {
                 savedNote = await DashApi.createNote({
                     title: editTitle.trim(),
-                    content: editContent.trim()
+                    content: editContent.trim(),
+                    fontSize: fontSize
                 });
                 setNotes(prev => [savedNote, ...prev]);
             } else if (selectedNote) {
                 savedNote = await DashApi.updateNote(selectedNote.id, {
                     title: editTitle.trim(),
-                    content: editContent.trim()
+                    content: editContent.trim(),
+                    fontSize: fontSize
                 });
                 setNotes(prev => prev.map(note =>
                     note.id === selectedNote.id ? savedNote : note
@@ -242,9 +257,18 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
             setViewMode('list');
             setSelectedNote(null);
             setIsNewNote(false);
-        } else {
-            // If editing existing note, go back to view mode
+            setFontSize('16px'); // Reset to default font size
+        } else if (selectedNote) {
+            // If editing existing note, revert changes and go back to view mode
+            setEditTitle(selectedNote.title);
+            setEditContent(selectedNote.content);
+            setFontSize(originalFontSize); // Restore original font size
             setViewMode('view');
+        }
+
+        // Clear edit state if in modal
+        if (isEditingInModal) {
+            setIsEditingInModal(false);
         }
     };
 
@@ -433,7 +457,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                     flex: 1,
                     overflow: 'auto',
                 }}>
-                    <MarkdownPreview content={selectedNote.content} isMobile={isMobile} />
+                    <MarkdownPreview content={selectedNote.content} fontSize={fontSize} />
                 </Box>
             </Box>
         );
@@ -465,9 +489,9 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                             mb: 0.5,
                             '& .MuiOutlinedInput-root': {
                                 color: 'white',
-                                fontSize: isMobile ? '0.9rem' : '1rem', // Much smaller font size
-                                fontWeight: 500, // Reduced font weight
-                                padding: '4px 8px', // Much smaller padding
+                                fontSize: isMobile ? '0.9rem' : '1rem',
+                                fontWeight: 500,
+                                padding: '4px 8px',
                                 '& fieldset': {
                                     borderColor: 'rgba(255,255,255,0.3)',
                                 },
@@ -479,7 +503,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                 },
                             },
                             '& .MuiInputBase-input': {
-                                padding: '6px 0', // Much smaller vertical padding
+                                padding: '6px 0',
                             },
                             '& .MuiInputLabel-root': {
                                 color: 'rgba(255,255,255,0.7)',
@@ -498,7 +522,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                             onChange={(_, newValue) => setEditTab(newValue)}
                             sx={{
                                 minHeight: '32px',
-                                minWidth: 'auto', // Let tabs take minimal space
+                                minWidth: 'auto',
                                 '& .MuiTabs-indicator': {
                                     backgroundColor: theme.palette.primary.main,
                                 },
@@ -507,8 +531,8 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                     minHeight: '32px',
                                     fontSize: '0.8rem',
                                     textTransform: 'none',
-                                    minWidth: 'auto', // Compact tabs
-                                    padding: '6px 12px', // Smaller padding
+                                    minWidth: 'auto',
+                                    padding: '6px 12px',
                                     '&.Mui-selected': {
                                         color: 'white',
                                     },
@@ -522,7 +546,12 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                         {/* Show toolbar inline when in write mode */}
                         {editTab === 'write' && (
                             <Box sx={{ ml: 1, display: 'flex', alignItems: 'center' }}>
-                                <MarkdownToolbar onFormat={handleMarkdownFormat} isMobile={isMobile} />
+                                <MarkdownToolbar
+                                    onFormat={handleMarkdownFormat}
+                                    isMobile={isMobile}
+                                    fontSize={fontSize}
+                                    onFontSizeChange={handleFontSizeChange}
+                                />
                             </Box>
                         )}
                     </Box>
@@ -532,7 +561,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                         mt: 0.5,
                         display: 'flex',
                         flexDirection: 'column',
-                        overflow: 'hidden', // Prevent outer container from scrolling
+                        overflow: 'hidden',
                     }}>
                         {editTab === 'write' ? (
                             <TextField
@@ -549,7 +578,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                         backgroundColor: 'rgba(0,0,0,0.1)',
                                         color: 'white',
                                         fontFamily: 'monospace',
-                                        fontSize: isMobile ? '0.8rem' : '0.85rem',
+                                        fontSize: fontSize,
                                         height: '100%',
                                         display: 'flex',
                                         alignItems: 'stretch',
@@ -565,7 +594,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                     },
                                     '& .MuiInputBase-inputMultiline': {
                                         height: '100% !important',
-                                        overflow: 'auto !important', // Make the text input scrollable
+                                        overflow: 'auto !important',
                                         resize: 'none',
                                     },
                                     '& .MuiInputLabel-root': {
@@ -589,7 +618,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                 backgroundColor: 'rgba(0,0,0,0.1)',
                                 overflow: 'hidden',
                             }}>
-                                <MarkdownPreview content={editContent} isMobile={isMobile} />
+                                <MarkdownPreview content={editContent} fontSize={fontSize} />
                             </Box>
                         )}
                     </Box>
@@ -597,7 +626,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                         display: 'flex',
                         justifyContent: 'flex-end',
                         mt: 1,
-                        flexShrink: 0, // Prevent buttons from shrinking
+                        flexShrink: 0,
                     }}>
                         <ConditionalTooltip title='Cancel'>
                             <IconButton
@@ -645,10 +674,10 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
     return (
         <CardContent sx={{
             height: '100%',
-            padding: 1, // Reduced from 2 to 1
+            padding: 1,
             maxWidth: '100%',
             width: '100%',
-            userSelect: 'auto', // Ensure text selection is allowed
+            userSelect: 'auto',
             ...(isMobile ? {} : {
                 minHeight: DUAL_WIDGET_CONTAINER_HEIGHT.sm
             })
@@ -759,12 +788,12 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                 <Box sx={{ flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', width: '100%' }}>
                     {/* Static container that remains consistent across all view modes */}
                     <Box sx={{
-                        px: 1, // Reduced from 1.5 to 1
-                        pt: 1, // Reduced from 1.5 to 1
-                        pb: 1, // Reduced from 1.5 to 1
+                        px: 1,
+                        pt: 1,
+                        pb: 1,
                         overflowY: 'auto',
-                        height: '320px', // Increased from 280px to 320px
-                        maxHeight: '320px', // Increased from 280px to 320px
+                        height: '320px',
+                        maxHeight: '320px',
                         width: '100%',
                         minWidth: '100%',
                         flex: '1 1 auto',
@@ -856,12 +885,12 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                             value={editTitle}
                             onChange={(e) => setEditTitle(e.target.value)}
                             sx={{
-                                mb: 0.5, // Reduced margin bottom
+                                mb: 0.5,
                                 '& .MuiOutlinedInput-root': {
                                     color: 'white',
-                                    fontSize: isMobile ? '1.1rem' : '1.3rem', // Reduced from 1.4rem/1.6rem
+                                    fontSize: isMobile ? '1.1rem' : '1.3rem',
                                     fontWeight: 600,
-                                    padding: '8px 14px', // Reduced padding
+                                    padding: '8px 14px',
                                     '& fieldset': {
                                         borderColor: 'rgba(255,255,255,0.3)',
                                     },
@@ -873,7 +902,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                     },
                                 },
                                 '& .MuiInputBase-input': {
-                                    padding: '12px 0', // Reduced vertical padding
+                                    padding: '12px 0',
                                 },
                                 '& .MuiInputLabel-root': {
                                     color: 'rgba(255,255,255,0.7)',
@@ -881,29 +910,50 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                             }}
                         />
 
-                        {/* Tabs for Write/Preview */}
-                        <Tabs
-                            value={editTab}
-                            onChange={(_, newValue) => setEditTab(newValue)}
-                            sx={{
-                                minHeight: '32px',
-                                '& .MuiTabs-indicator': {
-                                    backgroundColor: theme.palette.primary.main,
-                                },
-                                '& .MuiTab-root': {
-                                    color: 'rgba(255,255,255,0.7)',
+                        {/* Tabs for Write/Preview with inline toolbar */}
+                        <Box sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            borderBottom: '1px solid rgba(255,255,255,0.1)',
+                        }}>
+                            <Tabs
+                                value={editTab}
+                                onChange={(_, newValue) => setEditTab(newValue)}
+                                sx={{
                                     minHeight: '32px',
-                                    fontSize: '0.8rem',
-                                    textTransform: 'none',
-                                    '&.Mui-selected': {
-                                        color: 'white',
+                                    minWidth: 'auto',
+                                    '& .MuiTabs-indicator': {
+                                        backgroundColor: theme.palette.primary.main,
                                     },
-                                },
-                            }}
-                        >
-                            <Tab label='Write' value='write' />
-                            <Tab label='Preview' value='preview' />
-                        </Tabs>
+                                    '& .MuiTab-root': {
+                                        color: 'rgba(255,255,255,0.7)',
+                                        minHeight: '32px',
+                                        fontSize: '0.8rem',
+                                        textTransform: 'none',
+                                        minWidth: 'auto',
+                                        padding: '6px 12px',
+                                        '&.Mui-selected': {
+                                            color: 'white',
+                                        },
+                                    },
+                                }}
+                            >
+                                <Tab label='Write' value='write' />
+                                <Tab label='Preview' value='preview' />
+                            </Tabs>
+
+                            {/* Show toolbar inline when in write mode */}
+                            {editTab === 'write' && (
+                                <Box sx={{ ml: 1, display: 'flex', alignItems: 'center' }}>
+                                    <MarkdownToolbar
+                                        onFormat={handleMarkdownFormat}
+                                        isMobile={isMobile}
+                                        fontSize={fontSize}
+                                        onFontSizeChange={handleFontSizeChange}
+                                    />
+                                </Box>
+                            )}
+                        </Box>
 
                         <Box sx={{
                             flex: 1,
@@ -913,55 +963,52 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                             overflow: 'hidden', // Prevent outer container from scrolling
                         }}>
                             {editTab === 'write' ? (
-                                <>
-                                    <MarkdownToolbar onFormat={handleMarkdownFormat} isMobile={isMobile} />
-                                    <TextField
-                                        fullWidth
-                                        multiline
-                                        value={editContent}
-                                        onChange={(e) => setEditContent(e.target.value)}
-                                        placeholder='Write your note in markdown...'
-                                        variant='outlined'
-                                        inputRef={modalTextAreaRef}
-                                        sx={{
-                                            flex: 1,
-                                            '& .MuiOutlinedInput-root': {
-                                                backgroundColor: 'rgba(0,0,0,0.1)',
-                                                color: 'white',
-                                                fontFamily: 'monospace',
-                                                fontSize: isMobile ? '0.8rem' : '0.85rem',
-                                                height: '100%',
-                                                display: 'flex',
-                                                alignItems: 'stretch',
-                                                '& fieldset': {
-                                                    borderColor: 'rgba(255,255,255,0.3)',
-                                                },
-                                                '&:hover fieldset': {
-                                                    borderColor: 'rgba(255,255,255,0.5)',
-                                                },
-                                                '&.Mui-focused fieldset': {
-                                                    borderColor: theme.palette.primary.main,
-                                                },
+                                <TextField
+                                    fullWidth
+                                    multiline
+                                    value={editContent}
+                                    onChange={(e) => setEditContent(e.target.value)}
+                                    placeholder='Write your note in markdown...'
+                                    variant='outlined'
+                                    inputRef={modalTextAreaRef}
+                                    sx={{
+                                        flex: 1,
+                                        '& .MuiOutlinedInput-root': {
+                                            backgroundColor: 'rgba(0,0,0,0.1)',
+                                            color: 'white',
+                                            fontFamily: 'monospace',
+                                            fontSize: fontSize, // Dynamic font size
+                                            height: '100%',
+                                            display: 'flex',
+                                            alignItems: 'stretch',
+                                            '& fieldset': {
+                                                borderColor: 'rgba(255,255,255,0.3)',
                                             },
-                                            '& .MuiInputBase-inputMultiline': {
-                                                height: '100% !important',
-                                                overflow: 'auto !important', // Make the text input scrollable
-                                                resize: 'none',
+                                            '&:hover fieldset': {
+                                                borderColor: 'rgba(255,255,255,0.5)',
                                             },
-                                            '& .MuiInputLabel-root': {
-                                                color: 'rgba(255,255,255,0.7)',
+                                            '&.Mui-focused fieldset': {
+                                                borderColor: theme.palette.primary.main,
                                             },
-                                            '& .MuiInputBase-input': {
-                                                color: 'white !important',
-                                                caretColor: 'white',
-                                            },
-                                            '& .MuiInputBase-input::placeholder': {
-                                                color: 'rgba(255,255,255,0.5)',
-                                                opacity: 1,
-                                            },
-                                        }}
-                                    />
-                                </>
+                                        },
+                                        '& .MuiInputBase-inputMultiline': {
+                                            height: '100% !important',
+                                            overflow: 'auto !important', // Make the text input scrollable
+                                            resize: 'none',
+                                        },
+                                        '& .MuiInputLabel-root': {
+                                            color: 'rgba(255,255,255,0.7)',
+                                        },
+                                        '& .MuiInputBase-input': {
+                                            color: 'white !important',
+                                            caretColor: 'white',
+                                        },
+                                        '& .MuiInputBase-input::placeholder': {
+                                            color: 'rgba(255,255,255,0.5)',
+                                            opacity: 1,
+                                        },
+                                    }}
+                                />
                             ) : (
                                 <Box sx={{
                                     flex: 1,
@@ -970,7 +1017,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                     backgroundColor: 'rgba(0,0,0,0.1)',
                                     overflow: 'hidden',
                                 }}>
-                                    <MarkdownPreview content={editContent} isMobile={isMobile} />
+                                    <MarkdownPreview content={editContent} fontSize={fontSize} />
                                 </Box>
                             )}
                         </Box>
@@ -983,7 +1030,10 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                             <ConditionalTooltip title='Cancel'>
                                 <IconButton
                                     size='small'
-                                    onClick={() => setIsEditingInModal(false)}
+                                    onClick={() => {
+                                        handleCancel();
+                                        setIsEditingInModal(false);
+                                    }}
                                     sx={{
                                         color: 'white',
                                         opacity: 0.8,
