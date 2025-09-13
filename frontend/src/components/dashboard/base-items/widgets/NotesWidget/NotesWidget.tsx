@@ -85,9 +85,9 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
     const { isLoggedIn, isAdmin } = useAppContext();
 
     // Conditional tooltip component that only shows tooltips on devices with fine pointers
-    const ConditionalTooltip = ({ title, children, placement = 'top' }: { 
-        title: string; 
-        children: React.ReactElement; 
+    const ConditionalTooltip = ({ title, children, placement = 'top' }: {
+        title: string;
+        children: React.ReactElement;
         placement?: 'top' | 'bottom' | 'left' | 'right';
     }) => {
         if (hasCoarsePointer) {
@@ -371,7 +371,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    mb: 0, // Reduced to bring content closer to title
+                    mb: 0,
                     pb: .5,
                     borderBottom: '1px solid rgba(255,255,255,0.1)',
                     position: 'relative',
@@ -387,11 +387,8 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                             userSelect: 'text',
                             cursor: 'text',
                             flex: 1,
-                            lineHeight: 1.2, // Tighter line height
-                            marginLeft: 1, // Added left margin
-                            '&:hover': {
-                                backgroundColor: 'rgba(255,255,255,0.05)'
-                            }
+                            lineHeight: 1.2,
+                            marginLeft: 1
                         }}
                     >
                         {selectedNote.title}
