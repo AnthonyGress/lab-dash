@@ -71,7 +71,7 @@ export const WIDGET_OPTIONS = [
         id: ITEM_TYPE.MEDIA_SERVER_WIDGET,
         label: 'Media Server',
         icon: FaPlay,
-        description: 'Monitor active users and now playing details'
+        description: 'Monitor active users, now playing details, and total stored media '
     },
     {
         id: ITEM_TYPE.NOTES_WIDGET,
