@@ -407,6 +407,19 @@ export class DashApi {
         }
     }
 
+    public static async refreshSonarrMonitoredDownloads(itemId: string): Promise<any> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/sonarr/refresh-monitored-downloads`, {}, {
+                params: { itemId },
+                timeout: 10000
+            });
+            return res.data;
+        } catch (error) {
+            console.error('Error refreshing Sonarr monitored downloads:', error);
+            throw error;
+        }
+    }
+
     // Radarr API methods
     public static async getRadarrQueue(itemId: string): Promise<any> {
         try {
@@ -460,6 +473,19 @@ export class DashApi {
             return res.data.data || [];
         } catch (error) {
             console.error('Error fetching Radarr movies:', error);
+            throw error;
+        }
+    }
+
+    public static async refreshRadarrMonitoredDownloads(itemId: string): Promise<any> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/radarr/refresh-monitored-downloads`, {}, {
+                params: { itemId },
+                timeout: 10000
+            });
+            return res.data;
+        } catch (error) {
+            console.error('Error refreshing Radarr monitored downloads:', error);
             throw error;
         }
     }

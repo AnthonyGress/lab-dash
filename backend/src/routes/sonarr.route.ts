@@ -328,6 +328,47 @@ sonarrRoute.get('/series', async (req: Request, res: Response) => {
     }
 });
 
+// Refresh Monitored Downloads endpoint
+sonarrRoute.post('/refresh-monitored-downloads', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const baseUrl = getBaseUrl(req);
+        const apiKey = getApiKey(req);
+
+        if (!apiKey) {
+            res.status(400).json({
+                success: false,
+                error: 'API key not configured for this Sonarr instance'
+            });
+            return;
+        }
+
+        console.log('Sending RefreshMonitoredDownloads command to:', baseUrl);
+        // Send RefreshMonitoredDownloads command to Sonarr
+        await axios.post(`${baseUrl}/api/v3/command`, {
+            name: 'RefreshMonitoredDownloads'
+        }, {
+            headers: {
+                'X-Api-Key': apiKey,
+                'Content-Type': 'application/json'
+            },
+            httpsAgent: httpsAgent,
+            timeout: 10000
+        });
+
+        res.json({
+            success: true,
+            message: 'RefreshMonitoredDownloads command sent successfully'
+        });
+
+    } catch (error: any) {
+        console.error('Sonarr refresh monitored downloads error:', error.message);
+        res.status(error.response?.status || 500).json({
+            success: false,
+            error: error.response?.data?.message || error.message || 'Failed to refresh monitored downloads'
+        });
+    }
+});
+
 // Utility functions
 function getStateFromStatus(status: string, trackedDownloadStatus: string, trackedDownloadState: string): string {
     // Map Sonarr statuses to common download states
