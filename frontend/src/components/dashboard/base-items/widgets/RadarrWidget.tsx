@@ -119,11 +119,11 @@ export const RadarrWidget: React.FC<RadarrWidgetProps> = ({ id, config }) => {
                 if (id && config?.host && config?._hasApiKey) {
                     // Refresh monitored downloads when using dynamic polling
                     if (hasActiveDownloads) {
-                        DashApi.refreshRadarrMonitoredDownloads(id).catch(err => 
+                        DashApi.refreshRadarrMonitoredDownloads(id).catch(err =>
                             console.error('Failed to refresh Radarr monitored downloads:', err)
                         );
                     }
-                    
+
                     fetchQueueData().then(() => {
                         scheduleNext(); // Schedule the next fetch
                     });

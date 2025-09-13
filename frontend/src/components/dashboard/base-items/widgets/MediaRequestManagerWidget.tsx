@@ -538,7 +538,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                                         if (activeElement && activeElement.blur) {
                                             activeElement.blur();
                                         }
-                                        
+
                                         setPreviousSearchQuery(searchQuery); // Save current search query
                                         handleItemClick(newValue);
                                         setSearchQuery(''); // Clear search after selection
@@ -555,7 +555,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                                             if (activeElement && activeElement.blur) {
                                                 activeElement.blur();
                                             }
-                                            
+
                                             setPreviousSearchQuery(searchQuery);
                                             handleItemClick(firstItem);
                                             setSearchQuery('');

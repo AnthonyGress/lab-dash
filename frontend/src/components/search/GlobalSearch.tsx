@@ -113,7 +113,7 @@ export const GlobalSearch = () => {
     useEffect(() => {
         // Check if device has coarse pointer (mobile/touch devices)
         const hasCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
-        
+
         // Don't auto-focus on mobile/touch devices
         if (hasCoarsePointer) {
             return;

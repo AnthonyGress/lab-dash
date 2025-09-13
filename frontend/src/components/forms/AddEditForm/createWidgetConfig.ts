@@ -5,8 +5,8 @@ import { isEncrypted } from '../../../utils/utils';
 
 // Helper function to create widget configuration based on widget type
 export const createWidgetConfig = async (
-    widgetType: string, 
-    data: FormValues, 
+    widgetType: string,
+    data: FormValues,
     existingItem?: DashboardItem | null,
     formContext?: any
 ): Promise<any> => {

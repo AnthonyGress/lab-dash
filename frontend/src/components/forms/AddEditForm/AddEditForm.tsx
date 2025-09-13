@@ -412,7 +412,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             } else if (data.widgetType === ITEM_TYPE.NOTES_WIDGET) {
                 // Notes widget configuration
                 config = await createWidgetConfig(ITEM_TYPE.NOTES_WIDGET, data, existingItem, formContext);
-                
+
                 // If updating an existing Notes widget and the default font size changed, update all notes
                 if (existingItem && data.defaultNoteFontSize && existingItem.config?.defaultNoteFontSize !== data.defaultNoteFontSize) {
                     try {

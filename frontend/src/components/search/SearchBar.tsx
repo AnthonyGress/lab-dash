@@ -193,18 +193,18 @@ export const SearchBar = ({
                             }}
                             sx={{
                                 width: { xs: '100%',
-                                    sm: '50%',
+                                    sm: '90%',
                                     md: '90%',
                                     lg: '80%',
                                     xl: '50%'
                                 },
                                 height: '60px',
                                 '& .MuiOutlinedInput-root': {
-                                    backgroundColor: { xs: COLORS.TRANSPARENT_GRAY, md: 'transparent' },
+                                    backgroundColor: { xs: COLORS.TRANSPARENT_GRAY, sm: 'transparent' },
                                     borderRadius: 2,
-                                    backdropFilter: { xs: 'blur(6px)', md: 'none' },
+                                    backdropFilter: { xs: 'blur(6px)', sm: 'none' },
                                     // (Optional) Include the -webkit- prefix for Safari support:
-                                    WebkitBackdropFilter: { xs: 'blur(6px)', md: 'none' },
+                                    WebkitBackdropFilter: { xs: 'blur(6px)', sm: 'none' },
                                 },
                                 '& .MuiOutlinedInput-notchedOutline': {
                                     border: '1px solid rgba(255, 255, 255, 0.3) !important',

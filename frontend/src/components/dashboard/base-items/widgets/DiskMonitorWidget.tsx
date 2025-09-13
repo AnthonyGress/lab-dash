@@ -53,7 +53,7 @@ export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) 
     const formatSpace = (bytes: number): string => {
         if (bytes === 0) return '0 GB';
         const gb = bytes / (1024 ** 3);
-        
+
         // For large and smaller screens, don't show decimals
         if (isLargeOrSmaller) {
             if (gb >= 1000) {
@@ -61,7 +61,7 @@ export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) 
             }
             return `${Math.round(gb)} GB`;
         }
-        
+
         // For XL screens, show decimals
         if (gb >= 1000) {
             return `${(gb / 1000).toFixed(1)} TB`;

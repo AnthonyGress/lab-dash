@@ -1,7 +1,7 @@
 import { Add } from '@mui/icons-material';
 import CloseIcon from '@mui/icons-material/Close';
 import MenuIcon from '@mui/icons-material/Menu';
-import { Avatar, Badge, Button, CircularProgress, Divider, Drawer, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, styled } from '@mui/material';
+import { Avatar, Badge, Button, Divider, Drawer, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, styled } from '@mui/material';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
@@ -49,7 +49,6 @@ export const ResponsiveAppBar = ({ children }: Props) => {
     const [selectedPageForEdit, setSelectedPageForEdit] = useState<any>(null);
     const [openUpdateModal, setOpenUpdateModal] = useState(false);
     const [openVersionModal, setOpenVersionModal] = useState(false);
-    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [internetTooltipOpen, setInternetTooltipOpen] = useState(false);
 
     const { internetStatus } = useInternetStatus();
@@ -146,7 +145,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
     };
 
     const handleMenuClose = () => {
-        setAnchorEl(null);
+        // Menu close logic if needed
     };
 
     const handleLogin = () => {
@@ -310,20 +309,43 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                             </Box>
                         </Link>
                         { !currentPath.includes('/settings') && config?.search &&
-                            <Box sx={{ width: '100%', display: { xs: 'none', md: 'flex' }, justifyContent: 'center', flexGrow: 1 }}>
+                            <Box sx={{ width: '100%', display: { xs: 'none', sm: 'flex' }, justifyContent: 'center', flexGrow: 1 }}>
                                 <GlobalSearch />
                             </Box>
                         }
 
                         <Box sx={{ display: 'flex' }}>
                             <Box sx={{ display: 'flex', width: { md: '300px', lg: '350px' }, flexGrow: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
-                                {editMode ? (
-                                    <Tooltip title='Add Item' placement='left' arrow>
-                                        <IconButton onClick={() => setOpenAddModal(true)}>
-                                            <Add sx={{ color: 'white', fontSize: '2rem' }}/>
-                                        </IconButton>
-                                    </Tooltip>
-                                ) : showInternetIndicator ? (
+                                {editMode && (
+                                    <>
+                                        {/* Done button for sm screens and higher */}
+                                        <Button
+                                            variant='contained'
+                                            onClick={handleSave}
+                                            sx={{
+                                                display: { xs: 'none', sm: 'flex' },
+                                                backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT,
+                                                color: 'black',
+                                                borderRadius: '999px',
+                                                height: '2rem',
+                                                minWidth: '4.5rem',
+                                                mr: 1,
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.3)'
+                                                }
+                                            }}
+                                        >
+                                            Done
+                                        </Button>
+                                        {/* Add Item button */}
+                                        <Tooltip title='Add Item' placement='left' arrow>
+                                            <IconButton onClick={() => setOpenAddModal(true)}>
+                                                <Add sx={{ color: 'white', fontSize: '2rem' }}/>
+                                            </IconButton>
+                                        </Tooltip>
+                                    </>
+                                )}
+                                {!editMode && showInternetIndicator && (
                                     <Tooltip
                                         key='internet-tooltip'
                                         title={internetStatus === 'online' ? 'Internet Connected' : internetStatus === 'offline' ? 'No Internet Connection' : 'Checking Internet...'}
@@ -363,7 +385,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                             )}
                                         </IconButton>
                                     </Tooltip>
-                                ) : null}
+                                )}
 
                                 {/* Hamburger Menu Button */}
                                 <IconButton
@@ -707,22 +729,22 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                 <Box component='main' sx={{
                     flexGrow: 1,
                     mt: '64px',
-                    paddingTop: '3rem',
+                    paddingTop: { xs: '3rem', sm: '1rem' },
                 }}>
                 </Box>
                 {
                     editMode
-                        ? <Box position='absolute' sx={{ top: { xs: '66px', sm: '77px', md: '70px' }, zIndex: 99, display: 'flex', justifyContent: 'flex-end', width: '100%', px: 3, gap: 2 }}>
-                            {/* <Button variant='contained' onClick={handleEditCancel} sx={{ backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT, color: 'black', borderRadius: '999px', height: '1.7rem', width: '4.5rem' }}>Cancel</Button> */}
+                        ? <Box position='absolute' sx={{ top: { xs: '66px', sm: '77px', md: '70px' }, zIndex: 99, display: { xs: 'flex', sm: 'none' }, justifyContent: 'flex-end', width: '100%', px: 3, gap: 2 }}>
                             <Button variant='contained' onClick={handleSave}  sx={{ backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT, color: 'black', borderRadius: '999px', height: '1.7rem', width: '4.5rem' }}>Done</Button>
                         </Box>
-                        :
-                        !currentPath.includes('/settings') && config?.search && <Box position='absolute' sx={{ top: { xs: '49px', sm: '58px' }, zIndex: 99, display: { xs: 'flex', md: 'none' }, justifyContent: 'center', width: '100%' }} mt={.5}>
-                            <GlobalSearch />
-                        </Box>
+                        : null
                 }
+                {!currentPath.includes('/settings') && config?.search && !editMode && (
+                    <Box position='absolute' sx={{ top: { xs: '49px', sm: '58px' }, zIndex: 99, display: { xs: 'flex', sm: 'none' }, justifyContent: 'center', width: '100%' }} mt={.5}>
+                        <GlobalSearch />
+                    </Box>
+                )}
 
-                <Box sx={{ pb: 1, height: '100%', display: { xs: 'none', sm: 'block', md: 'none' } }} />
                 {children}
             </Box>
         </>

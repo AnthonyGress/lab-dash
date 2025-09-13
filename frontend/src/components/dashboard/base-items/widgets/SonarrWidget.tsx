@@ -119,11 +119,11 @@ export const SonarrWidget: React.FC<SonarrWidgetProps> = ({ id, config }) => {
                 if (id && config?.host && config?._hasApiKey) {
                     // Refresh monitored downloads when using dynamic polling
                     if (hasActiveDownloads) {
-                        DashApi.refreshSonarrMonitoredDownloads(id).catch(err => 
+                        DashApi.refreshSonarrMonitoredDownloads(id).catch(err =>
                             console.error('Failed to refresh Sonarr monitored downloads:', err)
                         );
                     }
-                    
+
                     fetchQueueData().then(() => {
                         scheduleNext(); // Schedule the next fetch
                     });
