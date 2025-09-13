@@ -26,7 +26,6 @@
     "@mui/icons-material": "^6.4.2",
     "@mui/material": "^6.4.3",
     "@mui/x-charts": "^7.25.0",
-    "@udecode/plate": "^48.0.5",
     "axios": "^1.8.3",
     "framer-motion": "^12.4.7",
     "mui-file-input": "^6.0.0",
