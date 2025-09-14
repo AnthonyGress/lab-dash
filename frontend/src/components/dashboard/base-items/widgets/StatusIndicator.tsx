@@ -44,14 +44,15 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({ url, healthChe
                     position: 'absolute',
                     bottom: 4,
                     right: 4,
-                    width: 16, // Changed to even number
-                    height: 16, // Changed to even number
+                    width: 14,
+                    height: 14,
                     borderRadius: '50%',
                     backgroundColor: dotColor,
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
+                    zIndex: 10,
                     // Force pixel-perfect centering
                     lineHeight: 0,
                     textAlign: 'center'
@@ -60,27 +61,13 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({ url, healthChe
                 {dotColor === 'green' && (
                     <KeyboardArrowUpIcon sx={{
                         color: 'white',
-                        fontSize: 16,
-                        position: 'absolute',
-                        top: 8, // Exactly half of 16px container
-                        left: 8, // Exactly half of 16px container
-                        transform: 'translate(-8px, -8px)', // Exactly half of 16px icon
-                        margin: 0,
-                        padding: 0,
-                        lineHeight: 0
+                        fontSize: 14
                     }} />
                 )}
                 {dotColor === 'red' && (
                     <KeyboardArrowDownIcon sx={{
                         color: 'white',
-                        fontSize: 16,
-                        position: 'absolute',
-                        top: 8, // Exactly half of 16px container
-                        left: 8, // Exactly half of 16px container
-                        transform: 'translate(-8px, -8px)', // Exactly half of 16px icon
-                        margin: 0,
-                        padding: 0,
-                        lineHeight: 0
+                        fontSize: 14
                     }} />
                 )}
             </Box>
