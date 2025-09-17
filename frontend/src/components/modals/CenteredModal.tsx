@@ -52,7 +52,7 @@ export const CenteredModal = ({ open, handleClose, children, width, height, titl
         bgcolor: 'background.paper',
         borderRadius: '8px',
         boxShadow: 24,
-        maxHeight: height ? height : '90vh', // Use provided height or default to 90vh
+        maxHeight: height ? height : '90vh',
         display: 'flex',
         flexDirection: 'column'
     };
@@ -60,7 +60,11 @@ export const CenteredModal = ({ open, handleClose, children, width, height, titl
     return (
         <Modal
             open={open}
-            onClose={handleClose}
+            onClose={(event, reason) => {
+                if (reason === 'escapeKeyDown') {
+                    handleClose();
+                }
+            }}
             aria-labelledby='modal-title'
             aria-describedby='modal-description'
             disableScrollLock={true}
@@ -90,7 +94,7 @@ export const CenteredModal = ({ open, handleClose, children, width, height, titl
                             sx={styles.vcenter}
                         >
                             <Tooltip title='Close' placement='top'>
-                                <IconButton 
+                                <IconButton
                                     onClick={handleClose}
                                     aria-label='Close modal'
                                 >

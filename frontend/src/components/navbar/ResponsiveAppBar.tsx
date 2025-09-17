@@ -21,7 +21,7 @@ import { useInternetStatus } from '../../hooks/useInternetStatus';
 import { COLORS, styles } from '../../theme/styles';
 import { theme } from '../../theme/theme';
 import { ITEM_TYPE } from '../../types';
-import { lockScroll } from '../../utils/scroll-utils';
+import { lockScrollForDrawer } from '../../utils/scroll-utils';
 import { getAppVersion } from '../../utils/version';
 import { AddEditForm } from '../forms/AddEditForm/AddEditForm';
 import { Logo } from '../Logo';
@@ -31,12 +31,16 @@ import { VersionModal } from '../modals/VersionModal';
 import { GlobalSearch } from '../search/GlobalSearch';
 import { ToastManager } from '../toast/ToastManager';
 
-const DrawerHeader = styled('div')(() => ({
+const DrawerHeader = styled('div')(({ theme: muiTheme }) => ({
     display: 'flex',
     alignItems: 'center',
-    padding: theme.spacing(0, 4),
-    ...theme.mixins.toolbar,
+    ...muiTheme.mixins.toolbar,
     justifyContent: 'flex-end',
+    paddingLeft: muiTheme.spacing(2),
+    paddingRight: muiTheme.spacing(1), // Increased padding to move close icon more to the right on mobile
+    [muiTheme.breakpoints.up('sm')]: {
+        paddingRight: muiTheme.spacing(4), // Match menu button margin on desktop (sm: 2) + some alignment
+    },
 }));
 
 type Props = {
@@ -109,7 +113,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
     // Lock scroll when drawer is open
     useEffect(() => {
         if (openDrawer) {
-            const unlockScroll = lockScroll();
+            const unlockScroll = lockScrollForDrawer();
             return unlockScroll;
         }
     }, [openDrawer]);
@@ -261,9 +265,9 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                 left: 0, // Ensure it starts from the left edge
                 right: 0, // Ensure it extends to the right edge
                 overflowX: 'hidden',
-                // On mobile, make it sticky to top with no movement
-                position: { xs: 'sticky', sm: 'fixed' },
-                top: { xs: 0, sm: 'auto' },
+                // Always use fixed positioning to ensure AppBar stays visible
+                position: 'fixed',
+                top: 0,
                 zIndex: theme.zIndex.appBar
             }}>
                 <Container maxWidth={false} sx={{
@@ -375,7 +379,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                             Done
                                         </Button>
                                         {/* Add Item button */}
-                                        <Tooltip title='Add Item' placement='left' arrow>
+                                        <Tooltip title='Add Item' placement='bottom' arrow>
                                             <IconButton onClick={() => setOpenAddModal(true)}>
                                                 <Add sx={{ color: 'white', fontSize: '2rem' }}/>
                                             </IconButton>
@@ -476,10 +480,19 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                 onClose={handleCloseDrawer}
                                 anchor='right'
                                 disableScrollLock={true}
+                                sx={{
+                                    '& .MuiDrawer-paper': {
+                                        width: 225,
+                                        boxSizing: 'border-box',
+                                        right: 0,
+                                        marginRight: 0,
+                                        borderRight: 'none',
+                                    }
+                                }}
                             >
                                 <Box
                                     sx={{
-                                        width: 225,
+                                        width: '100%',
                                         height: '100%',
                                         display: 'flex',
                                         flexDirection: 'column'
@@ -762,24 +775,20 @@ export const ResponsiveAppBar = ({ children }: Props) => {
             <Box sx={{
                 display: 'flex',
                 flexDirection: 'column',
-                // On mobile with sticky navbar, no top margin needed
-                // On desktop with fixed navbar, we need top margin
-                paddingTop: { xs: 0, sm: '64px' }
+                paddingTop: '64px'
             }}
             >
                 <Box component='main' sx={{
                     flexGrow: 1,
-                    // Adjust margin-top: mobile (sticky) = 0, desktop (fixed) = 0 since we use paddingTop above
-                    mt: 0,
+                    mt: { xs:-1, sm: 0 },
                     paddingTop: { xs: '3.5rem', sm: '1rem' },
                 }}>
                 </Box>
                 {
                     editMode
                         ? <Box position='absolute' sx={{
-                            // For mobile (sticky navbar): position relative to navbar
-                            // For desktop (fixed navbar): position from top of viewport
-                            top: { xs: '66px', sm: '141px' }, // sm value = 64px (navbar) + 77px (original offset)
+                            // For mobile: position relative to navbar since it's always fixed now
+                            top: '66px', // Just below the fixed navbar
                             zIndex: 99,
                             display: { xs: 'flex', sm: 'none' },
                             justifyContent: 'flex-end',
@@ -793,9 +802,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                 }
                 {!currentPath.includes('/settings') && config?.search && !editMode && (
                     <Box position='absolute' sx={{
-                        // For mobile (sticky navbar): position relative to navbar
-                        // For desktop (fixed navbar): position from top of viewport
-                        top: { xs: '49px', sm: '122px' }, // sm value = 64px (navbar) + 58px (original offset)
+                        top: '49px',
                         zIndex: 99,
                         display: { xs: 'flex', sm: 'none' },
                         justifyContent: 'center',
