@@ -21,6 +21,7 @@ import { useInternetStatus } from '../../hooks/useInternetStatus';
 import { COLORS, styles } from '../../theme/styles';
 import { theme } from '../../theme/theme';
 import { ITEM_TYPE } from '../../types';
+import { lockScroll } from '../../utils/scroll-utils';
 import { getAppVersion } from '../../utils/version';
 import { AddEditForm } from '../forms/AddEditForm/AddEditForm';
 import { Logo } from '../Logo';
@@ -104,6 +105,14 @@ export const ResponsiveAppBar = ({ children }: Props) => {
     useEffect(() => {
         setInternetTooltipOpen(false);
     }, [editMode]);
+
+    // Lock scroll when drawer is open
+    useEffect(() => {
+        if (openDrawer) {
+            const unlockScroll = lockScroll();
+            return unlockScroll;
+        }
+    }, [openDrawer]);
 
     const handleClose = () => setOpenAddModal(false);
     const handleCloseEditPage = () => {
@@ -247,20 +256,40 @@ export const ResponsiveAppBar = ({ children }: Props) => {
             <AppBar position='fixed' sx={{
                 backgroundColor: COLORS.TRANSPARENT_GRAY,
                 backdropFilter: 'blur(6px)',
-                width: '100%',
-                maxWidth: '100%',
-                overflowX: 'hidden'
+                width: '100vw', // Use full viewport width to cover scrollbar area
+                maxWidth: 'none', // Override any max-width constraints
+                left: 0, // Ensure it starts from the left edge
+                right: 0, // Ensure it extends to the right edge
+                overflowX: 'hidden',
+                // On mobile, make it sticky to top with no movement
+                position: { xs: 'sticky', sm: 'fixed' },
+                top: { xs: 0, sm: 'auto' },
+                zIndex: theme.zIndex.appBar
             }}>
-                <Container sx={{ margin: 0, padding: 0, minWidth: '100%' }}>
-                    <Toolbar disableGutters sx={{ justifyContent: 'space-between', width: '100%' }}>
+                <Container maxWidth={false} sx={{
+                    margin: 0,
+                    padding: { xs: '0 8px', sm: '0 16px' }, // Reduced mobile padding for more space
+                    width: '100%',
+                    minWidth: '100%',
+                    maxWidth: 'none' // Override any max-width constraints
+                }}>
+                    <Toolbar disableGutters sx={{
+                        justifyContent: 'space-between',
+                        width: '100%',
+                        minHeight: { xs: 56, sm: 64 }, // Standard AppBar heights
+                        px: 0, // Remove default padding since Container handles it
+                        // Ensure proper spacing on mobile
+                        alignItems: 'center'
+                    }}>
                         <Link to='/'>
                             {/* Desktop */}
                             <Box sx={{
                                 width: { xs: 'auto', md: '300px', lg: '350px' },
-                                flex: { xs: '0 1 auto', md: 'none' },
+                                flex: { xs: '1', md: 'none' }, // On mobile, allow to grow and push right content to edge
                                 ...styles.center,
                                 overflow: 'hidden',
-                                minWidth: 0
+                                minWidth: 0,
+                                justifyContent: { xs: 'flex-start', md: 'center' } // Left align on mobile, center on desktop
                             }}>
                                 <Logo sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }}/>
                                 <Typography
@@ -284,11 +313,11 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                     {config?.title || 'Lab Dash'}
                                 </Typography>
                                 {/* Mobile */}
-                                <Logo sx={{ display: { xs: 'flex', md: 'none' }, ml: 2, mr: 2 }} />
+                                <Logo sx={{ display: { xs: 'flex', md: 'none' }, mr: 1 }} />
                                 <Typography
                                     variant='h5'
                                     sx={{
-                                        mr: 2,
+                                        mr: 0, // Remove right margin to allow more space
                                         flexGrow: 0,
                                         flexShrink: 1,
                                         display: { xs: 'block', md: 'none' },
@@ -299,7 +328,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                         whiteSpace: 'nowrap',
                                         overflow: 'hidden',
                                         textOverflow: 'ellipsis',
-                                        maxWidth: 'calc(100vw - 200px)',
+                                        maxWidth: 'calc(100vw - 120px)', // Reduced from 200px to give more space for title
                                         minWidth: 0
                                     }}
                                     key={`app-title-mobile-${config?.title}-${nanoid()}`}
@@ -315,7 +344,15 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                         }
 
                         <Box sx={{ display: 'flex' }}>
-                            <Box sx={{ display: 'flex', width: { md: '300px', lg: '350px' }, flexGrow: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
+                            <Box sx={{
+                                display: 'flex',
+                                width: { xs: 'auto', md: '300px', lg: '350px' },
+                                flexGrow: { xs: 0, md: 1 },
+                                justifyContent: 'flex-end',
+                                alignItems: 'center',
+                                // On mobile, remove any width constraints to allow icons to go to the edge
+                                minWidth: { xs: 'auto', md: 'auto' }
+                            }}>
                                 {editMode && (
                                     <>
                                         {/* Done button for sm screens and higher */}
@@ -391,8 +428,8 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                 <IconButton
                                     onClick={handleOpenDrawer}
                                     sx={{
-                                        ml: 1,
-                                        mr: 2,
+                                        ml: { xs: 0, sm: 1 }, // Consistent left margin
+                                        mr: { xs: 0, sm: 2 }, // No right margin on mobile, normal on desktop
                                         display: 'flex',
                                         justifyContent: 'center',
                                         alignItems: 'center',
@@ -438,6 +475,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                 open={openDrawer}
                                 onClose={handleCloseDrawer}
                                 anchor='right'
+                                disableScrollLock={true}
                             >
                                 <Box
                                     sx={{
@@ -723,24 +761,46 @@ export const ResponsiveAppBar = ({ children }: Props) => {
             </AppBar>
             <Box sx={{
                 display: 'flex',
-                flexDirection: 'column'
+                flexDirection: 'column',
+                // On mobile with sticky navbar, no top margin needed
+                // On desktop with fixed navbar, we need top margin
+                paddingTop: { xs: 0, sm: '64px' }
             }}
             >
                 <Box component='main' sx={{
                     flexGrow: 1,
-                    mt: '64px',
-                    paddingTop: { xs: '3rem', sm: '1rem' },
+                    // Adjust margin-top: mobile (sticky) = 0, desktop (fixed) = 0 since we use paddingTop above
+                    mt: 0,
+                    paddingTop: { xs: '3.5rem', sm: '1rem' },
                 }}>
                 </Box>
                 {
                     editMode
-                        ? <Box position='absolute' sx={{ top: { xs: '66px', sm: '77px', md: '70px' }, zIndex: 99, display: { xs: 'flex', sm: 'none' }, justifyContent: 'flex-end', width: '100%', px: 3, gap: 2 }}>
+                        ? <Box position='absolute' sx={{
+                            // For mobile (sticky navbar): position relative to navbar
+                            // For desktop (fixed navbar): position from top of viewport
+                            top: { xs: '66px', sm: '141px' }, // sm value = 64px (navbar) + 77px (original offset)
+                            zIndex: 99,
+                            display: { xs: 'flex', sm: 'none' },
+                            justifyContent: 'flex-end',
+                            width: '100%',
+                            px: 3,
+                            gap: 2
+                        }}>
                             <Button variant='contained' onClick={handleSave}  sx={{ backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT, color: 'black', borderRadius: '999px', height: '1.7rem', width: '4.5rem' }}>Done</Button>
                         </Box>
                         : null
                 }
                 {!currentPath.includes('/settings') && config?.search && !editMode && (
-                    <Box position='absolute' sx={{ top: { xs: '49px', sm: '58px' }, zIndex: 99, display: { xs: 'flex', sm: 'none' }, justifyContent: 'center', width: '100%' }} mt={.5}>
+                    <Box position='absolute' sx={{
+                        // For mobile (sticky navbar): position relative to navbar
+                        // For desktop (fixed navbar): position from top of viewport
+                        top: { xs: '49px', sm: '122px' }, // sm value = 64px (navbar) + 58px (original offset)
+                        zIndex: 99,
+                        display: { xs: 'flex', sm: 'none' },
+                        justifyContent: 'center',
+                        width: '100%',
+                    }} mt={.5}>
                         <GlobalSearch />
                     </Box>
                 )}

@@ -1,10 +1,11 @@
 import CloseIcon from '@mui/icons-material/Close';
 import { AppBar, Box, IconButton, Modal, Toolbar, Tooltip, Typography, useMediaQuery } from '@mui/material';
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 
 import { useWindowDimensions } from '../../hooks/useWindowDimensions';
 import { styles } from '../../theme/styles';
 import { theme } from '../../theme/theme';
+import { lockScroll } from '../../utils/scroll-utils';
 
 type Props = {
     open: boolean;
@@ -19,6 +20,14 @@ type Props = {
 export const CenteredModal = ({ open, handleClose, children, width, height, title, fullWidthContent = false }: Props) => {
     const windowDimensions = useWindowDimensions();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+    // Lock scroll when modal is open
+    useEffect(() => {
+        if (open) {
+            const unlockScroll = lockScroll();
+            return unlockScroll;
+        }
+    }, [open]);
 
 
     const setWidth = () => {
@@ -51,12 +60,13 @@ export const CenteredModal = ({ open, handleClose, children, width, height, titl
     return (
         <Modal
             open={open}
-            aria-labelledby='modal'
-            disableEnforceFocus={true}
-            disableAutoFocus={true}
-            disableRestoreFocus={true}
-            // keepMounted
-            disableScrollLock={false}
+            onClose={handleClose}
+            aria-labelledby='modal-title'
+            aria-describedby='modal-description'
+            disableScrollLock={true}
+            disableEnforceFocus={false}
+            disableAutoFocus={false}
+            disableRestoreFocus={false}
         >
             <Box sx={style}>
                 {/* AppBar with Title and Close Button */}
@@ -73,14 +83,17 @@ export const CenteredModal = ({ open, handleClose, children, width, height, titl
                         px: 2, // Add padding for spacing
                         mt: isMobile ? '-.2rem' : '-.5rem'
                     }}>
-                        <Typography sx={{ flexGrow: 1 }}>{title}</Typography>
+                        <Typography id='modal-title' sx={{ flexGrow: 1 }}>{title}</Typography>
                         <Box
                             onPointerDownCapture={(e) => e.stopPropagation()} // Stop drag from interfering
                             onClick={(e) => e.stopPropagation()} // Prevent drag from triggering on click
                             sx={styles.vcenter}
                         >
                             <Tooltip title='Close' placement='top'>
-                                <IconButton onClick={handleClose}>
+                                <IconButton 
+                                    onClick={handleClose}
+                                    aria-label='Close modal'
+                                >
                                     <Box height={'100%'} sx={styles.vcenter}>
                                         <CloseIcon sx={{ fontSize: 28, color: 'white' }} />
                                     </Box>
@@ -92,6 +105,7 @@ export const CenteredModal = ({ open, handleClose, children, width, height, titl
 
                 {/* Modal Content (Fix for Scroll Issues) */}
                 <Box
+                    id='modal-description'
                     sx={{
                         flex: 1, // Take remaining space
                         overflowY: 'auto', // Enable scrolling

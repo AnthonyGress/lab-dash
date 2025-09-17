@@ -333,7 +333,6 @@ export const DashboardGrid: React.FC = () => {
         // FAILSAFE: Always restore scrolling on mobile when ANY drag ends
         if (isMobile) {
             document.body.style.overflow = '';
-            console.log('DashboardGrid: Restored scrolling on drag end');
         }
 
         // Only proceed with events if we have both active and over

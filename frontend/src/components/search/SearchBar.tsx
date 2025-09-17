@@ -6,6 +6,7 @@ import { FaSearch } from 'react-icons/fa';
 
 import { useAppContext } from '../../context/useAppContext';
 import { COLORS, styles } from '../../theme/styles';
+import { lockScroll } from '../../utils/scroll-utils';
 
 export type SearchOption = {
   label: string;
@@ -37,31 +38,9 @@ export const SearchBar = ({
     // Prevent body scrolling when dropdown is open
     useEffect(() => {
         if (isDropdownOpen) {
-            // Save current scroll position
-            const scrollY = window.scrollY;
-            // Disable scrolling
-            document.body.style.position = 'fixed';
-            document.body.style.top = `-${scrollY}px`;
-            document.body.style.width = '100%';
-        } else {
-            // Get scroll position
-            const scrollY = document.body.style.top;
-            // Enable scrolling
-            document.body.style.position = '';
-            document.body.style.top = '';
-            document.body.style.width = '';
-            // Restore scroll position
-            if (scrollY) {
-                window.scrollTo(0, parseInt(scrollY || '0', 10) * -1);
-            }
+            const unlockScroll = lockScroll();
+            return unlockScroll;
         }
-
-        // Cleanup on unmount
-        return () => {
-            document.body.style.position = '';
-            document.body.style.top = '';
-            document.body.style.width = '';
-        };
     }, [isDropdownOpen]);
 
     const getSearchUrl = (query: string) => {
@@ -69,7 +48,7 @@ export const SearchBar = ({
         return searchProvider.url.replace('{query}', encodeURIComponent(query));
     };
 
-    const handleChange = (_event: any, newValue: SearchOption | string | null) => {
+    const handleChange = (_event: React.SyntheticEvent, newValue: SearchOption | string | null) => {
         if (!newValue) return;
 
         if (typeof newValue === 'string') {
