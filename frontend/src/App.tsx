@@ -115,16 +115,50 @@ export const App = () => {
     const globalStyles = (
         <GlobalStyles
             styles={{
+                'html': {
+                    minHeight: '100vh',
+                    width: '100vw',
+                    position: 'relative',
+                },
                 'body': {
-                    background: backgroundImage,
-                    backgroundSize: 'cover',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundPosition: 'center center',
-                    // backgroundAttachment: 'scroll',
-                    imageRendering: 'crispEdges',
+                    background: 'transparent',
+                    margin: 0,
+                    padding: 0,
+                    minHeight: '100vh',
+                    '@media (max-width: 768px)': {
+                        overflowX: 'hidden',
+                        maxWidth: '100vw',
+                    },
                     '&.MuiModal-open': {
                         paddingRight: '0px !important',
                         overflow: 'hidden'
+                    }
+                },
+                // Fixed background element that won't resize
+                '#background-container': {
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100vw',
+                    height: '100vh',
+                    backgroundColor: '#0a0a0f',
+                    backgroundImage: backgroundImage,
+                    backgroundPosition: 'center center',
+                    backgroundSize: 'cover',
+                    backgroundRepeat: 'no-repeat',
+                    imageRendering: 'optimizeQuality',
+                    zIndex: -1,
+                    // Smooth transition when background changes
+                    transition: 'background-image 0.3s ease-in-out',
+                    // Ensure no resizing on mobile
+                    '@media (max-width: 768px)': {
+                        backgroundSize: 'cover !important',
+                        backgroundPosition: 'center center !important',
+                        // Force hardware acceleration for smoother performance
+                        transform: 'translateZ(0)',
+                        willChange: 'transform',
+                        // Ensure crisp rendering on mobile
+                        imageRendering: 'optimizeQuality',
                     }
                 },
             }}
@@ -134,6 +168,7 @@ export const App = () => {
     return (
         <>
             {globalStyles}
+            <div id='background-container' />
             <ScrollToTop />
             <Routes>
                 <Route element={<WithNav />}>
