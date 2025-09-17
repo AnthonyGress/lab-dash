@@ -37,7 +37,7 @@ const DrawerHeader = styled('div')(({ theme: muiTheme }) => ({
     ...muiTheme.mixins.toolbar,
     justifyContent: 'flex-end',
     paddingLeft: muiTheme.spacing(2),
-    paddingRight: muiTheme.spacing(1), // Increased padding to move close icon more to the right on mobile
+    paddingRight: muiTheme.spacing(1.5), // Increased padding to move close icon more to the right on mobile
     [muiTheme.breakpoints.up('sm')]: {
         paddingRight: muiTheme.spacing(4), // Match menu button margin on desktop (sm: 2) + some alignment
     },
@@ -272,7 +272,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
             }}>
                 <Container maxWidth={false} sx={{
                     margin: 0,
-                    padding: { xs: '0 8px', sm: '0 16px' }, // Reduced mobile padding for more space
+                    padding: { xs: '0 16px', sm: '0 16px' }, // Added padding on mobile
                     width: '100%',
                     minWidth: '100%',
                     maxWidth: 'none' // Override any max-width constraints
@@ -332,7 +332,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                         whiteSpace: 'nowrap',
                                         overflow: 'hidden',
                                         textOverflow: 'ellipsis',
-                                        maxWidth: 'calc(100vw - 120px)', // Reduced from 200px to give more space for title
+                                        maxWidth: 'calc(100vw - 180px)', // Reduced further to prevent icon shifting
                                         minWidth: 0
                                     }}
                                     key={`app-title-mobile-${config?.title}-${nanoid()}`}
