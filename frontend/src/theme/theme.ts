@@ -190,6 +190,18 @@ export const theme = createTheme({
                 },
             },
         },
+        MuiMenu: {
+            defaultProps: {
+                disableScrollLock: true,
+            },
+        },
+        MuiSelect: {
+            defaultProps: {
+                MenuProps: {
+                    disableScrollLock: true,
+                },
+            },
+        },
     },
 });
 

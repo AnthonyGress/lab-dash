@@ -22,7 +22,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@loganmarchione/homelab-svg-assets": "^0.4.12",
+    "@loganmarchione/homelab-svg-assets": "^0.4.13",
     "axios": "^1.8.3",
     "bcrypt": "^5.1.1",
     "cookie-parser": "^1.4.7",

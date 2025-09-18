@@ -1,11 +1,15 @@
 import { CheckCircle, Delete, Download, MoreVert, Pause, PlayArrow, Stop, Upload, Warning } from '@mui/icons-material';
-import { Box, CardContent, CircularProgress, IconButton, LinearProgress, Menu, MenuItem, Tooltip, Typography, useMediaQuery } from '@mui/material';
-import React, { useState } from 'react';
+import { Box, CardContent, CircularProgress, IconButton, LinearProgress, MenuItem, Tooltip, Typography, useMediaQuery } from '@mui/material';
+import React, { useCallback, useEffect, useState } from 'react';
+import { FaEllipsisV } from 'react-icons/fa';
+import { FaTrashCan } from 'react-icons/fa6';
 
 import { BACKEND_URL } from '../../../../constants/constants';
 import { DUAL_WIDGET_CONTAINER_HEIGHT } from '../../../../constants/widget-dimensions';
 import { useAppContext } from '../../../../context/useAppContext';
 import { theme } from '../../../../theme/theme';
+import { Menu } from '../../../custom-mui';
+import { DashApi } from '../../../../api/dash-api';
 
 export type QueueItem = {
     id: number;
@@ -162,15 +166,18 @@ interface QueueItemComponentProps {
 const QueueItemComponent: React.FC<QueueItemComponentProps> = ({ item, serviceName, isAdmin, onRemove }) => {
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+    const [menuOpen, setMenuOpen] = useState(false);
     const [isActionLoading, setIsActionLoading] = useState(false);
     const { editMode } = useAppContext();
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
         setMenuAnchorEl(event.currentTarget);
+        setMenuOpen(true);
     };
 
     const handleMenuClose = () => {
         setMenuAnchorEl(null);
+        setMenuOpen(false);
     };
 
     const handleRemove = async (removeFromClient: boolean, blocklist: boolean) => {
@@ -279,7 +286,7 @@ const QueueItemComponent: React.FC<QueueItemComponentProps> = ({ item, serviceNa
                 )}
                 <Menu
                     anchorEl={menuAnchorEl}
-                    open={Boolean(menuAnchorEl)}
+                    open={menuOpen}
                     onClose={handleMenuClose}
                     PaperProps={{
                         sx: {

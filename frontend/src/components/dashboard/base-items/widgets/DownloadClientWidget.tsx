@@ -1,5 +1,5 @@
 import { ArrowDownward, ArrowUpward, CheckCircle, Delete, Download, MoreVert, Pause, PlayArrow, Stop, Upload, Warning } from '@mui/icons-material';
-import { Box, Button, CardContent, CircularProgress, Grid, IconButton, LinearProgress, Link, Menu, MenuItem, TextField, Tooltip, Typography, useMediaQuery } from '@mui/material';
+import { Box, Button, CardContent, CircularProgress, Grid, IconButton, LinearProgress, Link, MenuItem, TextField, Tooltip, Typography, useMediaQuery } from '@mui/material';
 import React, { useState } from 'react';
 
 import { PopupManager } from '../../../../components/modals/PopupManager';
@@ -8,6 +8,7 @@ import { DUAL_WIDGET_CONTAINER_HEIGHT } from '../../../../constants/widget-dimen
 import { useAppContext } from '../../../../context/useAppContext';
 import { theme } from '../../../../theme/theme';
 import { TORRENT_CLIENT_TYPE } from '../../../../types';
+import { Menu } from '../../../custom-mui';
 
 export type DownloadClientStats = {
     dl_info_speed: number;
@@ -139,15 +140,18 @@ interface DownloadItemProps {
 const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmin, onResume, onPause, onDelete }) => {
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+    const [menuOpen, setMenuOpen] = useState(false);
     const [isActionLoading, setIsActionLoading] = useState(false);
     const { editMode } = useAppContext();
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
         setMenuAnchorEl(event.currentTarget);
+        setMenuOpen(true);
     };
 
     const handleMenuClose = () => {
         setMenuAnchorEl(null);
+        setMenuOpen(false);
     };
 
     const handleResume = async () => {
@@ -307,7 +311,7 @@ const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmi
                 )}
                 <Menu
                     anchorEl={menuAnchorEl}
-                    open={Boolean(menuAnchorEl)}
+                    open={menuOpen}
                     onClose={handleMenuClose}
                     anchorOrigin={{
                         vertical: 'bottom',
