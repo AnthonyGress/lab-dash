@@ -186,23 +186,10 @@ const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmi
         if (onDelete) {
             handleMenuClose();
 
-            // Import Swal directly for this custom case
-            const Swal = (await import('sweetalert2')).default;
-
-            Swal.fire({
+            PopupManager.threeButtonDialog({
                 title: `Remove "${torrent.name}"?`,
-                icon: 'error',
-                showDenyButton: true,
-                showCancelButton: true,
-                confirmButtonText: 'Delete Files',
-                confirmButtonColor: theme.palette.error.main,
-                denyButtonText: 'Keep Files',
-                denyButtonColor: theme.palette.info.main,
-                cancelButtonText: 'Cancel',
-                reverseButtons: true,
-                focusDeny: true
-            }).then(async (result) => {
-                if (result.isConfirmed) {
+                confirmText: 'Delete Files',
+                confirmAction: async () => {
                     // Delete torrent and files
                     setIsActionLoading(true);
                     try {
@@ -212,7 +199,9 @@ const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmi
                     } finally {
                         setIsActionLoading(false);
                     }
-                } else if (result.isDenied) {
+                },
+                denyText: 'Keep Files',
+                denyAction: async () => {
                     // Delete torrent only, keep files
                     setIsActionLoading(true);
                     try {
@@ -223,7 +212,6 @@ const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmi
                         setIsActionLoading(false);
                     }
                 }
-                // If result.dismiss, do nothing (cancel)
             });
         }
     };

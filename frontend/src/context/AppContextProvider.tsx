@@ -5,6 +5,7 @@ import shortid from 'shortid';
 
 import { AppContext } from './AppContext';
 import { DashApi } from '../api/dash-api';
+import { PopupManager } from '../components/modals/PopupManager';
 import { ToastManager } from '../components/toast/ToastManager';
 import { initialItems } from '../constants/constants';
 import { theme } from '../theme/theme';
@@ -775,8 +776,6 @@ export const AppContextProvider = ({ children }: Props) => {
         const pageToDelete = pages.find(page => page.id === pageId);
         const pageName = pageToDelete?.name || 'this page';
 
-        const { PopupManager } = await import('../components/modals/PopupManager');
-
         PopupManager.deleteConfirmation({
             title: `Delete "${pageName}"?`,
             text: 'This action cannot be undone. All items on this page will be permanently deleted.',
@@ -916,7 +915,6 @@ export const AppContextProvider = ({ children }: Props) => {
 
             if (!itemToMove) {
                 console.error('Item not found');
-                const { PopupManager } = await import('../components/modals/PopupManager');
                 PopupManager.failure('Item not found');
                 return;
             }

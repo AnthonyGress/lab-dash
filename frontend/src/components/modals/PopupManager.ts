@@ -39,6 +39,17 @@ export type ConfirmationOptions = {
     html?: string;
 }
 
+export type ThreeButtonOptions = {
+    title: string;
+    confirmAction: () => any;
+    confirmText?: string;
+    denyAction: () => any;
+    denyText?: string;
+    cancelAction?: () => any;
+    text?: string;
+    html?: string;
+}
+
 export class PopupManager {
     public static success(text?: string, action?: () => any): void {
         ThemedAlert.fire({
@@ -70,7 +81,7 @@ export class PopupManager {
     }
 
     public static confirmation (options: ConfirmationOptions) {
-        Swal.fire({
+        ThemedAlert.fire({
             title: `${options.title}`,
             confirmButtonText: options.confirmText ? options.confirmText : 'Yes',
             confirmButtonColor: CONFIRM_COLOR ,
@@ -92,7 +103,7 @@ export class PopupManager {
     }
 
     public static deleteConfirmation (options: ConfirmationOptions) {
-        Swal.fire({
+        ThemedAlert.fire({
             title: `${options.title}`,
             confirmButtonText: options.confirmText ? options.confirmText : 'Yes, Delete',
             confirmButtonColor: theme.palette.error.main,
@@ -111,6 +122,33 @@ export class PopupManager {
                 if (options.denyAction) {
                     options.denyAction();
                 }
+            }
+        });
+    }
+
+    public static threeButtonDialog(options: ThreeButtonOptions) {
+        ThemedAlert.fire({
+            title: options.title,
+            text: options.text,
+            html: options.html,
+            icon: 'error',
+            iconColor: theme.palette.error.main,
+            showDenyButton: true,
+            showCancelButton: true,
+            confirmButtonText: options.confirmText || 'Confirm',
+            confirmButtonColor: theme.palette.error.main,
+            denyButtonText: options.denyText || 'Deny',
+            denyButtonColor: theme.palette.info.main,
+            cancelButtonText: 'Cancel',
+            reverseButtons: true,
+            focusDeny: true
+        }).then((result: any) => {
+            if (result.isConfirmed) {
+                options.confirmAction();
+            } else if (result.isDenied) {
+                options.denyAction();
+            } else if (result.isDismissed && options.cancelAction) {
+                options.cancelAction();
             }
         });
     }

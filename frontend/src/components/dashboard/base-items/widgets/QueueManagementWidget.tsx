@@ -4,12 +4,13 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { FaEllipsisV } from 'react-icons/fa';
 import { FaTrashCan } from 'react-icons/fa6';
 
+import { DashApi } from '../../../../api/dash-api';
 import { BACKEND_URL } from '../../../../constants/constants';
 import { DUAL_WIDGET_CONTAINER_HEIGHT } from '../../../../constants/widget-dimensions';
 import { useAppContext } from '../../../../context/useAppContext';
 import { theme } from '../../../../theme/theme';
 import { Menu } from '../../../custom-mui';
-import { DashApi } from '../../../../api/dash-api';
+import { PopupManager } from '../../../modals/PopupManager';
 
 export type QueueItem = {
     id: number;
@@ -184,23 +185,14 @@ const QueueItemComponent: React.FC<QueueItemComponentProps> = ({ item, serviceNa
         if (onRemove) {
             handleMenuClose();
 
-            // Import Swal directly for this custom case
-            const Swal = (await import('sweetalert2')).default;
-
             const actionText = blocklist ? 'blocklist and remove' : 'remove';
             const clientText = removeFromClient ? 'and remove from download client' : 'but keep in download client';
 
-            Swal.fire({
+            PopupManager.deleteConfirmation({
                 title: `${actionText.charAt(0).toUpperCase() + actionText.slice(1)}?`,
                 text: `This will ${actionText} the item from ${serviceName} ${clientText}.`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: actionText.charAt(0).toUpperCase() + actionText.slice(1),
-                confirmButtonColor: theme.palette.error.main,
-                cancelButtonText: 'Cancel',
-                reverseButtons: true
-            }).then(async (result) => {
-                if (result.isConfirmed) {
+                confirmText: actionText.charAt(0).toUpperCase() + actionText.slice(1),
+                confirmAction: async () => {
                     setIsActionLoading(true);
                     try {
                         await onRemove(item.id.toString(), removeFromClient, blocklist);
