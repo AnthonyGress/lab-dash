@@ -1,11 +1,12 @@
 import CloseIcon from '@mui/icons-material/Close';
 import { Autocomplete, Box, InputAdornment, TextField, Typography } from '@mui/material';
 import { nanoid } from 'nanoid';
-import { Dispatch, RefObject, SetStateAction, useEffect, useState } from 'react';
+import React, { Dispatch, RefObject, SetStateAction, useEffect, useState } from 'react';
 import { FaSearch } from 'react-icons/fa';
 
 import { useAppContext } from '../../context/useAppContext';
 import { COLORS, styles } from '../../theme/styles';
+import { lockScroll } from '../../utils/scroll-utils';
 
 export type SearchOption = {
   label: string;
@@ -37,31 +38,9 @@ export const SearchBar = ({
     // Prevent body scrolling when dropdown is open
     useEffect(() => {
         if (isDropdownOpen) {
-            // Save current scroll position
-            const scrollY = window.scrollY;
-            // Disable scrolling
-            document.body.style.position = 'fixed';
-            document.body.style.top = `-${scrollY}px`;
-            document.body.style.width = '100%';
-        } else {
-            // Get scroll position
-            const scrollY = document.body.style.top;
-            // Enable scrolling
-            document.body.style.position = '';
-            document.body.style.top = '';
-            document.body.style.width = '';
-            // Restore scroll position
-            if (scrollY) {
-                window.scrollTo(0, parseInt(scrollY || '0', 10) * -1);
-            }
+            const unlockScroll = lockScroll();
+            return unlockScroll;
         }
-
-        // Cleanup on unmount
-        return () => {
-            document.body.style.position = '';
-            document.body.style.top = '';
-            document.body.style.width = '';
-        };
     }, [isDropdownOpen]);
 
     const getSearchUrl = (query: string) => {
@@ -69,7 +48,7 @@ export const SearchBar = ({
         return searchProvider.url.replace('{query}', encodeURIComponent(query));
     };
 
-    const handleChange = (_event: any, newValue: SearchOption | string | null) => {
+    const handleChange = (_event: React.SyntheticEvent, newValue: SearchOption | string | null) => {
         if (!newValue) return;
 
         if (typeof newValue === 'string') {
@@ -81,6 +60,33 @@ export const SearchBar = ({
         }
 
         setSearchValue('');
+    };
+
+    const handleKeyDown = (event: React.KeyboardEvent) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+
+            // Filter options based on current search value
+            const filteredOptions = autocompleteOptions.filter((option) =>
+                option.label.toLowerCase().includes(searchValue.toLowerCase())
+            );
+
+            // If there are filtered results and search value is not empty, use the first result
+            if (filteredOptions.length > 0 && searchValue.trim() !== '') {
+                const firstOption = filteredOptions[0];
+                if (firstOption.url) {
+                    window.open(firstOption.url, '_blank', 'noopener,noreferrer');
+                    setSearchValue('');
+                    return;
+                }
+            }
+
+            // Fallback to search provider if no autocomplete results or empty search
+            if (searchValue.trim() !== '') {
+                window.open(getSearchUrl(searchValue), '_blank', 'noopener,noreferrer');
+                setSearchValue('');
+            }
+        }
     };
 
     return (
@@ -153,6 +159,7 @@ export const SearchBar = ({
                             {...params}
                             inputRef={inputRef}
                             placeholder={placeholder || `Search with ${searchProvider.name}`}
+                            onKeyDown={handleKeyDown}
                             InputProps={{
                                 ...params.InputProps,
                                 startAdornment: (
@@ -165,18 +172,18 @@ export const SearchBar = ({
                             }}
                             sx={{
                                 width: { xs: '100%',
-                                    sm: '50%',
-                                    md: '80%',
-                                    lg: '65%',
+                                    sm: '90%',
+                                    md: '90%',
+                                    lg: '80%',
                                     xl: '50%'
                                 },
                                 height: '60px',
                                 '& .MuiOutlinedInput-root': {
-                                    backgroundColor: { xs: COLORS.TRANSPARENT_GRAY, md: 'transparent' },
+                                    backgroundColor: { xs: COLORS.TRANSPARENT_GRAY, sm: 'transparent' },
                                     borderRadius: 2,
-                                    backdropFilter: { xs: 'blur(6px)', md: 'none' },
+                                    backdropFilter: { xs: 'blur(6px)', sm: 'none' },
                                     // (Optional) Include the -webkit- prefix for Safari support:
-                                    WebkitBackdropFilter: { xs: 'blur(6px)', md: 'none' },
+                                    WebkitBackdropFilter: { xs: 'blur(6px)', sm: 'none' },
                                 },
                                 '& .MuiOutlinedInput-notchedOutline': {
                                     border: '1px solid rgba(255, 255, 255, 0.3) !important',

@@ -13,6 +13,13 @@ export interface IAppContext {
     setEditMode: Dispatch<SetStateAction<boolean>>;
     config: Config | undefined;
     updateConfig: (partialConfig: Partial<Config>) => Promise<void>;
+
+    // Performance optimization - bulk loading
+    iconCache: { [key: string]: string };
+    widgetDataCache: { [key: string]: any };
+    loadBulkData: (items: DashboardItem[]) => Promise<void>;
+    isInitialLoading: boolean;
+
     // Page management
     currentPageId: string | null;
     setCurrentPageId: Dispatch<SetStateAction<string | null>>;

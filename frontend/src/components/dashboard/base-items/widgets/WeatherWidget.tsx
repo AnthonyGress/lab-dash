@@ -221,7 +221,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
 
         // Set up interval for periodic refresh
         timerRef.current = window.setInterval(() => {
-            if (isComponentMounted && !errorMessage) {
+            if (isComponentMounted) {
                 // Cancel any existing request before making a new one
                 if (abortControllerRef.current) {
                     abortControllerRef.current.abort();

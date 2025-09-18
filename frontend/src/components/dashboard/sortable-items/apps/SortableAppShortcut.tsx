@@ -40,7 +40,12 @@ export const SortableAppShortcut: React.FC<Props> = ({
         id,
         data: {
             type: ITEM_TYPE.APP_SHORTCUT
-        }
+        },
+        animateLayoutChanges: ({ isSorting, wasDragging, isDragging: isCurrentlyDragging }) => {
+            if (isSorting && isCurrentlyDragging) return true;
+            if (wasDragging && !isCurrentlyDragging) return false;
+            return true;
+        },
     });
 
     // Only show label in overlay when dragging, or when not dragging at all
@@ -53,21 +58,14 @@ export const SortableAppShortcut: React.FC<Props> = ({
 
     return (
         <Grid2
-            size={{ xs: 4 , sm: 4, md: 2, lg: 4/3, xl: 4/3 }}
-            ref={!isOverlay && !isPreview ? setNodeRef : undefined}
-            {...(!isOverlay && !isPreview ? attributes : {})}
-            {...(!isOverlay && !isPreview ? listeners : {})}
+            size={{ xs: 4, sm: 4, md: 2, lg: 4 / 3, xl: 4 / 3 }}
+            ref={!isOverlay ? setNodeRef : undefined}
+            {...(!isOverlay ? attributes : {})}
+            {...(!isOverlay ? listeners : {})}
             sx={{
-                transition: isDragging ? undefined : transition,
+                transition: isDragging ? 'none' : transition,
                 transform: transform ? CSS.Translate.toString(transform) : undefined,
-                pointerEvents: isDragging || isPreview ? 'none' : 'auto',
-                opacity: (isDragging && !isOverlay && !isPreview) ? 0 :
-                    isOverlay ? 0.6 : isPreview ? 0.8 : 1,
-                visibility: (isDragging && !isOverlay && !isPreview) ? 'hidden' : 'visible',
-                // Apply instant opacity change for dragging
-                transitionProperty: isDragging ? 'none' : 'transform',
-                // Ensure smooth animation for movement only
-                transitionDuration: isDragging ? '0ms' : '250ms',
+                opacity: isOverlay ? 0.6 : (isDragging ? 0 : 1),
             }}
             data-type={ITEM_TYPE.APP_SHORTCUT}
             data-id={id}

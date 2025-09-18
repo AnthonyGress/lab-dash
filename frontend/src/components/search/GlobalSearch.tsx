@@ -111,6 +111,14 @@ export const GlobalSearch = () => {
 
     // Additional focus trigger for route changes
     useEffect(() => {
+        // Check if device has coarse pointer (mobile/touch devices)
+        const hasCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
+
+        // Don't auto-focus on mobile/touch devices
+        if (hasCoarsePointer) {
+            return;
+        }
+
         // Small delay to ensure DOM is ready after route change
         const focusTimer = setTimeout(() => {
             if (inputRef.current) {
@@ -120,6 +128,29 @@ export const GlobalSearch = () => {
 
         return () => clearTimeout(focusTimer);
     }, [location.pathname]);
+
+    // Global hotkey listener for Ctrl+K / Cmd+K
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            // Check for Ctrl+K (Windows/Linux) or Cmd+K (Mac)
+            if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
+                event.preventDefault();
+                if (inputRef.current) {
+                    inputRef.current.focus();
+                    // Clear any existing selection
+                    inputRef.current.select();
+                }
+            }
+        };
+
+        // Add event listener to document
+        document.addEventListener('keydown', handleKeyDown);
+
+        // Cleanup
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, []);
 
     return (
         <Box sx={{ width: '100%' }}>

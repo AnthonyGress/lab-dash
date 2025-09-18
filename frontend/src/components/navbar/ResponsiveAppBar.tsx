@@ -1,7 +1,7 @@
 import { Add } from '@mui/icons-material';
 import CloseIcon from '@mui/icons-material/Close';
 import MenuIcon from '@mui/icons-material/Menu';
-import { Avatar, Badge, Button, CircularProgress, Divider, Drawer, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, styled } from '@mui/material';
+import { Avatar, Badge, Button, Divider, Drawer, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, styled } from '@mui/material';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
@@ -21,8 +21,9 @@ import { useInternetStatus } from '../../hooks/useInternetStatus';
 import { COLORS, styles } from '../../theme/styles';
 import { theme } from '../../theme/theme';
 import { ITEM_TYPE } from '../../types';
+import { lockScrollForDrawer } from '../../utils/scroll-utils';
 import { getAppVersion } from '../../utils/version';
-import { AddEditForm } from '../forms/AddEditForm';
+import { AddEditForm } from '../forms/AddEditForm/AddEditForm';
 import { Logo } from '../Logo';
 import { CenteredModal } from '../modals/CenteredModal';
 import { UpdateModal } from '../modals/UpdateModal';
@@ -30,12 +31,16 @@ import { VersionModal } from '../modals/VersionModal';
 import { GlobalSearch } from '../search/GlobalSearch';
 import { ToastManager } from '../toast/ToastManager';
 
-const DrawerHeader = styled('div')(() => ({
+const DrawerHeader = styled('div')(({ theme: muiTheme }) => ({
     display: 'flex',
     alignItems: 'center',
-    padding: theme.spacing(0, 4),
-    ...theme.mixins.toolbar,
+    ...muiTheme.mixins.toolbar,
     justifyContent: 'flex-end',
+    paddingLeft: muiTheme.spacing(2),
+    paddingRight: muiTheme.spacing(1.5), // Increased padding to move close icon more to the right on mobile
+    [muiTheme.breakpoints.up('sm')]: {
+        paddingRight: muiTheme.spacing(4), // Match menu button margin on desktop (sm: 2) + some alignment
+    },
 }));
 
 type Props = {
@@ -49,7 +54,6 @@ export const ResponsiveAppBar = ({ children }: Props) => {
     const [selectedPageForEdit, setSelectedPageForEdit] = useState<any>(null);
     const [openUpdateModal, setOpenUpdateModal] = useState(false);
     const [openVersionModal, setOpenVersionModal] = useState(false);
-    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [internetTooltipOpen, setInternetTooltipOpen] = useState(false);
 
     const { internetStatus } = useInternetStatus();
@@ -106,6 +110,14 @@ export const ResponsiveAppBar = ({ children }: Props) => {
         setInternetTooltipOpen(false);
     }, [editMode]);
 
+    // Lock scroll when drawer is open
+    useEffect(() => {
+        if (openDrawer) {
+            const unlockScroll = lockScrollForDrawer();
+            return unlockScroll;
+        }
+    }, [openDrawer]);
+
     const handleClose = () => setOpenAddModal(false);
     const handleCloseEditPage = () => {
         setOpenEditPageModal(false);
@@ -146,7 +158,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
     };
 
     const handleMenuClose = () => {
-        setAnchorEl(null);
+        // Menu close logic if needed
     };
 
     const handleLogin = () => {
@@ -248,20 +260,40 @@ export const ResponsiveAppBar = ({ children }: Props) => {
             <AppBar position='fixed' sx={{
                 backgroundColor: COLORS.TRANSPARENT_GRAY,
                 backdropFilter: 'blur(6px)',
-                width: '100%',
-                maxWidth: '100%',
-                overflowX: 'hidden'
+                width: '100vw', // Use full viewport width to cover scrollbar area
+                maxWidth: 'none', // Override any max-width constraints
+                left: 0, // Ensure it starts from the left edge
+                right: 0, // Ensure it extends to the right edge
+                overflowX: 'hidden',
+                // Always use fixed positioning to ensure AppBar stays visible
+                position: 'fixed',
+                top: 0,
+                zIndex: theme.zIndex.appBar
             }}>
-                <Container sx={{ margin: 0, padding: 0, minWidth: '100%' }}>
-                    <Toolbar disableGutters sx={{ justifyContent: 'space-between', width: '100%' }}>
+                <Container maxWidth={false} sx={{
+                    margin: 0,
+                    padding: { xs: '0 16px', sm: '0 16px' }, // Added padding on mobile
+                    width: '100%',
+                    minWidth: '100%',
+                    maxWidth: 'none' // Override any max-width constraints
+                }}>
+                    <Toolbar disableGutters sx={{
+                        justifyContent: 'space-between',
+                        width: '100%',
+                        minHeight: { xs: 56, sm: 64 }, // Standard AppBar heights
+                        px: 0, // Remove default padding since Container handles it
+                        // Ensure proper spacing on mobile
+                        alignItems: 'center'
+                    }}>
                         <Link to='/'>
                             {/* Desktop */}
                             <Box sx={{
                                 width: { xs: 'auto', md: '300px', lg: '350px' },
-                                flex: { xs: '0 1 auto', md: 'none' },
+                                flex: { xs: '1', md: 'none' }, // On mobile, allow to grow and push right content to edge
                                 ...styles.center,
                                 overflow: 'hidden',
-                                minWidth: 0
+                                minWidth: 0,
+                                justifyContent: { xs: 'flex-start', md: 'center' } // Left align on mobile, center on desktop
                             }}>
                                 <Logo sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }}/>
                                 <Typography
@@ -285,11 +317,11 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                     {config?.title || 'Lab Dash'}
                                 </Typography>
                                 {/* Mobile */}
-                                <Logo sx={{ display: { xs: 'flex', md: 'none' }, ml: 2, mr: 2 }} />
+                                <Logo sx={{ display: { xs: 'flex', md: 'none' }, mr: 1 }} />
                                 <Typography
                                     variant='h5'
                                     sx={{
-                                        mr: 2,
+                                        mr: 0, // Remove right margin to allow more space
                                         flexGrow: 0,
                                         flexShrink: 1,
                                         display: { xs: 'block', md: 'none' },
@@ -300,7 +332,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                         whiteSpace: 'nowrap',
                                         overflow: 'hidden',
                                         textOverflow: 'ellipsis',
-                                        maxWidth: 'calc(100vw - 200px)',
+                                        maxWidth: 'calc(100vw - 180px)', // Reduced further to prevent icon shifting
                                         minWidth: 0
                                     }}
                                     key={`app-title-mobile-${config?.title}-${nanoid()}`}
@@ -310,20 +342,51 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                             </Box>
                         </Link>
                         { !currentPath.includes('/settings') && config?.search &&
-                            <Box sx={{ width: '100%', display: { xs: 'none', md: 'flex' }, justifyContent: 'center', flexGrow: 1 }}>
+                            <Box sx={{ width: '100%', display: { xs: 'none', sm: 'flex' }, justifyContent: 'center', flexGrow: 1 }}>
                                 <GlobalSearch />
                             </Box>
                         }
 
                         <Box sx={{ display: 'flex' }}>
-                            <Box sx={{ display: 'flex', width: { md: '300px', lg: '350px' }, flexGrow: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
-                                {editMode ? (
-                                    <Tooltip title='Add Item' placement='left' arrow>
-                                        <IconButton onClick={() => setOpenAddModal(true)}>
-                                            <Add sx={{ color: 'white', fontSize: '2rem' }}/>
-                                        </IconButton>
-                                    </Tooltip>
-                                ) : showInternetIndicator ? (
+                            <Box sx={{
+                                display: 'flex',
+                                width: { xs: 'auto', md: '300px', lg: '350px' },
+                                flexGrow: { xs: 0, md: 1 },
+                                justifyContent: 'flex-end',
+                                alignItems: 'center',
+                                // On mobile, remove any width constraints to allow icons to go to the edge
+                                minWidth: { xs: 'auto', md: 'auto' }
+                            }}>
+                                {editMode && (
+                                    <>
+                                        {/* Done button for sm screens and higher */}
+                                        <Button
+                                            variant='contained'
+                                            onClick={handleSave}
+                                            sx={{
+                                                display: { xs: 'none', sm: 'flex' },
+                                                backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT,
+                                                color: 'black',
+                                                borderRadius: '999px',
+                                                height: '2rem',
+                                                minWidth: '4.5rem',
+                                                mr: 1,
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.3)'
+                                                }
+                                            }}
+                                        >
+                                            Done
+                                        </Button>
+                                        {/* Add Item button */}
+                                        <Tooltip title='Add Item' placement='bottom' arrow>
+                                            <IconButton onClick={() => setOpenAddModal(true)}>
+                                                <Add sx={{ color: 'white', fontSize: '2rem' }}/>
+                                            </IconButton>
+                                        </Tooltip>
+                                    </>
+                                )}
+                                {!editMode && showInternetIndicator && (
                                     <Tooltip
                                         key='internet-tooltip'
                                         title={internetStatus === 'online' ? 'Internet Connected' : internetStatus === 'offline' ? 'No Internet Connection' : 'Checking Internet...'}
@@ -363,14 +426,14 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                             )}
                                         </IconButton>
                                     </Tooltip>
-                                ) : null}
+                                )}
 
                                 {/* Hamburger Menu Button */}
                                 <IconButton
                                     onClick={handleOpenDrawer}
                                     sx={{
-                                        ml: 1,
-                                        mr: 2,
+                                        ml: { xs: 0, sm: 1 }, // Consistent left margin
+                                        mr: { xs: 0, sm: 2 }, // No right margin on mobile, normal on desktop
                                         display: 'flex',
                                         justifyContent: 'center',
                                         alignItems: 'center',
@@ -416,10 +479,20 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                 open={openDrawer}
                                 onClose={handleCloseDrawer}
                                 anchor='right'
+                                disableScrollLock={true}
+                                sx={{
+                                    '& .MuiDrawer-paper': {
+                                        width: 225,
+                                        boxSizing: 'border-box',
+                                        right: 0,
+                                        marginRight: 0,
+                                        borderRight: 'none',
+                                    }
+                                }}
                             >
                                 <Box
                                     sx={{
-                                        width: 225,
+                                        width: '100%',
                                         height: '100%',
                                         display: 'flex',
                                         flexDirection: 'column'
@@ -701,28 +774,44 @@ export const ResponsiveAppBar = ({ children }: Props) => {
             </AppBar>
             <Box sx={{
                 display: 'flex',
-                flexDirection: 'column'
+                flexDirection: 'column',
+                paddingTop: '64px'
             }}
             >
                 <Box component='main' sx={{
                     flexGrow: 1,
-                    mt: '64px',
-                    paddingTop: '3rem',
+                    mt: { xs:-1, sm: 0 },
+                    paddingTop: { xs: '3.5rem', sm: '1rem' },
                 }}>
                 </Box>
                 {
                     editMode
-                        ? <Box position='absolute' sx={{ top: { xs: '66px', sm: '77px', md: '70px' }, zIndex: 99, display: 'flex', justifyContent: 'flex-end', width: '100%', px: 3, gap: 2 }}>
-                            {/* <Button variant='contained' onClick={handleEditCancel} sx={{ backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT, color: 'black', borderRadius: '999px', height: '1.7rem', width: '4.5rem' }}>Cancel</Button> */}
+                        ? <Box position='absolute' sx={{
+                            // For mobile: position relative to navbar since it's always fixed now
+                            top: '66px', // Just below the fixed navbar
+                            zIndex: 99,
+                            display: { xs: 'flex', sm: 'none' },
+                            justifyContent: 'flex-end',
+                            width: '100%',
+                            px: 3,
+                            gap: 2
+                        }}>
                             <Button variant='contained' onClick={handleSave}  sx={{ backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT, color: 'black', borderRadius: '999px', height: '1.7rem', width: '4.5rem' }}>Done</Button>
                         </Box>
-                        :
-                        !currentPath.includes('/settings') && config?.search && <Box position='absolute' sx={{ top: { xs: '49px', sm: '58px' }, zIndex: 99, display: { xs: 'flex', md: 'none' }, justifyContent: 'center', width: '100%' }} mt={.5}>
-                            <GlobalSearch />
-                        </Box>
+                        : null
                 }
+                {!currentPath.includes('/settings') && config?.search && !editMode && (
+                    <Box position='absolute' sx={{
+                        top: '49px',
+                        zIndex: 99,
+                        display: { xs: 'flex', sm: 'none' },
+                        justifyContent: 'center',
+                        width: '100%',
+                    }} mt={.5}>
+                        <GlobalSearch />
+                    </Box>
+                )}
 
-                <Box sx={{ pb: 1, height: '100%', display: { xs: 'none', sm: 'block', md: 'none' } }} />
                 {children}
             </Box>
         </>

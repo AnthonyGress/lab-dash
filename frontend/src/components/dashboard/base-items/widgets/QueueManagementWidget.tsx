@@ -71,6 +71,11 @@ export type QueueManagementWidgetProps = {
         port: string;
         ssl: boolean;
     };
+    statistics?: {
+        totalItems: number;
+        monitoredItems: number;
+        isLoading: boolean;
+    };
 };
 
 const formatBytes = (bytes: number): string => {
@@ -87,12 +92,18 @@ const formatProgress = (progress: number): string => {
 
 const formatEta = (eta: number): string => {
     if (eta <= 0) return '';
+
     const hours = Math.floor(eta / 3600);
     const minutes = Math.floor((eta % 3600) / 60);
+    const seconds = Math.floor(eta % 60);
+
     if (hours > 0) {
         return `${hours}h ${minutes}m`;
+    } else if (minutes > 0) {
+        return `${minutes}m ${seconds}s`;
+    } else {
+        return `${seconds}s`;
     }
-    return `${minutes}m`;
 };
 
 // Get status icon based on queue item state
@@ -342,7 +353,8 @@ export const QueueManagementWidget: React.FC<QueueManagementWidgetProps> = ({
     showLabel,
     onRemoveItem,
     error,
-    connectionDetails
+    connectionDetails,
+    statistics
 }) => {
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const { editMode, isAdmin } = useAppContext();
@@ -439,7 +451,7 @@ export const QueueManagementWidget: React.FC<QueueManagementWidgetProps> = ({
                     </Box>
                 ) : (
                     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
-                        <Box sx={{ flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', width: '100%' }}>
+                        <Box sx={{ flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', mb: 2, width: '100%' }}>
                             <Typography variant='caption' sx={{ px: 1, mb: 0.5, color: 'white' }}>
                                 Queue ({queueItems.length})
                             </Typography>
@@ -449,8 +461,8 @@ export const QueueManagementWidget: React.FC<QueueManagementWidgetProps> = ({
                                 pt: 1.5,
                                 pb: 1,
                                 overflowY: 'auto',
-                                height: '280px',
-                                maxHeight: '280px',
+                                height: '225px',
+                                maxHeight: '225px',
                                 width: '100%',
                                 minWidth: '100%',
                                 flex: '1 1 auto',
@@ -507,6 +519,31 @@ export const QueueManagementWidget: React.FC<QueueManagementWidgetProps> = ({
                                 ))}
                             </Box>
                         </Box>
+
+                        {/* Statistics Section */}
+                        {statistics && (
+                            <Box sx={{ mt: 'auto', pt: 1, borderTop: '1px solid rgba(255,255,255,0.1)', width: '100%' }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
+                                    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                                        <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary', mb: 0.5 }}>
+                                            {serviceName === 'Sonarr' ? 'Total TV Shows:' : 'Total Movies:'}
+                                        </Typography>
+                                        <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary' }}>
+                                            Monitored:
+                                        </Typography>
+                                    </Box>
+
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                        <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary', minWidth: '65px', textAlign: 'right', mb: 0.5 }}>
+                                            {statistics.isLoading ? '...' : statistics.totalItems}
+                                        </Typography>
+                                        <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary', minWidth: '65px', textAlign: 'right' }}>
+                                            {statistics.isLoading ? '...' : statistics.monitoredItems}
+                                        </Typography>
+                                    </Box>
+                                </Box>
+                            </Box>
+                        )}
                     </Box>
                 )}
             </Box>

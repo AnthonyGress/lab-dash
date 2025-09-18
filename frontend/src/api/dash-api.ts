@@ -2,7 +2,9 @@ import axios from 'axios';
 import { StatusCodes } from 'http-status-codes';
 
 import { BACKEND_URL } from '../constants/constants';
-import { Config, Icon, UploadImageResponse } from '../types';
+import { Config, DashboardItem, Icon, UploadImageResponse } from '../types';
+import { type BulkIconResponse, type BulkWidgetResponse, type CacheClearResponse, type CacheStatsResponse } from '../types/bulk-loading';
+import { GroupItem } from '../types/group';
 
 interface SignupResponse {
   message: string;
@@ -177,6 +179,87 @@ export class DashApi {
         return res.data;
     }
 
+    // Bulk load all icons used in the dashboard
+    public static async getAllActiveIcons(items: DashboardItem[]): Promise<{ [key: string]: string }> {
+        try {
+            // Extract all icon paths from dashboard items
+            const iconPaths = new Set<string>();
+
+            const extractIconPaths = (dashboardItems: DashboardItem[]) => {
+                dashboardItems.forEach(item => {
+                    // Extract icon from the main item
+                    if (item.icon?.path) {
+                        iconPaths.add(item.icon.path);
+                    }
+
+                    // Handle group widget items (items inside groups)
+                    if ((item.type === 'GROUP_WIDGET' || item.type === 'group-widget') && item.config?.items) {
+                        item.config.items.forEach((groupItem: GroupItem) => {
+                            if (groupItem.icon) {
+                                iconPaths.add(groupItem.icon);
+                            }
+                        });
+                    }
+
+                    // Handle app shortcuts that might have icons in their config
+                    if (item.type === 'APP_SHORTCUT' && item.config?.icon) {
+                        iconPaths.add(item.config.icon);
+                    }
+
+                    // Handle any other widget types that might have icons in their config
+                    if (item.config?.icon) {
+                        iconPaths.add(item.config.icon);
+                    }
+                });
+            };
+
+            extractIconPaths(items);
+
+            // Make bulk request for all icons using the new cached method
+            const iconPathsArray = Array.from(iconPaths);
+            if (iconPathsArray.length === 0) {
+                return {};
+            }
+
+            const response = await this.bulkLoadIcons(iconPathsArray);
+
+            return response.icons || {};
+        } catch (error) {
+            console.error('Error fetching icons in bulk:', error);
+            return {};
+        }
+    }
+
+    // Bulk load initial widget data for faster startup
+    public static async getBulkWidgetData(items: DashboardItem[]): Promise<{ [key: string]: any }> {
+        try {
+            // Extract widget configurations that need initial data
+            const widgetConfigs = items
+                .filter(item =>
+                    item.type &&
+                    !['APP_SHORTCUT', 'BLANK_APP', 'BLANK_ROW'].includes(item.type)
+                )
+                .map(item => ({
+                    id: item.id,
+                    type: item.type,
+                    config: item.config
+                }));
+
+            if (widgetConfigs.length === 0) {
+                return {};
+            }
+
+            const res = await axios.post(`${BACKEND_URL}/api/widgets/bulk-data`, {
+                widgets: widgetConfigs
+            });
+
+            return res.data?.widgetData || {};
+        } catch (error) {
+            console.error('Error fetching bulk widget data:', error);
+            return {};
+        }
+    }
+
     // These endpoints require authentication
     public static async getConfig(): Promise<Config> {
         // Explicitly set withCredentials for this request
@@ -311,6 +394,32 @@ export class DashApi {
         }
     }
 
+    public static async getSonarrSeries(itemId: string): Promise<any> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/sonarr/series`, {
+                params: { itemId },
+                timeout: 10000
+            });
+            return res.data.data || [];
+        } catch (error) {
+            console.error('Error fetching Sonarr series:', error);
+            throw error;
+        }
+    }
+
+    public static async refreshSonarrMonitoredDownloads(itemId: string): Promise<any> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/sonarr/refresh-monitored-downloads`, {}, {
+                params: { itemId },
+                timeout: 10000
+            });
+            return res.data;
+        } catch (error) {
+            console.error('Error refreshing Sonarr monitored downloads:', error);
+            throw error;
+        }
+    }
+
     // Radarr API methods
     public static async getRadarrQueue(itemId: string): Promise<any> {
         try {
@@ -351,6 +460,32 @@ export class DashApi {
             return res.data.data || {};
         } catch (error) {
             console.error('Error fetching Radarr status:', error);
+            throw error;
+        }
+    }
+
+    public static async getRadarrMovies(itemId: string): Promise<any> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/radarr/movies`, {
+                params: { itemId },
+                timeout: 10000
+            });
+            return res.data.data || [];
+        } catch (error) {
+            console.error('Error fetching Radarr movies:', error);
+            throw error;
+        }
+    }
+
+    public static async refreshRadarrMonitoredDownloads(itemId: string): Promise<any> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/radarr/refresh-monitored-downloads`, {}, {
+                params: { itemId },
+                timeout: 10000
+            });
+            return res.data;
+        } catch (error) {
+            console.error('Error refreshing Radarr monitored downloads:', error);
             throw error;
         }
     }
@@ -1943,6 +2078,21 @@ export class DashApi {
         }
     }
 
+    static async getJellyfinLibraryStats(itemId: string) {
+        try {
+            const res = await axios.get(
+                `${BACKEND_URL}/api/jellyfin/library-stats`,
+                {
+                    params: { itemId },
+                    withCredentials: true
+                }
+            );
+            return res.data;
+        } catch (error: any) {
+            throw new Error(error.response?.data?.error || 'Failed to fetch Jellyfin library stats');
+        }
+    }
+
     // Jellyseerr methods
     public static async jellyseerrSearch(itemId: string, query: string): Promise<any> {
         try {
@@ -2052,7 +2202,7 @@ export class DashApi {
         }
     }
 
-    public static async createNote(note: { title: string; content: string }): Promise<any> {
+    public static async createNote(note: { title: string; content: string; fontSize?: string }): Promise<any> {
         // Import shortid dynamically to avoid issues
         const shortid = await import('shortid');
 
@@ -2070,7 +2220,7 @@ export class DashApi {
         }
     }
 
-    public static async updateNote(noteId: string, note: { title: string; content: string }): Promise<any> {
+    public static async updateNote(noteId: string, note: { title: string; content: string; fontSize?: string }): Promise<any> {
         try {
             const res = await axios.put(`${BACKEND_URL}/api/notes/${noteId}`, note);
             return res.data;
@@ -2085,6 +2235,62 @@ export class DashApi {
             await axios.delete(`${BACKEND_URL}/api/notes/${noteId}`);
         } catch (error) {
             console.error('Error deleting note:', error);
+            throw error;
+        }
+    }
+
+    public static async updateAllNotesFontSize(fontSize: string): Promise<{ message: string; updatedCount: number }> {
+        try {
+            const res = await axios.put(`${BACKEND_URL}/api/notes/update-all-font-sizes`, { fontSize });
+            return res.data;
+        } catch (error) {
+            console.error('Error updating font size for all notes:', error);
+            throw error;
+        }
+    }
+
+    // Bulk loading methods for performance optimization
+    public static async bulkLoadIcons(iconPaths: string[]): Promise<BulkIconResponse> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/icons/bulk`, {
+                iconPaths
+            });
+            return res.data;
+        } catch (error) {
+            console.error('Error bulk loading icons:', error);
+            throw error;
+        }
+    }
+
+    public static async bulkLoadWidgetData(widgetRequests: Array<{ id: string; type: string; config?: Record<string, unknown> }>): Promise<BulkWidgetResponse> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/widgets/bulk-data`, {
+                widgets: widgetRequests
+            });
+            return res.data;
+        } catch (error) {
+            console.error('Error bulk loading widget data:', error);
+            throw error;
+        }
+    }
+
+    // Cache management methods
+    public static async getIconCacheStats(): Promise<CacheStatsResponse> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/icons/cache/stats`);
+            return res.data;
+        } catch (error) {
+            console.error('Error getting icon cache stats:', error);
+            throw error;
+        }
+    }
+
+    public static async clearIconCache(): Promise<CacheClearResponse> {
+        try {
+            const res = await axios.delete(`${BACKEND_URL}/api/icons/cache`);
+            return res.data;
+        } catch (error) {
+            console.error('Error clearing icon cache:', error);
             throw error;
         }
     }

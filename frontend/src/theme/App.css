@@ -9,21 +9,16 @@
   touch-action: manipulation !important; /* Prevents long-press actions */
 }
 
-html, body {
+html {
+  min-height: 100vh;
   width: 100vw;
-  /* background: url('/space4k-min.webp'); */
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-position: center;
-  background-attachment: scroll;
-  image-rendering: crisp-edges;
-  -webkit-touch-callout: none !important;
-  /* Fix to prevent layout shift when modals open */
-  padding-right: 0 !important; /* Prevent padding added by MUI */
 }
 
 body {
   overflow-x: hidden;
+  background: transparent;
+  margin: 0;
+  padding: 0;
 }
 
 a, img {
@@ -34,14 +29,14 @@ a, img {
 }
 
 #root {
-  /* text-align: center; */
-  /* margin: auto; */
   user-select: none !important;
   -ms-user-select: none;
   -moz-user-select: -moz-none;
   -webkit-user-select: none !important;
   -webkit-user-drag: none !important;
   -webkit-touch-callout: none !important;
+  min-height: 100vh;
+  width: 100%;
 }
 
 .swal2-container {

@@ -12,29 +12,29 @@ const retryWithBackoff = async <T>(
     baseDelay: number = 1000
 ): Promise<T> => {
     let lastError: Error | unknown;
-    
+
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
             return await fn();
         } catch (error) {
             lastError = error;
-            
+
             // Don't retry on client errors (4xx) or if it's the last attempt
             if (axios.isAxiosError(error) && error.response?.status && error.response.status < 500) {
                 throw error;
             }
-            
+
             if (attempt === maxRetries) {
                 throw error;
             }
-            
+
             // Exponential backoff: 1s, 2s, 4s
             const delay = baseDelay * Math.pow(2, attempt);
             console.log(`Weather API attempt ${attempt + 1} failed, retrying in ${delay}ms...`);
             await new Promise(resolve => setTimeout(resolve, delay));
         }
     }
-    
+
     throw lastError;
 };
 

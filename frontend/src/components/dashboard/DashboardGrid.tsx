@@ -20,7 +20,7 @@ import shortid from 'shortid';
 import { SortableSabnzbd } from './sortable-items/widgets/SortableSabnzbd';
 import { useAppContext } from '../../context/useAppContext';
 import { DashboardItem, DOWNLOAD_CLIENT_TYPE, ITEM_TYPE, TORRENT_CLIENT_TYPE } from '../../types';
-import { AddEditForm } from '../forms/AddEditForm';
+import { AddEditForm } from '../forms/AddEditForm/AddEditForm';
 import { CenteredModal } from '../modals/CenteredModal';
 import { ConfirmationOptions, PopupManager } from '../modals/PopupManager';
 import { BlankAppShortcut } from './base-items/apps/BlankAppShortcut';
@@ -333,7 +333,6 @@ export const DashboardGrid: React.FC = () => {
         // FAILSAFE: Always restore scrolling on mobile when ANY drag ends
         if (isMobile) {
             document.body.style.overflow = '';
-            console.log('DashboardGrid: Restored scrolling on drag end');
         }
 
         // Only proceed with events if we have both active and over
@@ -396,17 +395,13 @@ export const DashboardGrid: React.FC = () => {
             }
             // Handle regular reordering
             else if (active.id !== over.id) {
-                setDashboardLayout((prev: any[]) => {
-                    const oldIndex = prev.findIndex((item: { id: any; }) => item.id === active.id);
-                    const newIndex = prev.findIndex((item: { id: any; }) => item.id === over.id);
+                setDashboardLayout((prev) => {
+                    const oldIndex = prev.findIndex((item) => item.id === active.id);
+                    const newIndex = prev.findIndex((item) => item.id === over.id);
 
-                    // Only reorder if we found both indices
                     if (oldIndex !== -1 && newIndex !== -1) {
                         const newItems = arrayMove(prev, oldIndex, newIndex);
-
-                        // Save the updated layout to the server
                         saveLayout(newItems);
-
                         return newItems;
                     }
                     return prev;

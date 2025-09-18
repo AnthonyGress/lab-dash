@@ -1,8 +1,9 @@
 import { Grid2 as Grid } from '@mui/material';
 import { UseFormReturn } from 'react-hook-form';
-import { CheckboxElement, TextFieldElement } from 'react-hook-form-mui';
+import { CheckboxElement, SelectElement, TextFieldElement } from 'react-hook-form-mui';
 
-import { FormValues } from '../AddEditForm';
+import { FONT_SIZE_SELECT_OPTIONS } from '../../../constants/font-sizes';
+import { FormValues } from '../AddEditForm/types';
 
 interface NotesWidgetConfigProps {
     formContext: UseFormReturn<FormValues>;
@@ -32,6 +33,37 @@ export const NotesWidgetConfig = ({ formContext }: NotesWidgetConfigProps) => {
                             '&.Mui-focused fieldset': {
                                 borderColor: 'primary.main',
                             },
+                        },
+                    }}
+                />
+            </Grid>
+            <Grid>
+                <SelectElement
+                    name='defaultNoteFontSize'
+                    label='Default Font Size'
+                    options={FONT_SIZE_SELECT_OPTIONS}
+                    fullWidth
+                    sx={{
+                        '& .MuiInputLabel-root': {
+                            color: 'white',
+                        },
+                        '& .MuiOutlinedInput-root': {
+                            color: 'white',
+                            '& fieldset': {
+                                borderColor: 'rgba(255, 255, 255, 0.23)',
+                            },
+                            '&:hover fieldset': {
+                                borderColor: 'rgba(255, 255, 255, 0.5)',
+                            },
+                            '&.Mui-focused fieldset': {
+                                borderColor: 'primary.main',
+                            },
+                        },
+                        '& .MuiSelect-icon': {
+                            color: 'white',
+                        },
+                        '& .MuiMenuItem-root': {
+                            color: 'black',
                         },
                     }}
                 />

@@ -46,6 +46,32 @@ export const AppContextProvider = ({ children }: Props) => {
     // Recently updated states
     const [recentlyUpdated, setRecentlyUpdated] = useState<boolean>(false);
 
+    // Performance optimization states
+    const [iconCache, setIconCache] = useState<{ [key: string]: string }>({});
+    const [widgetDataCache, setWidgetDataCache] = useState<{ [key: string]: any }>({});
+    const [isInitialLoading, setIsInitialLoading] = useState<boolean>(false);
+
+    // Bulk data loading function
+    const loadBulkData = async (items: DashboardItem[]) => {
+        if (items.length === 0) return;
+
+        setIsInitialLoading(true);
+        try {
+            // Load icons and widget data in parallel
+            const [icons, widgetData] = await Promise.all([
+                DashApi.getAllActiveIcons(items),
+                DashApi.getBulkWidgetData(items)
+            ]);
+
+            setIconCache(prev => ({ ...prev, ...icons }));
+            setWidgetDataCache(prev => ({ ...prev, ...widgetData }));
+        } catch (error) {
+            console.error('Failed to load bulk data:', error);
+        } finally {
+            setIsInitialLoading(false);
+        }
+    };
+
     // Initialize authentication state and check if first time setup
     useEffect(() => {
         const initializeAuth = async () => {
@@ -103,6 +129,11 @@ export const AppContextProvider = ({ children }: Props) => {
                 // Set the page ID and layout
                 setCurrentPageId(targetPageId);
                 setDashboardLayout(selectedLayout || []);
+
+                // Load bulk data for performance optimization
+                if (selectedLayout && selectedLayout.length > 0) {
+                    await loadBulkData(selectedLayout);
+                }
             }
         };
 
@@ -129,6 +160,10 @@ export const AppContextProvider = ({ children }: Props) => {
                     setCurrentPageId(null);
                     const selectedLayout = isMobile ? config.layout.mobile : config.layout.desktop;
                     setDashboardLayout(selectedLayout || []);
+                    // Load bulk data for home page
+                    if (selectedLayout && selectedLayout.length > 0) {
+                        loadBulkData(selectedLayout);
+                    }
                 }
             } else if (pathname.startsWith('/') && !pathname.includes('/settings') && !pathname.includes('/login')) {
                 // Page route
@@ -143,6 +178,10 @@ export const AppContextProvider = ({ children }: Props) => {
                     setCurrentPageId(page.id);
                     const selectedLayout = isMobile ? page.layout.mobile : page.layout.desktop;
                     setDashboardLayout(selectedLayout || []);
+                    // Load bulk data for page
+                    if (selectedLayout && selectedLayout.length > 0) {
+                        loadBulkData(selectedLayout);
+                    }
                 } else if (!page) {
                     // Page doesn't exist, redirect to home
                     navigate('/', { replace: true });
@@ -752,7 +791,13 @@ export const AppContextProvider = ({ children }: Props) => {
 
                     const updatedPages = (config.pages || []).filter(page => page.id !== pageId);
 
+                    // Update the full config with the new pages array
+                    const updatedConfig = { ...config, pages: updatedPages };
+
                     await DashApi.saveConfig({ pages: updatedPages });
+
+                    // Update both config and pages state to ensure synchronization
+                    setConfig(updatedConfig);
                     setPages(updatedPages);
 
                     // If we're currently on the deleted page, switch to main dashboard
@@ -1124,6 +1169,11 @@ export const AppContextProvider = ({ children }: Props) => {
             switchToPage,
             pageNameToSlug,
             moveItemToPage,
+            // Performance optimization
+            iconCache,
+            widgetDataCache,
+            loadBulkData,
+            isInitialLoading,
             // Authentication states
             isLoggedIn,
             setIsLoggedIn,

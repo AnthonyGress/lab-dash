@@ -342,6 +342,90 @@ radarrRoute.get('/status', async (req: Request, res: Response) => {
     }
 });
 
+// Get Radarr movies for statistics
+radarrRoute.get('/movies', async (req: Request, res: Response) => {
+    console.log('Radarr movies request');
+    try {
+        const baseUrl = getBaseUrl(req);
+        const apiKey = getApiKey(req);
+
+        if (!apiKey) {
+            res.status(400).json({
+                success: false,
+                error: 'API key is required or could not be decrypted'
+            });
+            return;
+        }
+
+        const response = await axios.get(`${baseUrl}/api/v3/movie`, {
+            headers: {
+                'X-Api-Key': apiKey
+            },
+            timeout: 10000,
+            httpsAgent: httpsAgent
+        });
+
+        const movies = response.data || [];
+        const monitoredMovies = movies.filter((m: any) => m.monitored);
+
+        res.json({
+            success: true,
+            data: {
+                totalMovies: movies.length,
+                monitoredMovies: monitoredMovies.length
+            }
+        });
+
+    } catch (error: any) {
+        console.error('Radarr movies error:', error.message);
+        res.status(error.response?.status || 500).json({
+            success: false,
+            error: error.response?.data?.message || error.message || 'Failed to get Radarr movies'
+        });
+    }
+});
+
+// Refresh Monitored Downloads endpoint
+radarrRoute.post('/refresh-monitored-downloads', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const baseUrl = getBaseUrl(req);
+        const apiKey = getApiKey(req);
+
+        if (!apiKey) {
+            res.status(400).json({
+                success: false,
+                error: 'API key not configured for this Radarr instance'
+            });
+            return;
+        }
+
+        console.log('Sending RefreshMonitoredDownloads command to:', baseUrl);
+        // Send RefreshMonitoredDownloads command to Radarr
+        await axios.post(`${baseUrl}/api/v3/command`, {
+            name: 'RefreshMonitoredDownloads'
+        }, {
+            headers: {
+                'X-Api-Key': apiKey,
+                'Content-Type': 'application/json'
+            },
+            httpsAgent: httpsAgent,
+            timeout: 10000
+        });
+
+        res.json({
+            success: true,
+            message: 'RefreshMonitoredDownloads command sent successfully'
+        });
+
+    } catch (error: any) {
+        console.error('Radarr refresh monitored downloads error:', error.message);
+        res.status(error.response?.status || 500).json({
+            success: false,
+            error: error.response?.data?.message || error.message || 'Failed to refresh monitored downloads'
+        });
+    }
+});
+
 // Utility functions
 function getStateFromStatus(status: string, trackedDownloadStatus: string, trackedDownloadState: string): string {
     // Map Radarr statuses to common download states

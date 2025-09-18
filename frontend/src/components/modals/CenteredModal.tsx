@@ -1,10 +1,11 @@
 import CloseIcon from '@mui/icons-material/Close';
-import { AppBar, Backdrop, Box, Modal, styled, Toolbar, Tooltip, Typography, useMediaQuery } from '@mui/material';
+import { AppBar, Box, IconButton, Modal, Toolbar, Tooltip, Typography, useMediaQuery } from '@mui/material';
 import { ReactNode, useEffect } from 'react';
 
 import { useWindowDimensions } from '../../hooks/useWindowDimensions';
 import { styles } from '../../theme/styles';
 import { theme } from '../../theme/theme';
+import { lockScroll } from '../../utils/scroll-utils';
 
 type Props = {
     open: boolean;
@@ -13,11 +14,20 @@ type Props = {
     children: ReactNode;
     width?: string
     height?: string
+    fullWidthContent?: boolean
 }
 
-export const CenteredModal = ({ open, handleClose, children, width, height, title }: Props) => {
+export const CenteredModal = ({ open, handleClose, children, width, height, title, fullWidthContent = false }: Props) => {
     const windowDimensions = useWindowDimensions();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+    // Lock scroll when modal is open
+    useEffect(() => {
+        if (open) {
+            const unlockScroll = lockScroll();
+            return unlockScroll;
+        }
+    }, [open]);
 
 
     const setWidth = () => {
@@ -29,7 +39,7 @@ export const CenteredModal = ({ open, handleClose, children, width, height, titl
             return '92vw';
         }
 
-        return '40vw';
+        return '50vw';
     };
 
     const style = {
@@ -38,10 +48,11 @@ export const CenteredModal = ({ open, handleClose, children, width, height, titl
         left: '50%',
         transform: 'translate(-50%, -50%)',
         width: setWidth(),
+        height: height || 'auto',
         bgcolor: 'background.paper',
         borderRadius: '8px',
         boxShadow: 24,
-        maxHeight: '90vh', // Limit the maximum height to 90% of viewport height
+        maxHeight: height ? height : '90vh',
         display: 'flex',
         flexDirection: 'column'
     };
@@ -49,11 +60,17 @@ export const CenteredModal = ({ open, handleClose, children, width, height, titl
     return (
         <Modal
             open={open}
-            aria-labelledby='modal'
-            disableEnforceFocus
-            disableAutoFocus
-            // keepMounted
-            disableScrollLock={false}
+            onClose={(event, reason) => {
+                if (reason === 'escapeKeyDown') {
+                    handleClose();
+                }
+            }}
+            aria-labelledby='modal-title'
+            aria-describedby='modal-description'
+            disableScrollLock={true}
+            disableEnforceFocus={false}
+            disableAutoFocus={false}
+            disableRestoreFocus={false}
         >
             <Box sx={style}>
                 {/* AppBar with Title and Close Button */}
@@ -70,16 +87,21 @@ export const CenteredModal = ({ open, handleClose, children, width, height, titl
                         px: 2, // Add padding for spacing
                         mt: isMobile ? '-.2rem' : '-.5rem'
                     }}>
-                        <Typography sx={{ flexGrow: 1 }}>{title}</Typography>
+                        <Typography id='modal-title' sx={{ flexGrow: 1 }}>{title}</Typography>
                         <Box
                             onPointerDownCapture={(e) => e.stopPropagation()} // Stop drag from interfering
                             onClick={(e) => e.stopPropagation()} // Prevent drag from triggering on click
                             sx={styles.vcenter}
                         >
                             <Tooltip title='Close' placement='top'>
-                                <Box height={'100%'} sx={styles.vcenter}>
-                                    <CloseIcon sx={{ fontSize: 28, cursor: 'pointer' }} onClick={handleClose} />
-                                </Box>
+                                <IconButton
+                                    onClick={handleClose}
+                                    aria-label='Close modal'
+                                >
+                                    <Box height={'100%'} sx={styles.vcenter}>
+                                        <CloseIcon sx={{ fontSize: 28, color: 'white' }} />
+                                    </Box>
+                                </IconButton>
                             </Tooltip>
                         </Box>
                     </Toolbar>
@@ -87,15 +109,16 @@ export const CenteredModal = ({ open, handleClose, children, width, height, titl
 
                 {/* Modal Content (Fix for Scroll Issues) */}
                 <Box
+                    id='modal-description'
                     sx={{
                         flex: 1, // Take remaining space
                         overflowY: 'auto', // Enable scrolling
                         overflowX: 'hidden', // Prevent horizontal scrolling
-                        py: 4,
+                        py: 3,
                         px: 2,
                         display: 'flex',
                         flexDirection: 'column',
-                        alignItems: 'center',
+                        alignItems: fullWidthContent ? 'stretch' : 'center',
                         width: '100%',
                         '&::-webkit-scrollbar': {
                             width: '8px',

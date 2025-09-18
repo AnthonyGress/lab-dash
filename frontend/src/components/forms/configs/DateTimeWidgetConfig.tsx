@@ -6,7 +6,7 @@ import { UseFormReturn } from 'react-hook-form';
 import { DashApi } from '../../../api/dash-api';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { theme } from '../../../theme/theme';
-import { FormValues } from '../AddEditForm';
+import { FormValues } from '../AddEditForm/types';
 
 interface LocationOption {
     id: string;

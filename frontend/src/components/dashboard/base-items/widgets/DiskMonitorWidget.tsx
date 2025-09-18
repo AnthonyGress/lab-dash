@@ -1,7 +1,6 @@
 import { Box, CardContent, Grid2 as Grid, Tooltip, Typography, useMediaQuery } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
-import { HiOutlineServer } from 'react-icons/hi';
-import { PiHardDrivesFill } from 'react-icons/pi';
+import { FaHdd } from 'react-icons/fa';
 
 import { DashApi } from '../../../../api/dash-api';
 import { DUAL_WIDGET_CONTAINER_HEIGHT } from '../../../../constants/widget-dimensions';
@@ -39,7 +38,8 @@ export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) 
     const [diskData, setDiskData] = useState<DiskInfo[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+    const isLargeOrSmaller = useMediaQuery(theme.breakpoints.down('xl'));
 
     // Get config options with defaults
     const selectedDisks = config?.selectedDisks || [];
@@ -53,6 +53,16 @@ export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) 
     const formatSpace = (bytes: number): string => {
         if (bytes === 0) return '0 GB';
         const gb = bytes / (1024 ** 3);
+
+        // For large and smaller screens, don't show decimals
+        if (isLargeOrSmaller) {
+            if (gb >= 1000) {
+                return `${Math.round(gb / 1000)} TB`;
+            }
+            return `${Math.round(gb)} GB`;
+        }
+
+        // For XL screens, show decimals
         if (gb >= 1000) {
             return `${(gb / 1000).toFixed(1)} TB`;
         }
@@ -166,7 +176,7 @@ export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) 
                     <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
                         {showIcons && (
                             <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
-                                <PiHardDrivesFill size={16} color='white' />
+                                <FaHdd size={16} color='white' />
                             </Box>
                         )}
                         <Box sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -279,28 +289,30 @@ export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) 
                 </Box>
 
                 {/* Space Info */}
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1 }}>
                     <Typography
                         variant='caption'
                         sx={{
                             fontSize: '0.65rem',
                             color: 'white',
-                            minWidth: isMobile ? '60px' : '80px'
+                            flex: '0 1 auto',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
                         }}
                     >
-                        {isMobile ? 'F:' : 'Free:'} {formatSpace(displayFreeSpace)}
+                        {isLargeOrSmaller ? 'F:' : 'Free:'} {formatSpace(displayFreeSpace)}
                     </Typography>
                     <Typography
                         variant='caption'
                         sx={{
-                            ml: 'auto',
                             color: 'white',
                             fontSize: '0.65rem',
-                            minWidth: isMobile ? '60px' : '80px',
+                            flex: '0 0 auto',
                             textAlign: 'right'
                         }}
                     >
-                        {isMobile ? 'T:' : 'Total:'} {formatSpace(totalSpace)}
+                        {isLargeOrSmaller ? 'T:' : 'Total:'} {formatSpace(totalSpace)}
                     </Typography>
                 </Box>
             </Box>
@@ -345,7 +357,7 @@ export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) 
                             gap: 0.5
                         }}
                     >
-                        <PiHardDrivesFill size={18} color='white' />
+                        <FaHdd size={18} color='white' />
                         <Typography
                             variant='h6'
                             sx={{

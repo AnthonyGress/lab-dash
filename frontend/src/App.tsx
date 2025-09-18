@@ -2,7 +2,7 @@ import './theme/App.css';
 import { GlobalStyles } from '@mui/material';
 import { Box, Paper } from '@mui/material';
 import { useEffect } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, useNavigate } from 'react-router-dom';
 
 import { DashApi } from './api/dash-api';
 import { SetupForm } from './components/forms/SetupForm';
@@ -46,8 +46,11 @@ export const App = () => {
         setSetupComplete,
         refreshDashboard,
         checkLoginStatus,
-        isLoggedIn
+        isLoggedIn,
+        pages
     } = useAppContext();
+
+    const navigate = useNavigate();
 
     // Check if setup is complete based on the config
     useEffect(() => {
@@ -66,6 +69,45 @@ export const App = () => {
         }
     }, [config?.title]);
 
+    // Global hotkey listener for Ctrl+0-9 / Cmd+0-9 to switch pages
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            // Check for Ctrl+Number (Windows/Linux) or Cmd+Number (Mac)
+            if ((event.ctrlKey || event.metaKey) && (event.key >= '0' && event.key <= '9')) {
+                event.preventDefault();
+                event.stopPropagation(); // Prevent other listeners from interfering
+
+                const keyNumber = parseInt(event.key, 10);
+
+                if (keyNumber === 0) {
+                    // Cmd+0 goes to Settings page
+                    navigate('/settings');
+                } else if (keyNumber === 1) {
+                    // Cmd+1 always goes to Home page
+                    navigate('/');
+                } else {
+                    // Cmd+2+ goes to custom pages (pages[0], pages[1], etc.)
+                    const pageIndex = keyNumber - 2;
+
+                    if (pages && pages.length > pageIndex) {
+                        const targetPage = pages[pageIndex];
+                        // Convert page name to URL-friendly format: lowercase, spaces to hyphens
+                        const pageSlug = targetPage.name.toLowerCase().replace(/\s+/g, '-');
+                        navigate(`/${pageSlug}`);
+                    }
+                }
+            }
+        };
+
+        // Add event listener to document with capture to handle it early
+        document.addEventListener('keydown', handleKeyDown, true);
+
+        // Cleanup
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown, true);
+        };
+    }, [pages, navigate]);
+
     const backgroundImage = config?.backgroundImage
         ? `url('${BACKEND_URL}/uploads/${config?.backgroundImage}')`
         : 'url(\'/space4k-min.webp\')';
@@ -73,16 +115,50 @@ export const App = () => {
     const globalStyles = (
         <GlobalStyles
             styles={{
+                'html': {
+                    minHeight: '100vh',
+                    width: '100vw',
+                    position: 'relative',
+                },
                 'body': {
-                    background: backgroundImage,
-                    backgroundSize: 'cover',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundPosition: 'center center',
-                    // backgroundAttachment: 'scroll',
-                    imageRendering: 'crispEdges',
+                    background: 'transparent',
+                    margin: 0,
+                    padding: 0,
+                    minHeight: '100vh',
+                    '@media (max-width: 768px)': {
+                        overflowX: 'hidden',
+                        maxWidth: '100vw',
+                    },
                     '&.MuiModal-open': {
                         paddingRight: '0px !important',
                         overflow: 'hidden'
+                    }
+                },
+                // Fixed background element that won't resize
+                '#background-container': {
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100vw',
+                    height: '100vh',
+                    backgroundColor: '#0a0a0f',
+                    backgroundImage: backgroundImage,
+                    backgroundPosition: 'center center',
+                    backgroundSize: 'cover',
+                    backgroundRepeat: 'no-repeat',
+                    imageRendering: 'optimizeQuality',
+                    zIndex: -1,
+                    // Smooth transition when background changes
+                    transition: 'background-image 0.3s ease-in-out',
+                    // Ensure no resizing on mobile
+                    '@media (max-width: 768px)': {
+                        backgroundSize: 'cover !important',
+                        backgroundPosition: 'center center !important',
+                        // Force hardware acceleration for smoother performance
+                        transform: 'translateZ(0)',
+                        willChange: 'transform',
+                        // Ensure crisp rendering on mobile
+                        imageRendering: 'optimizeQuality',
                     }
                 },
             }}
@@ -92,6 +168,7 @@ export const App = () => {
     return (
         <>
             {globalStyles}
+            <div id='background-container' />
             <ScrollToTop />
             <Routes>
                 <Route element={<WithNav />}>
