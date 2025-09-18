@@ -23,6 +23,7 @@ import { DashboardItem, DOWNLOAD_CLIENT_TYPE, ITEM_TYPE, TORRENT_CLIENT_TYPE } f
 import { AddEditForm } from '../forms/AddEditForm/AddEditForm';
 import { CenteredModal } from '../modals/CenteredModal';
 import { ConfirmationOptions, PopupManager } from '../modals/PopupManager';
+import { ToastManager } from '../toast/ToastManager';
 import { BlankAppShortcut } from './base-items/apps/BlankAppShortcut';
 import { BlankWidget } from './base-items/widgets/BlankWidget';
 import { SortableAppShortcut } from './sortable-items/apps/SortableAppShortcut';
@@ -448,7 +449,6 @@ export const DashboardGrid: React.FC = () => {
                 saveLayout(updatedLayout);
 
                 // Show success toast
-                const { ToastManager } = await import('../toast/ToastManager');
                 ToastManager.success(`${itemName} deleted successfully`);
             }
         };

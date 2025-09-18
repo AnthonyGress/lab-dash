@@ -8,11 +8,12 @@ import {
     FormatQuote,
     Link
 } from '@mui/icons-material';
-import { Box, FormControl, IconButton, MenuItem, Select, Tooltip } from '@mui/material';
-import React from 'react';
+import { Box, FormControl, IconButton, MenuItem, Tooltip } from '@mui/material';
+import React, { useState } from 'react';
 import { GoHeading } from 'react-icons/go';
 
 import { FONT_SIZE_SELECT_OPTIONS } from '../../../../../constants/font-sizes';
+import { Select } from '../../../../custom-mui';
 
 interface MarkdownToolbarProps {
     onFormat: (type: string, prefix?: string, suffix?: string) => void;
@@ -28,6 +29,8 @@ export const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({
     onFontSizeChange,
     hideFontSize = false
 }) => {
+    const [isSelectOpen, setIsSelectOpen] = useState(false);
+
     const iconButtonStyle = {
         color: 'rgba(255,255,255,0.7)',
         '&:hover': { color: 'white' },
@@ -59,7 +62,10 @@ export const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({
                 <FormControl size='small' sx={{ minWidth: 55, mr: 1 }}>
                     <Select
                         value={fontSize}
-                        onChange={(e) => onFontSizeChange(e.target.value)}
+                        open={isSelectOpen}
+                        onOpen={() => setIsSelectOpen(true)}
+                        onClose={() => setIsSelectOpen(false)}
+                        onChange={(e) => onFontSizeChange(e.target.value as string)}
                         sx={{
                             color: 'rgba(255,255,255,0.7)',
                             fontSize: '0.75rem',

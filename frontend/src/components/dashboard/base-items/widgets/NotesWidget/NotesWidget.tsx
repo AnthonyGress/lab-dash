@@ -1,5 +1,5 @@
 import { Add, Close, List, MoreVert, Save } from '@mui/icons-material';
-import { Box, CardContent, IconButton, Menu, MenuItem, Tab, Tabs, TextField, Tooltip, Typography, useMediaQuery } from '@mui/material';
+import { Box, CardContent, IconButton, MenuItem, Tab, Tabs, TextField, Tooltip, Typography, useMediaQuery } from '@mui/material';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { FaEdit } from 'react-icons/fa';
 import { FaStickyNote } from 'react-icons/fa';
@@ -13,6 +13,7 @@ import { DashApi } from '../../../../../api/dash-api';
 import { DUAL_WIDGET_CONTAINER_HEIGHT } from '../../../../../constants/widget-dimensions';
 import { useAppContext } from '../../../../../context/useAppContext';
 import { theme } from '../../../../../theme/theme';
+import { Menu } from '../../../../custom-mui';
 import { CenteredModal } from '../../../../modals/CenteredModal';
 import { PopupManager } from '../../../../modals/PopupManager';
 
@@ -88,6 +89,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
             }
         }, 0);
     };
+
     const { editMode } = useAppContext();
 
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));

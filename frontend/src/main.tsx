@@ -1,5 +1,5 @@
 import { ThemeProvider } from '@mui/material';
-import { CssBaseline, GlobalStyles } from '@mui/material';
+import { CssBaseline } from '@mui/material';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter as Router } from 'react-router-dom';

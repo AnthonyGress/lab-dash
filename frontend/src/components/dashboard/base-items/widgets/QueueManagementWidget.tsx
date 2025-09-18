@@ -1,11 +1,13 @@
 import { CheckCircle, Delete, Download, MoreVert, Pause, PlayArrow, Stop, Upload, Warning } from '@mui/icons-material';
-import { Box, CardContent, CircularProgress, IconButton, LinearProgress, Menu, MenuItem, Tooltip, Typography, useMediaQuery } from '@mui/material';
+import { Box, CardContent, IconButton, LinearProgress, MenuItem, Tooltip, Typography, useMediaQuery } from '@mui/material';
 import React, { useState } from 'react';
 
 import { BACKEND_URL } from '../../../../constants/constants';
 import { DUAL_WIDGET_CONTAINER_HEIGHT } from '../../../../constants/widget-dimensions';
 import { useAppContext } from '../../../../context/useAppContext';
 import { theme } from '../../../../theme/theme';
+import { Menu } from '../../../custom-mui';
+import { PopupManager } from '../../../modals/PopupManager';
 
 export type QueueItem = {
     id: number;
@@ -162,38 +164,32 @@ interface QueueItemComponentProps {
 const QueueItemComponent: React.FC<QueueItemComponentProps> = ({ item, serviceName, isAdmin, onRemove }) => {
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+    const [menuOpen, setMenuOpen] = useState(false);
     const [isActionLoading, setIsActionLoading] = useState(false);
     const { editMode } = useAppContext();
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
         setMenuAnchorEl(event.currentTarget);
+        setMenuOpen(true);
     };
 
     const handleMenuClose = () => {
         setMenuAnchorEl(null);
+        setMenuOpen(false);
     };
 
     const handleRemove = async (removeFromClient: boolean, blocklist: boolean) => {
         if (onRemove) {
             handleMenuClose();
 
-            // Import Swal directly for this custom case
-            const Swal = (await import('sweetalert2')).default;
-
             const actionText = blocklist ? 'blocklist and remove' : 'remove';
             const clientText = removeFromClient ? 'and remove from download client' : 'but keep in download client';
 
-            Swal.fire({
+            PopupManager.deleteConfirmation({
                 title: `${actionText.charAt(0).toUpperCase() + actionText.slice(1)}?`,
                 text: `This will ${actionText} the item from ${serviceName} ${clientText}.`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: actionText.charAt(0).toUpperCase() + actionText.slice(1),
-                confirmButtonColor: theme.palette.error.main,
-                cancelButtonText: 'Cancel',
-                reverseButtons: true
-            }).then(async (result) => {
-                if (result.isConfirmed) {
+                confirmText: actionText.charAt(0).toUpperCase() + actionText.slice(1),
+                confirmAction: async () => {
                     setIsActionLoading(true);
                     try {
                         await onRemove(item.id.toString(), removeFromClient, blocklist);
@@ -279,7 +275,7 @@ const QueueItemComponent: React.FC<QueueItemComponentProps> = ({ item, serviceNa
                 )}
                 <Menu
                     anchorEl={menuAnchorEl}
-                    open={Boolean(menuAnchorEl)}
+                    open={menuOpen}
                     onClose={handleMenuClose}
                     PaperProps={{
                         sx: {

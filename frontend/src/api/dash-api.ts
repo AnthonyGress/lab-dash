@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { StatusCodes } from 'http-status-codes';
+import shortid from 'shortid';
 
 import { BACKEND_URL } from '../constants/constants';
 import { Config, DashboardItem, Icon, UploadImageResponse } from '../types';
@@ -2203,9 +2204,6 @@ export class DashApi {
     }
 
     public static async createNote(note: { title: string; content: string; fontSize?: string }): Promise<any> {
-        // Import shortid dynamically to avoid issues
-        const shortid = await import('shortid');
-
         try {
             const noteWithId = {
                 ...note,

@@ -1,5 +1,5 @@
 import { ArrowDownward, ArrowUpward, CheckCircle, Delete, Download, MoreVert, Pause, PlayArrow, Stop, Upload, Warning } from '@mui/icons-material';
-import { Box, Button, CardContent, CircularProgress, Grid, IconButton, LinearProgress, Link, Menu, MenuItem, TextField, Tooltip, Typography, useMediaQuery } from '@mui/material';
+import { Box, Button, CardContent, CircularProgress, Grid, IconButton, LinearProgress, Link, MenuItem, TextField, Tooltip, Typography, useMediaQuery } from '@mui/material';
 import React, { useState } from 'react';
 
 import { PopupManager } from '../../../../components/modals/PopupManager';
@@ -8,6 +8,7 @@ import { DUAL_WIDGET_CONTAINER_HEIGHT } from '../../../../constants/widget-dimen
 import { useAppContext } from '../../../../context/useAppContext';
 import { theme } from '../../../../theme/theme';
 import { TORRENT_CLIENT_TYPE } from '../../../../types';
+import { Menu } from '../../../custom-mui';
 
 export type DownloadClientStats = {
     dl_info_speed: number;
@@ -139,15 +140,18 @@ interface DownloadItemProps {
 const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmin, onResume, onPause, onDelete }) => {
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+    const [menuOpen, setMenuOpen] = useState(false);
     const [isActionLoading, setIsActionLoading] = useState(false);
     const { editMode } = useAppContext();
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
         setMenuAnchorEl(event.currentTarget);
+        setMenuOpen(true);
     };
 
     const handleMenuClose = () => {
         setMenuAnchorEl(null);
+        setMenuOpen(false);
     };
 
     const handleResume = async () => {
@@ -182,23 +186,10 @@ const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmi
         if (onDelete) {
             handleMenuClose();
 
-            // Import Swal directly for this custom case
-            const Swal = (await import('sweetalert2')).default;
-
-            Swal.fire({
+            PopupManager.threeButtonDialog({
                 title: `Remove "${torrent.name}"?`,
-                icon: 'error',
-                showDenyButton: true,
-                showCancelButton: true,
-                confirmButtonText: 'Delete Files',
-                confirmButtonColor: theme.palette.error.main,
-                denyButtonText: 'Keep Files',
-                denyButtonColor: theme.palette.info.main,
-                cancelButtonText: 'Cancel',
-                reverseButtons: true,
-                focusDeny: true
-            }).then(async (result) => {
-                if (result.isConfirmed) {
+                confirmText: 'Delete Files',
+                confirmAction: async () => {
                     // Delete torrent and files
                     setIsActionLoading(true);
                     try {
@@ -208,7 +199,9 @@ const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmi
                     } finally {
                         setIsActionLoading(false);
                     }
-                } else if (result.isDenied) {
+                },
+                denyText: 'Keep Files',
+                denyAction: async () => {
                     // Delete torrent only, keep files
                     setIsActionLoading(true);
                     try {
@@ -219,7 +212,6 @@ const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmi
                         setIsActionLoading(false);
                     }
                 }
-                // If result.dismiss, do nothing (cancel)
             });
         }
     };
@@ -307,7 +299,7 @@ const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmi
                 )}
                 <Menu
                     anchorEl={menuAnchorEl}
-                    open={Boolean(menuAnchorEl)}
+                    open={menuOpen}
                     onClose={handleMenuClose}
                     anchorOrigin={{
                         vertical: 'bottom',
