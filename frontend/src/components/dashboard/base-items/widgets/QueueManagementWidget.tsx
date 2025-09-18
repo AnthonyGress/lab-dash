@@ -1,10 +1,7 @@
 import { CheckCircle, Delete, Download, MoreVert, Pause, PlayArrow, Stop, Upload, Warning } from '@mui/icons-material';
-import { Box, CardContent, CircularProgress, IconButton, LinearProgress, MenuItem, Tooltip, Typography, useMediaQuery } from '@mui/material';
-import React, { useCallback, useEffect, useState } from 'react';
-import { FaEllipsisV } from 'react-icons/fa';
-import { FaTrashCan } from 'react-icons/fa6';
+import { Box, CardContent, IconButton, LinearProgress, MenuItem, Tooltip, Typography, useMediaQuery } from '@mui/material';
+import React, { useState } from 'react';
 
-import { DashApi } from '../../../../api/dash-api';
 import { BACKEND_URL } from '../../../../constants/constants';
 import { DUAL_WIDGET_CONTAINER_HEIGHT } from '../../../../constants/widget-dimensions';
 import { useAppContext } from '../../../../context/useAppContext';
