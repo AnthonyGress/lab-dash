@@ -69,24 +69,25 @@ export const App = () => {
         }
     }, [config?.title]);
 
-    // Global hotkey listener for Ctrl+0-9 / Cmd+0-9 to switch pages
+    // Global hotkey listener for Ctrl+1-9 / Cmd+1-9 to switch pages
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
             // Check for Ctrl+Number (Windows/Linux) or Cmd+Number (Mac)
-            if ((event.ctrlKey || event.metaKey) && (event.key >= '0' && event.key <= '9')) {
+            // Skip 0 to allow default browser behavior (zoom reset)
+            if ((event.ctrlKey || event.metaKey) && (event.key >= '1' && event.key <= '9')) {
                 event.preventDefault();
                 event.stopPropagation(); // Prevent other listeners from interfering
 
                 const keyNumber = parseInt(event.key, 10);
 
-                if (keyNumber === 0) {
-                    // Cmd+0 goes to Settings page
+                if (keyNumber === 9) {
+                    // Cmd+9 goes to Settings page
                     navigate('/settings');
                 } else if (keyNumber === 1) {
                     // Cmd+1 always goes to Home page
                     navigate('/');
                 } else {
-                    // Cmd+2+ goes to custom pages (pages[0], pages[1], etc.)
+                    // Cmd+2-8 goes to custom pages (pages[0], pages[1], etc.)
                     const pageIndex = keyNumber - 2;
 
                     if (pages && pages.length > pageIndex) {

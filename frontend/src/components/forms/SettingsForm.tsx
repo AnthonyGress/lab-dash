@@ -1256,7 +1256,7 @@ export const SettingsForm = () => {
                                             }}>
                                                 <KeyBadge>{commandKey}</KeyBadge>
                                                 <Typography variant='body1'>+</Typography>
-                                                <KeyBadge>0</KeyBadge>
+                                                <KeyBadge>9</KeyBadge>
                                             </Box>
                                         </Box>
                                     </Box>
