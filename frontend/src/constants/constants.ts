@@ -11,7 +11,7 @@ export const initialItems = [
     })),
 ];
 
-export const BACKEND_URL = import.meta.env.PROD ? '' : 'http://localhost:5000';
+export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
 export const FIFTEEN_MIN_IN_MS = 900000;
 export const TWO_MIN_IN_MS = 120000;

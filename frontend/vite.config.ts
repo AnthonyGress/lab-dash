@@ -1,7 +1,11 @@
 import react from '@vitejs/plugin-react-swc';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
+import { fileURLToPath } from 'url';
 import { defineConfig } from 'vite';
+
+// Get the directory name for ES modules
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 // Read the root package.json version
 const rootPackagePath = resolve(__dirname, '../package.json');
@@ -12,7 +16,8 @@ const rootVersion = rootPackageJson.version;
 export default defineConfig({
     plugins: [react()],
     server: {
-        port: 2022
+        port: 2022,
+        host: '0.0.0.0' // Allow access from network
     },
     define: {
         // Expose the root version to the frontend code
