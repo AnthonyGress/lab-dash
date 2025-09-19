@@ -44,7 +44,9 @@ export const CenteredModal = ({ open, handleClose, children, width, height, titl
         boxShadow: 24,
         maxHeight: height ? height : '90vh',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        outline: 'none', // Remove focus outline
+        border: 'none'   // Ensure no border
     };
 
     return (
