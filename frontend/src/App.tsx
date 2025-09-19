@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { Route, Routes, useNavigate } from 'react-router-dom';
 
 import { DashApi } from './api/dash-api';
+import GlobalCustomScrollbar from './components/custom-mui/GlobalCustomScrollbar';
 import { SetupForm } from './components/forms/SetupForm';
 import { WithNav } from './components/navbar/WithNav';
 import { ScrollToTop } from './components/ScrollToTop';
@@ -171,6 +172,7 @@ export const App = () => {
             {globalStyles}
             <div id='background-container' />
             <ScrollToTop />
+            <GlobalCustomScrollbar />
             <Routes>
                 <Route element={<WithNav />}>
                     <Route path='/' element={isFirstTimeSetup && !setupComplete ? <SetupPage /> : <DashboardPage />}/>

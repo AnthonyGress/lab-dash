@@ -190,7 +190,23 @@ export const theme = createTheme({
                 },
             },
         },
+        // Disable MUI's native scroll lock - we'll use react-remove-scroll instead
+        MuiModal: {
+            defaultProps: {
+                disableScrollLock: true,
+            },
+        },
+        MuiDrawer: {
+            defaultProps: {
+                disableScrollLock: true,
+            },
+        },
         MuiMenu: {
+            defaultProps: {
+                disableScrollLock: true,
+            },
+        },
+        MuiPopover: {
             defaultProps: {
                 disableScrollLock: true,
             },
