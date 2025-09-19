@@ -98,117 +98,117 @@ export const SearchBar = ({
                     }}
                     onOpen={() => setIsDropdownOpen(true)}
                     onClose={() => setIsDropdownOpen(false)}
-                    filterOptions={(options, state) => {
-                        const filtered = options.filter((option) =>
-                            option.label.toLowerCase().includes(state.inputValue.toLowerCase())
-                        );
+                filterOptions={(options, state) => {
+                    const filtered = options.filter((option) =>
+                        option.label.toLowerCase().includes(state.inputValue.toLowerCase())
+                    );
 
-                        if (filtered.length === 0 && state.inputValue.trim() !== '') {
-                            return [
-                                {
-                                    label: `Search ${searchProvider.name} for "${state.inputValue}"`,
-                                    url: getSearchUrl(state.inputValue),
-                                },
-                            ];
-                        }
+                    if (filtered.length === 0 && state.inputValue.trim() !== '') {
+                        return [
+                            {
+                                label: `Search ${searchProvider.name} for "${state.inputValue}"`,
+                                url: getSearchUrl(state.inputValue),
+                            },
+                        ];
+                    }
 
-                        return filtered;
-                    }}
-                    onChange={handleChange}
-                    renderOption={(props, option) => {
-                        if (typeof option === 'string') {
-                            return (
-                                <li {...props} key={nanoid()}>
-                                    {option}
-                                </li>
-                            );
-                        }
+                    return filtered;
+                }}
+                onChange={handleChange}
+                renderOption={(props, option) => {
+                    if (typeof option === 'string') {
                         return (
-                            <Box
-                                component='li'
-                                {...props}
-                                key={nanoid()}
-                                sx={{
-                                    '&:hover': {
-                                        backgroundColor: `${COLORS.LIGHT_GRAY_HOVER} !important`,
-                                    }
-                                }}
-                            >
-                                {option.icon && (
-                                    <img
-                                        src={option.icon}
-                                        alt=''
-                                        style={{ width: 30, height: 30, marginRight: 14 }}
-                                        key={nanoid()}
-                                    />
-                                )}
-                                <Typography key={nanoid()} fontSize={18}>{option.label}</Typography>
-                            </Box>
+                            <li {...props} key={nanoid()}>
+                                {option}
+                            </li>
                         );
-                    }}
-                    renderInput={(params) => (
-                        <Box sx={{ width: '100%', ...styles.center }}>
-                            <TextField
-                                {...params}
-                                inputRef={inputRef}
-                                placeholder={placeholder || `Search with ${searchProvider.name}`}
-                                onKeyDown={handleKeyDown}
-                                InputProps={{
-                                    ...params.InputProps,
-                                    startAdornment: (
-                                        <InputAdornment position='start' sx={{ color: 'text.primary' }}>
-                                            <FaSearch />
-                                        </InputAdornment>
-                                    ),
-                                    type: 'text',
-                                    sx: { height: '70%' },
-                                }}
-                                sx={{
-                                    width: { xs: '100%',
-                                        sm: '90%',
-                                        md: '90%',
-                                        lg: '80%',
-                                        xl: '50%'
-                                    },
-                                    height: '60px',
-                                    '& .MuiOutlinedInput-root': {
-                                        backgroundColor: { xs: COLORS.TRANSPARENT_GRAY, sm: 'transparent' },
-                                        borderRadius: 2,
-                                        backdropFilter: { xs: 'blur(6px)', sm: 'none' },
-                                        // (Optional) Include the -webkit- prefix for Safari support:
-                                        WebkitBackdropFilter: { xs: 'blur(6px)', sm: 'none' },
-                                    },
-                                    '& .MuiOutlinedInput-notchedOutline': {
-                                        border: '1px solid rgba(255, 255, 255, 0.3) !important',
-                                    },
-                                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                                        border: '1px solid rgba(255, 255, 255, 0.5) !important',
-                                    },
-                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                        border: '1px solid rgba(255, 255, 255, 0.7) !important',
-                                    },
-                                    borderRadius: 2,
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                }}
-                            />
+                    }
+                    return (
+                        <Box
+                            component='li'
+                            {...props}
+                            key={nanoid()}
+                            sx={{
+                                '&:hover': {
+                                    backgroundColor: `${COLORS.LIGHT_GRAY_HOVER} !important`,
+                                }
+                            }}
+                        >
+                            {option.icon && (
+                                <img
+                                    src={option.icon}
+                                    alt=''
+                                    style={{ width: 30, height: 30, marginRight: 14 }}
+                                    key={nanoid()}
+                                />
+                            )}
+                            <Typography key={nanoid()} fontSize={18}>{option.label}</Typography>
                         </Box>
-                    )}
-                    sx={{ width: '100%', px: 2 }}
-                    slotProps={{
-                        listbox: {
-                            sx: {
-                                '& .MuiAutocomplete-option': {
-                                    minHeight: 'unset',
-                                    lineHeight: '1.5',
-                                    height: {
-                                        xs: '3rem'
-                                    }
+                    );
+                }}
+                renderInput={(params) => (
+                    <Box sx={{ width: '100%', ...styles.center }}>
+                        <TextField
+                            {...params}
+                            inputRef={inputRef}
+                            placeholder={placeholder || `Search with ${searchProvider.name}`}
+                            onKeyDown={handleKeyDown}
+                            InputProps={{
+                                ...params.InputProps,
+                                startAdornment: (
+                                    <InputAdornment position='start' sx={{ color: 'text.primary' }}>
+                                        <FaSearch />
+                                    </InputAdornment>
+                                ),
+                                type: 'text',
+                                sx: { height: '70%' },
+                            }}
+                            sx={{
+                                width: { xs: '100%',
+                                    sm: '90%',
+                                    md: '90%',
+                                    lg: '80%',
+                                    xl: '50%'
                                 },
+                                height: '60px',
+                                '& .MuiOutlinedInput-root': {
+                                    backgroundColor: { xs: COLORS.TRANSPARENT_GRAY, sm: 'transparent' },
+                                    borderRadius: 2,
+                                    backdropFilter: { xs: 'blur(6px)', sm: 'none' },
+                                    // (Optional) Include the -webkit- prefix for Safari support:
+                                    WebkitBackdropFilter: { xs: 'blur(6px)', sm: 'none' },
+                                },
+                                '& .MuiOutlinedInput-notchedOutline': {
+                                    border: '1px solid rgba(255, 255, 255, 0.3) !important',
+                                },
+                                '&:hover .MuiOutlinedInput-notchedOutline': {
+                                    border: '1px solid rgba(255, 255, 255, 0.5) !important',
+                                },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                    border: '1px solid rgba(255, 255, 255, 0.7) !important',
+                                },
+                                borderRadius: 2,
+                                display: 'flex',
+                                justifyContent: 'center',
+                            }}
+                        />
+                    </Box>
+                )}
+                sx={{ width: '100%', px: 2 }}
+                slotProps={{
+                    listbox: {
+                        sx: {
+                            '& .MuiAutocomplete-option': {
+                                minHeight: 'unset',
+                                lineHeight: '1.5',
+                                height: {
+                                    xs: '3rem'
+                                }
                             },
                         },
-                    }}
-                />
+                    },
+                }}
+            />
             </Box>
         </RemoveScroll>
     );

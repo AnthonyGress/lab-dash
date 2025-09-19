@@ -57,6 +57,15 @@ const GlobalCustomScrollbar: React.FC = () => {
 
     // Check if scrolling should be disabled based on open overlays
     const checkAndUpdateScrollLock = useCallback(() => {
+        // First check specifically for MuiAutocomplete dropdowns 
+        const autocompleteDropdown = document.querySelector('.MuiAutocomplete-popper, .MuiAutocomplete-listbox');
+        if (autocompleteDropdown) {
+            // Hide the custom scrollbar but don't apply our scroll lock
+            // (RemoveScroll from SearchBar handles background scroll prevention)
+            setIsScrollLocked(false);
+            return true; // Hide scrollbar but don't use our scroll lock
+        }
+
         // Check for MUI backdrop (drawer, modal, etc.)
         const backdrop = document.querySelector('.MuiBackdrop-root');
         if (backdrop) {
@@ -71,7 +80,7 @@ const GlobalCustomScrollbar: React.FC = () => {
             return true;
         }
 
-        // Check for open select/menu
+        // Check for open select/menu 
         const menu = document.querySelector('[role="listbox"], [role="menu"]');
         if (menu) {
             setIsScrollLocked(true);
@@ -139,7 +148,7 @@ const GlobalCustomScrollbar: React.FC = () => {
         if (postDragAutoHideActive) {
             return;
         }
-        
+
         setIsScrollbarVisible(true);
         if (hideTimeoutRef.current) {
             clearTimeout(hideTimeoutRef.current);
@@ -149,7 +158,7 @@ const GlobalCustomScrollbar: React.FC = () => {
 
     const handleScroll = useCallback(() => {
         updateScrollbar();
-        
+
         // If user scrolls after dragging, clear the flags and cancel post-drag auto-hide
         if (justFinishedDragging || postDragAutoHideActive) {
             setJustFinishedDragging(false);
@@ -158,7 +167,7 @@ const GlobalCustomScrollbar: React.FC = () => {
                 clearTimeout(postDragTimeoutRef.current);
             }
         }
-        
+
         // Only show scrollbar if not currently dragging
         if (!isDragging) {
             showScrollbar();
@@ -168,7 +177,7 @@ const GlobalCustomScrollbar: React.FC = () => {
     const handleMouseEnter = useCallback(() => {
         // Don't show scrollbar if scrolling is disabled
         if (checkAndUpdateScrollLock()) return;
-        
+
         isMouseOverScrollbarRef.current = true;
         // Reset the auto-hide timer when mouse enters scrollbar
         if (hideTimeoutRef.current) {
@@ -194,7 +203,7 @@ const GlobalCustomScrollbar: React.FC = () => {
     const handleThumbMouseDown = useCallback((e: React.MouseEvent) => {
         // Don't allow dragging if scrolling is disabled
         if (checkAndUpdateScrollLock()) return;
-        
+
         e.preventDefault();
 
         // Temporarily disable smooth scrolling during drag
@@ -243,7 +252,7 @@ const GlobalCustomScrollbar: React.FC = () => {
         if (wasDragging) {
             setJustFinishedDragging(true);
             setPostDragAutoHideActive(true); // Block showScrollbar from interfering
-            
+
             // Clear any existing timers
             if (hideTimeoutRef.current) {
                 clearTimeout(hideTimeoutRef.current);
@@ -251,7 +260,7 @@ const GlobalCustomScrollbar: React.FC = () => {
             if (postDragTimeoutRef.current) {
                 clearTimeout(postDragTimeoutRef.current);
             }
-            
+
             // Set post-drag auto-hide timer
             postDragTimeoutRef.current = window.setTimeout(() => {
                 // Only hide if mouse is not over scrollbar
@@ -270,7 +279,7 @@ const GlobalCustomScrollbar: React.FC = () => {
     const handleTrackClick = useCallback((e: React.MouseEvent) => {
         // Don't allow track clicks if scrolling is disabled
         if (checkAndUpdateScrollLock()) return;
-        
+
         if (e.target === e.currentTarget) {
             const rect = e.currentTarget.getBoundingClientRect();
             const clickY = e.clientY - rect.top;
@@ -336,10 +345,7 @@ const GlobalCustomScrollbar: React.FC = () => {
     }
 
     return (
-        <RemoveScroll 
-            enabled={isScrollLocked}
-            allowPinchZoom
-        >
+        <RemoveScroll enabled={isScrollLocked}>
             <ScrollbarTrack
                 visible={isScrollbarVisible}
                 onMouseEnter={handleMouseEnter}
