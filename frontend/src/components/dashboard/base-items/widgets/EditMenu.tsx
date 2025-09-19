@@ -1,11 +1,9 @@
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-import { IconButton, MenuItem } from '@mui/material';
+import { IconButton, Menu, MenuItem } from '@mui/material';
 import React, { useState } from 'react';
-import { FaHome } from 'react-icons/fa';
-import { FaArrowRight, FaCopy, FaFile, FaHouse, FaPenToSquare, FaTrash, FaTrashCan } from 'react-icons/fa6';
+import { FaArrowRight, FaCopy, FaFile, FaHouse, FaPenToSquare, FaTrashCan } from 'react-icons/fa6';
 
 import { useAppContext } from '../../../../context/useAppContext';
-import { Menu } from '../../../custom-mui';
 
 type EditMenuProps = {
     editMode: boolean;

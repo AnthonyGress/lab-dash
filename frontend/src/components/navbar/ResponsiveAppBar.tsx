@@ -20,8 +20,7 @@ import { useAppContext } from '../../context/useAppContext';
 import { useInternetStatus } from '../../hooks/useInternetStatus';
 import { COLORS, styles } from '../../theme/styles';
 import { theme } from '../../theme/theme';
-import { ITEM_TYPE } from '../../types';
-import { lockScrollForDrawer } from '../../utils/scroll-utils';
+import { DashboardItem, ITEM_TYPE } from '../../types';
 import { getAppVersion } from '../../utils/version';
 import { AddEditForm } from '../forms/AddEditForm/AddEditForm';
 import { Logo } from '../Logo';
@@ -55,6 +54,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
     const [openUpdateModal, setOpenUpdateModal] = useState(false);
     const [openVersionModal, setOpenVersionModal] = useState(false);
     const [internetTooltipOpen, setInternetTooltipOpen] = useState(false);
+    const [originalLayoutSnapshot, setOriginalLayoutSnapshot] = useState<DashboardItem[] | null>(null);
 
     const { internetStatus } = useInternetStatus();
 
@@ -110,14 +110,6 @@ export const ResponsiveAppBar = ({ children }: Props) => {
         setInternetTooltipOpen(false);
     }, [editMode]);
 
-    // Lock scroll when drawer is open
-    useEffect(() => {
-        if (openDrawer) {
-            const unlockScroll = lockScrollForDrawer();
-            return unlockScroll;
-        }
-    }, [openDrawer]);
-
     const handleClose = () => setOpenAddModal(false);
     const handleCloseEditPage = () => {
         setOpenEditPageModal(false);
@@ -146,7 +138,25 @@ export const ResponsiveAppBar = ({ children }: Props) => {
         handleCloseDrawer();
         setEditMode(false);
         setOpenAddModal(false);
-        saveLayout(dashboardLayout);
+
+        // Only save if there were actual changes made
+        if (originalLayoutSnapshot) {
+            const hasChanges = JSON.stringify(originalLayoutSnapshot) !== JSON.stringify(dashboardLayout);
+            
+            if (hasChanges) {
+                console.log('Layout changes detected, saving...');
+                saveLayout(dashboardLayout);
+            } else {
+                console.log('No layout changes detected, skipping save');
+            }
+            
+            // Clear the snapshot
+            setOriginalLayoutSnapshot(null);
+        } else {
+            // Fallback - save if we don't have a snapshot (shouldn't happen)
+            console.log('No original layout snapshot found, saving as fallback');
+            saveLayout(dashboardLayout);
+        }
     };
 
     const handleOpenDrawer = () => {
@@ -218,6 +228,14 @@ export const ResponsiveAppBar = ({ children }: Props) => {
 
         if (window.location.pathname.includes('/settings')) {
             navigate('/');
+        }
+
+        // When entering edit mode, capture the current layout as a snapshot
+        if (value) {
+            setOriginalLayoutSnapshot(JSON.parse(JSON.stringify(dashboardLayout)));
+        } else {
+            // When exiting edit mode, clear the snapshot
+            setOriginalLayoutSnapshot(null);
         }
     };
 
@@ -341,7 +359,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                 </Typography>
                             </Box>
                         </Link>
-                        { !currentPath.includes('/settings') && config?.search &&
+                        { !currentPath.includes('/settings') && !currentPath.includes('/login') && !currentPath.includes('/signup') && config?.search &&
                             <Box sx={{ width: '100%', display: { xs: 'none', sm: 'flex' }, justifyContent: 'center', flexGrow: 1 }}>
                                 <GlobalSearch />
                             </Box>
@@ -479,7 +497,6 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                 open={openDrawer}
                                 onClose={handleCloseDrawer}
                                 anchor='right'
-                                disableScrollLock={true}
                                 sx={{
                                     '& .MuiDrawer-paper': {
                                         width: 225,
@@ -800,7 +817,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                         </Box>
                         : null
                 }
-                {!currentPath.includes('/settings') && config?.search && !editMode && (
+                {!currentPath.includes('/settings') && !currentPath.includes('/login') && !currentPath.includes('/signup') && config?.search && !editMode && (
                     <Box position='absolute' sx={{
                         top: '49px',
                         zIndex: 99,

@@ -8,12 +8,11 @@ import {
     FormatQuote,
     Link
 } from '@mui/icons-material';
-import { Box, FormControl, IconButton, MenuItem, Tooltip } from '@mui/material';
+import { Box, FormControl, IconButton, MenuItem, Select, Tooltip } from '@mui/material';
 import React, { useState } from 'react';
 import { GoHeading } from 'react-icons/go';
 
 import { FONT_SIZE_SELECT_OPTIONS } from '../../../../../constants/font-sizes';
-import { Select } from '../../../../custom-mui';
 
 interface MarkdownToolbarProps {
     onFormat: (type: string, prefix?: string, suffix?: string) => void;

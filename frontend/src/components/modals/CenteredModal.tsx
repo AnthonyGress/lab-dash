@@ -1,11 +1,10 @@
 import CloseIcon from '@mui/icons-material/Close';
 import { AppBar, Box, IconButton, Modal, Toolbar, Tooltip, Typography, useMediaQuery } from '@mui/material';
-import { ReactNode, useEffect } from 'react';
+import { ReactNode } from 'react';
 
 import { useWindowDimensions } from '../../hooks/useWindowDimensions';
 import { styles } from '../../theme/styles';
 import { theme } from '../../theme/theme';
-import { lockScroll } from '../../utils/scroll-utils';
 
 type Props = {
     open: boolean;
@@ -20,15 +19,6 @@ type Props = {
 export const CenteredModal = ({ open, handleClose, children, width, height, title, fullWidthContent = false }: Props) => {
     const windowDimensions = useWindowDimensions();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
-    // Lock scroll when modal is open
-    useEffect(() => {
-        if (open) {
-            const unlockScroll = lockScroll();
-            return unlockScroll;
-        }
-    }, [open]);
-
 
     const setWidth = () => {
         if (width) {
@@ -67,10 +57,6 @@ export const CenteredModal = ({ open, handleClose, children, width, height, titl
             }}
             aria-labelledby='modal-title'
             aria-describedby='modal-description'
-            disableScrollLock={true}
-            disableEnforceFocus={false}
-            disableAutoFocus={false}
-            disableRestoreFocus={false}
         >
             <Box sx={style}>
                 {/* AppBar with Title and Close Button */}

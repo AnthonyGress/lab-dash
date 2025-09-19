@@ -13,25 +13,6 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom scrollbar styling */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: rgba(46, 46, 46, 0.7); /* Match navbar background color */
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
-}
-
 div {
   -webkit-tap-highlight-color: transparent;
 }
