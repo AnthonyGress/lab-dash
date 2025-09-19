@@ -517,8 +517,9 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                         if (searchQuery && !confirmationItem) {
                             setSearchQuery('');
                             setSearchResults([]);
-                            setIsDropdownOpen(false);
                         }
+                        // Always reset dropdown state when clicking away
+                        setIsDropdownOpen(false);
                     }}>
                         <Box sx={{
                             flex: 1,
@@ -529,7 +530,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                             visibility: editMode ? 'hidden' : 'visible'
                         }}>
                             <RemoveScroll 
-                                enabled={isDropdownOpen} 
+                                enabled={isDropdownOpen && searchResults.length > 0} 
                                 removeScrollBar={false}
                                 style={{ width: '100%' }}
                             >
