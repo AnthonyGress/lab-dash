@@ -1,5 +1,5 @@
 import { ArrowDownward, ArrowUpward, CheckCircle, Delete, Download, MoreVert, Pause, PlayArrow, Stop, Upload, Warning } from '@mui/icons-material';
-import { Box, Button, CardContent, CircularProgress, Grid, IconButton, LinearProgress, Link, MenuItem, TextField, Tooltip, Typography, useMediaQuery } from '@mui/material';
+import { Box, Button, CardContent, CircularProgress, Grid, IconButton, LinearProgress, Link, Menu, MenuItem, TextField, Tooltip, Typography, useMediaQuery } from '@mui/material';
 import React, { useState } from 'react';
 
 import { PopupManager } from '../../../../components/modals/PopupManager';
@@ -7,8 +7,6 @@ import { BACKEND_URL } from '../../../../constants/constants';
 import { DUAL_WIDGET_CONTAINER_HEIGHT } from '../../../../constants/widget-dimensions';
 import { useAppContext } from '../../../../context/useAppContext';
 import { theme } from '../../../../theme/theme';
-import { TORRENT_CLIENT_TYPE } from '../../../../types';
-import { Menu } from '../../../custom-mui';
 
 export type DownloadClientStats = {
     dl_info_speed: number;

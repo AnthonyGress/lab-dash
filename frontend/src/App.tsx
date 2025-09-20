@@ -4,21 +4,20 @@ import { Box, Paper } from '@mui/material';
 import { useEffect } from 'react';
 import { Route, Routes, useNavigate } from 'react-router-dom';
 
-import { DashApi } from './api/dash-api';
 import { SetupForm } from './components/forms/SetupForm';
+import { GlobalCustomScrollbar } from './components/GlobalCustomScrollbar';
 import { WithNav } from './components/navbar/WithNav';
 import { ScrollToTop } from './components/ScrollToTop';
 import { BACKEND_URL } from './constants/constants';
-import { AppContextProvider } from './context/AppContextProvider';
 import { useAppContext } from './context/useAppContext';
+import { useMobilePointer } from './hooks/useMobilePointer';
 import { DashboardPage } from './pages/DashboardPage';
 import { LoginPage } from './pages/LoginPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { styles } from './theme/styles';
-import { theme } from './theme/theme';
 
 const SetupPage = () => {
-    const { isFirstTimeSetup, setupComplete, setSetupComplete, checkLoginStatus } = useAppContext();
+    const { isFirstTimeSetup, setSetupComplete } = useAppContext();
 
     // Show loading state while checking
     if (isFirstTimeSetup === null) {
@@ -44,13 +43,11 @@ export const App = () => {
         isFirstTimeSetup,
         setupComplete,
         setSetupComplete,
-        refreshDashboard,
-        checkLoginStatus,
-        isLoggedIn,
         pages
     } = useAppContext();
 
     const navigate = useNavigate();
+    const isMobilePointer = useMobilePointer();
 
     // Check if setup is complete based on the config
     useEffect(() => {
@@ -171,6 +168,7 @@ export const App = () => {
             {globalStyles}
             <div id='background-container' />
             <ScrollToTop />
+            {!isMobilePointer && <GlobalCustomScrollbar />}
             <Routes>
                 <Route element={<WithNav />}>
                     <Route path='/' element={isFirstTimeSetup && !setupComplete ? <SetupPage /> : <DashboardPage />}/>

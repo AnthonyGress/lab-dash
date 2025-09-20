@@ -26,6 +26,7 @@ import {
 import React, { useCallback, useEffect, useState } from 'react';
 import { FaSearch } from 'react-icons/fa';
 import { FaRegThumbsDown, FaRegThumbsUp } from 'react-icons/fa6';
+import { RemoveScroll } from 'react-remove-scroll';
 
 import { DashApi } from '../../../../api/dash-api';
 import { BACKEND_URL, TWENTY_SEC_IN_MS } from '../../../../constants/constants';
@@ -114,6 +115,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
     const [tvShowDetails, setTvShowDetails] = useState<any>(null);
     const [selectedSeasons, setSelectedSeasons] = useState<number[]>([]);
     const [loadingTvDetails, setLoadingTvDetails] = useState(false);
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const { editMode, isAdmin, isLoggedIn } = useAppContext();
@@ -175,6 +177,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
     const handleSearch = useCallback(async (query: string) => {
         if (!query.trim() || !id || !_hasApiKey) {
             setSearchResults([]);
+            setIsDropdownOpen(false);
             return;
         }
 
@@ -189,6 +192,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
         } catch (searchError) {
             console.error('Search error:', searchError);
             setSearchResults([]);
+            setIsDropdownOpen(false);
         } finally {
             setSearchLoading(false);
         }
@@ -198,6 +202,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
     useEffect(() => {
         if (!searchQuery.trim() || searchQuery.trim().length < 2) {
             setSearchResults([]);
+            setIsDropdownOpen(false);
             return;
         }
 
@@ -288,6 +293,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                 // Clear search results and query
                 setSearchResults([]);
                 setSearchQuery('');
+                setIsDropdownOpen(false);
                 ToastManager.success(`Successfully requested ${title}`);
             } else {
                 console.error('Request creation failed:', response.error);
@@ -512,6 +518,8 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                             setSearchQuery('');
                             setSearchResults([]);
                         }
+                        // Always reset dropdown state when clicking away
+                        setIsDropdownOpen(false);
                     }}>
                         <Box sx={{
                             flex: 1,
@@ -521,17 +529,24 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                             alignItems: 'center',
                             visibility: editMode ? 'hidden' : 'visible'
                         }}>
-                            <Autocomplete
-                                freeSolo
-                                options={searchResults}
-                                getOptionLabel={(option) =>
-                                    typeof option === 'string' ? option : getTitle(option)
-                                }
-                                inputValue={searchQuery}
-                                onInputChange={(_, newInputValue) => {
-                                    setSearchQuery(newInputValue);
-                                }}
-                                onChange={(_, newValue) => {
+                            <RemoveScroll 
+                                enabled={isDropdownOpen && searchResults.length > 0} 
+                                removeScrollBar={false}
+                                style={{ width: '100%' }}
+                            >
+                                <Autocomplete
+                                    freeSolo
+                                    options={searchResults}
+                                    getOptionLabel={(option) =>
+                                        typeof option === 'string' ? option : getTitle(option)
+                                    }
+                                    inputValue={searchQuery}
+                                    onInputChange={(_, newInputValue) => {
+                                        setSearchQuery(newInputValue);
+                                    }}
+                                    onOpen={() => setIsDropdownOpen(true)}
+                                    onClose={() => setIsDropdownOpen(false)}
+                                    onChange={(_, newValue) => {
                                     if (newValue && typeof newValue !== 'string') {
                                         // Dismiss keyboard on mobile
                                         const activeElement = document.activeElement as HTMLElement;
@@ -542,6 +557,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                                         setPreviousSearchQuery(searchQuery); // Save current search query
                                         handleItemClick(newValue);
                                         setSearchQuery(''); // Clear search after selection
+                                        setIsDropdownOpen(false);
                                     }
                                 }}
                                 onKeyDown={(event) => {
@@ -559,6 +575,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                                             setPreviousSearchQuery(searchQuery);
                                             handleItemClick(firstItem);
                                             setSearchQuery('');
+                                            setIsDropdownOpen(false);
                                         }
                                     }
                                 }}
@@ -709,9 +726,10 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                                     }
                                 }}
                             />
+                            </RemoveScroll>
                         </Box>
                     </ClickAwayListener>
-                </Box>
+            </Box>
 
                 {error ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1, width: '100%', flexDirection: 'column' }}>

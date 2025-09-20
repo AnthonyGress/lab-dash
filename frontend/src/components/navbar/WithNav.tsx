@@ -2,8 +2,8 @@ import { Box } from '@mui/material';
 import { useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
-import { useAppContext } from '../../context/useAppContext';
 import { ResponsiveAppBar } from './ResponsiveAppBar';
+import { useAppContext } from '../../context/useAppContext';
 
 export const WithNav = () => {
     const { isLoggedIn, isAdmin } = useAppContext();

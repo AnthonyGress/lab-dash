@@ -1,12 +1,11 @@
 import { CheckCircle, Delete, Download, MoreVert, Pause, PlayArrow, Stop, Upload, Warning } from '@mui/icons-material';
-import { Box, CardContent, IconButton, LinearProgress, MenuItem, Tooltip, Typography, useMediaQuery } from '@mui/material';
+import { Box, CardContent, IconButton, LinearProgress, Menu, MenuItem, Tooltip, Typography, useMediaQuery } from '@mui/material';
 import React, { useState } from 'react';
 
 import { BACKEND_URL } from '../../../../constants/constants';
 import { DUAL_WIDGET_CONTAINER_HEIGHT } from '../../../../constants/widget-dimensions';
 import { useAppContext } from '../../../../context/useAppContext';
 import { theme } from '../../../../theme/theme';
-import { Menu } from '../../../custom-mui';
 import { PopupManager } from '../../../modals/PopupManager';
 
 export type QueueItem = {

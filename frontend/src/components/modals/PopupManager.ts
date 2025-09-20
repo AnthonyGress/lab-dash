@@ -2,32 +2,15 @@ import { grey } from '@mui/material/colors';
 import Swal from 'sweetalert2';
 
 import { theme } from '../../theme/theme';
-import { lockScroll } from '../../utils/scroll-utils';
 
 const CONFIRM_COLOR = theme.palette.success.main;
-
-// Custom scroll lock management for SweetAlert
-let currentUnlockScroll: (() => void) | null = null;
 
 const ThemedAlert = Swal.mixin({
     customClass: {
         confirmButton: 'confirm-btn',
         cancelButton: 'cancel-btn'
     },
-    scrollbarPadding: false, // Disable SweetAlert's default scroll lock
-    didOpen: () => {
-        // Apply our custom scroll lock when popup opens
-        if (!currentUnlockScroll) {
-            currentUnlockScroll = lockScroll();
-        }
-    },
-    didClose: () => {
-        // Remove our custom scroll lock when popup closes
-        if (currentUnlockScroll) {
-            currentUnlockScroll();
-            currentUnlockScroll = null;
-        }
-    },
+    scrollbarPadding: true,
 });
 
 export type ConfirmationOptions = {

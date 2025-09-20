@@ -1,6 +1,6 @@
-import { Box, Button, CircularProgress, Grid2 as Grid, MenuItem, Paper, Typography } from '@mui/material';
+import { Box, Button, CircularProgress, Grid2 as Grid, Menu, MenuItem, Paper, Typography } from '@mui/material';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FaGlobe, FaList, FaPercentage } from 'react-icons/fa';
+import { FaPercentage } from 'react-icons/fa';
 import { FaShield } from 'react-icons/fa6';
 import { MdBlockFlipped, MdDns, MdPause, MdPlayArrow } from 'react-icons/md';
 
@@ -8,7 +8,6 @@ import { DashApi } from '../../../../../api/dash-api';
 import { BACKEND_URL } from '../../../../../constants/constants';
 import { useAppContext } from '../../../../../context/useAppContext';
 import { formatNumber } from '../../../../../utils/utils';
-import { Menu } from '../../../../custom-mui';
 
 // Define our own Timeout type based on setTimeout's return type
 type TimeoutId = ReturnType<typeof setTimeout>;

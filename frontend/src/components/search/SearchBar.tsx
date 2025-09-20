@@ -1,12 +1,12 @@
 import CloseIcon from '@mui/icons-material/Close';
 import { Autocomplete, Box, InputAdornment, TextField, Typography } from '@mui/material';
 import { nanoid } from 'nanoid';
-import React, { Dispatch, RefObject, SetStateAction, useEffect, useState } from 'react';
+import React, { Dispatch, RefObject, SetStateAction, useState } from 'react';
 import { FaSearch } from 'react-icons/fa';
+import { RemoveScroll } from 'react-remove-scroll';
 
 import { useAppContext } from '../../context/useAppContext';
 import { COLORS, styles } from '../../theme/styles';
-import { lockScroll } from '../../utils/scroll-utils';
 
 export type SearchOption = {
   label: string;
@@ -34,14 +34,6 @@ export const SearchBar = ({
 
     // Default to Google if no search provider is configured
     const searchProvider = config?.searchProvider || { name: 'Google', url: 'https://www.google.com/search?q={query}' };
-
-    // Prevent body scrolling when dropdown is open
-    useEffect(() => {
-        if (isDropdownOpen) {
-            const unlockScroll = lockScroll();
-            return unlockScroll;
-        }
-    }, [isDropdownOpen]);
 
     const getSearchUrl = (query: string) => {
         if (!query.trim()) return '';
@@ -90,21 +82,22 @@ export const SearchBar = ({
     };
 
     return (
-        <Box sx={styles.center}>
-            <Autocomplete
-                freeSolo
-                value={null}
-                clearIcon={<CloseIcon sx={{ color: 'text.primary' }} />}
-                options={autocompleteOptions}
-                getOptionLabel={(option) =>
-                    typeof option === 'string' ? option : option.label
-                }
-                inputValue={searchValue}
-                onInputChange={(_event, newInputValue) => {
-                    setSearchValue(newInputValue);
-                }}
-                onOpen={() => setIsDropdownOpen(true)}
-                onClose={() => setIsDropdownOpen(false)}
+        <RemoveScroll enabled={isDropdownOpen} removeScrollBar={false}>
+            <Box sx={styles.center}>
+                <Autocomplete
+                    freeSolo
+                    value={null}
+                    clearIcon={<CloseIcon sx={{ color: 'text.primary' }} />}
+                    options={autocompleteOptions}
+                    getOptionLabel={(option) =>
+                        typeof option === 'string' ? option : option.label
+                    }
+                    inputValue={searchValue}
+                    onInputChange={(_event, newInputValue) => {
+                        setSearchValue(newInputValue);
+                    }}
+                    onOpen={() => setIsDropdownOpen(true)}
+                    onClose={() => setIsDropdownOpen(false)}
                 filterOptions={(options, state) => {
                     const filtered = options.filter((option) =>
                         option.label.toLowerCase().includes(state.inputValue.toLowerCase())
@@ -216,6 +209,7 @@ export const SearchBar = ({
                     },
                 }}
             />
-        </Box>
+            </Box>
+        </RemoveScroll>
     );
 };
