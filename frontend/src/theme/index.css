@@ -32,7 +32,6 @@ html {
 }
 
 html, body {
-  overflow-x: hidden; /* Never allow horizontal scroll */
   scrollbar-width: none;
   -ms-overflow-style: none;
 }

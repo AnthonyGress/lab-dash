@@ -59,6 +59,7 @@ export const CenteredModal = ({ open, handleClose, children, width, height, titl
             }}
             aria-labelledby='modal-title'
             aria-describedby='modal-description'
+            disableScrollLock={false}
         >
             <Box sx={style}>
                 {/* AppBar with Title and Close Button */}

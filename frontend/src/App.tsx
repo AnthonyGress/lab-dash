@@ -172,7 +172,7 @@ export const App = () => {
             {globalStyles}
             <div id='background-container' />
             <ScrollToTop />
-            <GlobalCustomScrollbar />
+            {/* <GlobalCustomScrollbar /> */}
             <Routes>
                 <Route element={<WithNav />}>
                     <Route path='/' element={isFirstTimeSetup && !setupComplete ? <SetupPage /> : <DashboardPage />}/>
