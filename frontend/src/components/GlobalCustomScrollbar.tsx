@@ -1,6 +1,5 @@
 import { Box, styled } from '@mui/material';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { RemoveScroll } from 'react-remove-scroll';
 
 const ScrollbarTrack = styled(Box, {
     shouldForwardProp: (prop) => prop !== 'visible',
@@ -8,7 +7,7 @@ const ScrollbarTrack = styled(Box, {
     position: 'fixed',
     top: 0,
     right: 0,
-    width: '10px', // Standard scrollbar width (was 8px)
+    width: '10px',
     height: '100vh',
     background: 'transparent',
     opacity: visible ? 1 : 0,
@@ -41,12 +40,11 @@ const ScrollbarThumb = styled(Box, {
     },
 }));
 
-const GlobalCustomScrollbar: React.FC = () => {
+export const GlobalCustomScrollbar: React.FC = () => {
     const [isScrollbarVisible, setIsScrollbarVisible] = useState(false);
     const [thumbHeight, setThumbHeight] = useState(0);
     const [thumbTop, setThumbTop] = useState(0);
     const [isDragging, setIsDragging] = useState(false);
-    const [isScrollLocked, setIsScrollLocked] = useState(false);
     const [dragStart, setDragStart] = useState({ y: 0, scrollTop: 0 });
     const [justFinishedDragging, setJustFinishedDragging] = useState(false);
     const [postDragAutoHideActive, setPostDragAutoHideActive] = useState(false);
@@ -55,63 +53,8 @@ const GlobalCustomScrollbar: React.FC = () => {
     const postDragTimeoutRef = useRef<number>();
     const isMouseOverScrollbarRef = useRef(false);
 
-    // Check if scrolling should be disabled based on open overlays
-    const checkAndUpdateScrollLock = useCallback(() => {
-        // First check specifically for MuiAutocomplete dropdowns 
-        const autocompleteDropdown = document.querySelector('.MuiAutocomplete-popper, .MuiAutocomplete-listbox');
-        if (autocompleteDropdown) {
-            // Hide the custom scrollbar but don't apply our scroll lock
-            // (RemoveScroll from SearchBar handles background scroll prevention)
-            setIsScrollLocked(false);
-            return true; // Hide scrollbar but don't use our scroll lock
-        }
-
-        // Check for MUI backdrop (drawer, modal, etc.)
-        const backdrop = document.querySelector('.MuiBackdrop-root');
-        if (backdrop) {
-            setIsScrollLocked(true);
-            return true;
-        }
-
-        // Check for open drawer
-        const drawer = document.querySelector('[role="presentation"]');
-        if (drawer) {
-            setIsScrollLocked(true);
-            return true;
-        }
-
-        // Check for open select/menu 
-        const menu = document.querySelector('[role="listbox"], [role="menu"]');
-        if (menu) {
-            setIsScrollLocked(true);
-            return true;
-        }
-
-        // Check for SweetAlert popup
-        const swalPopup = document.querySelector('.swal2-container');
-        if (swalPopup) {
-            setIsScrollLocked(true);
-            return true;
-        }
-
-        // Check for any modal or dialog
-        const modal = document.querySelector('[role="dialog"]');
-        if (modal) {
-            setIsScrollLocked(true);
-            return true;
-        }
-
-        setIsScrollLocked(false);
-        return false;
-    }, []);
 
     const updateScrollbar = useCallback(() => {
-        // Hide scrollbar if scrolling is disabled
-        if (checkAndUpdateScrollLock()) {
-            setIsScrollbarVisible(false);
-            return;
-        }
-
         const scrollHeight = document.documentElement.scrollHeight;
         const clientHeight = window.innerHeight;
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
@@ -135,7 +78,7 @@ const GlobalCustomScrollbar: React.FC = () => {
 
         setThumbHeight(adjustedThumbHeight);
         setThumbTop(newThumbTop);
-    }, [checkAndUpdateScrollLock]);
+    }, []);
 
     const tryHideScrollbar = useCallback(() => {
         if (!isDragging && !isMouseOverScrollbarRef.current) {
@@ -175,8 +118,7 @@ const GlobalCustomScrollbar: React.FC = () => {
     }, [updateScrollbar, showScrollbar, isDragging, justFinishedDragging, postDragAutoHideActive]);
 
     const handleMouseEnter = useCallback(() => {
-        // Don't show scrollbar if scrolling is disabled
-        if (checkAndUpdateScrollLock()) return;
+
 
         isMouseOverScrollbarRef.current = true;
         // Reset the auto-hide timer when mouse enters scrollbar
@@ -186,7 +128,7 @@ const GlobalCustomScrollbar: React.FC = () => {
         setIsScrollbarVisible(true);
         // Start a fresh 2-second timer
         hideTimeoutRef.current = window.setTimeout(tryHideScrollbar, 2000);
-    }, [tryHideScrollbar, checkAndUpdateScrollLock]);
+    }, [tryHideScrollbar]);
 
     const handleMouseLeave = useCallback(() => {
         isMouseOverScrollbarRef.current = false;
@@ -201,9 +143,6 @@ const GlobalCustomScrollbar: React.FC = () => {
     }, [isDragging, tryHideScrollbar]);
 
     const handleThumbMouseDown = useCallback((e: React.MouseEvent) => {
-        // Don't allow dragging if scrolling is disabled
-        if (checkAndUpdateScrollLock()) return;
-
         e.preventDefault();
 
         // Temporarily disable smooth scrolling during drag
@@ -218,7 +157,7 @@ const GlobalCustomScrollbar: React.FC = () => {
 
         // Store the original scroll behavior to restore later
         (window as Window & { originalScrollBehavior?: string }).originalScrollBehavior = originalScrollBehavior;
-    }, [checkAndUpdateScrollLock]);
+    }, []);
 
     const handleMouseMove = useCallback((e: MouseEvent) => {
         if (!isDragging) return;
@@ -277,9 +216,6 @@ const GlobalCustomScrollbar: React.FC = () => {
     }, [isDragging, tryHideScrollbar]);
 
     const handleTrackClick = useCallback((e: React.MouseEvent) => {
-        // Don't allow track clicks if scrolling is disabled
-        if (checkAndUpdateScrollLock()) return;
-
         if (e.target === e.currentTarget) {
             const rect = e.currentTarget.getBoundingClientRect();
             const clickY = e.clientY - rect.top;
@@ -293,7 +229,7 @@ const GlobalCustomScrollbar: React.FC = () => {
                 behavior: 'smooth'
             });
         }
-    }, [checkAndUpdateScrollLock]);
+    }, []);
 
     useEffect(() => {
         const handleGlobalMouseMove = (e: MouseEvent) => handleMouseMove(e);
@@ -345,22 +281,18 @@ const GlobalCustomScrollbar: React.FC = () => {
     }
 
     return (
-        <RemoveScroll enabled={isScrollLocked}>
-            <ScrollbarTrack
-                visible={isScrollbarVisible}
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
-                onClick={handleTrackClick}
-            >
-                <ScrollbarThumb
-                    height={thumbHeight}
-                    top={thumbTop}
-                    isDragging={isDragging}
-                    onMouseDown={handleThumbMouseDown}
-                />
-            </ScrollbarTrack>
-        </RemoveScroll>
+        <ScrollbarTrack
+            visible={isScrollbarVisible}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            onClick={handleTrackClick}
+        >
+            <ScrollbarThumb
+                height={thumbHeight}
+                top={thumbTop}
+                isDragging={isDragging}
+                onMouseDown={handleThumbMouseDown}
+            />
+        </ScrollbarTrack>
     );
 };
-
-export default GlobalCustomScrollbar;

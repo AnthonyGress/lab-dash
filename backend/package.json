@@ -2,7 +2,7 @@
   "name": "lab-dash-backend",
   "main": "index.js",
   "scripts": {
-    "dev": "PORT=5000 nodemon",
+    "dev": "NODE_ENV=development PORT=5000 nodemon",
     "start": "node ./index.js",
     "build": "NODE_ENV=production node esbuild.config.js",
     "lint": "eslint .",

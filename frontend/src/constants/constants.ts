@@ -12,7 +12,9 @@ export const initialItems = [
 ];
 
 export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || (
-    import.meta.env.PROD ? '' : 'http://localhost:5000'
+    import.meta.env.PROD 
+        ? '' 
+        : `http://${window.location.hostname}:5000`
 );
 
 export const FIFTEEN_MIN_IN_MS = 900000;
