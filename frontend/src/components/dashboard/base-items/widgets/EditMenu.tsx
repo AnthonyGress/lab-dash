@@ -71,6 +71,7 @@ export const EditMenu: React.FC<EditMenuProps> = ({ editMode, itemId, onEdit, on
                 anchorEl={anchorEl}
                 open={open}
                 onClose={handleMenuClose}
+                disableScrollLock={false}
                 sx={{
                     '& .MuiPaper-root': {
                         bgcolor: '#2A2A2A',
@@ -139,6 +140,7 @@ export const EditMenu: React.FC<EditMenuProps> = ({ editMode, itemId, onEdit, on
                 anchorEl={moveMenuAnchor}
                 open={moveMenuOpen}
                 onClose={handleMoveMenuClose}
+                disableScrollLock={false}
                 anchorOrigin={{
                     vertical: 'top',
                     horizontal: 'right',
