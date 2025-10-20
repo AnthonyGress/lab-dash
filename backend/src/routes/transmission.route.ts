@@ -33,7 +33,14 @@ const validateItemId = (req: Request): string => {
 const getBaseUrl = (req: Request): string => {
     const itemId = validateItemId(req);
     const connectionInfo = getItemConnectionInfo(itemId);
-    const host = connectionInfo.host || 'localhost';
+    
+    // Clean the host to remove any protocol prefix
+    let host = connectionInfo.host || 'localhost';
+    // Remove http:// or https:// if present
+    host = host.replace(/^https?:\/\//, '');
+    // Remove any trailing slashes
+    host = host.replace(/\/+$/, '');
+    
     const port = connectionInfo.port || '9091';
     const ssl = connectionInfo.ssl || false;
     const protocol = ssl ? 'https' : 'http';
@@ -158,7 +165,15 @@ async function ensureValidSession(req: Request): Promise<string | null> {
 }
 
 // Make RPC request to Transmission
-async function makeTransmissionRequest(baseUrl: string, sessionId: string, method: string, args?: any, username?: string, password?: string): Promise<any> {
+async function makeTransmissionRequest(
+    baseUrl: string, 
+    sessionId: string, 
+    method: string, 
+    args?: any, 
+    username?: string, 
+    password?: string,
+    sessionKey?: string
+): Promise<any> {
     // Handle encrypted password
     let decryptedPassword = password;
     if (password && isEncrypted(password)) {
@@ -173,20 +188,48 @@ async function makeTransmissionRequest(baseUrl: string, sessionId: string, metho
         'Authorization': `Basic ${Buffer.from(`${username}:${decryptedPassword}`).toString('base64')}`
     } : {};
 
+    try {
+        const response = await axios.post(baseUrl, {
+            method,
+            arguments: args || {}
+        }, {
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Transmission-Session-Id': sessionId,
+                ...authHeader
+            }
+        });
 
-
-    const response = await axios.post(baseUrl, {
-        method,
-        arguments: args || {}
-    }, {
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Transmission-Session-Id': sessionId,
-            ...authHeader
+        return response.data;
+    } catch (error: any) {
+        // Handle 409 Conflict - Transmission sends new session ID
+        if (error.response?.status === 409) {
+            const newSessionId = error.response.headers['x-transmission-session-id'];
+            if (newSessionId) {
+                console.log('Received new Transmission session ID, retrying request...');
+                
+                // Update the stored session if sessionKey provided
+                if (sessionKey && sessions[sessionKey]) {
+                    sessions[sessionKey].sessionId = newSessionId;
+                    sessions[sessionKey].expires = Date.now() + SESSION_LIFETIME;
+                }
+                
+                // Retry with new session ID
+                const retryResponse = await axios.post(baseUrl, {
+                    method,
+                    arguments: args || {}
+                }, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Transmission-Session-Id': newSessionId,
+                        ...authHeader
+                    }
+                });
+                return retryResponse.data;
+            }
         }
-    });
-
-    return response.data;
+        throw error;
+    }
 }
 
 transmissionRoute.post('/login', async (req: Request, res: Response) => {
@@ -292,14 +335,14 @@ transmissionRoute.get('/stats', async (req: Request, res: Response) => {
             const password = session?.password || credentials.password;
 
 
-
             const response = await makeTransmissionRequest(
                 baseUrl,
                 sessionId,
                 'session-stats',
                 {},
                 username,
-                password
+                password,
+                sessionKey
             );
 
             if (response.result === 'success') {
@@ -378,7 +421,8 @@ transmissionRoute.get('/torrents', async (req: Request, res: Response) => {
                     ]
                 },
                 username,
-                password
+                password,
+                sessionKey
             );
 
             if (response.result === 'success') {
@@ -437,7 +481,8 @@ transmissionRoute.post('/torrents/start', authenticateToken, async (req: Request
             'torrent-start',
             { ids: Array.isArray(ids) ? ids : [ids] },
             username,
-            password
+            password,
+            sessionKey
         );
 
         if (response.result === 'success') {
@@ -484,7 +529,8 @@ transmissionRoute.post('/torrents/stop', authenticateToken, async (req: Request,
             'torrent-stop',
             { ids: Array.isArray(ids) ? ids : [ids] },
             username,
-            password
+            password,
+            sessionKey
         );
 
         if (response.result === 'success') {
@@ -534,7 +580,8 @@ transmissionRoute.post('/torrents/delete', authenticateToken, async (req: Reques
                 'delete-local-data': deleteFiles === true
             },
             username,
-            password
+            password,
+            sessionKey
         );
 
         if (response.result === 'success') {

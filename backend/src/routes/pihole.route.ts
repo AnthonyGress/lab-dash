@@ -25,7 +25,12 @@ const validateItemId = (req: Request): string => {
 const getBaseUrl = (req: Request): string => {
     const itemId = validateItemId(req);
     const connectionInfo = getItemConnectionInfo(itemId);
-    const host = connectionInfo.host || 'localhost';
+    
+    // Clean the host to remove any protocol prefix
+    let host = connectionInfo.host || 'localhost';
+    host = host.replace(/^https?:\/\//, '');
+    host = host.replace(/\/+$/, '');
+    
     const port = connectionInfo.port || '80';
     const ssl = connectionInfo.ssl || false;
     const protocol = ssl ? 'https' : 'http';
