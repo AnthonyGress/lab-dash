@@ -27,7 +27,8 @@ export enum DOWNLOAD_CLIENT_TYPE {
     QBITTORRENT = 'qbittorrent',
     DELUGE = 'deluge',
     TRANSMISSION = 'transmission',
-    SABNZBD = 'sabnzbd'
+    SABNZBD = 'sabnzbd',
+    NZBGET = 'nzbget'
 }
 
 // Legacy support

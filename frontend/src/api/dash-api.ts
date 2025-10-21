@@ -121,6 +121,7 @@ export class DashApi {
                     originalRequest.url?.includes('/api/qbittorrent') ||
                     originalRequest.url?.includes('/api/deluge') ||
                     originalRequest.url?.includes('/api/sabnzbd') ||
+                    originalRequest.url?.includes('/api/nzbget') ||
                     originalRequest.url?.includes('/api/radarr') ||
                     originalRequest.url?.includes('/api/sonarr') ||
                     originalRequest.url?.includes('/api/adguard') ||
@@ -2074,6 +2075,120 @@ export class DashApi {
         try {
             const res = await axios.post(
                 `${BACKEND_URL}/api/sabnzbd/encrypt-password`,
+                { password },
+                { withCredentials: true }
+            );
+            return res.data.encryptedPassword;
+        } catch (error: any) {
+            throw new Error(error.response?.data?.message || 'Failed to encrypt password');
+        }
+    }
+
+    // NZBGet API methods
+    public static async nzbgetLogin(itemId: string): Promise<boolean> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/nzbget/login`, {}, {
+                params: { itemId },
+                withCredentials: true
+            });
+            return res.data.success;
+        } catch (error: any) {
+            console.error('NZBGet login error:', error);
+            if (error.response?.status === 401) {
+                throw new Error('Invalid credentials');
+            }
+            return false;
+        }
+    }
+
+    public static async nzbgetGetStats(itemId: string): Promise<any> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/nzbget/stats`, {
+                params: { itemId },
+                withCredentials: true
+            });
+            return res.data;
+        } catch (error: any) {
+            console.error('Error getting NZBGet stats:', error);
+            throw error;
+        }
+    }
+
+    public static async nzbgetGetDownloads(itemId: string): Promise<any[]> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/nzbget/downloads`, {
+                params: { itemId },
+                withCredentials: true
+            });
+            return res.data;
+        } catch (error: any) {
+            console.error('Error getting NZBGet downloads:', error);
+            throw error;
+        }
+    }
+
+    public static async nzbgetLogout(itemId: string): Promise<boolean> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/nzbget/logout`, {}, {
+                params: { itemId },
+                withCredentials: true
+            });
+            return res.data.success;
+        } catch (error: any) {
+            console.error('NZBGet logout error:', error);
+            return false;
+        }
+    }
+
+    public static async nzbgetResumeDownload(itemId: string, nzbId?: string): Promise<boolean> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/nzbget/resume`, 
+                { nzbId }, // Send nzbId in request body
+                {
+                    params: { itemId },
+                    withCredentials: true
+                }
+            );
+            return res.data.success;
+        } catch (error: any) {
+            console.error('NZBGet resume download error:', error);
+            return false;
+        }
+    }
+
+    public static async nzbgetPauseDownload(itemId: string, nzbId?: string): Promise<boolean> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/nzbget/pause`, 
+                { nzbId }, // Send nzbId in request body
+                {
+                    params: { itemId },
+                    withCredentials: true
+                }
+            );
+            return res.data.success;
+        } catch (error: any) {
+            console.error('NZBGet pause download error:', error);
+            return false;
+        }
+    }
+
+    public static async nzbgetDeleteDownload(itemId: string, nzbId: string, deleteFiles: boolean = false): Promise<boolean> {
+        try {
+            const res = await axios.delete(`${BACKEND_URL}/api/nzbget/delete/${nzbId}`, {
+                params: { itemId, deleteFiles: deleteFiles.toString() },
+                withCredentials: true
+            });
+            return res.data.success;
+        } catch (error: any) {
+            console.error('NZBGet delete download error:', error);
+            return false;
+        }
+    }
+
+    public static async encryptNzbgetPassword(password: string): Promise<string> {
+        try {
+            const res = await axios.post(
+                `${BACKEND_URL}/api/nzbget/encrypt-password`,
                 { password },
                 { withCredentials: true }
             );

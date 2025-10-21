@@ -528,15 +528,19 @@ export const DownloadClientWidget: React.FC<DownloadClientWidgetProps> = ({
                 >
                     {showLabel && (
                         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 1 }}>
-                            <img
-                                src={`${BACKEND_URL}/icons/${clientName.toLowerCase().includes('qbittorrent') ? 'qbittorrent.svg' : clientName.toLowerCase().includes('transmission') ? 'transmission.svg' : clientName.toLowerCase().includes('sabnzbd') ? 'sabnzbd.svg' : 'deluge.svg'}`}
-                                alt={clientName}
-                                style={{
-                                    width: '24px',
-                                    height: '24px',
-                                    marginRight: '8px'
-                                }}
-                            />
+                            {clientName.toLowerCase().includes('nzbget') ? (
+                                <Download sx={{ width: '24px', height: '24px', marginRight: '8px', color: 'white' }} />
+                            ) : (
+                                <img
+                                    src={`${BACKEND_URL}/icons/${clientName.toLowerCase().includes('qbittorrent') ? 'qbittorrent.svg' : clientName.toLowerCase().includes('transmission') ? 'transmission.svg' : clientName.toLowerCase().includes('sabnzbd') ? 'sabnzbd.svg' : 'deluge.svg'}`}
+                                    alt={clientName}
+                                    style={{
+                                        width: '24px',
+                                        height: '24px',
+                                        marginRight: '8px'
+                                    }}
+                                />
+                            )}
                             <Typography variant='h6' align='center' gutterBottom sx={{ color: 'white', mb: 0 }}>
                                 {clientName}
                             </Typography>
@@ -608,15 +612,19 @@ export const DownloadClientWidget: React.FC<DownloadClientWidgetProps> = ({
                             }}
                             onClick={handleOpenWebUI}
                         >
-                            <img
-                                src={`${BACKEND_URL}/icons/${clientName.toLowerCase().includes('qbittorrent') ? 'qbittorrent.svg' : clientName.toLowerCase().includes('transmission') ? 'transmission.svg' : clientName.toLowerCase().includes('sabnzbd') ? 'sabnzbd.svg' : 'deluge.svg'}`}
-                                alt={clientName}
-                                style={{
-                                    width: '24px',
-                                    height: '24px',
-                                    marginRight: '8px'
-                                }}
-                            />
+                            {clientName.toLowerCase().includes('nzbget') ? (
+                                <Download sx={{ width: '24px', height: '24px', marginRight: '8px', color: 'white' }} />
+                            ) : (
+                                <img
+                                    src={`${BACKEND_URL}/icons/${clientName.toLowerCase().includes('qbittorrent') ? 'qbittorrent.svg' : clientName.toLowerCase().includes('transmission') ? 'transmission.svg' : clientName.toLowerCase().includes('sabnzbd') ? 'sabnzbd.svg' : 'deluge.svg'}`}
+                                    alt={clientName}
+                                    style={{
+                                        width: '24px',
+                                        height: '24px',
+                                        marginRight: '8px'
+                                    }}
+                                />
+                            )}
                             <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ color: 'white' }}>
                                 {clientName}
                             </Typography>

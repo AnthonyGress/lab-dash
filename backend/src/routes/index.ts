@@ -10,6 +10,7 @@ import { iconsRoute } from './icons.route';
 import { jellyfinRoute } from './jellyfin.route';
 import { jellyseerRoute } from './jellyseerr.route';
 import { notesRoute } from './notes.route';
+import { nzbgetRoute } from './nzbget.route';
 import { piholeV6Route } from './pihole-v6.route';
 import { piholeRoute } from './pihole.route';
 import { qbittorrentRoute } from './qbittorrent.route';
@@ -68,6 +69,7 @@ router.use('/transmission', torrentApiLimiter, transmissionRoute);
 
 // NZB client routes
 router.use('/sabnzbd', torrentApiLimiter, sabnzbdRoute);
+router.use('/nzbget', torrentApiLimiter, nzbgetRoute);
 
 // Pi-hole routes
 router.use('/pihole', apiLimiter, piholeRoute);
