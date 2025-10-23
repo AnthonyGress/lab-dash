@@ -13,7 +13,8 @@ const DOWNLOAD_CLIENT_OPTIONS = [
     { id: DOWNLOAD_CLIENT_TYPE.QBITTORRENT, label: 'qBittorrent' },
     { id: DOWNLOAD_CLIENT_TYPE.DELUGE, label: 'Deluge' },
     { id: DOWNLOAD_CLIENT_TYPE.TRANSMISSION, label: 'Transmission' },
-    { id: DOWNLOAD_CLIENT_TYPE.SABNZBD, label: 'SABnzbd' }
+    { id: DOWNLOAD_CLIENT_TYPE.SABNZBD, label: 'SABnzbd' },
+    { id: DOWNLOAD_CLIENT_TYPE.NZBGET, label: 'NZBGet' }
 ];
 
 interface DownloadClientWidgetConfigProps {
@@ -74,7 +75,8 @@ export const DownloadClientWidgetConfig = ({ formContext, existingItem }: Downlo
             const defaultPort = watchedTorrentClientType === DOWNLOAD_CLIENT_TYPE.DELUGE ? '8112'
                 : watchedTorrentClientType === DOWNLOAD_CLIENT_TYPE.TRANSMISSION ? '9091'
                     : watchedTorrentClientType === DOWNLOAD_CLIENT_TYPE.SABNZBD ? '8080'
-                        : '8080';
+                        : watchedTorrentClientType === DOWNLOAD_CLIENT_TYPE.NZBGET ? '6789'
+                            : '8080';
 
             // For new widgets (no existingItem), always update the port to the default
             // For existing widgets, only update if the current port is empty
@@ -203,8 +205,10 @@ export const DownloadClientWidgetConfig = ({ formContext, existingItem }: Downlo
                     }}
                 />
             </Grid>
-            {/* Only show username field for qBittorrent and Transmission (not SABnzbd - it uses API key) */}
-            {(torrentClientType === DOWNLOAD_CLIENT_TYPE.QBITTORRENT || torrentClientType === DOWNLOAD_CLIENT_TYPE.TRANSMISSION) && (
+            {/* Show username field for qBittorrent, Transmission, and NZBGet (not SABnzbd - it uses API key) */}
+            {(torrentClientType === DOWNLOAD_CLIENT_TYPE.QBITTORRENT || 
+              torrentClientType === DOWNLOAD_CLIENT_TYPE.TRANSMISSION || 
+              torrentClientType === DOWNLOAD_CLIENT_TYPE.NZBGET) && (
                 <Grid>
                     <TextFieldElement
                         name='tcUsername'
@@ -242,7 +246,7 @@ export const DownloadClientWidgetConfig = ({ formContext, existingItem }: Downlo
                     autoComplete='off'
                     required={watchedTorrentClientType !== DOWNLOAD_CLIENT_TYPE.TRANSMISSION && !hasExistingPassword && !userClearedPassword}
                     rules={{
-                        required: (watchedTorrentClientType !== DOWNLOAD_CLIENT_TYPE.TRANSMISSION && !hasExistingPassword && !userClearedPassword) ? 'Password is required' : false
+                        required: (watchedTorrentClientType !== DOWNLOAD_CLIENT_TYPE.TRANSMISSION && !hasExistingPassword && !userClearedPassword) ? (torrentClientType === DOWNLOAD_CLIENT_TYPE.SABNZBD ? 'API Key is required' : 'Password is required') : false
                     }}
                     sx={{
                         width: '100%',

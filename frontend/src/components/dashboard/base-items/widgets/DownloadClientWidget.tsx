@@ -8,6 +8,7 @@ import { DUAL_WIDGET_CONTAINER_HEIGHT } from '../../../../constants/widget-dimen
 import { useAppContext } from '../../../../context/useAppContext';
 import { theme } from '../../../../theme/theme';
 
+
 export type DownloadClientStats = {
     dl_info_speed: number;
     dl_info_data: number;
@@ -529,7 +530,7 @@ export const DownloadClientWidget: React.FC<DownloadClientWidgetProps> = ({
                     {showLabel && (
                         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 1 }}>
                             <img
-                                src={`${BACKEND_URL}/icons/${clientName.toLowerCase().includes('qbittorrent') ? 'qbittorrent.svg' : clientName.toLowerCase().includes('transmission') ? 'transmission.svg' : clientName.toLowerCase().includes('sabnzbd') ? 'sabnzbd.svg' : 'deluge.svg'}`}
+                                src={`${BACKEND_URL}/icons/${clientName.toLowerCase().includes('qbittorrent') ? 'qbittorrent.svg' : clientName.toLowerCase().includes('transmission') ? 'transmission.svg' : clientName.toLowerCase().includes('sabnzbd') ? 'sabnzbd.svg' : clientName.toLowerCase().includes('nzbget') ? 'nzbget.svg' : 'deluge.svg'}`}
                                 alt={clientName}
                                 style={{
                                     width: '24px',
@@ -609,7 +610,7 @@ export const DownloadClientWidget: React.FC<DownloadClientWidgetProps> = ({
                             onClick={handleOpenWebUI}
                         >
                             <img
-                                src={`${BACKEND_URL}/icons/${clientName.toLowerCase().includes('qbittorrent') ? 'qbittorrent.svg' : clientName.toLowerCase().includes('transmission') ? 'transmission.svg' : clientName.toLowerCase().includes('sabnzbd') ? 'sabnzbd.svg' : 'deluge.svg'}`}
+                                src={`${BACKEND_URL}/icons/${clientName.toLowerCase().includes('qbittorrent') ? 'qbittorrent.svg' : clientName.toLowerCase().includes('transmission') ? 'transmission.svg' : clientName.toLowerCase().includes('sabnzbd') ? 'sabnzbd.svg' : clientName.toLowerCase().includes('nzbget') ? 'nzbget.svg' : 'deluge.svg'}`}
                                 alt={clientName}
                                 style={{
                                     width: '24px',

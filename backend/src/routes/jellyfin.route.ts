@@ -72,9 +72,14 @@ jellyfinRoute.get('/sessions', async (req: Request, res: Response) => {
 
         console.log('Jellyfin sessions request');
 
+        // Clean the host to remove any protocol prefix
+        let cleanHost = host;
+        cleanHost = cleanHost.replace(/^https?:\/\//, '');
+        cleanHost = cleanHost.replace(/\/+$/, '');
+
         const protocol = ssl ? 'https' : 'http';
         const actualPort = port || '8096';
-        const baseUrl = `${protocol}://${host}:${actualPort}`;
+        const baseUrl = `${protocol}://${cleanHost}:${actualPort}`;
         const sessionsUrl = `${baseUrl}/Sessions`;
 
         const httpModule = ssl ? https : http;
@@ -183,9 +188,14 @@ jellyfinRoute.get('/library-stats', async (req: Request, res: Response) => {
 
         console.log('Jellyfin library stats request');
 
+        // Clean the host to remove any protocol prefix
+        let cleanHost = host;
+        cleanHost = cleanHost.replace(/^https?:\/\//, '');
+        cleanHost = cleanHost.replace(/\/+$/, '');
+
         const protocol = ssl ? 'https' : 'http';
         const actualPort = port || '8096';
-        const baseUrl = `${protocol}://${host}:${actualPort}`;
+        const baseUrl = `${protocol}://${cleanHost}:${actualPort}`;
 
         const httpModule = ssl ? https : http;
 

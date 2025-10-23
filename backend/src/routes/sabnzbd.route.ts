@@ -27,7 +27,14 @@ const getBaseUrl = (req: Request): string => {
     }
 
     const connectionInfo = getItemConnectionInfo(itemId);
-    const host = connectionInfo.host || 'localhost';
+    
+    // Clean the host to remove any protocol prefix
+    let host = connectionInfo.host || 'localhost';
+    // Remove http:// or https:// if present
+    host = host.replace(/^https?:\/\//, '');
+    // Remove any trailing slashes
+    host = host.replace(/\/+$/, '');
+    
     const port = connectionInfo.port || '8080';
     const ssl = connectionInfo.ssl || false;
     const protocol = ssl ? 'https' : 'http';

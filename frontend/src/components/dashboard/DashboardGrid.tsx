@@ -18,6 +18,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import shortid from 'shortid';
 
 import { SortableSabnzbd } from './sortable-items/widgets/SortableSabnzbd';
+import { SortableNzbget } from './sortable-items/widgets/SortableNzbget';
 import { useAppContext } from '../../context/useAppContext';
 import { DashboardItem, DOWNLOAD_CLIENT_TYPE, ITEM_TYPE, TORRENT_CLIENT_TYPE } from '../../types';
 import { AddEditForm } from '../forms/AddEditForm/AddEditForm';
@@ -643,6 +644,9 @@ export const DashboardGrid: React.FC = () => {
             }
             if (clientType === DOWNLOAD_CLIENT_TYPE.SABNZBD) {
                 return <SortableSabnzbd key={key} {...commonProps} />;
+            }
+            if (clientType === DOWNLOAD_CLIENT_TYPE.NZBGET) {
+                return <SortableNzbget key={key} {...commonProps} />;
             }
             // Default to qBittorrent for DOWNLOAD_CLIENT
             return <SortableQBittorrent key={key} {...commonProps} />;

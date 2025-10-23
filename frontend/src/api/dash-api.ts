@@ -112,19 +112,38 @@ export class DashApi {
             async (error) => {
                 const originalRequest = error.config;
 
-                // Only handle 401 errors for authenticated routes
+                // Only handle 401 errors for our own auth system, not external services
+                // Check if this is a 401 from our backend API
+                const isOurBackendApi = originalRequest.url?.includes(BACKEND_URL);
+
+                // List of external service routes that proxy to other applications. These should NOT trigger a logout if they return 401/403
+                const isExternalServiceRoute = originalRequest.url?.includes('/api/pihole') ||
+                    originalRequest.url?.includes('/api/qbittorrent') ||
+                    originalRequest.url?.includes('/api/deluge') ||
+                    originalRequest.url?.includes('/api/sabnzbd') ||
+                    originalRequest.url?.includes('/api/nzbget') ||
+                    originalRequest.url?.includes('/api/radarr') ||
+                    originalRequest.url?.includes('/api/sonarr') ||
+                    originalRequest.url?.includes('/api/adguard') ||
+                    originalRequest.url?.includes('/api/jellyfin') ||
+                    originalRequest.url?.includes('/api/jellyseerr') ||
+                    originalRequest.url?.includes('/api/transmission') ||
+                    originalRequest.url?.includes('/api/notes');
+
+                const isAuthRoute = originalRequest.url?.includes('api/auth/login') ||
+                    originalRequest.url?.includes('api/auth/refresh');
+
+                // Only attempt token refresh if:
+                // 1. It's a 401 error
+                // 2. We haven't already tried to retry this request
+                // 3. It's from our backend API
+                // 4. It's NOT from an external service route
+                // 5. It's NOT from an auth route (to prevent infinite loops)
                 if (error.response?.status === 401 &&
                     !originalRequest._retry &&
-                    !originalRequest.url?.includes('api/auth/login') &&
-                    !originalRequest.url?.includes('api/auth/refresh') &&
-                    // Exclude external service routes from triggering token refresh/logout
-                    !originalRequest.url?.includes('api/pihole') &&
-                    !originalRequest.url?.includes('api/pihole/v6') &&
-                    !originalRequest.url?.includes('api/qbittorrent') &&
-                    !originalRequest.url?.includes('api/deluge') &&
-                    !originalRequest.url?.includes('api/notes') &&
-                    // Ensure we're only handling 401s from our own API
-                    originalRequest.url?.includes(BACKEND_URL)) {
+                    isOurBackendApi &&
+                    !isExternalServiceRoute &&
+                    !isAuthRoute) {
 
                     originalRequest._retry = true;
 
@@ -133,10 +152,12 @@ export class DashApi {
                         const refreshResult = await this.refreshToken();
 
                         if (refreshResult.success) {
-                            console.log('Token refreshed, retrying original request');                            // If refresh was successful, retry the original request
+                            console.log('Token refreshed, retrying original request');
+                            // If refresh was successful, retry the original request
                             return axios(originalRequest);
                         } else {
-                            console.log('Token refresh failed, logging out user');                            // The refreshToken method will handle the logout
+                            console.log('Token refresh failed, logging out user');
+                            // The refreshToken method will handle the logout
                             return Promise.reject(error);
                         }
                     } catch (refreshError) {
@@ -2054,6 +2075,120 @@ export class DashApi {
         try {
             const res = await axios.post(
                 `${BACKEND_URL}/api/sabnzbd/encrypt-password`,
+                { password },
+                { withCredentials: true }
+            );
+            return res.data.encryptedPassword;
+        } catch (error: any) {
+            throw new Error(error.response?.data?.message || 'Failed to encrypt password');
+        }
+    }
+
+    // NZBGet API methods
+    public static async nzbgetLogin(itemId: string): Promise<boolean> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/nzbget/login`, {}, {
+                params: { itemId },
+                withCredentials: true
+            });
+            return res.data.success;
+        } catch (error: any) {
+            console.error('NZBGet login error:', error);
+            if (error.response?.status === 401) {
+                throw new Error('Invalid credentials');
+            }
+            return false;
+        }
+    }
+
+    public static async nzbgetGetStats(itemId: string): Promise<any> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/nzbget/stats`, {
+                params: { itemId },
+                withCredentials: true
+            });
+            return res.data;
+        } catch (error: any) {
+            console.error('Error getting NZBGet stats:', error);
+            throw error;
+        }
+    }
+
+    public static async nzbgetGetDownloads(itemId: string): Promise<any[]> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/nzbget/downloads`, {
+                params: { itemId },
+                withCredentials: true
+            });
+            return res.data;
+        } catch (error: any) {
+            console.error('Error getting NZBGet downloads:', error);
+            throw error;
+        }
+    }
+
+    public static async nzbgetLogout(itemId: string): Promise<boolean> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/nzbget/logout`, {}, {
+                params: { itemId },
+                withCredentials: true
+            });
+            return res.data.success;
+        } catch (error: any) {
+            console.error('NZBGet logout error:', error);
+            return false;
+        }
+    }
+
+    public static async nzbgetResumeDownload(itemId: string, nzbId?: string): Promise<boolean> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/nzbget/resume`, 
+                { nzbId }, // Send nzbId in request body
+                {
+                    params: { itemId },
+                    withCredentials: true
+                }
+            );
+            return res.data.success;
+        } catch (error: any) {
+            console.error('NZBGet resume download error:', error);
+            return false;
+        }
+    }
+
+    public static async nzbgetPauseDownload(itemId: string, nzbId?: string): Promise<boolean> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/nzbget/pause`, 
+                { nzbId }, // Send nzbId in request body
+                {
+                    params: { itemId },
+                    withCredentials: true
+                }
+            );
+            return res.data.success;
+        } catch (error: any) {
+            console.error('NZBGet pause download error:', error);
+            return false;
+        }
+    }
+
+    public static async nzbgetDeleteDownload(itemId: string, nzbId: string, deleteFiles: boolean = false): Promise<boolean> {
+        try {
+            const res = await axios.delete(`${BACKEND_URL}/api/nzbget/delete/${nzbId}`, {
+                params: { itemId, deleteFiles: deleteFiles.toString() },
+                withCredentials: true
+            });
+            return res.data.success;
+        } catch (error: any) {
+            console.error('NZBGet delete download error:', error);
+            return false;
+        }
+    }
+
+    public static async encryptNzbgetPassword(password: string): Promise<string> {
+        try {
+            const res = await axios.post(
+                `${BACKEND_URL}/api/nzbget/encrypt-password`,
                 { password },
                 { withCredentials: true }
             );
