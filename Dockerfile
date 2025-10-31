@@ -1,5 +1,5 @@
 # Build (Backend)
-FROM node:lts-slim AS backend-build
+FROM node:22-slim AS backend-build
 
 WORKDIR /usr/src/app
 COPY ./backend ./
@@ -19,7 +19,7 @@ RUN npm install --omit-optional
 RUN npm run build
 
 # Build (Frontend)
-FROM node:lts-slim AS frontend-build
+FROM node:22-slim AS frontend-build
 WORKDIR /usr/src/app
 # Copy root package.json for version access
 COPY ./package.json ../package.json
@@ -29,7 +29,7 @@ ENV NODE_ENV=production
 RUN npm run build
 
 # Deploy (Backend)
-FROM node:lts-slim AS backend-deploy
+FROM node:22-slim AS backend-deploy
 
 WORKDIR /app
 ENV NODE_ENV=production
