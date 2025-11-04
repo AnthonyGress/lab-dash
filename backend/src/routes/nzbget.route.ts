@@ -32,14 +32,14 @@ const validateItemId = (req: Request): string => {
 const getBaseUrl = (req: Request): string => {
     const itemId = validateItemId(req);
     const connectionInfo = getItemConnectionInfo(itemId);
-    
+
     // Clean the host to remove any protocol prefix
     let host = connectionInfo.host || 'localhost';
     // Remove http:// or https:// if present
     host = host.replace(/^https?:\/\//, '');
     // Remove any trailing slashes
     host = host.replace(/\/+$/, '');
-    
+
     const port = connectionInfo.port || '6789';
     const ssl = connectionInfo.ssl || false;
     const protocol = ssl ? 'https' : 'http';
@@ -262,7 +262,7 @@ nzbgetRoute.get('/stats', async (req: Request, res: Response) => {
 
             // NZBGet returns download speed in bytes/sec
             const downloadSpeed = status.DownloadRate || 0;
-            
+
             // Calculate totals from history
             const monthlyBytes = status.DownloadedSizeMB ? status.DownloadedSizeMB * 1024 * 1024 : 0;
 
@@ -369,7 +369,7 @@ nzbgetRoute.get('/downloads', async (req: Request, res: Response) => {
                     size: totalSize,
                     dlspeed: downloadSpeed, // Only show speed for active download
                     upspeed: 0, // NZBGet doesn't upload
-                    eta: remainingSize > 0 && downloadSpeed > 0 
+                    eta: remainingSize > 0 && downloadSpeed > 0
                         ? Math.round(remainingSize / downloadSpeed)
                         : undefined
                 };
@@ -484,10 +484,10 @@ nzbgetRoute.delete('/delete/:nzbId', async (req: Request, res: Response) => {
         // Delete the download
         // historydelete removes from history and optionally from disk
         await makeNZBGetRequest(
-            baseUrl, 
-            'editqueue', 
-            ['GroupDelete', 0, '', [parseInt(nzbId)]], 
-            auth.username, 
+            baseUrl,
+            'editqueue',
+            ['GroupDelete', 0, '', [parseInt(nzbId)]],
+            auth.username,
             auth.password
         );
 

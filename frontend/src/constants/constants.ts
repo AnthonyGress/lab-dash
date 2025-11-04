@@ -12,8 +12,8 @@ export const initialItems = [
 ];
 
 export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || (
-    import.meta.env.PROD 
-        ? '' 
+    import.meta.env.PROD
+        ? ''
         : `http://${window.location.hostname}:5000`
 );
 

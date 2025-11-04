@@ -117,7 +117,7 @@ export const SortableGroupWidget: React.FC<Props> = ({
             type: ITEM_TYPE.APP_SHORTCUT,
             label: foundItem.name,
             url: foundItem.url,
-            showLabel: true,
+            showLabel: foundItem.showLabel ?? true,
             adminOnly: foundItem.adminOnly || false,
             icon: {
                 path: foundItem.icon || '',
@@ -161,7 +161,8 @@ export const SortableGroupWidget: React.FC<Props> = ({
             name: updatedItem.label,
             url: updatedItem.url?.toString() || '#',
             icon: updatedItem.icon?.path || '',
-            adminOnly: updatedItem.adminOnly || false
+            adminOnly: updatedItem.adminOnly || false,
+            showLabel: updatedItem.showLabel ?? true
         };
 
         // Add WoL properties if they exist
@@ -247,7 +248,7 @@ export const SortableGroupWidget: React.FC<Props> = ({
             type: ITEM_TYPE.APP_SHORTCUT,
             label: draggedItem.name,
             url: draggedItem.url,
-            showLabel: true,
+            showLabel: draggedItem.showLabel ?? true,
             icon: {
                 path: draggedItem.icon || '',
                 name: draggedItem.name
@@ -363,7 +364,8 @@ export const SortableGroupWidget: React.FC<Props> = ({
             name: shortcutItem.label || (isPlaceholder ? 'Placeholder' : 'App'),
             url: isPlaceholder ? '#' : (shortcutItem.url?.toString() || '#'),
             icon: shortcutItem.icon?.path || '',
-            adminOnly: shortcutItem.adminOnly || false
+            adminOnly: shortcutItem.adminOnly || false,
+            showLabel: shortcutItem.showLabel ?? true
         };
 
         // Add any additional properties
@@ -784,7 +786,7 @@ export const SortableGroupWidget: React.FC<Props> = ({
             type: ITEM_TYPE.APP_SHORTCUT,
             label: groupItem.name,
             url: groupItem.url,
-            showLabel: true,
+            showLabel: groupItem.showLabel ?? true,
             icon: {
                 path: groupItem.icon || '',
                 name: groupItem.name
