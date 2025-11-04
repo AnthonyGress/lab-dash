@@ -19,7 +19,7 @@ export const useMobilePointer = (): boolean => {
         // Listen for changes (e.g., device rotation or external mouse connection)
         const mediaQuery = window.matchMedia('(pointer: coarse)');
         const handleChange = () => detectAndSetPointerType();
-        
+
         if (mediaQuery.addEventListener) {
             mediaQuery.addEventListener('change', handleChange);
         } else {

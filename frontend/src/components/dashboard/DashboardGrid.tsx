@@ -17,8 +17,8 @@ import { Box, Grid2 as Grid, useMediaQuery } from '@mui/material';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import shortid from 'shortid';
 
-import { SortableSabnzbd } from './sortable-items/widgets/SortableSabnzbd';
 import { SortableNzbget } from './sortable-items/widgets/SortableNzbget';
+import { SortableSabnzbd } from './sortable-items/widgets/SortableSabnzbd';
 import { useAppContext } from '../../context/useAppContext';
 import { DashboardItem, DOWNLOAD_CLIENT_TYPE, ITEM_TYPE, TORRENT_CLIENT_TYPE } from '../../types';
 import { AddEditForm } from '../forms/AddEditForm/AddEditForm';

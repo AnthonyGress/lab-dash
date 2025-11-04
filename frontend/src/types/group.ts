@@ -10,5 +10,6 @@ export interface GroupItem {
     healthUrl?: string;
     healthCheckType?: string;
     adminOnly?: boolean;
+    showLabel?: boolean;
     [key: string]: any;
 }
