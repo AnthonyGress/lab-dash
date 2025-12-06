@@ -1,5 +1,6 @@
 import { Box, Button, InputAdornment, Typography } from '@mui/material';
 import { FormContainer, TextFieldElement, useForm } from 'react-hook-form-mui';
+import { useTranslation } from 'react-i18next';
 import { FaLock, FaUser } from 'react-icons/fa6';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -15,6 +16,7 @@ type FormValues = {
 }
 
 export const LoginForm = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
     const { setIsLoggedIn, setUsername, setIsAdmin, refreshDashboard } = useAppContext();
@@ -44,15 +46,15 @@ export const LoginForm = () => {
             // Refresh dashboard to load admin-only items if user is admin
             await refreshDashboard();
 
-            // Show success toast and navigate back to previous page or home
-            ToastManager.success('Login successful!');
+            // Show success toast using translation
+            ToastManager.success(t('auth.success'));
 
             // Get the previous location from navigation state, default to home
             const from = (location.state as any)?.from || '/';
             navigate(from, { replace: true });
         } catch (error: any) {
-            // Show error message
-            ToastManager.error(error.message || 'Login failed');
+            // Show error message using translation (fallback to API message if available, otherwise generic fail)
+            ToastManager.error(error.message || t('auth.failed'));
         }
     };
 
@@ -60,17 +62,17 @@ export const LoginForm = () => {
         <FormContainer onSuccess={handleSubmit} formContext={formContext}>
             <Box sx={styles.vcenter} gap={3}>
                 <Box pt={2} textAlign={'center'}>
-                    <Typography variant='h4'>Login</Typography>
+                    <Typography variant='h4'>{t('auth.title')}</Typography>
                 </Box>
                 <Box sx={styles.vcenter} mb={2} mt={2}>
                     <Box width={'100%'} sx={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <TextFieldElement
                             name='username'
-                            label='Username'
+                            label={t('auth.username')} 
                             variant='outlined'
                             sx={{ width: { xs: '80%', md: '40%' } }}
                             required
-                            placeholder='Username'
+                            placeholder={t('auth.username')}
                             slotProps={{
                                 input: {
                                     startAdornment: (
@@ -87,11 +89,11 @@ export const LoginForm = () => {
                 <Box width={'100%'} sx={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <TextFieldElement
                         name='password'
-                        label='Password'
+                        label={t('auth.password')}
                         variant='outlined'
                         sx={{ width: { xs: '80%', md: '40%' } }}
                         type='password'
-                        placeholder='Password'
+                        placeholder={t('auth.password')}
                         required
                         slotProps={{
                             input: {
@@ -105,7 +107,7 @@ export const LoginForm = () => {
                     />
                 </Box>
                 <Box mt={4} sx={styles.center} mb={2}>
-                    <Button variant='contained' type='submit'>Login</Button>
+                    <Button variant='contained' type='submit'>{t('auth.submit')}</Button>
                 </Box>
             </Box>
         </FormContainer>

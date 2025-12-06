@@ -1,6 +1,7 @@
 import CloseIcon from '@mui/icons-material/Close';
 import { AppBar, Box, IconButton, Modal, Toolbar, Tooltip, Typography, useMediaQuery } from '@mui/material';
 import { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next'; // 1. Import
 
 import { useWindowDimensions } from '../../hooks/useWindowDimensions';
 import { styles } from '../../theme/styles';
@@ -17,6 +18,7 @@ type Props = {
 }
 
 export const CenteredModal = ({ open, handleClose, children, width, height, title, fullWidthContent = false }: Props) => {
+    const { t } = useTranslation(); // 2. Hook
     const windowDimensions = useWindowDimensions();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -82,10 +84,10 @@ export const CenteredModal = ({ open, handleClose, children, width, height, titl
                             onClick={(e) => e.stopPropagation()} // Prevent drag from triggering on click
                             sx={styles.vcenter}
                         >
-                            <Tooltip title='Close' placement='top'>
+                            <Tooltip title={t('common.close')} placement='top'>
                                 <IconButton
                                     onClick={handleClose}
-                                    aria-label='Close modal'
+                                    aria-label={t('common.close')} 
                                 >
                                     <Box height={'100%'} sx={styles.vcenter}>
                                         <CloseIcon sx={{ fontSize: 28, color: 'white' }} />

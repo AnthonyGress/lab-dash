@@ -1,40 +1,42 @@
 import { Box, Button, CircularProgress, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { useTranslation } from 'react-i18next';
 
 import { CenteredModal } from './CenteredModal';
-import { PopupManager } from './PopupManager';
-import { DashApi } from '../../api/dash-api';
+// import { PopupManager } from './PopupManager';
+// import { DashApi } from '../../api/dash-api';
 import { styles } from '../../theme/styles';
 import { compareVersions } from '../../utils/updateChecker';
 import { getAppVersion } from '../../utils/version';
 
 interface GitHubRelease {
-  body: string;
-  html_url: string;
-  tag_name: string;
-  name: string;
-  published_at: string;
-  author: {
-    login: string;
-    avatar_url: string;
-  };
+    body: string;
+    html_url: string;
+    tag_name: string;
+    name: string;
+    published_at: string;
+    author: {
+        login: string;
+        avatar_url: string;
+    };
 }
 
 interface ReleaseNote {
-  version: string;
-  notes: string;
-  date: string;
+    version: string;
+    notes: string;
+    date: string;
 }
 
 interface UpdateModalProps {
-  open: boolean;
-  handleClose: () => void;
-  latestVersion: string | null;
-  isAdmin: boolean;
+    open: boolean;
+    handleClose: () => void;
+    latestVersion: string | null;
+    isAdmin: boolean;
 }
 
 export const UpdateModal = ({ open, handleClose, latestVersion, isAdmin }: UpdateModalProps) => {
+    const { t, i18n } = useTranslation();
     const [isUpdating, setIsUpdating] = useState(false);
     const [releaseNotes, setReleaseNotes] = useState<ReleaseNote[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -79,7 +81,8 @@ export const UpdateModal = ({ open, handleClose, latestVersion, isAdmin }: Updat
     };
 
     const formatDate = (dateString: string): string => {
-        return new Date(dateString).toLocaleDateString(undefined, {
+        // Use the application's current language for date formatting
+        return new Date(dateString).toLocaleDateString(i18n.language, {
             year: 'numeric',
             month: 'short',
             day: 'numeric'
@@ -138,10 +141,10 @@ export const UpdateModal = ({ open, handleClose, latestVersion, isAdmin }: Updat
     };
 
     return (
-        <CenteredModal open={open} handleClose={handleClose} title='Update Available'>
+        <CenteredModal open={open} handleClose={handleClose} title={t('update.title')}>
             <Box sx={{ p: 2 }}>
                 <Typography variant='h6' gutterBottom>
-                    A new version is available: {latestVersion}
+                    {t('update.available', { version: latestVersion })}
                 </Typography>
 
                 {isLoading ? (
@@ -151,7 +154,7 @@ export const UpdateModal = ({ open, handleClose, latestVersion, isAdmin }: Updat
                 ) : releaseNotes.length > 0 ? (
                     <Box sx={{ my: 2, maxHeight: '350px', overflowY: 'auto' }}>
                         <Typography variant='subtitle1' fontWeight='bold' gutterBottom>
-                            Release Notes:
+                            {t('update.notes')}
                         </Typography>
                         {releaseNotes.map((note, index) => (
                             <Box key={note.version} sx={{ mb: index < releaseNotes.length - 1 ? 3 : 0 }}>
@@ -232,13 +235,13 @@ export const UpdateModal = ({ open, handleClose, latestVersion, isAdmin }: Updat
                                         }
                                         handleClose();
                                     } catch (error) {
-                                        PopupManager.failure('Failed to update container');
+                                        PopupManager.failure(t('update.error'));
                                     } finally {
                                         setIsUpdating(false);
                                     }
                                 }}
                             >
-                                {isUpdating ? 'Updating...' : 'Update Now'}
+                                {isUpdating ? t('update.updating') : t('update.updateNow')}
                             </Button> */}
                             <Button
                                 variant='contained'
@@ -247,7 +250,7 @@ export const UpdateModal = ({ open, handleClose, latestVersion, isAdmin }: Updat
                                     handleClose();
                                 }}
                             >
-                                Update Guide
+                                {t('update.guide')}
                             </Button>
                         </Box>
                     )}

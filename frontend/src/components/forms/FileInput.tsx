@@ -3,6 +3,7 @@ import { MuiFileInput } from 'mui-file-input';
 import { useState } from 'react';
 import { Controller } from 'react-hook-form-mui';
 import { FaFileUpload } from 'react-icons/fa';
+import { useTranslation } from 'react-i18next';
 
 import { theme } from '../../theme/theme';
 
@@ -23,6 +24,7 @@ export const FileInput = ({
     maxSize = 5 * 1024 * 1024, // 5MB default
     sx
 }: Props) => {
+    const { t, i18n } = useTranslation();
     const [sizeError, setSizeError] = useState<string | null>(null);
 
     return (
@@ -37,7 +39,7 @@ export const FileInput = ({
                         if (file instanceof File) {
                             // Check file size
                             if (file.size > maxSize) {
-                                setSizeError(`File is too large (${Math.round(maxSize/1024/1024)}MB max)`);
+                                setSizeError(t('settings.appearance.fileTooLarge', { maxMB: Math.round(maxSize / 1024 / 1024) } ));
                             } else {
                                 setSizeError(null);
                                 field.onChange(file);
@@ -58,7 +60,7 @@ export const FileInput = ({
                         startAdornment: <FaFileUpload style={{ marginLeft: 5, color: theme.palette.text.primary }}/>
                     }}
                     sx={{ width: width || '100%', ...sx }}
-                    placeholder='Select a File'
+                    placeholder={t('settings.appearance.selectFile')}
                     fullWidth={!width}
                 />
             )}

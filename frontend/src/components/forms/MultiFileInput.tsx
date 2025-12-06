@@ -3,6 +3,7 @@ import { MuiFileInput } from 'mui-file-input';
 import { useState } from 'react';
 import { Controller } from 'react-hook-form-mui';
 import { FaFileUpload } from 'react-icons/fa';
+import { useTranslation } from 'react-i18next';
 
 import { theme } from '../../theme/theme';
 
@@ -24,7 +25,9 @@ export const MultiFileInput = ({
     maxSize = 5 * 1024 * 1024, // 5MB default per file
     maxFiles = 20,
     sx
+
 }: Props) => {
+    const { t, i18n } = useTranslation();
     const [sizeError, setSizeError] = useState<string | null>(null);
 
     return (
@@ -39,14 +42,14 @@ export const MultiFileInput = ({
 
                             // Check file count
                             if (fileArray.length > maxFiles) {
-                                setSizeError(`Too many files (${maxFiles} max)`);
+                                setSizeError(t('settings.appearance.tooManyFiles', { maxFiles }));
                                 return;
                             }
 
                             // Check individual file sizes
                             const oversizedFiles = fileArray.filter(file => file.size > maxSize);
                             if (oversizedFiles.length > 0) {
-                                setSizeError(`Some files are too large (${Math.round(maxSize/1024/1024)}MB max per file)`);
+                                setSizeError(t('settings.appearance.filesTooLarge', { maxMB: Math.round(maxSize / 1024 / 1024) } ));
                                 return;
                             }
 
@@ -68,7 +71,7 @@ export const MultiFileInput = ({
                         startAdornment: <FaFileUpload style={{ marginLeft: 5, color: theme.palette.text.primary }}/>
                     }}
                     sx={{ width: width || '100%', ...sx }}
-                    placeholder={`Select up to ${maxFiles} files`}
+                    placeholder={t('settings.appearance.selectFiles', { maxFiles })}
                     fullWidth={!width}
                     multiple
                 />

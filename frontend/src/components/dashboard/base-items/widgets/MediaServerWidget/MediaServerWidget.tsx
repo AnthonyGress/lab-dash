@@ -1,6 +1,7 @@
 import { ArrowDownward, Movie, MusicNote, Pause, Person, PlayArrow, Schedule, Tv } from '@mui/icons-material';
 import { Box, CardContent, CircularProgress, Typography, useMediaQuery } from '@mui/material';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next'; // Import hook
 
 import { DashApi } from '../../../../../api/dash-api';
 import { BACKEND_URL, FIFTEEN_MIN_IN_MS } from '../../../../../constants/constants';
@@ -74,23 +75,23 @@ const formatProgress = (positionTicks: number, runtimeTicks: number): string => 
     return `${Math.round((positionTicks / runtimeTicks) * 100)}%`;
 };
 
-// Get media type display name
-const getMediaTypeDisplay = (type: string): string => {
+// Get media type display name - Now accepts t function
+const getMediaTypeDisplay = (type: string, t: any): string => {
     switch (type?.toLowerCase()) {
     case 'episode':
-        return 'TV Show';
+        return t('widgets.mediaServer.types.tvShow');
     case 'movie':
-        return 'Movie';
+        return t('widgets.mediaServer.types.movie');
     case 'audio':
-        return 'Music';
+        return t('widgets.mediaServer.types.music');
     case 'musicalbum':
-        return 'Album';
+        return t('widgets.mediaServer.types.album');
     case 'book':
-        return 'Book';
+        return t('widgets.mediaServer.types.book');
     case 'audiobook':
-        return 'Audiobook';
+        return t('widgets.mediaServer.types.audiobook');
     default:
-        return type || 'Media';
+        return type || t('widgets.mediaServer.types.media');
     }
 };
 
@@ -137,6 +138,7 @@ interface SessionItemProps {
 }
 
 const SessionItem: React.FC<SessionItemProps> = ({ session, clientType, config }) => {
+    const { t } = useTranslation(); // Initialize hook
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const displayTitle = getDisplayTitle(session.NowPlayingItem);
     const subtitle = session.NowPlayingItem?.Type === 'Episode' ? session.NowPlayingItem.Name : '';
@@ -217,7 +219,7 @@ const SessionItem: React.FC<SessionItemProps> = ({ session, clientType, config }
                                 fontWeight: 500
                             }}
                         >
-                            {displayTitle || 'Unknown Media'}
+                            {displayTitle || t('widgets.mediaServer.status.unknown')}
                         </Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 1 }}>
                             <Typography
@@ -229,7 +231,7 @@ const SessionItem: React.FC<SessionItemProps> = ({ session, clientType, config }
                                     textAlign: 'right'
                                 }}
                             >
-                                {session.PlayState?.IsPaused ? 'Paused' : 'Playing'}
+                                {session.PlayState?.IsPaused ? t('widgets.mediaServer.status.paused') : t('widgets.mediaServer.status.playing')}
                             </Typography>
                             {getStatusIcon(session)}
                         </Box>
@@ -270,7 +272,7 @@ const SessionItem: React.FC<SessionItemProps> = ({ session, clientType, config }
                                 }}
                             >
                                 {getMediaIcon(session.NowPlayingItem?.Type || '')}
-                                {getMediaTypeDisplay(session.NowPlayingItem?.Type || '')}
+                                {getMediaTypeDisplay(session.NowPlayingItem?.Type || '', t)}
                             </Typography>
                         </Box>
                         <Typography
@@ -298,6 +300,7 @@ export const MediaServerWidget: React.FC<MediaServerWidgetProps> = ({
     onDelete,
     onDuplicate
 }) => {
+    const { t } = useTranslation(); // Initialize hook
     const [sessions, setSessions] = useState<JellyfinSession[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -315,13 +318,13 @@ export const MediaServerWidget: React.FC<MediaServerWidgetProps> = ({
 
     const fetchSessions = useCallback(async () => {
         if (!id) {
-            setError('Widget ID missing');
+            setError(t('widgets.mediaServer.errors.widgetIdMissing'));
             setIsLoading(false);
             return;
         }
 
         if (!config?.host || (!config?.apiKey && !config?._hasApiKey)) {
-            setError('Server configuration missing');
+            setError(t('widgets.mediaServer.errors.configMissing'));
             setIsLoading(false);
             return;
         }
@@ -335,16 +338,16 @@ export const MediaServerWidget: React.FC<MediaServerWidgetProps> = ({
                 setSessions(data.sessions || []);
                 setError(null);
             } else {
-                setError(`${config.clientType} is not yet supported`);
+                setError(t('widgets.mediaServer.errors.notSupported', { type: config.clientType }));
             }
         } catch (err) {
             console.error('Error fetching media server sessions:', err);
-            setError(err instanceof Error ? err.message : 'Unknown error');
+            setError(err instanceof Error ? err.message : t('widgets.mediaServer.errors.unknown'));
             setSessions([]);
         } finally {
             setIsLoading(false);
         }
-    }, [id, config]);
+    }, [id, config, t]);
 
     const fetchLibraryStats = useCallback(async () => {
         if (!id) {
@@ -557,7 +560,7 @@ export const MediaServerWidget: React.FC<MediaServerWidgetProps> = ({
                         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
                             <Box sx={{ flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', mb: 1, width: '100%' }}>
                                 <Typography variant='caption' sx={{ px: 1, mb: 0.5, color: 'white' }}>
-                                    Watching ({sessions.length})
+                                    {t('widgets.mediaServer.watching', { count: sessions.length })}
                                 </Typography>
 
                                 <Box sx={{
@@ -617,7 +620,7 @@ export const MediaServerWidget: React.FC<MediaServerWidgetProps> = ({
                                                 bottom: 0,
                                                 zIndex: 1
                                             }}>
-                                                No active items
+                                                {t('widgets.mediaServer.noActiveItems')}
                                             </Box>
                                             {/* Hidden sample session item to maintain width - but not visible */}
                                             <Box sx={{
@@ -660,7 +663,7 @@ export const MediaServerWidget: React.FC<MediaServerWidgetProps> = ({
                                                                 mr: 0.5
                                                             }}
                                                         >
-                                                            Playing
+                                                            {t('widgets.mediaServer.status.playing')}
                                                         </Typography>
                                                     </Box>
                                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.2 }}>
@@ -688,10 +691,10 @@ export const MediaServerWidget: React.FC<MediaServerWidgetProps> = ({
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
                                     <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                                         <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary', mb: 0.5 }}>
-                                            Total TV Shows:
+                                            {t('widgets.mediaServer.totalTvShows')}
                                         </Typography>
                                         <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary' }}>
-                                            Total Movies:
+                                            {t('widgets.mediaServer.totalMovies')}
                                         </Typography>
                                     </Box>
 

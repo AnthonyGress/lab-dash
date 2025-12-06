@@ -1,5 +1,6 @@
 import { Box, CardContent, Grid2 as Grid, Tooltip, Typography, useMediaQuery } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next'; // Import hook
 import { FaHdd } from 'react-icons/fa';
 
 import { DashApi } from '../../../../api/dash-api';
@@ -35,6 +36,7 @@ interface DiskMonitorWidgetProps {
 }
 
 export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) => {
+    const { t } = useTranslation(); // Initialize hook
     const [diskData, setDiskData] = useState<DiskInfo[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -92,11 +94,11 @@ export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) 
 
                 setDiskData(validDisks);
             } else {
-                setError('No disk information available');
+                setError(t('widgets.diskMonitor.errorNoInfo'));
             }
         } catch (err) {
             console.error('Error fetching disk data:', err);
-            setError('Failed to fetch disk information');
+            setError(t('widgets.diskMonitor.errorFetch'));
         } finally {
             setIsLoading(false);
         }
@@ -110,7 +112,7 @@ export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) 
             const interval = setInterval(fetchDiskData, 30000);
             return () => clearInterval(interval);
         }
-    }, [editMode]);
+    }, [editMode, t]); // Added t dependency
 
     // Create display disks with custom names
     const displayDisks = selectedDisks
@@ -270,7 +272,7 @@ export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) 
                         }}
                     />
                     <Tooltip
-                        title={`Used: ${formatSpace(usedSpace)} / ${formatSpace(totalSpace)}`}
+                        title={`${t('widgets.system.used')}: ${formatSpace(usedSpace)} / ${formatSpace(totalSpace)}`}
                         arrow
                         placement='top'
                     >
@@ -301,7 +303,7 @@ export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) 
                             whiteSpace: 'nowrap'
                         }}
                     >
-                        {isLargeOrSmaller ? 'F:' : 'Free:'} {formatSpace(displayFreeSpace)}
+                        {isLargeOrSmaller ? t('widgets.diskMonitor.freeShort') : t('widgets.diskMonitor.free')} {formatSpace(displayFreeSpace)}
                     </Typography>
                     <Typography
                         variant='caption'
@@ -312,7 +314,7 @@ export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) 
                             textAlign: 'right'
                         }}
                     >
-                        {isLargeOrSmaller ? 'T:' : 'Total:'} {formatSpace(totalSpace)}
+                        {isLargeOrSmaller ? t('widgets.diskMonitor.totalShort') : t('widgets.diskMonitor.total')} {formatSpace(totalSpace)}
                     </Typography>
                 </Box>
             </Box>
@@ -365,7 +367,7 @@ export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) 
                                 fontSize: '1.1rem',
                             }}
                         >
-                            Disk Monitor
+                            {t('widgets.diskMonitor.title')}
                         </Typography>
                     </Box>
                 )}
@@ -376,7 +378,7 @@ export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) 
                         alignItems: 'center'
                     }}>
                         <Typography variant='body2' sx={{ textAlign: 'center', mb: 1 }}>
-                            Configuration Error
+                            {t('widgets.common.error')}
                         </Typography>
                         <Typography variant='caption' sx={{ color: 'rgba(255,255,255,0.7)', textAlign: 'center' }}>
                             {error}
@@ -387,7 +389,7 @@ export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) 
                         color: 'rgba(255,255,255,0.5)',
                         fontSize: '0.85rem'
                     }}>
-                        {isLoading ? 'Loading disks...' : 'No disks configured'}
+                        {isLoading ? t('widgets.diskMonitor.loading') : t('widgets.diskMonitor.noDisks')}
                     </Box>
                 ) : (
                     <Box sx={{

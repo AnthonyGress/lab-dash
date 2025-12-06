@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { QueueItem, QueueManagementWidget } from './QueueManagementWidget';
 import { DashApi } from '../../../../api/dash-api';
@@ -19,6 +20,7 @@ interface SonarrWidgetProps {
 }
 
 export const SonarrWidget: React.FC<SonarrWidgetProps> = ({ id, config }) => {
+    const { t } = useTranslation();
     const [isLoading, setIsLoading] = useState(true);
     const [queueItems, setQueueItems] = useState<QueueItem[]>([]);
     const [error, setError] = useState<string | null>(null);
@@ -36,7 +38,7 @@ export const SonarrWidget: React.FC<SonarrWidgetProps> = ({ id, config }) => {
         // Check for required configuration and valid ID
         if (!id || !config?.host || !config?._hasApiKey) {
             setIsLoading(false);
-            setError('Missing required configuration. Please configure host and API key.');
+            setError(t('widgets.sonarr.errors.missingConfig'));
             return;
         }
 
@@ -55,12 +57,12 @@ export const SonarrWidget: React.FC<SonarrWidgetProps> = ({ id, config }) => {
             setQueueItems(sortedQueue);
         } catch (err) {
             console.error('Failed to fetch Sonarr queue:', err);
-            setError('Failed to connect to Sonarr. Please check your configuration.');
+            setError(t('widgets.sonarr.errors.fetchFailedQueue'));
             setQueueItems([]);
         } finally {
             setIsLoading(false);
         }
-    }, [id, config?.host, config?._hasApiKey]);
+    }, [id, config?.host, config?._hasApiKey, t]);
 
     const fetchStatistics = useCallback(async () => {
         if (!id || !config?.host || !config?._hasApiKey) {
@@ -98,7 +100,7 @@ export const SonarrWidget: React.FC<SonarrWidgetProps> = ({ id, config }) => {
         // Only fetch if we have the required configuration
         if (!id || !config?.host || !config?._hasApiKey) {
             setIsLoading(false);
-            setError('Missing required configuration. Please configure host and API key.');
+            setError(t('widgets.sonarr.errors.missingConfig'));
             return;
         }
 
@@ -145,7 +147,7 @@ export const SonarrWidget: React.FC<SonarrWidgetProps> = ({ id, config }) => {
                 clearTimeout(timeoutId);
             }
         };
-    }, [id, config?.host, config?._hasApiKey, fetchQueueData, fetchStatistics]);
+    }, [id, config?.host, config?._hasApiKey, fetchQueueData, fetchStatistics, t]);
 
     const handleRemoveItem = useCallback(async (itemId: string, removeFromClient: boolean, blocklist: boolean): Promise<boolean> => {
         try {
@@ -155,13 +157,14 @@ export const SonarrWidget: React.FC<SonarrWidgetProps> = ({ id, config }) => {
             return true;
         } catch (err) {
             console.error('Failed to remove Sonarr queue item:', err);
+            ToastManager.error(t('widgets.sonarr.errors.removeFailed'));
             return false;
         }
-    }, [id, fetchQueueData]);
+    }, [id, fetchQueueData, t]);
 
     return (
         <QueueManagementWidget
-            serviceName='Sonarr'
+            serviceName={t('widgets.sonarr.title')}
             isLoading={isLoading}
             queueItems={queueItems}
             showLabel={config?.showLabel !== false}
@@ -173,6 +176,11 @@ export const SonarrWidget: React.FC<SonarrWidgetProps> = ({ id, config }) => {
                 port: config.port?.toString() || '8989',
                 ssl: config.ssl || false
             } : undefined}
+            
+            statsLabels={{
+                total: t('widgets.sonarr.stats.seriesTotal'),
+                monitored: t('widgets.sonarr.stats.monitoredSeries')
+            }}
         />
     );
 };

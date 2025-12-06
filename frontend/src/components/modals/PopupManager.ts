@@ -1,6 +1,5 @@
 import { grey } from '@mui/material/colors';
 import Swal from 'sweetalert2';
-
 import { theme } from '../../theme/theme';
 
 const CONFIRM_COLOR = theme.palette.success.main;
@@ -34,9 +33,9 @@ export type ThreeButtonOptions = {
 }
 
 export class PopupManager {
-    public static success(text?: string, action?: () => any): void {
+    public static success(title: string, text?: string, action?: () => any): void {
         ThemedAlert.fire({
-            title: 'Success',
+            title: title,
             text: text && text,
             icon: 'success',
             iconColor: theme.palette.success.main,
@@ -44,9 +43,10 @@ export class PopupManager {
             confirmButtonColor: CONFIRM_COLOR,
         }).then(() => action && action());
     }
-    public static failure(text?: string, action?: () => any): void {
+    
+    public static failure(title: string, text?: string, action?: () => any): void {
         ThemedAlert.fire({
-            title: 'Error',
+            title: title,
             text: text && text,
             confirmButtonColor: CONFIRM_COLOR,
             icon: 'error',
@@ -54,9 +54,9 @@ export class PopupManager {
         }).then(() => action && action());
     }
 
-    public static loading(text?: string, action?: () => any): void {
+    public static loading(title: string, text?: string, action?: () => any): void {
         ThemedAlert.fire({
-            title: 'Loading',
+            title: title,
             text: text && text,
             confirmButtonColor: CONFIRM_COLOR,
             icon: 'info'
@@ -66,7 +66,7 @@ export class PopupManager {
     public static confirmation (options: ConfirmationOptions) {
         ThemedAlert.fire({
             title: `${options.title}`,
-            confirmButtonText: options.confirmText ? options.confirmText : 'Yes',
+            confirmButtonText: options.confirmText || 'Yes',
             confirmButtonColor: CONFIRM_COLOR ,
             text: options.text && options.text,
             icon: 'info',
@@ -88,14 +88,14 @@ export class PopupManager {
     public static deleteConfirmation (options: ConfirmationOptions) {
         ThemedAlert.fire({
             title: `${options.title}`,
-            confirmButtonText: options.confirmText ? options.confirmText : 'Yes, Delete',
+            confirmButtonText: options.confirmText || 'Yes, Delete',
             confirmButtonColor: theme.palette.error.main,
-            text: options.text ? options.text : 'This action cannot be undone',
+            text: options.text || 'This action cannot be undone',
             html: options.html && options.html,
             icon: 'error',
             iconColor: theme.palette.error.main,
             showDenyButton: true,
-            denyButtonText: 'Cancel',
+            denyButtonText: options.denyText || 'Cancel',
             denyButtonColor: grey[500],
             reverseButtons: true
         }).then((result: any) => {

@@ -1,5 +1,6 @@
 import { Box } from '@mui/material';
 import React from 'react';
+import { useTranslation } from 'react-i18next'; // Import hook
 import ReactMarkdown from 'react-markdown';
 
 import { theme } from '../../../../../theme/theme';
@@ -10,6 +11,8 @@ interface MarkdownPreviewProps {
 }
 
 export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, fontSize = '16px' }) => {
+    const { t } = useTranslation(); // Initialize hook
+
     return (
         <Box sx={{
             color: 'rgba(255,255,255,0.9)',
@@ -97,7 +100,7 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, fontS
                     )
                 }}
             >
-                {content || 'No content'}
+                {content || t('widgets.notes.noContent')}
             </ReactMarkdown>
         </Box>
     );

@@ -4,6 +4,8 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter as Router } from 'react-router-dom';
 
+import './i18n';
+
 import { DashApi } from './api/dash-api.ts';
 import { App } from './App.tsx';
 import { ToastInitializer } from './components/toast/ToastInitializer.tsx';

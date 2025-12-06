@@ -15,6 +15,7 @@ import {
 } from '@dnd-kit/sortable';
 import { Box, Grid2 as Grid, useMediaQuery } from '@mui/material';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next'; // Import hook
 import shortid from 'shortid';
 
 import { SortableNzbget } from './sortable-items/widgets/SortableNzbget';
@@ -70,8 +71,6 @@ const customCollisionDetection = (args: any) => {
             if (!activeRect || !containerRect) {
                 return { id: container.id, value: 0 };
             }
-
-
 
             // Try to get valid coordinates from different possible properties
             const activeX = activeRect.x ?? activeRect.left ?? 0;
@@ -212,6 +211,7 @@ function getIntersectionArea(rect1: any, rect2: any) {
 }
 
 export const DashboardGrid: React.FC = () => {
+    const { t } = useTranslation(); // Initialize hook
     const [activeId, setActiveId] = useState<string | null>(null);
     const [activeData, setActiveData] = useState<any>(null);
     const [selectedItem, setSelectedItem] = useState<DashboardItem | null>(null);
@@ -440,17 +440,20 @@ export const DashboardGrid: React.FC = () => {
 
     const handleDelete = (id: string) => {
         const itemToDelete = dashboardLayout.find(item => item.id === id);
-        const itemName = itemToDelete?.label || itemToDelete?.config?.displayName || 'Item';
+        const itemName = itemToDelete?.label || itemToDelete?.config?.displayName || t('dashboard.item');
 
         const options: ConfirmationOptions = {
-            title: 'Delete Item?',
+            title: t('dashboard.deleteItemTitle', { name: itemName }),
+            text: t('dashboard.deleteItemText', { name: itemName }),
+            confirmText: t('common.yesDelete'),
+            denyText: t('common.deny'),
             confirmAction: async () => {
                 const updatedLayout = dashboardLayout.filter((item) => item.id !== id);
                 setDashboardLayout(updatedLayout);
                 saveLayout(updatedLayout);
 
                 // Show success toast
-                ToastManager.success(`${itemName} deleted successfully`);
+                ToastManager.success(t('dashboard.deleteSuccess', { name: itemName }));
             }
         };
 
@@ -794,7 +797,7 @@ export const DashboardGrid: React.FC = () => {
 
     // Render a placeholder app shortcut
     const renderPlaceholder = (placeholder: any) => {
-        const name = placeholder.item?.name || 'Item';
+        const name = placeholder.item?.name || t('dashboard.item');
         const icon = placeholder.item?.icon || '';
         const url = placeholder.item?.url;
         const healthUrl = placeholder.item?.healthUrl;
@@ -878,7 +881,7 @@ export const DashboardGrid: React.FC = () => {
                                 key={activeId}
                                 id={activeId}
                                 url={activeData.originalItem?.url}
-                                name={activeData.originalItem?.name || 'App'}
+                                name={activeData.originalItem?.name || t('dashboard.app')}
                                 iconName={activeData.originalItem?.icon || ''}
                                 editMode={editMode}
                                 isOverlay
@@ -1003,7 +1006,7 @@ export const DashboardGrid: React.FC = () => {
                 </DragOverlay>
             </DndContext>
 
-            <CenteredModal open={openEditModal} handleClose={() => setOpenEditModal(false)} title='Edit Item'>
+            <CenteredModal open={openEditModal} handleClose={() => setOpenEditModal(false)} title={t('dashboard.editItemTitle')}>
                 <AddEditForm handleClose={() => setOpenEditModal(false)} existingItem={selectedItem}/>
             </CenteredModal>
         </>

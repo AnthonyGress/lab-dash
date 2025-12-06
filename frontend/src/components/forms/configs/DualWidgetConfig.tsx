@@ -1,7 +1,8 @@
 import { Box, FormControlLabel, Grid2 as Grid, Radio, RadioGroup, Tab, Tabs, TextField, Typography } from '@mui/material';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { CheckboxElement, SelectElement, TextFieldElement } from 'react-hook-form-mui';
+import { useTranslation } from 'react-i18next';
 
 import { DateTimeWidgetConfig } from './DateTimeWidgetConfig';
 import { DiskMonitorWidgetConfig } from './DiskMonitorWidgetConfig';
@@ -12,15 +13,6 @@ import { COLORS } from '../../../theme/styles';
 import { theme } from '../../../theme/theme';
 import { ITEM_TYPE } from '../../../types';
 import { FormValues } from '../AddEditForm/types';
-
-const WIDGET_OPTIONS = [
-    { id: ITEM_TYPE.DATE_TIME_WIDGET, label: 'Date & Time' },
-    { id: ITEM_TYPE.WEATHER_WIDGET, label: 'Weather' },
-    { id: ITEM_TYPE.SYSTEM_MONITOR_WIDGET, label: 'System Monitor' },
-    { id: ITEM_TYPE.DISK_MONITOR_WIDGET, label: 'Disk Monitor' },
-    { id: ITEM_TYPE.PIHOLE_WIDGET, label: 'Pi-hole' },
-    { id: ITEM_TYPE.ADGUARD_WIDGET, label: 'AdGuard Home' }
-];
 
 interface DualWidgetConfigProps {
     formContext: UseFormReturn<FormValues>;
@@ -43,8 +35,19 @@ type PositionFormContext = Omit<UseFormReturn<FormValues>, 'register' | 'watch' 
 };
 
 export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfigProps) => {
+    const { t } = useTranslation();
     const isMobile = useIsMobile();
     const initializedRef = useRef(false);
+
+    // Memoize widget options to allow translation
+    const widgetOptions = useMemo(() => [
+        { id: ITEM_TYPE.DATE_TIME_WIDGET, label: t('widgets.titles.dateTime') },
+        { id: ITEM_TYPE.WEATHER_WIDGET, label: t('widgets.titles.weather') },
+        { id: ITEM_TYPE.SYSTEM_MONITOR_WIDGET, label: t('widgets.titles.system') },
+        { id: ITEM_TYPE.DISK_MONITOR_WIDGET, label: t('widgets.titles.diskMonitor') },
+        { id: ITEM_TYPE.PIHOLE_WIDGET, label: t('widgets.titles.pihole') },
+        { id: ITEM_TYPE.ADGUARD_WIDGET, label: t('widgets.titles.adguard') }
+    ], [t]);
 
     // State to track which position's config is currently being edited
     const [widgetState, setWidgetState] = useState<WidgetState>({
@@ -1370,6 +1373,14 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
             }
         }, [shouldShowNetworkField]);
 
+        const systemMonitorGaugeOptions = useMemo(() => [
+            { id: 'cpu', label: t('widgets.system.config.cpuUsage') },
+            { id: 'temp', label: t('widgets.system.config.cpuTemp') },
+            { id: 'ram', label: t('widgets.system.config.ramUsage') },
+            { id: 'network', label: t('widgets.system.config.network') },
+            { id: 'none', label: t('widgets.system.config.none') }
+        ], [t]);
+
         return (
             <>
                 {/* Temperature Unit Radio Buttons */}
@@ -1382,7 +1393,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                             ml: 1
                         }}
                     >
-                        Temperature Unit:
+                        {t('widgets.system.config.tempUnit')}:
                     </Typography>
                     <RadioGroup
                         name={temperatureUnitFieldName}
@@ -1411,7 +1422,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                                     }}
                                 />
                             }
-                            label='Fahrenheit (°F)'
+                            label={t('widgets.system.config.fahrenheit')}
                         />
                         <FormControlLabel
                             value='celsius'
@@ -1425,14 +1436,14 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                                     }}
                                 />
                             }
-                            label='Celsius (°C)'
+                            label={t('widgets.system.config.celsius')}
                         />
                     </RadioGroup>
                 </Box>
 
                 <Box sx={{ mt: 2 }}>
                     <SelectElement
-                        label='Left Gauge'
+                        label={t('widgets.system.config.leftGauge')}
                         name={gauge1FieldName}
                         options={[
                             { id: 'cpu', label: 'CPU Usage' },
@@ -1453,7 +1464,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 </Box>
                 <Box sx={{ mt: 2 }}>
                     <SelectElement
-                        label='Middle Gauge'
+                        label={t('widgets.system.config.middleGauge')}
                         name={gauge2FieldName}
                         options={[
                             { id: 'cpu', label: 'CPU Usage' },
@@ -1474,7 +1485,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 </Box>
                 <Box sx={{ mt: 2 }}>
                     <SelectElement
-                        label='Right Gauge'
+                        label={t('widgets.system.config.rightGauge')}
                         name={gauge3FieldName}
                         options={[
                             { id: 'cpu', label: 'CPU Usage' },
@@ -1515,13 +1526,13 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 {/* Display Options */}
                 <Box sx={{ mt: 3, mb: 2 }}>
                     <Typography variant='h6' sx={{ color: 'text.primary', mb: 2 }}>
-                        Display Options
+                        {t('widgets.system.config.displayOptions')}
                     </Typography>
                 </Box>
 
                 <Box sx={{ width: '100%', mb: 2 }}>
                     <CheckboxElement
-                        label='Show Disk Usage'
+                        label={t('widgets.system.config.showDisk')}
                         name={getFieldName(position, 'showDiskUsage')}
                         sx={{
                             ml: 1,
@@ -1533,7 +1544,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
 
                 <Box sx={{ width: '100%', mb: 2 }}>
                     <CheckboxElement
-                        label='Show System Info Button'
+                        label={t('widgets.system.config.showSysInfo')}
                         name={getFieldName(position, 'showSystemInfo')}
                         sx={{
                             ml: 1,
@@ -1545,7 +1556,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
 
                 <Box sx={{ width: '100%', mb: 2 }}>
                     <CheckboxElement
-                        label='Show Internet Status'
+                        label={t('widgets.system.config.showInternet')}
                         name={getFieldName(position, 'showInternetStatus')}
                         sx={{
                             ml: 1,
@@ -1638,7 +1649,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                             ml: 1
                         }}
                     >
-                        Temperature Unit:
+                        {t('widgets.weather.config.temperatureUnit')}:
                     </Typography>
                     <RadioGroup
                         name={getFieldName(position, 'temperatureUnit')}
@@ -1664,7 +1675,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                                     }}
                                 />
                             }
-                            label='Fahrenheit (°F)'
+                            label={t('widgets.weather.config.fahrenheit')}
                         />
                         <FormControlLabel
                             value='celsius'
@@ -1678,7 +1689,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                                     }}
                                 />
                             }
-                            label='Celsius (°C)'
+                            label={t('widgets.weather.config.celsius')}
                         />
                     </RadioGroup>
                 </Box>
@@ -1922,7 +1933,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 <Grid sx={{ width: '100%', mb: 2 }}>
                     <TextField
                         name={hostField}
-                        label='Pi-hole Host'
+                        label={t('widgets.pihole.config.host')}
                         variant='outlined'
                         fullWidth
                         autoComplete='off'
@@ -1930,7 +1941,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                         value={host}
                         onChange={handleHostChange}
                         error={!host}
-                        helperText={!host ? 'Host is required' : ''}
+                        helperText={!host ? t('widgets.pihole.config.hostRequired') : ''}
                         sx={{
                             width: '100%',
                             minWidth: isMobile ? '65vw' : '20vw',
@@ -1953,7 +1964,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 <Grid sx={{ width: '100%', mb: 2 }}>
                     <TextField
                         name={portField}
-                        label='Port'
+                        label={t('forms.addEdit.fields.port')}
                         variant='outlined'
                         fullWidth
                         autoComplete='off'
@@ -1961,7 +1972,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                         value={port}
                         onChange={handlePortChange}
                         error={!port}
-                        helperText={!port ? 'Port is required' : ''}
+                        helperText={!port ? t('widgets.pihole.config.portRequired') : ''}
                         sx={{
                             width: '100%',
                             minWidth: isMobile ? '65vw' : '20vw',
@@ -1984,7 +1995,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 <Grid sx={{ width: '100%', mb: 2 }}>
                     <TextFieldElement
                         name={getFieldName(position, 'piholeName')}
-                        label='Display Name'
+                        label={t('forms.addEdit.fields.displayName')}
                         variant='outlined'
                         placeholder='Pi-hole'
                         fullWidth
@@ -2008,7 +2019,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                     {/* Use a regular TextField for better control */}
                     <TextField
                         name={apiTokenField}
-                        label='API Token (Pi-hole v5)'
+                        label={t('widgets.pihole.config.apiTokenV5')}
                         type='password'
                         variant='outlined'
                         fullWidth
@@ -2019,10 +2030,10 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                         value={apiToken}
                         onChange={handleApiTokenChange}
                         helperText={
-                            password && password !== '**********' ? 'Password already provided' :
-                                hasExistingApiToken && apiToken === '**********' ? 'Current API token is set (shown as ********). Clear field to remove or enter new token to replace.' :
-                                    !apiToken && !password && !hasExistingApiToken && !hasExistingPassword ? 'Enter API token or password below' :
-                                        'Enter the API token from Pi-hole Settings > API/Web interface'
+                            password && password !== '**********' ? t('widgets.pihole.config.passwordProvided') :
+                                hasExistingApiToken && apiToken === '**********' ? t('widgets.pihole.config.tokenSet') :
+                                    !apiToken && !password && !hasExistingApiToken && !hasExistingPassword ? t('widgets.pihole.config.tokenOrPassword') :
+                                        t('widgets.pihole.config.tokenHelper')
                         }
                         sx={{
                             width: '100%',
@@ -2047,7 +2058,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                     {/* Use a regular TextField for better control */}
                     <TextField
                         name={passwordField}
-                        label='Password (Pi-hole v6)'
+                        label={t('widgets.pihole.config.passwordV6')}
                         type='password'
                         variant='outlined'
                         fullWidth
@@ -2058,10 +2069,10 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                         value={password}
                         onChange={handlePasswordChange}
                         helperText={
-                            apiToken && apiToken !== '**********' ? 'API Token already provided' :
+                            apiToken && apiToken !== '**********' ? t('widgets.pihole.config.tokenProvided') :
                                 hasExistingPassword && password === '**********' &&
-                                    !apiToken && !password && !hasExistingApiToken && !hasExistingPassword ? 'Enter password or API token above' :
-                                    'Enter your Pi-hole admin password'
+                                    !apiToken && !password && !hasExistingApiToken && !hasExistingPassword ? t('widgets.pihole.config.passwordOrToken') :
+                                    t('widgets.pihole.config.passwordHelper')
                         }
                         sx={{
                             width: '100%',
@@ -2084,7 +2095,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 </Grid>
                 <Grid sx={{ width: '100%', mb: 2 }}>
                     <CheckboxElement
-                        label='Use SSL'
+                        label={t('forms.addEdit.fields.useSsl')}
                         name={getFieldName(position, 'piholeSsl')}
                         sx={{
                             ml: 1,
@@ -2095,7 +2106,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 </Grid>
                 <Grid sx={{ width: '100%', mb: 2 }}>
                     <CheckboxElement
-                        label='Show Name'
+                        label={t('forms.addEdit.fields.showLabel')}
                         name={getFieldName(position, 'showLabel')}
                         sx={{
                             ml: 1,
@@ -2268,7 +2279,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 <Grid sx={{ width: '100%', mb: 2 }}>
                     <TextField
                         name={hostField}
-                        label='AdGuard Home Host'
+                        label={t('widgets.adguard.config.host')}
                         variant='outlined'
                         fullWidth
                         autoComplete='off'
@@ -2276,7 +2287,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                         value={host}
                         onChange={handleHostChange}
                         error={!host}
-                        helperText={!host ? 'Host is required' : ''}
+                        helperText={!host ? t('widgets.adguard.config.hostRequired') : ''}
                         sx={{
                             width: '100%',
                             minWidth: isMobile ? '65vw' : '20vw',
@@ -2299,7 +2310,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 <Grid sx={{ width: '100%', mb: 2 }}>
                     <TextField
                         name={portField}
-                        label='Port'
+                        label={t('forms.addEdit.fields.port')}
                         variant='outlined'
                         fullWidth
                         autoComplete='off'
@@ -2307,7 +2318,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                         value={port}
                         onChange={handlePortChange}
                         error={!port}
-                        helperText={!port ? 'Port is required' : ''}
+                        helperText={!port ? t('widgets.adguard.config.portRequired') : ''}
                         sx={{
                             width: '100%',
                             minWidth: isMobile ? '65vw' : '20vw',
@@ -2330,7 +2341,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 <Grid sx={{ width: '100%', mb: 2 }}>
                     <TextFieldElement
                         name={getFieldName(position, 'adguardName')}
-                        label='Display Name'
+                        label={t('forms.addEdit.fields.displayName')}
                         variant='outlined'
                         placeholder='AdGuard Home'
                         fullWidth
@@ -2353,7 +2364,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 <Grid sx={{ width: '100%', mb: 2 }}>
                     <TextField
                         name={usernameField}
-                        label='Username'
+                        label={t('forms.addEdit.fields.username')}
                         variant='outlined'
                         fullWidth
                         autoComplete='off'
@@ -2362,8 +2373,9 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                         onChange={handleUsernameChange}
                         error={isUsernameRequired() && !username}
                         helperText={
-                            hasExistingUsername && username === '**********' ? 'Current username is set (shown as ********). Clear field to remove or enter new username to replace.' :
-                                'Enter your AdGuard Home admin username'
+                            hasExistingUsername && username === '**********' 
+                                ? t('widgets.adguard.config.usernameSet')
+                                : t('widgets.adguard.config.usernameHelper')
                         }
                         sx={{
                             width: '100%',
@@ -2387,7 +2399,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 <Grid sx={{ width: '100%', mb: 2 }}>
                     <TextField
                         name={passwordField}
-                        label='Password'
+                        label={t('forms.addEdit.fields.password')}
                         type='password'
                         variant='outlined'
                         fullWidth
@@ -2397,8 +2409,9 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                         onChange={handlePasswordChange}
                         error={isPasswordRequired() && !password}
                         helperText={
-                            hasExistingPassword && password === '**********' ? 'Current password is set (shown as ********). Clear field to remove or enter new password to replace.' :
-                                'Enter your AdGuard Home admin password'
+                            hasExistingPassword && password === '**********'
+                                ? t('widgets.adguard.config.passwordSet')
+                                : t('widgets.adguard.config.passwordHelper')
                         }
                         sx={{
                             width: '100%',
@@ -2421,7 +2434,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 </Grid>
                 <Grid sx={{ width: '100%', mb: 2 }}>
                     <CheckboxElement
-                        label='Use SSL'
+                        label={t('forms.addEdit.fields.useSsl')}
                         name={getFieldName(position, 'adguardSsl')}
                         sx={{
                             ml: 1,
@@ -2432,7 +2445,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 </Grid>
                 <Grid sx={{ width: '100%', mb: 2 }}>
                     <CheckboxElement
-                        label='Show Name'
+                        label={t('forms.addEdit.fields.showLabel')}
                         name={getFieldName(position, 'showLabel')}
                         sx={{
                             ml: 1,
@@ -2531,8 +2544,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                         }
                     }}
                 >
-                    <Tab label={'Top Widget'} />
-                    <Tab label={'Bottom Widget'} />
+                    <Tab label={t('widgets.dual.config.topWidget')} />
+                    <Tab label={t('widgets.dual.config.bottomWidget')} />
                 </Tabs>
             </Box>
 
@@ -2548,9 +2561,9 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                     <>
                         <Grid style={{ width: '100%' }}>
                             <SelectElement
-                                label='Widget Type'
+                                label={t('widgets.dual.config.widgetType')}
                                 name='topWidgetType'
-                                options={WIDGET_OPTIONS}
+                                options={widgetOptions}
                                 required
                                 fullWidth
                                 sx={selectStyling}
@@ -2579,9 +2592,9 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                     <>
                         <Grid style={{ width: '100%' }}>
                             <SelectElement
-                                label='Widget Type'
+                                label={t('widgets.dual.config.widgetType')}
                                 name='bottomWidgetType'
-                                options={WIDGET_OPTIONS}
+                                options={widgetOptions}
                                 required
                                 fullWidth
                                 sx={selectStyling}

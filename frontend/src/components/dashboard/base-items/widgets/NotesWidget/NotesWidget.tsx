@@ -1,6 +1,7 @@
 import { Add, Close, List, MoreVert, Save } from '@mui/icons-material';
 import { Box, CardContent, IconButton, Menu, MenuItem, Tab, Tabs, TextField, Tooltip, Typography, useMediaQuery } from '@mui/material';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next'; // Import hook
 import { FaEdit } from 'react-icons/fa';
 import { FaStickyNote } from 'react-icons/fa';
 import { FaRegWindowRestore, FaTrashCan } from 'react-icons/fa6';
@@ -36,6 +37,7 @@ interface NotesWidgetProps {
 }
 
 export const NotesWidget = ({ config }: NotesWidgetProps) => {
+    const { t } = useTranslation(); // Initialize hook
     const [notes, setNotes] = useState<Note[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -74,6 +76,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
             selectionStart,
             selectionEnd,
             type,
+            t, // Pass t function
             prefix,
             suffix
         );
@@ -115,7 +118,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
     };
 
     const showLabel = config?.showLabel !== false;
-    const displayName = config?.displayName || 'Notes';
+    const displayName = config?.displayName || t('widgets.notes.title');
 
     const fetchNotes = useCallback(async () => {
         try {
@@ -127,11 +130,11 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
             setNotes(notesData);
         } catch (err) {
             console.error('Error fetching notes:', err);
-            setError('Failed to fetch notes');
+            setError(t('widgets.notes.errors.fetchFailed'));
         } finally {
             setIsLoading(false);
         }
-    }, [notes.length]);
+    }, [notes.length, t]);
 
     useEffect(() => {
         if (!editMode) {
@@ -189,7 +192,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
     const handleSave = async () => {
         try {
             if (!editTitle.trim()) {
-                setError('Title is required');
+                setError(t('widgets.notes.errors.titleRequired'));
                 return;
             }
 
@@ -224,7 +227,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
             setError(null);
         } catch (err) {
             console.error('Error saving note:', err);
-            setError('Failed to save note');
+            setError(t('widgets.notes.errors.saveFailed'));
         }
     };
 
@@ -232,9 +235,9 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
         if (!selectedNote) return;
 
         PopupManager.deleteConfirmation({
-            title: 'Delete Note',
-            text: `Are you sure you want to delete "${selectedNote.title}"?`,
-            confirmText: 'Yes, Delete',
+            title: t('widgets.notes.deleteConfirmTitle'),
+            text: t('widgets.notes.deleteConfirmText', { title: selectedNote.title }),
+            confirmText: t('widgets.notes.deleteConfirmBtn'),
             confirmAction: async () => {
                 try {
                     await DashApi.deleteNote(noteId);
@@ -248,7 +251,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                     }
                 } catch (err) {
                     console.error('Error deleting note:', err);
-                    setError('Failed to delete note');
+                    setError(t('widgets.notes.errors.deleteFailed'));
                 }
             }
         });
@@ -431,7 +434,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                             flexShrink: 0
                         }}>
                             {showModalButton && (
-                                <ConditionalTooltip title='Open in popup'>
+                                <ConditionalTooltip title={t('widgets.notes.openInPopup')}>
                                     <IconButton
                                         size='small'
                                         onClick={handleOpenModal}
@@ -486,7 +489,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                     <TextField
                         fullWidth
                         variant='outlined'
-                        placeholder='Note title...'
+                        placeholder={t('widgets.notes.placeholders.title')}
                         value={editTitle}
                         onChange={(e) => setEditTitle(e.target.value)}
                         sx={{
@@ -547,8 +550,8 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                         },
                                     }}
                                 >
-                                    <Tab label='Write' value='write' />
-                                    <Tab label='Preview' value='preview' />
+                                    <Tab label={t('widgets.notes.write')} value='write' />
+                                    <Tab label={t('widgets.notes.preview')} value='preview' />
                                 </Tabs>
 
                                 {/* Font size selector inline with tabs */}
@@ -606,8 +609,8 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                     },
                                 }}
                             >
-                                <Tab label='Write' value='write' />
-                                <Tab label='Preview' value='preview' />
+                                <Tab label={t('widgets.notes.write')} value='write' />
+                                <Tab label={t('widgets.notes.preview')} value='preview' />
                             </Tabs>
 
                             {/* Show toolbar inline when in write mode */}
@@ -629,7 +632,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                         mt: 0.5,
                         display: 'flex',
                         flexDirection: 'column',
-                        overflow: 'hidden',
+                        overflow: 'hidden', // Prevent outer container from scrolling
                     }}>
                         {editTab === 'write' ? (
                             <TextField
@@ -637,7 +640,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                 multiline
                                 value={editContent}
                                 onChange={(e) => setEditContent(e.target.value)}
-                                placeholder='Write your note in markdown...'
+                                placeholder={t('widgets.notes.placeholders.content')}
                                 variant='outlined'
                                 inputRef={textAreaRef}
                                 sx={{
@@ -696,7 +699,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                         mt: 1,
                         flexShrink: 0,
                     }}>
-                        <ConditionalTooltip title='Cancel'>
+                        <ConditionalTooltip title={t('widgets.notes.cancel')}>
                             <IconButton
                                 size='small'
                                 onClick={handleCancel}
@@ -714,7 +717,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                 <Close fontSize='small' />
                             </IconButton>
                         </ConditionalTooltip>
-                        <ConditionalTooltip title='Save note'>
+                        <ConditionalTooltip title={t('widgets.notes.save')}>
                             <IconButton
                                 size='small'
                                 onClick={handleSave}
@@ -790,7 +793,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                         {!editMode && (
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                 {viewMode === 'list' && isLoggedIn && isAdmin ? (
-                                    <ConditionalTooltip title='New note'>
+                                    <ConditionalTooltip title={t('widgets.notes.newNote')}>
                                         <IconButton
                                             size='small'
                                             onClick={handleNewNote}
@@ -809,7 +812,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                     </IconButton>
                                 }
                                 {viewMode === 'view' && (
-                                    <ConditionalTooltip title='List' placement='left'>
+                                    <ConditionalTooltip title={t('widgets.notes.backToList')} placement='left'>
                                         <IconButton
                                             size='small'
                                             onClick={handleListClick}
@@ -820,7 +823,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                     </ConditionalTooltip>
                                 )}
                                 {viewMode === 'edit' && (
-                                    <ConditionalTooltip title='Cancel'>
+                                    <ConditionalTooltip title={t('widgets.notes.cancel')}>
                                         <IconButton
                                             size='small'
                                             onClick={handleCancel}
@@ -848,7 +851,9 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                         userSelect: 'none',
                         display: 'block'
                     }}>
-                        {viewMode === 'list' ? `Notes (${notes.length})` : 'Notes (0)'}
+                        {viewMode === 'list' 
+                            ? t('widgets.notes.notesCount', { count: notes.length }) 
+                            : t('widgets.notes.notesCount', { count: 0 })}
                     </Typography>
                 )}
 
@@ -926,7 +931,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                     bottom: 0,
                                     zIndex: 1
                                 }}>
-                                    {isLoading ? 'Loading notes...' : 'No notes yet'}
+                                    {isLoading ? t('widgets.notes.loading') : t('widgets.notes.noNotes')}
                                 </Box>
                             )
                         ) : (
@@ -940,7 +945,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
             <CenteredModal
                 open={isModalOpen}
                 handleClose={handleCloseModal}
-                title={isEditingInModal ? 'Edit Note' : 'Note'}
+                title={isEditingInModal ? t('widgets.notes.editNote') : selectedNote?.title || t('widgets.notes.title')}
                 fullWidthContent={true}
                 height='80vh'
             >
@@ -949,7 +954,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                         <TextField
                             fullWidth
                             variant='outlined'
-                            placeholder='Note title...'
+                            placeholder={t('widgets.notes.placeholders.title')}
                             value={editTitle}
                             onChange={(e) => setEditTitle(e.target.value)}
                             sx={{
@@ -1006,8 +1011,8 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                     },
                                 }}
                             >
-                                <Tab label='Write' value='write' />
-                                <Tab label='Preview' value='preview' />
+                                <Tab label={t('widgets.notes.write')} value='write' />
+                                <Tab label={t('widgets.notes.preview')} value='preview' />
                             </Tabs>
 
                             {/* Show toolbar inline when in write mode */}
@@ -1036,7 +1041,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                     multiline
                                     value={editContent}
                                     onChange={(e) => setEditContent(e.target.value)}
-                                    placeholder='Write your note in markdown...'
+                                    placeholder={t('widgets.notes.placeholders.content')}
                                     variant='outlined'
                                     inputRef={modalTextAreaRef}
                                     sx={{
@@ -1095,7 +1100,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                             mt: 1,
                             flexShrink: 0, // Prevent buttons from shrinking
                         }}>
-                            <ConditionalTooltip title='Cancel'>
+                            <ConditionalTooltip title={t('widgets.notes.cancel')}>
                                 <IconButton
                                     size='small'
                                     onClick={() => {
@@ -1116,7 +1121,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                     <Close fontSize='small' />
                                 </IconButton>
                             </ConditionalTooltip>
-                            <ConditionalTooltip title='Save note'>
+                            <ConditionalTooltip title={t('widgets.notes.save')}>
                                 <IconButton
                                     size='small'
                                     onClick={handleSave}
@@ -1164,7 +1169,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                     }}
                 >
                     <FaEdit size={14} />
-                    Edit
+                    {t('widgets.notes.editNote')}
                 </MenuItem>
                 <MenuItem
                     onClick={() => selectedNote && handleDeleteNote(selectedNote.id)}
@@ -1176,7 +1181,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                     }}
                 >
                     <FaTrashCan size={14} />
-                    Delete
+                    {t('widgets.notes.deleteNote')}
                 </MenuItem>
             </Menu>
         </CardContent>

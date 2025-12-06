@@ -1,5 +1,6 @@
 import { Box, Button, CircularProgress, Grid2 as Grid, Menu, MenuItem, Paper, Typography } from '@mui/material';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next'; // Import hook
 import { FaPercentage } from 'react-icons/fa';
 import { FaShield } from 'react-icons/fa6';
 import { MdBlockFlipped, MdDns, MdPause, MdPlayArrow } from 'react-icons/md';
@@ -43,6 +44,7 @@ const initialStats: AdGuardStats = {
 };
 
 export const AdGuardWidget = (props: { config?: AdGuardWidgetConfig; id?: string }) => {
+    const { t } = useTranslation(); // Initialize hook
     const { config, id } = props;
     const { editMode, config: appConfig } = useAppContext();
 
@@ -140,10 +142,10 @@ export const AdGuardWidget = (props: { config?: AdGuardWidgetConfig; id?: string
             safeSetState(() => {
                 if (err?.adguard?.requiresReauth) {
                     setAuthFailed(true);
-                    setError('Authentication failed. Please reconfigure your AdGuard Home credentials.');
+                    setError(t('widgets.adguard.errors.authFailed'));
                 } else if (err.message?.includes('Item not found in configuration')) {
                     // Handle "Item not found" errors - this might be a timing issue during duplication
-                    console.log('🔄 AdGuard: Item not found, retrying in 2s (duplication timing)');
+                    console.log('売 AdGuard: Item not found, retrying in 2s (duplication timing)');
                     // Schedule a retry after a short delay instead of setting permanent error
                     setTimeout(() => {
                         if (isMountedRef.current && !error && !authFailed) {
@@ -152,7 +154,7 @@ export const AdGuardWidget = (props: { config?: AdGuardWidgetConfig; id?: string
                     }, 2000); // Retry after 2 seconds
                     return; // Exit without setting error state
                 } else {
-                    setError(err.message || 'Failed to fetch AdGuard Home statistics');
+                    setError(err.message || t('widgets.adguard.errors.fetchFailed'));
                 }
                 setStats(initialStats);
             });
@@ -161,7 +163,7 @@ export const AdGuardWidget = (props: { config?: AdGuardWidgetConfig; id?: string
                 setIsLoading(false);
             });
         }
-    }, [isConfigured, id]);
+    }, [isConfigured, id, t]); // Added t dependency
 
     // Effect to update configuration when props change
     useEffect(() => {
@@ -289,7 +291,7 @@ export const AdGuardWidget = (props: { config?: AdGuardWidgetConfig; id?: string
             safeSetState(() => {
                 if (err.message?.includes('Item not found in configuration')) {
                     // Handle "Item not found" errors - this might be a timing issue during duplication
-                    console.log('🔄 AdGuard: Disable failed, retrying in 2s (duplication timing)');
+                    console.log('売 AdGuard: Disable failed, retrying in 2s (duplication timing)');
                     // Schedule a retry after a short delay instead of setting permanent error
                     setTimeout(() => {
                         if (isMountedRef.current && !error && !authFailed) {
@@ -298,7 +300,7 @@ export const AdGuardWidget = (props: { config?: AdGuardWidgetConfig; id?: string
                     }, 2000); // Retry after 2 seconds
                     return; // Exit without setting error state
                 } else {
-                    setError(err.message || 'Failed to disable AdGuard Home protection');
+                    setError(err.message || t('widgets.adguard.errors.disableFailed'));
                 }
             });
         } finally {
@@ -332,7 +334,7 @@ export const AdGuardWidget = (props: { config?: AdGuardWidgetConfig; id?: string
             safeSetState(() => {
                 if (err.message?.includes('Item not found in configuration')) {
                     // Handle "Item not found" errors - this might be a timing issue during duplication
-                    console.log('🔄 AdGuard: Enable failed, retrying in 2s (duplication timing)');
+                    console.log('売 AdGuard: Enable failed, retrying in 2s (duplication timing)');
                     // Schedule a retry after a short delay instead of setting permanent error
                     setTimeout(() => {
                         if (isMountedRef.current && !error && !authFailed) {
@@ -341,7 +343,7 @@ export const AdGuardWidget = (props: { config?: AdGuardWidgetConfig; id?: string
                     }, 2000); // Retry after 2 seconds
                     return; // Exit without setting error state
                 } else {
-                    setError(err.message || 'Failed to enable AdGuard Home protection');
+                    setError(err.message || t('widgets.adguard.errors.enableFailed'));
                 }
             });
         } finally {
@@ -418,8 +420,8 @@ export const AdGuardWidget = (props: { config?: AdGuardWidgetConfig; id?: string
                 </Typography>
                 <Typography variant='caption' align='center' sx={{ mt: 1, fontSize: '0.8rem' }}>
                     {authFailed ?
-                        'Using Basic Authentication' :
-                        'Check your AdGuard Home configuration and network connection'}
+                        t('widgets.adguard.errors.basicAuth') :
+                        t('widgets.adguard.errors.checkConfig')}
                 </Typography>
                 <Button
                     variant='contained'
@@ -427,7 +429,7 @@ export const AdGuardWidget = (props: { config?: AdGuardWidgetConfig; id?: string
                     sx={{ mt: 2 }}
                     onClick={handleRetry}
                 >
-                    Retry
+                    {t('common.retry')}
                 </Button>
             </Box>
         );
@@ -444,7 +446,7 @@ export const AdGuardWidget = (props: { config?: AdGuardWidgetConfig; id?: string
                 alignItems: 'center'
             }}>
                 <Typography variant='subtitle1'>
-                    Please configure the AdGuard Home widget in settings
+                    {t('widgets.adguard.errors.notConfigured')}
                 </Typography>
             </Box>
         );
@@ -538,7 +540,7 @@ export const AdGuardWidget = (props: { config?: AdGuardWidgetConfig; id?: string
                             ml: 'auto'
                         }}
                     >
-                        {isBlocking ? 'Disable' : (remainingTime ? `Resume (${remainingTime})` : 'Resume')}
+                        {isBlocking ? t('widgets.adguard.disable') : (remainingTime ? t('widgets.adguard.resumeWithTime', { time: remainingTime }) : t('widgets.adguard.resume'))}
                     </Button>
                 )}
 
@@ -549,13 +551,13 @@ export const AdGuardWidget = (props: { config?: AdGuardWidgetConfig; id?: string
                     onClose={() => setDisableMenuAnchor(null)}
                     closeAfterTransition={false}
                 >
-                    <MenuItem onClick={() => handleDisableProtection(10)}>10 seconds</MenuItem>
-                    <MenuItem onClick={() => handleDisableProtection(30)}>30 seconds</MenuItem>
-                    <MenuItem onClick={() => handleDisableProtection(60)}>1 minute</MenuItem>
-                    <MenuItem onClick={() => handleDisableProtection(300)}>5 minutes</MenuItem>
-                    <MenuItem onClick={() => handleDisableProtection(1800)}>30 minutes</MenuItem>
-                    <MenuItem onClick={() => handleDisableProtection(3600)}>1 hour</MenuItem>
-                    <MenuItem onClick={() => handleDisableProtection()}>Indefinitely</MenuItem>
+                    <MenuItem onClick={() => handleDisableProtection(10)}>{t('widgets.adguard.duration.seconds', { count: 10 })}</MenuItem>
+                    <MenuItem onClick={() => handleDisableProtection(30)}>{t('widgets.adguard.duration.seconds', { count: 30 })}</MenuItem>
+                    <MenuItem onClick={() => handleDisableProtection(60)}>{t('widgets.adguard.duration.minute')}</MenuItem>
+                    <MenuItem onClick={() => handleDisableProtection(300)}>{t('widgets.adguard.duration.minutes', { count: 5 })}</MenuItem>
+                    <MenuItem onClick={() => handleDisableProtection(1800)}>{t('widgets.adguard.duration.minutes', { count: 30 })}</MenuItem>
+                    <MenuItem onClick={() => handleDisableProtection(3600)}>{t('widgets.adguard.duration.hour')}</MenuItem>
+                    <MenuItem onClick={() => handleDisableProtection()}>{t('widgets.adguard.indefinitely')}</MenuItem>
                 </Menu>
             </Box>
 
@@ -584,7 +586,7 @@ export const AdGuardWidget = (props: { config?: AdGuardWidgetConfig; id?: string
                     >
                         <MdBlockFlipped style={{ fontSize: '1.6rem' }} />
                         <Typography variant='body2' align='center' sx={{ mt: 0, mb: 0, fontSize: '0.75rem' }}>
-                            Blocked Today
+                            {t('widgets.adguard.blockedToday')}
                         </Typography>
                         <Typography variant='subtitle2' align='center' fontWeight='bold' sx={{ fontSize: '0.95rem', lineHeight: 1 }}>
                             {formatNumber(stats.ads_blocked_today || 0)}
@@ -618,7 +620,7 @@ export const AdGuardWidget = (props: { config?: AdGuardWidgetConfig; id?: string
                             <FaPercentage style={{ fontSize: '1.6rem' }} />
                         </Box>
                         <Typography variant='body2' align='center' sx={{ mt: 0, mb: 0, fontSize: '0.75rem' }}>
-                            Percent Blocked
+                            {t('widgets.adguard.percentBlocked')}
                         </Typography>
                         <Typography variant='subtitle2' align='center' fontWeight='bold' sx={{ fontSize: '0.95rem', lineHeight: 1 }}>
                             {percentageText}%
@@ -650,7 +652,7 @@ export const AdGuardWidget = (props: { config?: AdGuardWidgetConfig; id?: string
                     >
                         <MdDns style={{ fontSize: '1.6rem' }} />
                         <Typography variant='body2' align='center' sx={{ mt: 0, mb: 0, fontSize: '0.75rem' }}>
-                            Queries Today
+                            {t('widgets.adguard.queriesToday')}
                         </Typography>
                         <Typography variant='subtitle2' align='center' fontWeight='bold' sx={{ fontSize: '0.95rem', lineHeight: 1 }}>
                             {formatNumber(stats.dns_queries_today || 0)}
@@ -682,7 +684,7 @@ export const AdGuardWidget = (props: { config?: AdGuardWidgetConfig; id?: string
                     >
                         <FaShield style={{ fontSize: '1.6rem' }} />
                         <Typography variant='body2' align='center' sx={{ mt: 0, mb: 0, fontSize: '0.75rem' }}>
-                            Blocked Malware
+                            {t('widgets.adguard.blockedMalware')}
                         </Typography>
                         <Typography variant='subtitle2' align='center' fontWeight='bold' sx={{ fontSize: '0.95rem', lineHeight: 1 }}>
                             {formatNumber(stats.domains_being_blocked || 0)}

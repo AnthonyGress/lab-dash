@@ -9,6 +9,7 @@ import {
 import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { CheckboxElement, TextFieldElement } from 'react-hook-form-mui';
+import { useTranslation } from 'react-i18next';
 
 import { theme } from '../../../theme/theme';
 import { FormValues } from '../AddEditForm/types';
@@ -20,6 +21,7 @@ interface MediaRequestManagerWidgetConfigProps {
 export const MediaRequestManagerWidgetConfig: React.FC<MediaRequestManagerWidgetConfigProps> = ({
     formContext
 }) => {
+    const { t } = useTranslation();
     const { watch, setValue } = formContext;
 
     const service = watch('mediaRequestManagerService') || 'jellyseerr';
@@ -51,7 +53,7 @@ export const MediaRequestManagerWidgetConfig: React.FC<MediaRequestManagerWidget
                             ml: 1
                         }}
                     >
-                        Select Service:
+                        {t('widgets.mediaRequestManager.config.selectService')}
                     </Typography>
                     <RadioGroup
                         name='mediaRequestManagerService'
@@ -99,7 +101,7 @@ export const MediaRequestManagerWidgetConfig: React.FC<MediaRequestManagerWidget
             <Grid>
                 <TextFieldElement
                     name='mediaRequestManagerName'
-                    label='Display Name'
+                    label={t('widgets.mediaRequestManager.config.displayName')}
                     variant='outlined'
                     fullWidth
                     autoComplete='off'
@@ -121,7 +123,7 @@ export const MediaRequestManagerWidgetConfig: React.FC<MediaRequestManagerWidget
             <Grid>
                 <TextFieldElement
                     name='mediaRequestManagerHost'
-                    label='Host'
+                    label={t('widgets.mediaRequestManager.config.host')}
                     variant='outlined'
                     fullWidth
                     autoComplete='off'
@@ -144,7 +146,7 @@ export const MediaRequestManagerWidgetConfig: React.FC<MediaRequestManagerWidget
             <Grid>
                 <TextFieldElement
                     name='mediaRequestManagerPort'
-                    label='Port'
+                    label={t('widgets.mediaRequestManager.config.port')}
                     variant='outlined'
                     fullWidth
                     autoComplete='off'
@@ -167,7 +169,7 @@ export const MediaRequestManagerWidgetConfig: React.FC<MediaRequestManagerWidget
             <Grid>
                 <TextFieldElement
                     name='mediaRequestManagerApiKey'
-                    label='API Key'
+                    label={t('widgets.mediaRequestManager.config.apiKey')}
                     type='password'
                     variant='outlined'
                     fullWidth
@@ -190,7 +192,7 @@ export const MediaRequestManagerWidgetConfig: React.FC<MediaRequestManagerWidget
             </Grid>
             <Grid>
                 <CheckboxElement
-                    label='Use SSL'
+                    label={t('widgets.mediaRequestManager.config.useSsl')}
                     name='mediaRequestManagerSsl'
                     checked={formContext.watch('mediaRequestManagerSsl')}
                     sx={{
@@ -202,7 +204,7 @@ export const MediaRequestManagerWidgetConfig: React.FC<MediaRequestManagerWidget
             </Grid>
             <Grid>
                 <CheckboxElement
-                    label='Show Name'
+                    label={t('widgets.mediaRequestManager.config.showLabel')}
                     name='showLabel'
                     checked={formContext.watch('showLabel')}
                     sx={{ ml: 1, color: 'white', '& .MuiSvgIcon-root': { fontSize: 30 } }}

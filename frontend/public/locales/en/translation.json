@@ -1,0 +1,964 @@
+{ 
+  "common": {
+    "next": "Next",
+    "back": "Back",
+    "searchPlaceholder": "Search...",
+    "searchFor": "Search {{provider}} for \"{{query}}\"",
+    "successTitle": "Success",
+    "errorTitle": "Error",
+    "loadingTitle": "Loading",
+    "done": "Done",
+    "yes": "Yes",
+    "cancel": "Cancel",
+    "yesDelete": "Yes, Delete",
+    "cannotUndo": "This action cannot be undone",
+    "confirm": "Confirm",
+    "deny": "Deny",
+    "close": "Close",
+    "retry": "Retry",
+    "unknown": "Unknown",
+    "edit": "Edit",
+    "duplicate": "Duplicate",
+    "delete": "Delete",
+    "moveToPage": "Move to page"
+  },
+  "navigation": {
+    "home": "Home",
+    "editDashboard": "Edit Dashboard",
+    "settings": "Settings",
+    "donate": "Donate",
+    "donateSubtitle": "Support this project",
+    "updateAvailable": "Update Available",
+    "version": "Version",
+    "recentlyUpdated": "Recently Updated",
+    "addItem": "Add Item",
+    "admin": "Administrator",
+    "user": "User",
+    "internet": {
+      "online": "Internet Connected",
+      "offline": "No Internet Connection",
+      "checking": "Checking Internet..."
+    }
+  },
+  "dashboard": {
+    "deleteItemTitle": "Delete {{name}}?",
+    "deleteSuccess": "{{name}} deleted successfully",
+    "deleteItemText": "This action cannot be undone",
+    "editItemTitle": "Edit Item",
+    "item": "Item",
+    "app": "App"
+  },
+  "auth": {
+    "login": "Login",
+    "username": "Username",
+    "password": "Password",
+    "logout": "Logout",
+    "title": "Login",
+    "submit": "Login",
+    "success": "Login successful!",
+    "failed": "Login failed"
+  },
+  "setup": {
+    "steps": {
+      "language": "Language Selection",
+      "welcome": "Welcome",
+      "features": "Features",
+      "customization": "Customization",
+      "privacy": "Privacy",
+      "admin": "Admin Account"
+    },
+    "languageSelect": {
+      "title": "Welcome to Lab Dash",
+      "subtitle": "Choose your language to get started",
+      "description": "You can change this later in settings.",
+      "label": "Select Language"
+    },
+    "welcome": {
+      "title": "Your Personal Dashboard",
+      "text1": "Welcome to Lab Dash, a customizable dashboard for your lab environment.",
+      "text2": "This wizard will help you set up your system and get started. Let's take a moment to configure basic settings."
+    },
+    "features": {
+      "title": "Powerful Dashboard Tools",
+      "text": "Lab Dash features a customizable grid layout where you can add various widgets:",
+      "bullets": {
+        "links": "Links to your tools/services",
+        "system": "System information",
+        "health": "Service health checks",
+        "widgets": "Custom widgets and more"
+      }
+    },
+    "customization": {
+      "title": "Make It Your Own",
+      "text": "You can easily customize your dashboard by:",
+      "bullets": {
+        "drag": "Dragging and reordering widgets",
+        "background": "Changing the background image",
+        "search": "Adding custom search providers",
+        "config": "Importing/exporting configurations"
+      }
+    },
+    "privacy": {
+      "title": "Your Data Stays Private",
+      "text": "You have complete control over your data and dashboard configuration.",
+      "bullets": {
+        "local": "All data is stored locally on your own server",
+        "admin": "Only administrator accounts can make changes",
+        "backup": "Configurations can be easily backed up and restored"
+      }
+    },
+    "createAccount": {
+      "title": "Create Administrator Account",
+      "subtitle": "This will be the first user account for your dashboard",
+      "username": "Username",
+      "password": "Password",
+      "confirmPassword": "Confirm Password",
+      "submit": "Create Account & Continue",
+      "passwordMismatch": "Passwords do not match",
+      "usernameLength": "Username must be at least 3 characters",
+      "passwordLength": "Password must be at least 6 characters",
+      "success": "Account created successfully!",
+      "error": "Failed to create account"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "save": "Save Changes",
+    "language": "Interface Language",
+    "languageUpdated": "Language updated successfully",
+    "languageUpdateFailed": "Failed to update language",
+    "tabs": {
+      "general": "General",
+      "appearance": "Appearance",
+      "backup": "Backup",
+      "hotkeys": "Hotkeys"
+    },
+    "general": {
+      "title": "General Settings",
+      "customTitle": "Custom Title",
+      "enableSearch": "Enable Search",
+      "showInternet": "Show Internet Indicator",
+      "searchProvider": "Search Provider",
+      "providerName": "Provider Name",
+      "searchUrl": "Search URL",
+      "searchUrlPlaceholder": "Use {query} as placeholder",
+      "searchUrlHelperMobile": "Example: ...search?q={query}",
+      "searchUrlHelperDesktop": "Example: https://www.google.com/search?q={query}",
+      "reset": "Reset All Settings",
+      "resetConfirmTitle": "Reset All Settings",
+      "resetConfirmText": "Are you sure you want to reset all settings? This cannot be undone.",
+      "resetSuccess": "All settings have been reset",
+      "saveSuccess": "Settings updated successfully!",
+      "saveError": "Failed to update settings. Please try again."
+    },
+    "appearance": {
+      "title": "Appearance Settings",
+      "background": "Background Image",
+      "uploadIcons": "Upload App Icons",
+      "clearIcons": "Clear",
+      "clearCache": "Clear Icon Cache",
+      "clearCacheSuccess": "Icon cache cleared successfully",
+      "clearCacheError": "Failed to clear icon cache",
+      "resetBackground": "Reset Background",
+      "resetBackgroundConfirmTitle": "Reset Background",
+      "resetBackgroundConfirmText": "This will restore the default background and remove all uploaded background images.",
+      "resetBackgroundConfirmButton": "Yes, Reset",
+      "resetBackgroundSuccess": "Background has been reset",
+      "resetBackgroundError": "Failed to reset background",
+      "uploadedImages": "Uploaded Images",
+      "loadingImages": "Loading images...",
+      "loadImagesError": "Failed to load uploaded images",
+      "noImages": "No uploaded images found.",
+      "previewUnavailable": "Preview unavailable",
+      "delete": "Delete",
+      "deleteImageConfirmTitle": "Delete Image",
+      "deleteImageConfirmText": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
+      "deleteSuccess": "{{name}} deleted successfully",
+      "deleteError": "Failed to delete image",
+      "deleteBackgroundSuccess": "Background image deleted and reset to default",
+      "deleteBackgroundConfigError": "Image deleted successfully, but failed to reset background config",
+      "uploadSuccess": "{{count}} app icon(s) uploaded successfully!",
+      "uploadError": "Failed to upload app icons",
+      "cacheCleared": "Icon cache cleared successfully",
+      "selectFile": "Select a File",
+      "selectFiles": "Select up to {{maxFiles}} files",
+      "fileTooLarge": "File is too large. Maximum size is {{maxMB}}MB",
+      "filesTooLarge": "Some files are too large. Maximum size is {{maxMB}}MB per file",
+      "tooManyFiles": "Too many files. {{maxFiles}} max.",
+      "details": {
+        "size": "Size:",
+        "uploaded": "Uploaded:",
+        "type": "Type:"
+      }
+    },
+    "backup": {
+      "title": "Backup Settings",
+      "export": "Export Configuration",
+      "exportBtn": "Export",
+      "exportSuccess": "Configuration exported successfully!",
+      "exportError": "Failed to export configuration",
+      "restore": "Restore Configuration",
+      "restoreSuccess": "Configuration restored successfully!",
+      "restoreError": "Failed to restore configuration. The file format may be invalid.",
+      "layoutSync": "Layout Sync",
+      "copyLayout": "Copy Desktop Layout to Mobile",
+      "copyLayoutConfirmTitle": "Copy Desktop Layout to Mobile",
+      "copyLayoutConfirmText": "This will overwrite your current mobile layout with your desktop layout. Continue?",
+      "copyLayoutConfirmButton": "Yes, Copy",
+      "copyLayoutSuccess": "Desktop layout successfully copied to mobile",
+      "copyLayoutError": "Failed to copy desktop layout to mobile",
+      "noLayoutError": "No desktop layout found to copy"
+    },
+    "hotkeys": {
+      "title": "Keyboard Shortcuts",
+      "description": "Use these keyboard shortcuts to quickly navigate and control your dashboard.",
+      "search": "Search",
+      "focusSearch": "Focus search bar",
+      "navigation": "Page Navigation",
+      "goHome": "Go to Home page",
+      "goSettings": "Go to Settings page",
+      "goTo": "Go to {{name}}"
+    }
+  },
+  "update": {
+    "title": "Update Available",
+    "available": "New version available: {{version}}",
+    "notes": "Release Notes:",
+    "guide": "Update Guide",
+    "updateNow": "Update Now",
+    "updating": "Updating...",
+    "error": "Failed to update container"
+  },
+  "version": {
+    "titleCurrent": "Current Version",
+    "titleUpdate": "Update Information",
+    "header": "Version {{version}}",
+    "releaseNotes": "Release Notes:",
+    "showingNotes": "Showing notes from version {{version}}",
+    "showingNotesUpdated": "Showing notes from version {{version}} (updated from v{{oldVersion}})",
+    "changesNotFound": "Changes between {{oldVersion}} and {{newVersion}} could not be found. Showing the latest available changelog.",
+    "noDetailedNotes": "No detailed release notes available for this version.",
+    "noChangelog": "No changelog information available.",
+    "fetchError": "Unable to fetch release notes. Check your connection or try again later."
+  },
+  "forms": {
+    "addEdit": {
+      "addItem": "Add Item",
+      "editItem": "Edit Item",
+      "update": "Update",
+      "add": "Add",
+      "back": "Back",
+      "selectType": "Select Item Type",
+      "selectWidget": "Select Widget",
+      "configure": "Configure {{type}}",
+      "helpers": {
+        "optional": "Optional",
+        "defaultPort": "Default: 9",
+        "macFormat": "Format: xx:xx:xx:xx:xx:xx",
+        "broadcastDesc": "The broadcast address for your network"
+      },
+      "iconSearch": {
+        "selectIcon": "Select Icon*",
+        "customSuffix": "(Custom)",
+        "noIconsFound": "No icons found",
+        "selectCustomIcon": "Select Custom Icon"
+      },
+      "placeholderConfig": {
+        "placeholderSize": "Placeholder Size",
+        "appShortcut": "App Shortcut",
+        "widget": "Widget",
+        "fullRow": "Full Row"
+      },
+      "validation": {
+        "required": "This field is required",
+        "invalidUrlExample": "Invalid URL. Ex: \"http://192.168.x.x\" or \"unifi-network://\"",
+        "invalidMac": "Invalid MAC address format",
+        "invalidIp": "Invalid IP address format",
+        "portNumber": "Port must be a number"
+      },
+      "types": {
+        "shortcut": "Shortcut",
+        "shortcutDesc": "Link to website, application or service",
+        "widget": "Widget",
+        "widgetDesc": "Interactive live data and monitoring",
+        "placeholder": "Placeholder",
+        "placeholderDesc": "Spacer for layout organization",
+        "page": "Page",
+        "pageDesc": "Add new page to navigation menu"
+      },
+      "fields": {
+        "displayName": "Display Name",
+        "url": "URL",
+        "openInNewTab": "Open in new tab",
+        "host": "Host / IP",
+        "port": "Port",
+        "useSsl": "Use SSL (HTTPS)",
+        "username": "Username",
+        "password": "Password",
+        "apiKey": "API Key",
+        "apiToken": "API Token",
+        "showLabel": "Show Label",
+        "adminOnly": "Admin Only",
+        "pageName": "Page Name",
+        "pageNameRequired": "Page name is required",
+        "pageNameInvalid": "Page name can only contain letters, numbers, and spaces",
+        "pageNameReserved": "Page name cannot be \"settings\"",
+        "pageNameDuplicate": "A page named \"{{value}}\" already exists. Please choose a different name.",
+        "pageHelper": "Pages are added to the navigation menu"
+      },
+      "healthCheck": {
+        "http": "HTTP Request",
+        "ping": "Ping Host"
+      },
+      "helpers": {
+        "optional": "Optional",
+        "defaultPort": "Default: 9",
+        "macFormat": "Format: xx:xx:xx:xx:xx:xx",
+        "broadcastDesc": "The broadcast address for your network"
+      }
+    }
+  },
+  "widgets": {
+    "titles": {
+      "adguard": "AdGuard Home",
+      "dateTime": "Date & Time",
+      "diskMonitor": "Disk Monitor",
+      "downloadClient": "Download Client",
+      "dual": "Dual Widget",
+      "group": "Group",
+      "mediaRequest": "Media Request Manager",
+      "mediaServer": "Media Server",
+      "notes": "Notes",
+      "pihole": "Pi-hole",
+      "radarr": "Radarr",
+      "sonarr": "Sonarr",
+      "system": "System Monitor",
+      "weather": "Weather"
+    },
+    "descriptions": {
+      "adguard": "Monitor AdGuard Home DNS blocking statistics",
+      "dateTime": "Display current date, time, and timezone",
+      "diskMonitor": "View disk usage and storage information",
+      "downloadClient": "Manage torrent/usenet download activity",
+      "dual": "Combine two widgets into one item",
+      "group": "Group multiple shortcuts together",
+      "mediaRequest": "Request media and manage approvals",
+      "mediaServer": "Monitor active users and now playing",
+      "notes": "Save quick notes with markdown support",
+      "pihole": "Monitor Pi-hole DNS blocking statistics",
+      "radarr": "Manage movie downloads and status",
+      "sonarr": "Manage TV show downloads and status",
+      "system": "Monitor CPU, RAM, temperature, network",
+      "weather": "Live weather conditions and forecast"
+    },
+    "common": {
+      "loading": "Loading...",
+      "error": "Error",
+      "retry": "Retry",
+      "offline": "Offline",
+      "online": "Online",
+      "healthCheckType": "Health check type",
+      "healthCheckUrl": "Health check URL",
+      "hostnameIp": "Hostname or IP",
+      "macAddress": "MAC Address",
+      "broadcastAddress": "Broadcast address (Optional)",
+      "portOptional": "Port (Optional)",
+      "wol": {
+        "title": "Wake-on-LAN",
+        "invalidConfig": "Invalid Wake-on-LAN configuration",
+        "packetSent": "Wake-on-LAN packet sent to {{address}}",
+        "sendFailed": "Failed to send Wake-on-LAN packet"
+      },
+      "fields": {
+         "host": "Host",
+         "apiKey": "API Key",
+         "password": "Password",
+         "useSsl": "Use SSL",
+         "showName": "Show Name"
+      }
+    },
+    "dateTime": {
+      "config": {
+        "searchLocation": "Search location",
+        "searchPlaceholder": "Enter a zip code or city",
+        "searching": "Searching...",
+        "typeToSearch": "Type to search...",
+        "noLocationsFound": "No locations found",
+        "fetchingTimezone": "Fetching timezone...",
+        "timezoneError": "Failed to fetch timezone",
+        "timezoneErrorInvalid": "Failed to fetch timezone: Invalid response format",
+        "apiError": "Error: {{message}}",
+        "unknownError": "Unknown error fetching timezone"
+      }
+    },
+    "diskMonitor": {
+      "config": {
+        "layout": "Layout",
+        "layoutGrid2x2": "2x2 Grid",
+        "layoutGrid2x4": "2x4 Grid",
+        "layoutList1x5": "1x5 List",
+        "atLeastOneDisk": "At least one disk must be selected",
+        "diskLabel": "Disk {{index}}",
+        "customName": "Custom Name",
+        "showMountPath": "Show Mount Path",
+        "remove": "Remove",
+        "addDisk": "Add Disk ({{count}}/{{max}})",
+        "showDiskIcons": "Show Disk Icons",
+        "showName": "Show Name",
+        "loadingDisks": "Loading available disks...",
+        "noDisksAvailable": "No disks available for monitoring",
+        "title": "Layout & Disk Selection"
+      },
+      "title": "Disk Monitor",
+      "loading": "Loading disks...",
+      "noDisks": "No disks configured",
+      "errorFetch": "Failed to fetch disk information",
+      "errorNoInfo": "No disk information available",
+      "free": "Free:",
+      "total": "Total:",
+      "freeShort": "F:",
+      "totalShort": "T:"
+    },
+    "downloadClient": {
+      "config": {
+        "selectClient": "Select Download Client",
+        "apiKey": "API Key",
+        "password": "Password",
+        "usernameRequired": "Username is required",
+        "passwordRequired": "Password is required",
+        "apiKeyRequired": "API Key is required"
+      },
+      "status": {
+        "downloading": "Downloading",
+        "uploading": "Uploading",
+        "seeding": "Seeding",
+        "paused": "Paused",
+        "pausedDL": "Paused (Download)",
+        "pausedUP": "Paused (Upload)",
+        "stalled": "Stalled",
+        "stalledDL": "Stalled (Download)",
+        "stalledUP": "Stalled (Upload)",
+        "completed": "Completed",
+        "checking": "Checking",
+        "checkingUP": "Checking",
+        "queued": "Queued",
+        "stopped": "Stopped",
+        "error": "Error",
+        "failed": "Failed",
+        "warning": "Warning",
+        "unknown": "Unknown",
+        "metaDL": "Metadata Download",
+        "forcedDL": "Forced Download",
+        "forcedUP": "Forced Upload",
+        "moving": "Moving",
+        "missingfiles": "Missing Files",
+        "active": "Active",
+        "extracting": "Extracting"
+      },
+      "stats": {
+        "active": "Active",
+        "current": "Current:",
+        "session": "Session:",
+        "thisMonth": "This month:",
+        "noActiveItems": "No active items"
+      },
+      "actions": {
+        "start": "Start",
+        "stop": "Stop",
+        "resume": "Resume",
+        "pause": "Pause",
+        "remove": "Remove",
+        "deleteFiles": "Delete Files",
+        "keepFiles": "Keep Files",
+        "removeTitle": "Remove \"{{name}}\"?"
+      },
+      "errors": {
+        "authFailed": "Authentication failed",
+        "sessionExpired": "Session expired. Please login again.",
+        "retry": "Retry"
+      },
+      "deluge": {
+        "loginAttemptFailed": "Login attempt {{current}}/{{max}} failed. Retrying...",
+        "connectionFailedMaxAttempts": "Connection error after multiple attempts. Check your Deluge WebUI settings.",
+        "decryptionFailed": "Failed to decrypt password. Please update your credentials in the widget settings.",
+        "missingConfig": "Missing required configuration fields"
+      },
+      "nzbget": {
+        "loginAttemptFailed": "Login attempt {{current}}/{{max}} failed. Missing required fields.",
+        "connectionFailedMaxAttempts": "Connection error after multiple attempts. Please check your NZBGet settings.",
+        "decryptionFailed": "Failed to decrypt password after multiple attempts. Please update your credentials in the widget settings.",
+        "decryptionFailedSimple": "Failed to decrypt password. Please update your credentials in the widget settings."
+      },
+      "qbittorrent": {
+        "loginAttemptFailed": "Login attempt {{current}}/{{max}} failed. Retrying...",
+        "loginFailedMaxAttempts": "Login failed after multiple attempts. Check your credentials and connection.",
+        "connectionFailed": "Connection error after multiple attempts. Check your qBittorrent WebUI settings.",
+        "decryptionFailed": "Failed to decrypt password. Please update your credentials in the widget settings."
+      },
+      "sabnzbd": {
+        "loginAttemptFailed": "Login attempt {{current}}/{{max}} failed. Missing required fields.",
+        "connectionFailedMaxAttempts": "Connection error after multiple attempts. Please check your SABnzbd settings.",
+        "decryptionFailed": "Failed to decrypt API key after multiple attempts. Please update your credentials in the widget settings.",
+        "decryptionFailedSimple": "Failed to decrypt API key. Please update your credentials in the widget settings."
+      },
+      "transmission": {
+        "loginAttemptFailed": "Login attempt {{current}}/{{max}} failed. Retrying...",
+        "loginFailedMaxAttempts": "Login failed after multiple attempts. Check your credentials and connection.",
+        "decryptionFailed": "Failed to decrypt password. Please update your credentials in the widget settings.",
+        "connectionFailed": "Connection error after multiple attempts. Check your Transmission settings."
+      }
+    },
+    "dual": {
+      "config": {
+        "topWidget": "Top Widget",
+        "bottomWidget": "Bottom Widget",
+        "widgetType": "Widget Type"
+      },
+      "notConfigured": "Widget not configured",
+      "unknownType": "Unknown widget type: {{type}}",
+      "renderError": "Error rendering widget"
+    },
+    "group": {
+      "config": {
+          "groupName": "Group Name",
+          "nameRequired": "Name is required",
+          "layout": "Layout",
+          "showName": "Show Name",
+          "items3": "3 Items (3x1)",
+          "items6_2x3": "6 Items (2x3)",
+          "items6_3x2": "6 Items (3x2)",
+          "items8_4x2": "8 Items (4x2)"
+      }
+    },
+    "radarr": {
+      "title": "Radarr",
+      "queue": "Radarr Queue",
+      "stats": {
+        "moviesTotal": "Total Movies",
+        "monitoredMovies": "Monitored Movies"
+      },
+      "errors": {
+        "missingConfig": "Missing required configuration. Please configure host and API key.",
+        "fetchFailedQueue": "Failed to fetch Radarr queue. Please check configuration.",
+        "fetchFailedMovies": "Failed to fetch Radarr movies statistics. Please check configuration.",
+        "removeFailed": "Failed to remove item from Radarr queue."
+      }
+    },
+    "sonarr": {
+      "title": "Sonarr",
+      "queue": "Sonarr Queue",
+      "stats": {
+        "seriesTotal": "Total Series",
+        "monitoredSeries": "Monitored Series"
+      },
+      "errors": {
+        "missingConfig": "Missing required configuration. Please configure host and API key.",
+        "fetchFailedQueue": "Failed to fetch Sonarr queue. Please check configuration.",
+        "fetchFailedSeries": "Failed to fetch Sonarr series statistics. Please check configuration.",
+        "removeFailed": "Failed to remove item from Sonarr queue."
+      }
+    },
+    "system": {
+      "config": {
+        "tempUnit": "Temperature Unit",
+        "fahrenheit": "Fahrenheit (°F)",
+        "celsius": "Celsius (°C)",
+        "leftGauge": "Left Gauge",
+        "middleGauge": "Middle Gauge",
+        "rightGauge": "Right Gauge",
+        "cpuUsage": "CPU Usage",
+        "cpuTemp": "CPU Temperature",
+        "ramUsage": "RAM Usage",
+        "network": "Network",
+        "none": "None",
+        "networkInterface": "Network Interface",
+        "noInterfaces": "No network interfaces available",
+        "displayOptions": "Display Options",
+        "showDisk": "Show Disk Usage",
+        "showSysInfo": "Show System Info Button",
+        "showInternet": "Show Internet Status"
+      },
+      "title": "System Monitor",
+      "cpu": "Processor",
+      "ram": "Memory",
+      "temp": "CPU Temperature",
+      "network": "Network",
+      "disk": "Disk",
+      "diskUsage": "Disk Usage",
+      "used": "Used",
+      "free": "Free",
+      "uptime": "Uptime",
+      "arch": "Architecture",
+      "os": "OS",
+      "kernel": "Kernel",
+      "upload": "Upload Speed",
+      "download": "Download Speed",
+      "memory": "Memory",
+      "diskMount": "Disk Mount",
+      "diskTotal": "Disk Total",
+      "netInterface": "Network Interface",
+      "internetStatus": "Internet Status",
+      "modalTitle": "System Information",
+      "gaugeTitles": {
+        "cpu": "CPU",
+        "temp": "TEMP",
+        "ram": "RAM",
+        "net": "NET"
+      },
+      "internet": {
+        "connected": "Connected",
+        "disconnected": "Disconnected",
+        "checking": "Checking..."
+      },
+      "errors": {
+        "fetchFailed": "Error fetching system data",
+        "rateLimit": "API Rate limit: {{message}}",
+        "apiError": "API error: {{message}}",
+        "generic": "Error: {{message}}",
+        "unknown": "An unknown error occurred"
+      },
+      "loading": "Loading system data..."
+    },
+    "weather": {
+      "config": {
+        "temperatureUnit": "Temperature Unit",
+        "fahrenheit": "Fahrenheit (°F)",
+        "celsius": "Celsius (°C)",
+        "searchLocation": "Search location",
+        "searchPlaceholder": "Enter a zip code or city",
+        "searching": "Searching...",
+        "typeToSearch": "Type to search...",
+        "noLocationsFound": "No locations found"
+      },
+      "conditions": {
+        "clear": "Clear",
+        "mostlyClear": "Mostly clear",
+        "partlyCloudy": "Partly cloudy",
+        "overcast": "Overcast",
+        "fog": "Fog",
+        "depositingRimeFog": "Depositing rime fog",
+        "drizzle": "Drizzle",
+        "rain": "Rain",
+        "heavyRain": "Heavy Rain",
+        "snow": "Snow",
+        "heavySnow": "Heavy Snow",
+        "rainShowers": "Rain showers",
+        "moderateRainShowers": "Moderate Rain Showers",
+        "heavyRainShowers": "Heavy Rain Showers",
+        "snowShowers": "Snow showers",
+        "thunderstorm": "Thunderstorm",
+        "unknown": "Unknown"
+      },
+      "sunrise": "Sunrise",
+      "sunset": "Sunset",
+      "wind": "Wind Speed",
+      "speedUnit": "mph",
+      "high": "High",
+      "low": "Low",
+      "unavailable": "Weather unavailable",
+      "setLocation": "Please set a location in the widget settings",
+      "errors": {
+        "fetchFailed": "Error fetching weather data",
+        "serviceUnavailable": "Weather service temporarily unavailable. Please try again.",
+        "rateLimit": "API Rate limit: {{message}}",
+        "apiError": "API error: {{message}}",
+        "generic": "An unknown error occurred",
+        "specific": "Error: {{message}}"
+      }
+    },
+    "downloads": {
+      "queue": "Queue",
+      "active": "Active",
+      "downloading": "Downloading",
+      "seeding": "Seeding",
+      "paused": "Paused",
+      "completed": "Completed",
+      "stopped": "Stopped",
+      "eta": "ETA"
+    },
+    "pihole": {
+      "config": {
+        "host": "Pi-hole Host",
+        "portRequired": "Port is required",
+        "hostRequired": "Host is required",
+        "apiTokenV5": "API Token (Pi-hole v5)",
+        "passwordV6": "Password (Pi-hole v6)",
+        "tokenSet": "Current API token is set (hidden). Clear field to remove or enter new token.",
+        "passwordSet": "Current password is set (hidden). Clear field to remove or enter new password.",
+        "passwordHelper": "Enter your Pi-hole admin password",
+        "tokenHelper": "Enter the API token from Pi-hole Settings > API/Web interface",
+        "passwordProvided": "Password already provided",
+        "tokenProvided": "API Token already provided",
+        "passwordOrToken": "Enter password or API token above",
+        "tokenOrPassword": "Enter API token or password above"
+      },
+      "blockedToday": "Blocked Today",
+      "percentBlocked": "Percent Blocked",
+      "queriesToday": "Queries Today",
+      "domainsOnBlocklist": "Domains on Blocklist",
+      "disable": "Disable",
+      "enable": "Enable",
+      "indefinitely": "Indefinitely",
+      "resume": "Resume",
+      "resumeWithTime": "Resume ({{time}})",
+      "status": {
+        "disabledWillResume": "Blocking disabled. Will resume in {{time}}",
+        "disabledIndefinitely": "Blocking disabled indefinitely"
+      },
+      "errors": {
+        "authFailed": "Authentication failed. Please check your Pi-hole credentials in widget settings.",
+        "badRequest": "Bad Request: Invalid configuration or authentication data",
+        "rateLimit": "Too many requests to Pi-hole API. The default session expiration is 30 minutes. You can manually clear unused sessions or increase the max_sessions setting in Pi-hole.",
+        "connectionFailed": "Connection failed: {{error}}. Please check if Pi-hole is running.",
+        "disableFailed": "Failed to disable Pi-hole blocking",
+        "enableFailed": "Failed to enable Pi-hole blocking",
+        "notConfigured": "Please configure the Pi-hole widget in settings",
+        "checkConfig": "Check your Pi-hole configuration and network connection",
+        "usingAuth": "Using {{method}} authentication"
+      },
+      "duration": {
+        "seconds": "{{count}} seconds",
+        "minute": "1 minute",
+        "minutes": "{{count}} minutes",
+        "hour": "1 hour"
+      },
+      "authMethods": {
+        "token": "API token",
+        "password": "password"
+      }
+    },
+    "adguard": {
+      "config": {
+        "host": "AdGuard Home Host",
+        "hostRequired": "Host is required",
+        "portRequired": "Port is required",
+        "usernameHelper": "Enter your AdGuard Home admin username",
+        "passwordHelper": "Enter your AdGuard Home admin password",
+        "usernameSet": "Current username is set (hidden). Clear field to remove or enter new username.",
+        "passwordSet": "Current password is set (hidden). Clear field to remove or enter new password."
+      },
+      "blockedToday": "Blocked Today",
+      "percentBlocked": "Percent Blocked",
+      "queriesToday": "Queries Today",
+      "blockedMalware": "Blocked Malware",
+      "disable": "Disable",
+      "resume": "Resume",
+      "resumeWithTime": "Resume ({{time}})",
+      "indefinitely": "Indefinitely",
+      "errors": {
+        "authFailed": "Authentication failed. Please reconfigure your AdGuard Home credentials.",
+        "fetchFailed": "Failed to fetch AdGuard Home statistics",
+        "disableFailed": "Failed to disable AdGuard Home protection",
+        "enableFailed": "Failed to enable AdGuard Home protection",
+        "notConfigured": "Please configure the AdGuard Home widget in settings",
+        "checkConfig": "Check your AdGuard Home configuration and network connection",
+        "basicAuth": "Using Basic Authentication"
+      },
+      "duration": {
+        "seconds": "{{count}} seconds",
+        "minute": "1 minute",
+        "minutes": "{{count}} minutes",
+        "hour": "1 hour"
+      }
+    },
+    "mediaServer": {
+      "config": {
+        "selectServer": "Select Media Server:",
+        "displayName": "Display Name",
+        "placeholder": "192.168.1.100 or jellyfin.example.com",
+        "host": "Host",
+        "port": "Port",
+        "apiKey": "API Key",
+        "apiKeyHelper": "Generate in Jellyfin: Dashboard > API Keys",
+        "apiKeyRequired": "API Key is required",
+        "useSsl": "Use SSL",
+        "showLabel": "Show Label"
+      },
+      "watching": "Watching ({{count}})",
+      "noActiveItems": "No active items",
+      "totalTvShows": "Total TV Shows:",
+      "totalMovies": "Total Movies:",
+      "types": {
+        "tvShow": "TV Show",
+        "movie": "Movie",
+        "music": "Music",
+        "album": "Album",
+        "book": "Book",
+        "audiobook": "Audiobook",
+        "media": "Media"
+      },
+      "status": {
+        "paused": "Paused",
+        "playing": "Playing",
+        "unknown": "Unknown Media"
+      },
+      "errors": {
+        "widgetIdMissing": "Widget ID missing",
+        "configMissing": "Server configuration missing",
+        "notSupported": "{{type}} is not yet supported",
+        "unknown": "Unknown error"
+      }
+    },
+    "mediaRequestManager": {
+      "config": {
+        "selectService": "Select Service:",
+        "displayName": "Display Name",
+        "host": "Host",
+        "port": "Port",
+        "apiKey": "API Key",
+        "useSsl": "Use SSL",
+        "showLabel": "Show Label"
+      },
+      "unknownTitle": "Unknown Title",
+      "title": "Media Requests",
+      "search": "Search for movies or TV shows...",
+      "loading": "Searching...",
+      "noResults": "No results found",
+      "typeToSearch": "Type to search...",
+      "requestsCount": "Requests ({{count}})",
+      "request": "Request {{title}}",
+      "requestMovie": "Request Movie",
+      "requestSuccess": "Successfully requested {{title}}",
+      "requestFailed": "Failed to request {{title}}",
+      "requestError": "An error occurred while requesting",
+      "title": "Title",
+      "movie": "Movie",
+      "tvShow": "TV Show",
+      "year": "Year",
+      "selectSeasons": "Select Seasons:",
+      "allSeasons": "All",
+      "allAvailable": "All seasons are already available or requested",
+      "selectSeasonsLabel": "Season {{number}}",
+      "seasonsRequested": "{{count}} seasons requested",
+      "alreadyAvailable": "Already Available",
+      "alreadyRequested": "Already Requested",
+      "failedToLoadSeasons": "Failed to load season information",
+      "actions": {
+        "requestTitle": "Request {{title}}",
+        "approveTitle": "Approve Request",
+        "declineTitle": "Decline Request",
+        "approveConfirm": "Are you sure you want to approve the request for \"{{title}}\"?",
+        "declineConfirm": "Are you sure you want to decline the request for \"{{title}}\"?",
+        "yesApprove": "Yes, Approve",
+        "yesDecline": "Yes, Decline",
+        "cancel": "Cancel"
+      },
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "declined": "Declined",
+        "partial": "Partial",
+        "available": "Available",
+        "failed": "Failed",
+        "processing": "Processing",
+        "deleted": "Deleted"
+      },
+      "mediaInfo": {
+        "requestedBy": "Requested By:",
+        "onDate": "on:",
+        "profile": "Profile:",
+        "noRequests": "No requests found"
+      },
+      "errors": {
+        "configuration": "Configuration Error",
+        "missingConfig": "Missing required configuration"
+      }
+    },
+    "queueManagement": {
+      "config": {
+        "apiKeyHelper": "Find your API key in {{serviceName}}: Settings → General → Security → API Key",
+        "apiKeyPlaceholder": "Enter your {{serviceName}} API key"
+      },
+      "noItems": "No items in queue",
+      "eta": "ETA",
+      "status": {
+        "downloading": "Downloading",
+        "uploading": "Uploading",
+        "seeding": "Seeding",
+        "paused": "Paused",
+        "pausedDL": "Paused (Download)",
+        "pausedUP": "Paused (Upload)",
+        "stalled": "Stalled",
+        "stalledDL": "Stalled (Download)",
+        "stalledUP": "Stalled (Upload)",
+        "completed": "Completed",
+        "checkingUP": "Checking",
+        "queued": "Queued",
+        "stopped": "Stopped",
+        "error": "Error",
+        "failed": "Failed",
+        "warning": "Warning"
+      },
+      "actions": {
+        "remove": "Remove from Queue",
+        "removeKeep": "Remove (Keep in Client)",
+        "blocklist": "Blocklist & Remove",
+        "removeTitle": "{{action}}?",
+        "removeText": "This will {{action}} the item from {{serviceName}} {{clientText}}.",
+        "removeAction": "remove",
+        "blocklistAction": "blocklist and remove",
+        "removeFromClient": "and remove from download client",
+        "keepInClient": "but keep in download client"
+      },
+      "stats": {
+          "total": "Total:",
+          "monitored": "Monitored:"
+      }
+    },
+    "notes": {
+      "config": {
+        "displayName": "Display Name",
+        "defaultFontSize": "Default Font Size",
+        "showLabel": "Show Label"
+      },
+      "title": "Notes",
+      "notesCount": "Notes ({{count}})",
+      "noNotes": "No notes yet",
+      "noContent": "No content",
+      "loading": "Loading notes...",
+      "newNote": "New note",
+      "editNote": "Edit Note",
+      "deleteNote": "Delete Note",
+      "deleteConfirmTitle": "Delete Note",
+      "deleteConfirmText": "Are you sure you want to delete \"{{title}}\"?",
+      "deleteConfirmBtn": "Yes, Delete",
+      "save": "Save",
+      "cancel": "Cancel",
+      "openInPopup": "Open in popup",
+      "backToList": "Back to list",
+      "write": "Write",
+      "preview": "Preview",
+      "placeholders": {
+        "title": "Note title...",
+        "content": "Write your note in markdown..."
+      },
+      "errors": {
+        "fetchFailed": "Failed to fetch notes",
+        "saveFailed": "Failed to save note",
+        "deleteFailed": "Failed to delete note",
+        "titleRequired": "Title is required"
+      },
+      "markdown": {
+        "heading": "Heading",
+        "code": "code",
+        "text": "text",
+        "quote": "Quote",
+        "linkText": "link text",
+        "listItem": "List item",
+        "taskItem": "Task item"
+      },
+      "toolbar": {
+        "heading": "Heading",
+        "bold": "Bold",
+        "italic": "Italic",
+        "inlineCode": "Inline Code",
+        "codeBlock": "Code Block",
+        "quote": "Quote",
+        "link": "Link",
+        "ul": "Unordered List",
+        "ol": "Numbered List",
+        "taskList": "Task List"
+      }
+    }
+  },
+}

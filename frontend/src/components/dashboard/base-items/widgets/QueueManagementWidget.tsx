@@ -1,6 +1,7 @@
 import { CheckCircle, Delete, Download, MoreVert, Pause, PlayArrow, Stop, Upload, Warning } from '@mui/icons-material';
 import { Box, CardContent, IconButton, LinearProgress, Menu, MenuItem, Tooltip, Typography, useMediaQuery } from '@mui/material';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { BACKEND_URL } from '../../../../constants/constants';
 import { DUAL_WIDGET_CONTAINER_HEIGHT } from '../../../../constants/widget-dimensions';
@@ -77,6 +78,11 @@ export type QueueManagementWidgetProps = {
         monitoredItems: number;
         isLoading: boolean;
     };
+    // Optional prop for customized stats labels
+    statsLabels?: {
+        total: string;
+        monitored: string;
+    };
 };
 
 const formatBytes = (bytes: number): string => {
@@ -130,29 +136,6 @@ const getStatusIcon = (state: string) => {
     }
 };
 
-// Format status text for tooltip display
-const formatStatusText = (state: string): string => {
-    switch (state) {
-    case 'downloading': return 'Downloading';
-    case 'uploading': return 'Uploading';
-    case 'seeding': return 'Seeding';
-    case 'paused': return 'Paused';
-    case 'pausedDL': return 'Paused (Download)';
-    case 'pausedUP': return 'Paused (Upload)';
-    case 'stalledDL': return 'Stalled (Download)';
-    case 'stalledUP': return 'Stalled (Upload)';
-    case 'stalled': return 'Stalled';
-    case 'completed': return 'Completed';
-    case 'checkingUP': return 'Checking';
-    case 'queued': return 'Queued';
-    case 'stopped': return 'Stopped';
-    case 'error': return 'Error';
-    case 'failed': return 'Failed';
-    case 'warning': return 'Warning';
-    default: return state.charAt(0).toUpperCase() + state.slice(1);
-    }
-};
-
 interface QueueItemComponentProps {
     item: QueueItem;
     serviceName: string;
@@ -161,11 +144,23 @@ interface QueueItemComponentProps {
 }
 
 const QueueItemComponent: React.FC<QueueItemComponentProps> = ({ item, serviceName, isAdmin, onRemove }) => {
+    const { t } = useTranslation();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
     const [menuOpen, setMenuOpen] = useState(false);
     const [isActionLoading, setIsActionLoading] = useState(false);
     const { editMode } = useAppContext();
+
+    // Format status text for tooltip display using translations
+    const getStatusText = (state: string): string => {
+        const key = `widgets.queueManagement.status.${state}`;
+        const translation = t(key);
+        
+        if (translation === key) {
+             return state.charAt(0).toUpperCase() + state.slice(1);
+        }
+        return translation;
+    };
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
         setMenuAnchorEl(event.currentTarget);
@@ -181,13 +176,24 @@ const QueueItemComponent: React.FC<QueueItemComponentProps> = ({ item, serviceNa
         if (onRemove) {
             handleMenuClose();
 
-            const actionText = blocklist ? 'blocklist and remove' : 'remove';
-            const clientText = removeFromClient ? 'and remove from download client' : 'but keep in download client';
+            const actionTextKey = blocklist ? 'widgets.queueManagement.actions.blocklistAction' : 'widgets.queueManagement.actions.removeAction';
+            const clientTextKey = removeFromClient ? 'widgets.queueManagement.actions.removeFromClient' : 'widgets.queueManagement.actions.keepInClient';
+            
+            // Get raw text for constructing the message
+            const actionText = t(actionTextKey);
+            const clientText = t(clientTextKey);
+
+            // Capitalize first letter for title
+            const titleAction = actionText.charAt(0).toUpperCase() + actionText.slice(1);
 
             PopupManager.deleteConfirmation({
-                title: `${actionText.charAt(0).toUpperCase() + actionText.slice(1)}?`,
-                text: `This will ${actionText} the item from ${serviceName} ${clientText}.`,
-                confirmText: actionText.charAt(0).toUpperCase() + actionText.slice(1),
+                title: t('widgets.queueManagement.actions.removeTitle', { action: titleAction }),
+                text: t('widgets.queueManagement.actions.removeText', { 
+                    action: actionText, 
+                    serviceName: serviceName,
+                    clientText: clientText 
+                }),
+                confirmText: titleAction,
                 confirmAction: async () => {
                     setIsActionLoading(true);
                     try {
@@ -221,7 +227,7 @@ const QueueItemComponent: React.FC<QueueItemComponentProps> = ({ item, serviceNa
         }}>
             <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                 <Tooltip
-                    title={formatStatusText(item.state)}
+                    title={getStatusText(item.state)}
                     placement='top'
                     enterDelay={500}
                     arrow
@@ -256,7 +262,7 @@ const QueueItemComponent: React.FC<QueueItemComponentProps> = ({ item, serviceNa
                     variant='caption'
                     sx={{ ml: 'auto', color: 'white', fontSize: '.75rem', minWidth: '100px', textAlign: 'right' }}
                 >
-                    {item.eta ? `ETA: ${formatEta(item.eta)}` : ''}
+                    {item.eta ? `${t('widgets.queueManagement.eta')}: ${formatEta(item.eta)}` : ''}
                 </Typography>
                 {showMenuButton && (
                     <IconButton
@@ -289,21 +295,21 @@ const QueueItemComponent: React.FC<QueueItemComponentProps> = ({ item, serviceNa
                         sx={{ fontSize: '0.9rem', py: 1, color: 'white' }}
                     >
                         <Delete fontSize='small' sx={{ mr: 1 }} />
-                        Remove from Queue
+                        {t('widgets.queueManagement.actions.remove')}
                     </MenuItem>
                     <MenuItem
                         onClick={() => handleRemove(false, false)}
                         sx={{ fontSize: '0.9rem', py: 1, color: 'white' }}
                     >
                         <Delete fontSize='small' sx={{ mr: 1 }} />
-                        Remove (Keep in Client)
+                        {t('widgets.queueManagement.actions.removeKeep')}
                     </MenuItem>
                     <MenuItem
                         onClick={() => handleRemove(true, true)}
                         sx={{ fontSize: '0.9rem', py: 1, color: theme.palette.error.main }}
                     >
                         <Delete fontSize='small' sx={{ mr: 1 }} />
-                        Blocklist & Remove
+                        {t('widgets.queueManagement.actions.blocklist')}
                     </MenuItem>
                 </Menu>
             </Box>
@@ -349,8 +355,10 @@ export const QueueManagementWidget: React.FC<QueueManagementWidgetProps> = ({
     onRemoveItem,
     error,
     connectionDetails,
-    statistics
+    statistics,
+    statsLabels
 }) => {
+    const { t } = useTranslation();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const { editMode, isAdmin } = useAppContext();
 
@@ -376,12 +384,22 @@ export const QueueManagementWidget: React.FC<QueueManagementWidgetProps> = ({
     const getServiceIcon = () => {
         const iconName = serviceName.toLowerCase();
         // Map service names to their actual icon filenames
+        // Use hardcoded fallback map first, but ideally should use backend response
         const iconMap: { [key: string]: string } = {
             'sonarr': 'sonarr.svg',
             'radarr': 'radarr-light.svg' // Using dark variant for better visibility
         };
 
-        const iconFile = iconMap[iconName] || `${iconName}.svg`;
+        // Also try to match by translated name if needed, but serviceName passed is usually from config (English or fixed key)
+        // If serviceName comes translated, we might need original key. 
+        // Assuming serviceName prop is consistent with icon names for now.
+        
+        // Simple normalization
+        let normalizedName = iconName;
+        if (iconName.includes('sonarr')) normalizedName = 'sonarr';
+        if (iconName.includes('radarr')) normalizedName = 'radarr';
+
+        const iconFile = iconMap[normalizedName] || `${normalizedName}.svg`;
         return `${BACKEND_URL}/icons/${iconFile}`;
     };
 
@@ -438,7 +456,7 @@ export const QueueManagementWidget: React.FC<QueueManagementWidgetProps> = ({
                 {error ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1, width: '100%', flexDirection: 'column' }}>
                         <Typography variant='body2' sx={{ textAlign: 'center', mb: 1 }}>
-                            Configuration Error
+                            {t('widgets.mediaRequestManager.errors.configuration')}
                         </Typography>
                         <Typography variant='caption' sx={{ color: 'rgba(255,255,255,0.7)', textAlign: 'center' }}>
                             {error}
@@ -448,7 +466,7 @@ export const QueueManagementWidget: React.FC<QueueManagementWidgetProps> = ({
                     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
                         <Box sx={{ flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', mb: 2, width: '100%' }}>
                             <Typography variant='caption' sx={{ px: 1, mb: 0.5, color: 'white' }}>
-                                Queue ({queueItems.length})
+                                {t('widgets.downloadClient.status.queued')} ({queueItems.length})
                             </Typography>
 
                             <Box sx={{
@@ -499,7 +517,7 @@ export const QueueManagementWidget: React.FC<QueueManagementWidgetProps> = ({
                                     opacity: queueItems.length === 0 ? 1 : 0,
                                     pointerEvents: queueItems.length === 0 ? 'auto' : 'none'
                                 }}>
-                                    No items in queue
+                                    {t('widgets.queueManagement.noItems')}
                                 </Box>
 
                                 {/* Queue items */}
@@ -521,10 +539,12 @@ export const QueueManagementWidget: React.FC<QueueManagementWidgetProps> = ({
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
                                     <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                                         <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary', mb: 0.5 }}>
-                                            {serviceName === 'Sonarr' ? 'Total TV Shows:' : 'Total Movies:'}
+                                            {/* Use statsLabels.total if provided, otherwise fallback to generic translation */}
+                                            {statsLabels?.total || t('widgets.queueManagement.stats.total')}
                                         </Typography>
                                         <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary' }}>
-                                            Monitored:
+                                            {/* Use statsLabels.monitored if provided, otherwise fallback */}
+                                            {statsLabels?.monitored || t('widgets.queueManagement.stats.monitored')}
                                         </Typography>
                                     </Box>
 

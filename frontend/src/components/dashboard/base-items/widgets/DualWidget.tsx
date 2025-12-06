@@ -1,5 +1,6 @@
 import { Box, Divider, Typography, useMediaQuery } from '@mui/material';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { AdGuardWidget } from './AdGuardWidget/AdGuardWidget';
 import { DateTimeWidget } from './DateTimeWidget';
@@ -41,6 +42,7 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
     onDuplicate,
     url
 }) => {
+    const { t } = useTranslation();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     const renderWidget = (widgetConfig: { type: string; config?: any } | undefined, position: 'top' | 'bottom') => {
@@ -56,7 +58,7 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
                     }}
                 >
                     <Typography variant='body2' color='text.secondary'>
-                        Widget not configured
+                        {t('widgets.dual.notConfigured')}
                     </Typography>
                 </Box>
             );
@@ -105,7 +107,7 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
                         }}
                     >
                         <Typography variant='body2' color='text.primary'>
-                            Unknown widget type: {widgetConfig.type}
+                            {t('widgets.dual.unknownType', { type: widgetConfig.type })}
                         </Typography>
                     </Box>
                 );
@@ -123,7 +125,7 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
                     }}
                 >
                     <Typography variant='body2' color='text.secondary'>
-                        Error rendering widget
+                        {t('widgets.dual.renderError')}
                     </Typography>
                 </Box>
             );

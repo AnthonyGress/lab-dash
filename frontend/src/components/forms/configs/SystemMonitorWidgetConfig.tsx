@@ -1,33 +1,21 @@
 import { Box, FormControlLabel, Grid2 as Grid, Radio, RadioGroup, Typography } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { CheckboxElement, SelectElement } from 'react-hook-form-mui';
+import { useTranslation } from 'react-i18next';
 
 import { DashApi } from '../../../api/dash-api';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { COLORS } from '../../../theme/styles';
 import { theme } from '../../../theme/theme';
-import { ITEM_TYPE } from '../../../types';
 import { FormValues } from '../AddEditForm/types';
-
-const TEMPERATURE_UNIT_OPTIONS = [
-    { id: 'fahrenheit', label: 'Fahrenheit (°F)' },
-    { id: 'celsius', label: 'Celsius (°C)' }
-];
-
-const SYSTEM_MONITOR_GAUGE_OPTIONS = [
-    { id: 'cpu', label: 'CPU Usage' },
-    { id: 'temp', label: 'CPU Temperature' },
-    { id: 'ram', label: 'RAM Usage' },
-    { id: 'network', label: 'Network' },
-    { id: 'none', label: 'None' }
-];
 
 interface SystemMonitorWidgetConfigProps {
     formContext: UseFormReturn<FormValues>;
 }
 
 export const SystemMonitorWidgetConfig = ({ formContext }: SystemMonitorWidgetConfigProps) => {
+    const { t } = useTranslation();
     const isMobile = useIsMobile();
     const [networkInterfaces, setNetworkInterfaces] = useState<Array<{id: string, label: string}>>([]);
 
@@ -37,6 +25,20 @@ export const SystemMonitorWidgetConfig = ({ formContext }: SystemMonitorWidgetCo
         const currentValue = formContext.getValues('temperatureUnit');
         return typeof currentValue === 'string' ? currentValue : 'fahrenheit';
     });
+
+    // Memoize options to enable translation updates
+    const temperatureUnitOptions = useMemo(() => [
+        { id: 'fahrenheit', label: t('widgets.system.config.fahrenheit') },
+        { id: 'celsius', label: t('widgets.system.config.celsius') }
+    ], [t]);
+
+    const systemMonitorGaugeOptions = useMemo(() => [
+        { id: 'cpu', label: t('widgets.system.config.cpuUsage') },
+        { id: 'temp', label: t('widgets.system.config.cpuTemp') },
+        { id: 'ram', label: t('widgets.system.config.ramUsage') },
+        { id: 'network', label: t('widgets.system.config.network') },
+        { id: 'none', label: t('widgets.system.config.none') }
+    ], [t]);
 
     // Sync local state with form value when it changes
     useEffect(() => {
@@ -148,7 +150,7 @@ export const SystemMonitorWidgetConfig = ({ formContext }: SystemMonitorWidgetCo
                             ml: 1
                         }}
                     >
-                        Temperature Unit:
+                        {t('widgets.system.config.tempUnit')}:
                     </Typography>
                     <RadioGroup
                         name='temperatureUnit'
@@ -165,7 +167,7 @@ export const SystemMonitorWidgetConfig = ({ formContext }: SystemMonitorWidgetCo
                             }
                         }}
                     >
-                        {TEMPERATURE_UNIT_OPTIONS.map((option) => (
+                        {temperatureUnitOptions.map((option) => (
                             <FormControlLabel
                                 key={option.id}
                                 value={option.id}
@@ -187,9 +189,9 @@ export const SystemMonitorWidgetConfig = ({ formContext }: SystemMonitorWidgetCo
             </Grid>
             <Grid>
                 <SelectElement
-                    label='Left Gauge'
+                    label={t('widgets.system.config.leftGauge')}
                     name='gauge1'
-                    options={SYSTEM_MONITOR_GAUGE_OPTIONS}
+                    options={systemMonitorGaugeOptions}
                     required
                     fullWidth
                     sx={selectStyling}
@@ -200,9 +202,9 @@ export const SystemMonitorWidgetConfig = ({ formContext }: SystemMonitorWidgetCo
             </Grid>
             <Grid>
                 <SelectElement
-                    label='Middle Gauge'
+                    label={t('widgets.system.config.middleGauge')}
                     name='gauge2'
-                    options={SYSTEM_MONITOR_GAUGE_OPTIONS}
+                    options={systemMonitorGaugeOptions}
                     required
                     fullWidth
                     sx={selectStyling}
@@ -213,9 +215,9 @@ export const SystemMonitorWidgetConfig = ({ formContext }: SystemMonitorWidgetCo
             </Grid>
             <Grid>
                 <SelectElement
-                    label='Right Gauge'
+                    label={t('widgets.system.config.rightGauge')}
                     name='gauge3'
-                    options={SYSTEM_MONITOR_GAUGE_OPTIONS}
+                    options={systemMonitorGaugeOptions}
                     required
                     fullWidth
                     sx={selectStyling}
@@ -230,9 +232,9 @@ export const SystemMonitorWidgetConfig = ({ formContext }: SystemMonitorWidgetCo
                 formContext.watch('gauge2') === 'network' ||
                 formContext.watch('gauge3') === 'network') && (
                     <SelectElement
-                        label='Network Interface'
+                        label={t('widgets.system.config.networkInterface')}
                         name='networkInterface'
-                        options={networkInterfaces.length > 0 ? networkInterfaces : [{ id: '', label: 'No network interfaces available' }]}
+                        options={networkInterfaces.length > 0 ? networkInterfaces : [{ id: '', label: t('widgets.system.config.noInterfaces') }]}
                         required
                         fullWidth
                         disabled={networkInterfaces.length === 0}
@@ -249,13 +251,13 @@ export const SystemMonitorWidgetConfig = ({ formContext }: SystemMonitorWidgetCo
 
             <Grid>
                 <Typography variant='h6' sx={{ color: 'text.primary', mb: 2, mt: 2 }}>
-                    Display Options
+                    {t('widgets.system.config.displayOptions')}
                 </Typography>
             </Grid>
 
             <Grid>
                 <CheckboxElement
-                    label='Show Disk Usage'
+                    label={t('widgets.system.config.showDisk')}
                     name='showDiskUsage'
                     sx={{
                         ml: 1,
@@ -267,7 +269,7 @@ export const SystemMonitorWidgetConfig = ({ formContext }: SystemMonitorWidgetCo
 
             <Grid>
                 <CheckboxElement
-                    label='Show System Info Button'
+                    label={t('widgets.system.config.showSysInfo')}
                     name='showSystemInfo'
                     sx={{
                         ml: 1,
@@ -279,7 +281,7 @@ export const SystemMonitorWidgetConfig = ({ formContext }: SystemMonitorWidgetCo
 
             <Grid>
                 <CheckboxElement
-                    label='Show Internet Status'
+                    label={t('widgets.system.config.showInternet')}
                     name='showInternetStatus'
                     sx={{
                         ml: 1,

@@ -1,6 +1,7 @@
-import { Grid2 as Grid, Typography } from '@mui/material';
+import { Grid2 as Grid } from '@mui/material';
 import { UseFormReturn } from 'react-hook-form';
 import { CheckboxElement, TextFieldElement } from 'react-hook-form-mui';
+import { useTranslation } from 'react-i18next'; // Import hook
 
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { theme } from '../../../theme/theme';
@@ -17,6 +18,7 @@ export const QueueManagementWidgetConfig: React.FC<QueueManagementWidgetConfigPr
     serviceName,
     defaultPort
 }) => {
+    const { t } = useTranslation(); // Initialize hook
     const isMobile = useIsMobile();
     const servicePrefix = serviceName.toLowerCase(); // 'sonarr' or 'radarr'
 
@@ -25,7 +27,7 @@ export const QueueManagementWidgetConfig: React.FC<QueueManagementWidgetConfigPr
             <Grid>
                 <TextFieldElement
                     name={`${servicePrefix}Name`}
-                    label='Display Name'
+                    label={t('forms.addEdit.fields.displayName')}
                     fullWidth
                     sx={{
                         '& .MuiOutlinedInput-root': {
@@ -47,7 +49,7 @@ export const QueueManagementWidgetConfig: React.FC<QueueManagementWidgetConfigPr
             <Grid>
                 <TextFieldElement
                     name={`${servicePrefix}Host`}
-                    label='Host'
+                    label={t('widgets.common.fields.host')} // Assuming you have a common key for Host, or use forms.addEdit.fields.host
                     placeholder='localhost'
                     fullWidth
                     required
@@ -71,7 +73,7 @@ export const QueueManagementWidgetConfig: React.FC<QueueManagementWidgetConfigPr
             <Grid>
                 <TextFieldElement
                     name={`${servicePrefix}Port`}
-                    label='Port'
+                    label={t('forms.addEdit.fields.port')}
                     placeholder={defaultPort}
                     fullWidth
                     required
@@ -94,7 +96,7 @@ export const QueueManagementWidgetConfig: React.FC<QueueManagementWidgetConfigPr
 
             <Grid>
                 <CheckboxElement
-                    label='Use SSL'
+                    label={t('forms.addEdit.fields.useSsl')}
                     name={`${servicePrefix}Ssl`}
                     sx={{
                         ml: 1,
@@ -107,12 +109,12 @@ export const QueueManagementWidgetConfig: React.FC<QueueManagementWidgetConfigPr
             <Grid>
                 <TextFieldElement
                     name={`${servicePrefix}ApiKey`}
-                    label='API Key'
-                    placeholder={`Enter your ${serviceName} API key`}
+                    label={t('widgets.common.fields.apiKey')} // Assuming common key exists
+                    placeholder={t('widgets.queueManagement.config.apiKeyPlaceholder', { serviceName })}
                     fullWidth
                     required
                     type='password'
-                    helperText={`Find your API key in ${serviceName}: Settings → General → Security → API Key`}
+                    helperText={t('widgets.queueManagement.config.apiKeyHelper', { serviceName })}
                     sx={{
                         '& .MuiOutlinedInput-root': {
                             '& fieldset': {
@@ -133,7 +135,7 @@ export const QueueManagementWidgetConfig: React.FC<QueueManagementWidgetConfigPr
 
             <Grid>
                 <CheckboxElement
-                    label='Show Label'
+                    label={t('forms.addEdit.fields.showLabel')}
                     name='showLabel'
                     sx={{
                         ml: 1,

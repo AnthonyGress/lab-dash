@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { DownloadClientWidget } from './DownloadClientWidget';
 import { DashApi } from '../../../../api/dash-api';
@@ -15,6 +16,7 @@ type SabnzbdWidgetConfig = {
 
 export const SabnzbdWidget = (props: { config?: SabnzbdWidgetConfig; id?: string }) => {
     const { config, id } = props;
+    const { t } = useTranslation();
 
     const [isLoading, setIsLoading] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -62,11 +64,14 @@ export const SabnzbdWidget = (props: { config?: SabnzbdWidgetConfig; id?: string
                 loginAttemptsRef.current += 1;
 
                 if (loginAttemptsRef.current >= MAX_LOGIN_ATTEMPTS) {
-                    setAuthError('Connection error after multiple attempts. Please check your SABnzbd settings.');
+                    setAuthError(t('widgets.downloadClient.sabnzbd.connectionFailedMaxAttempts'));
                     setIsAuthenticated(false);
                     setLoginAttemptFailed(true);
                 } else {
-                    setAuthError(`Login attempt ${loginAttemptsRef.current}/${MAX_LOGIN_ATTEMPTS} failed. Missing required fields.`);
+                    setAuthError(t('widgets.downloadClient.sabnzbd.loginAttemptFailed', { 
+                        current: loginAttemptsRef.current, 
+                        max: MAX_LOGIN_ATTEMPTS 
+                    }));
 
                     // Schedule another attempt
                     setTimeout(() => {
@@ -89,11 +94,15 @@ export const SabnzbdWidget = (props: { config?: SabnzbdWidgetConfig; id?: string
                 loginAttemptsRef.current += 1;
 
                 if (loginAttemptsRef.current >= MAX_LOGIN_ATTEMPTS) {
-                    setAuthError('Failed to decrypt API key after multiple attempts. Please update your credentials in the widget settings.');
+                    setAuthError(t('widgets.downloadClient.sabnzbd.decryptionFailed'));
                     setIsAuthenticated(false);
                     setLoginAttemptFailed(true);
                 } else {
-                    setAuthError(`Login attempt ${loginAttemptsRef.current}/${MAX_LOGIN_ATTEMPTS} failed. Retrying...`);
+                    // Reuse the generic retry message or create a specific one
+                    setAuthError(t('widgets.downloadClient.errors.transmission.loginAttemptFailed', { 
+                        current: loginAttemptsRef.current, 
+                        max: MAX_LOGIN_ATTEMPTS 
+                    })); // (using same key as transmission for generic retry message)
 
                     // Schedule another attempt
                     setTimeout(() => {
@@ -121,15 +130,18 @@ export const SabnzbdWidget = (props: { config?: SabnzbdWidgetConfig; id?: string
             if (loginAttemptsRef.current >= MAX_LOGIN_ATTEMPTS) {
                 // Check for decryption error
                 if (error.response?.data?.error?.includes('Failed to decrypt')) {
-                    setAuthError('Failed to decrypt API key. Please update your credentials in the widget settings.');
+                    setAuthError(t('widgets.downloadClient.sabnzbd.decryptionFailedSimple'));
                 } else {
-                    setAuthError('Connection error after multiple attempts. Check your SABnzbd settings.');
+                    setAuthError(t('widgets.downloadClient.sabnzbd.connectionFailedMaxAttempts'));
                 }
                 setIsAuthenticated(false);
                 setLoginAttemptFailed(true);
             } else {
                 // If we haven't reached max attempts, show a retry message
-                setAuthError(`Login attempt ${loginAttemptsRef.current}/${MAX_LOGIN_ATTEMPTS} failed. Retrying...`);
+                setAuthError(t('widgets.downloadClient.errors.transmission.loginAttemptFailed', { 
+                    current: loginAttemptsRef.current, 
+                    max: MAX_LOGIN_ATTEMPTS 
+                }));
 
                 // Schedule another attempt
                 setTimeout(() => {
@@ -144,7 +156,7 @@ export const SabnzbdWidget = (props: { config?: SabnzbdWidgetConfig; id?: string
                 setIsLoading(false);
             }
         }
-    }, [loginCredentials, config, isAuthenticated, id]);
+    }, [loginCredentials, config, isAuthenticated, id, t]); // Added t dependency
 
     const fetchStats = useCallback(async () => {
         if (!isAuthenticated || loginAttemptFailed) return;
@@ -155,7 +167,7 @@ export const SabnzbdWidget = (props: { config?: SabnzbdWidgetConfig; id?: string
             // Check for decryption error
             if (statsData.decryptionError) {
                 setIsAuthenticated(false);
-                setAuthError('Failed to decrypt API key. Please update your credentials in the widget settings.');
+                setAuthError(t('widgets.downloadClient.sabnzbd.decryptionFailedSimple'));
                 return;
             }
 
@@ -179,12 +191,12 @@ export const SabnzbdWidget = (props: { config?: SabnzbdWidgetConfig; id?: string
             // If we get an auth error, set isAuthenticated to false to trigger retry
             if ((error as any)?.response?.status === 401 || (error as any)?.response?.status === 403) {
                 setIsAuthenticated(false);
-                setAuthError('Authentication failed. Retrying...');
+                setAuthError(t('widgets.downloadClient.errors.authFailed') + '. ' + t('widgets.downloadClient.errors.retry'));
                 loginAttemptsRef.current = 0; // Reset counter for retry
                 setLoginAttemptFailed(false);
             }
         }
-    }, [isAuthenticated, loginAttemptFailed, id]);
+    }, [isAuthenticated, loginAttemptFailed, id, t]); // Added t dependency
 
     const fetchDownloads = useCallback(async () => {
         if (!isAuthenticated || loginAttemptFailed) return;
@@ -213,19 +225,17 @@ export const SabnzbdWidget = (props: { config?: SabnzbdWidgetConfig; id?: string
             }));
 
             // For SABnzbd, keep the original order from the API (which reflects SABnzbd's queue order)
-            // The active download should already be first in the queue from SABnzbd
-            // No sorting needed - maintain SABnzbd's original queue order
             setDownloads(convertedDownloads);
         } catch (error) {
             console.error('Error fetching SABnzbd downloads:', error);
             if ((error as any)?.response?.status === 401 || (error as any)?.response?.status === 403) {
                 setIsAuthenticated(false);
-                setAuthError('Authentication failed. Retrying...');
+                setAuthError(t('widgets.downloadClient.errors.authFailed') + '. ' + t('widgets.downloadClient.errors.retry'));
                 loginAttemptsRef.current = 0; // Reset counter for retry
                 setLoginAttemptFailed(false);
             }
         }
-    }, [isAuthenticated, loginAttemptFailed, id]);
+    }, [isAuthenticated, loginAttemptFailed, id, config, t]); // Added t dependency
 
     // Handle input changes
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

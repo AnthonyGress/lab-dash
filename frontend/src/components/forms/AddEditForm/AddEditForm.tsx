@@ -1,9 +1,10 @@
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
-import { Box, Button, Grid2 as Grid, Paper, Typography, useMediaQuery } from '@mui/material';
+import { Box, Button, Grid2 as Grid, Typography, useMediaQuery } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { CheckboxElement, FormContainer, SelectElement, TextFieldElement } from 'react-hook-form-mui';
+import { CheckboxElement, FormContainer, TextFieldElement } from 'react-hook-form-mui';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { createWidgetConfig } from './createWidgetConfig';
 import { ItemTypeSelector } from './ItemSelector';
@@ -26,7 +27,7 @@ type Props = {
 }
 
 export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
-    const { formState: { errors } } = useForm();
+    const { t } = useTranslation();
     const { dashboardLayout, addItem, updateItem, addPage, refreshDashboard, pageNameToSlug, pages } = useAppContext();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const navigate = useNavigate();
@@ -45,6 +46,46 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
 
     const selectedItemType = formContext.watch('itemType');
     const selectedWidgetType = formContext.watch('widgetType');
+
+    // Helper for dynamic title in configure step
+    const getConfigureTitle = () => {
+        if (selectedItemType === 'widget') {
+            // Find widget label translation based on ID
+            const widgetId = selectedWidgetType;
+            const keyMap: Record<string, string> = {
+                 [ITEM_TYPE.ADGUARD_WIDGET]: 'adguard',
+                 [ITEM_TYPE.DATE_TIME_WIDGET]: 'dateTime',
+                 [ITEM_TYPE.DISK_MONITOR_WIDGET]: 'diskMonitor',
+                 [ITEM_TYPE.DOWNLOAD_CLIENT]: 'downloadClient',
+                 [ITEM_TYPE.DUAL_WIDGET]: 'dual',
+                 [ITEM_TYPE.GROUP_WIDGET]: 'group',
+                 [ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET]: 'mediaRequest',
+                 [ITEM_TYPE.MEDIA_SERVER_WIDGET]: 'mediaServer',
+                 [ITEM_TYPE.NOTES_WIDGET]: 'notes',
+                 [ITEM_TYPE.PIHOLE_WIDGET]: 'pihole',
+                 [ITEM_TYPE.RADARR_WIDGET]: 'radarr',
+                 [ITEM_TYPE.SONARR_WIDGET]: 'sonarr',
+                 [ITEM_TYPE.SYSTEM_MONITOR_WIDGET]: 'system',
+                 [ITEM_TYPE.WEATHER_WIDGET]: 'weather'
+            };
+            
+            const translationKey = keyMap[widgetId];
+            const label = translationKey 
+                ? t(`widgets.titles.${translationKey}`) 
+                : WIDGET_OPTIONS.find(opt => opt.id === selectedWidgetType)?.label;
+            
+            return t('forms.addEdit.configure', { type: label });
+        } else {
+             // Find item type label translation
+             let label = ITEM_TYPE_OPTIONS.find(opt => opt.id === selectedItemType)?.label;
+             
+             if (selectedItemType === ITEM_TYPE.APP_SHORTCUT) label = t('forms.addEdit.types.shortcut');
+             else if (selectedItemType === ITEM_TYPE.PLACEHOLDER) label = t('forms.addEdit.types.placeholder');
+             else if (selectedItemType === ITEM_TYPE.PAGE) label = t('forms.addEdit.types.page');
+
+             return t('forms.addEdit.configure', { type: label });
+        }
+    };
 
     // Set default showLabel based on widget type
     useEffect(() => {
@@ -81,7 +122,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
     // Automatically set shortcutName to "Group" for new group widgets
     useEffect(() => {
         if (!existingItem && selectedItemType === 'widget' && selectedWidgetType === ITEM_TYPE.GROUP_WIDGET) {
-            formContext.setValue('shortcutName', 'Group');
+            formContext.setValue('shortcutName', t('widgets.titles.group'));
         }
     }, [selectedItemType, selectedWidgetType, existingItem, formContext]);
 
@@ -711,7 +752,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                             }}
                                             startIcon={<ArrowBackIosIcon />}
                                         >
-                                            Back
+                                            {t('forms.addEdit.back')}
                                         </Button>
 
                                         <Typography variant='h6' sx={{
@@ -722,7 +763,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                             textAlign: 'center',
                                             width: { xs: '100%', sm: 'auto' },
                                         }}>
-                                            Select Widget
+                                            {t('forms.addEdit.selectWidget')}
                                         </Typography>
                                     </Grid>
 
@@ -762,7 +803,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                             }}
                                             startIcon={<ArrowBackIosIcon />}
                                         >
-                                            Back
+                                            {t('forms.addEdit.back')}
                                         </Button>
 
                                         <Typography variant='h6' sx={{
@@ -777,9 +818,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                             overflow: { xs: 'visible', sm: 'hidden' },
                                             textOverflow: { xs: 'clip', sm: 'ellipsis' }
                                         }}>
-                                            Configure {selectedItemType === 'widget'
-                                                ? WIDGET_OPTIONS.find(opt => opt.id === selectedWidgetType)?.label
-                                                : ITEM_TYPE_OPTIONS.find(opt => opt.id === selectedItemType)?.label}
+                                            {getConfigureTitle()}
                                         </Typography>
                                     </Grid>
 
@@ -787,7 +826,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                         <>
                                             <Grid>
                                                 <TextFieldElement
-                                                    label='Page Name'
+                                                    label={t('forms.addEdit.fields.pageName')}
                                                     name='pageName'
                                                     required
                                                     fullWidth
@@ -802,24 +841,24 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                                         width: '100%',
                                                         minWidth: isMobile ? '65vw' : '20vw'
                                                     }}
-                                                    helperText='Pages are added to the navigation menu'
+                                                    helperText={t('forms.addEdit.fields.pageHelper')}
                                                     slotProps={{
                                                         inputLabel: { style: { color: theme.palette.text.primary } }
                                                     }}
                                                     rules={{
-                                                        required: 'Page name is required',
+                                                        required: t('forms.addEdit.fields.pageNameRequired'),
                                                         validate: (value: string) => {
-                                                            if (!value) return 'Page name is required';
+                                                            if (!value) return t('forms.addEdit.fields.pageNameRequired');
 
                                                             // Check if it contains only alphanumeric characters and spaces
                                                             const allowedCharsRegex = /^[a-zA-Z0-9\s]+$/;
                                                             if (!allowedCharsRegex.test(value)) {
-                                                                return 'Page name can only contain letters, numbers, and spaces';
+                                                                return t('forms.addEdit.fields.pageNameInvalid');
                                                             }
 
                                                             // Check if it's the word "settings" (case-insensitive)
                                                             if (value.toLowerCase() === 'settings') {
-                                                                return 'Page name cannot be "settings"';
+                                                                return t('forms.addEdit.fields.pageNameReserved');
                                                             }
 
                                                             // Check for duplicate page names (case-insensitive)
@@ -829,7 +868,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                                                 page.id !== existingItem?.id
                                                             );
                                                             if (isDuplicate) {
-                                                                return `A page named "${value}" already exists. Please choose a different name.`;
+                                                                return t('forms.addEdit.fields.pageNameDuplicate', { value });
                                                             }
 
                                                             return true;
@@ -840,7 +879,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
 
                                             <Grid>
                                                 <CheckboxElement
-                                                    label='Admin Only'
+                                                    label={t('forms.addEdit.fields.adminOnly')}
                                                     name='adminOnly'
                                                     checked={formContext.watch('adminOnly')}
                                                     sx={{
@@ -866,7 +905,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                             {/* Admin Only checkbox for widget types - keep this outside the WidgetConfig component */}
                                             <Grid>
                                                 <CheckboxElement
-                                                    label='Admin Only'
+                                                    label={t('forms.addEdit.fields.adminOnly')}
                                                     name='adminOnly'
                                                     checked={formContext.watch('adminOnly')}
 
@@ -896,7 +935,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                     {(selectedItemType === ITEM_TYPE.BLANK_WIDGET || selectedItemType === ITEM_TYPE.BLANK_ROW || selectedItemType === ITEM_TYPE.BLANK_APP) && (
                                         <Grid>
                                             <CheckboxElement
-                                                label='Admin Only'
+                                                label={t('forms.addEdit.fields.adminOnly')}
                                                 name='adminOnly'
                                                 checked={formContext.watch('adminOnly')}
                                                 sx={{
@@ -915,7 +954,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
 
                                     <Grid sx={{ width: '100%', display: 'flex', justifyContent: 'center', mt: 2 }}>
                                         <Button variant='contained' type='submit' sx={{ minHeight: '3rem' }} fullWidth>
-                                            {existingItem ? 'Update' : 'Add'}
+                                            {existingItem ? t('forms.addEdit.update') : t('forms.addEdit.add')}
                                         </Button>
                                     </Grid>
                                 </>

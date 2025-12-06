@@ -1,6 +1,7 @@
 import { Box, useMediaQuery } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { SearchBar } from './SearchBar';
 import { useAppContext } from '../../context/useAppContext';
@@ -16,6 +17,7 @@ type SearchOption = {
 };
 
 export const GlobalSearch = () => {
+    const { t } = useTranslation();
     const [searchOptions, setSearchOptions] = useState<SearchOption[]>([]);
     const [searchValue, setSearchValue] = useState('');
     const { dashboardLayout, config, pages } = useAppContext();
@@ -155,7 +157,7 @@ export const GlobalSearch = () => {
     return (
         <Box sx={{ width: '100%' }}>
             <SearchBar
-                placeholder='Search...'
+                placeholder={t('common.searchPlaceholder')}
                 searchValue={searchValue}
                 setSearchValue={setSearchValue}
                 autocompleteOptions={searchOptions}

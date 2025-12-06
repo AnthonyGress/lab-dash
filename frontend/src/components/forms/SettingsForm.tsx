@@ -1,7 +1,8 @@
 import CloseIcon from '@mui/icons-material/Close';
-import { Box, Button, Tab, Tabs, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material';
+import { Box, Button, Tab, Tabs, Tooltip, Typography, useMediaQuery, useTheme, MenuItem, Select, FormControl } from '@mui/material';
 import React, { SyntheticEvent, useEffect, useMemo, useState } from 'react';
 import { CheckboxElement, FormContainer, SelectElement, TextFieldElement, useForm } from 'react-hook-form-mui';
+import { useTranslation } from 'react-i18next';
 import { FaCog } from 'react-icons/fa';
 import { FaClockRotateLeft, FaImage, FaKeyboard, FaTrashCan } from 'react-icons/fa6';
 import { useNavigate } from 'react-router-dom';
@@ -71,12 +72,21 @@ function a11yProps(index: number) {
 }
 
 // Separate component for image preview to handle state properly
-const ImagePreviewCard = ({ image, onDelete, formatFileSize }: {
+const ImagePreviewCard = ({ image, onDelete }: {
     image: any;
     onDelete: () => void;
-    formatFileSize: (bytes: number) => string;
 }) => {
     const [imageError, setImageError] = useState(false);
+    const { t } = useTranslation();
+    
+    // Format file size for display
+    const formatFileSize = (bytes: number): string => {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
 
     return (
         <Box
@@ -110,7 +120,7 @@ const ImagePreviewCard = ({ image, onDelete, formatFileSize }: {
                         color: 'rgba(255, 255, 255, 0.5)',
                         fontSize: '12px'
                     }}>
-                        Preview unavailable
+                        {t('settings.appearance.previewUnavailable')}
                     </Typography>
                 ) : (
                     <img
@@ -148,21 +158,21 @@ const ImagePreviewCard = ({ image, onDelete, formatFileSize }: {
                     fontSize: '0.7rem'
                 }}>
                     <Typography variant='caption' sx={{ fontSize: '0.7rem' }}>
-                        Size:
+                        {t('settings.appearance.details.size')}
                     </Typography>
                     <Typography variant='caption' sx={{ fontSize: '0.7rem' }}>
                         {formatFileSize(image.size)}
                     </Typography>
 
                     <Typography variant='caption' sx={{ fontSize: '0.7rem' }}>
-                        Uploaded:
+                        {t('settings.appearance.details.uploaded')}
                     </Typography>
                     <Typography variant='caption' sx={{ fontSize: '0.7rem' }}>
                         {new Date(image.uploadDate).toLocaleDateString()}
                     </Typography>
 
                     <Typography variant='caption' sx={{ fontSize: '0.7rem' }}>
-                        Type:
+                        {t('settings.appearance.details.type')}
                     </Typography>
                     <Typography variant='caption' sx={{
                         fontSize: '0.7rem',
@@ -185,7 +195,7 @@ const ImagePreviewCard = ({ image, onDelete, formatFileSize }: {
                         minHeight: 'unset'
                     }}
                 >
-                    Delete
+                    {t('settings.appearance.delete')}
                 </Button>
             </Box>
         </Box>
@@ -193,6 +203,8 @@ const ImagePreviewCard = ({ image, onDelete, formatFileSize }: {
 };
 
 export const SettingsForm = () => {
+    const { t, i18n } = useTranslation();
+    const [userLanguage, setUserLanguage] = useState(i18n.language);
     const [isCustomProvider, setIsCustomProvider] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
     const { config, updateConfig, refreshDashboard, pages } = useAppContext();
@@ -202,6 +214,10 @@ export const SettingsForm = () => {
     const navigate = useNavigate();
     const [uploadedImages, setUploadedImages] = useState<any[]>([]);
     const [loadingImages, setLoadingImages] = useState(false);
+
+    const handleLanguageChange = async (newLang: string) => {
+        setUserLanguage(newLang);
+    };
 
     // Detect user's OS for appropriate command key display
     const isMac = useMemo(() => {
@@ -230,6 +246,7 @@ export const SettingsForm = () => {
             {children}
         </Box>
     );
+
     // Add custom styling for menu items
     useEffect(() => {
         // Create a style element
@@ -265,8 +282,7 @@ export const SettingsForm = () => {
 
         // Check if it matches any predefined provider
         for (const provider of SEARCH_PROVIDERS) {
-            if (provider.id !== 'custom' &&
-                url === provider.url) {
+            if (provider.id !== 'custom' && url === provider.url) {
                 return provider.id;
             }
         }
@@ -296,7 +312,7 @@ export const SettingsForm = () => {
                         ? SEARCH_PROVIDERS.find(p => p.id === initialProviderId)?.url || ''
                         : ''
             },
-            showInternetIndicator: config?.showInternetIndicator !== false, // Default to true
+            showInternetIndicator: config?.showInternetIndicator !== false,  // Default to true
             configFile: null,
             appIconFiles: null
         }
@@ -346,6 +362,9 @@ export const SettingsForm = () => {
     useEffect(() => {
         // Check if there are changes that would be saved
         const checkForChanges = () => {
+            // Language change
+            if (userLanguage !== i18n.language) return true;
+
             // Title change
             if (title !== (config?.title || 'Lab Dash')) return true;
 
@@ -371,7 +390,6 @@ export const SettingsForm = () => {
                     // Check predefined provider
                     const selectedProvider = SEARCH_PROVIDERS.find(p => p.id === searchProviderId);
                     if (!selectedProvider) return false;
-
                     // Compare with current config
                     if (config?.searchProvider) {
                         if (selectedProvider.url !== config.searchProvider.url) return true;
@@ -385,15 +403,15 @@ export const SettingsForm = () => {
                 // Currently has search enabled, but form has it disabled
                 return true;
             }
-
             // Config file is handled separately and doesn't affect this button
 
             // No changes detected
             return false;
         };
-
         setHasChanges(checkForChanges());
     }, [
+        userLanguage,
+        i18n.language,
         title,
         backgroundFile,
         appIconFiles,
@@ -411,7 +429,13 @@ export const SettingsForm = () => {
 
     const handleSubmit = async (data: any) => {
         try {
-            // console.log('Form data submitted:', data);
+            // Checking if the user selected a different language than the current one
+            if (userLanguage !== i18n.language) {
+                // First, change the language in i18next (this re-renders the application)
+                await i18n.changeLanguage(userLanguage);
+                // Update the profile in the database
+                await DashApi.updateProfile({ language: userLanguage });
+            }
 
             const updatedConfig: Partial<Config> = {};
 
@@ -435,8 +459,8 @@ export const SettingsForm = () => {
 
             // Handle search provider if search is enabled
             if (data.search && data.searchProviderId) {
+                // Use custom provider settings
                 if (data.searchProviderId === 'custom' && data.searchProvider) {
-                    // Use custom provider settings
                     const { name, url } = data.searchProvider;
                     if (name && url) {
                         updatedConfig.searchProvider = { name, url };
@@ -467,30 +491,36 @@ export const SettingsForm = () => {
                             if (typeof fileContent === 'string') {
                                 const importedConfig = JSON.parse(fileContent) as Config;
 
-
                                 // Validate imported config has required structure
                                 if (importedConfig && typeof importedConfig === 'object') {
                                     // Use the new import endpoint instead of updateConfig
                                     await DashApi.importConfig(importedConfig);
                                     await refreshDashboard();
-
                                     // Show success message
-                                    PopupManager.success('Configuration restored successfully!', () => navigate('/'));
-
+                                    PopupManager.success(
+                                        t('common.successTitle'),
+                                        t('settings.backup.restoreSuccess'),
+                                        () => navigate('/')
+                                    );
                                     // Reset the file input
                                     formContext.resetField('configFile');
                                 }
                             }
                         } catch (error) {
-                            PopupManager.failure('Failed to restore configuration. The file format may be invalid.');
+                            PopupManager.failure(
+                                t('common.errorTitle'),
+                                t('settings.backup.restoreError')
+                            );
                             console.error('Error restoring configuration:', error);
                         }
                     };
-
                     fileReader.readAsText(data.configFile);
                     return; // Skip other updates when importing config
                 } catch (error) {
-                    PopupManager.failure('Failed to restore configuration. The file format may be invalid.');
+                    PopupManager.failure(
+                        t('common.errorTitle'),
+                        t('settings.backup.restoreError')
+                    );
                     console.error('Error restoring configuration:', error);
                 }
             }
@@ -500,23 +530,32 @@ export const SettingsForm = () => {
                 try {
                     const uploadedIcons = await DashApi.uploadAppIconsBatch(data.appIconFiles);
                     if (uploadedIcons.length > 0) {
-                        PopupManager.success(`${uploadedIcons.length} app icon(s) uploaded successfully!`);
+
+                        PopupManager.success(
+                            t('common.successTitle'),
+                            t('settings.appearance.uploadSuccess', { count: uploadedIcons.length })
+                        );
                         // Reset the app icon files field
                         formContext.resetField('appIconFiles');
                         // Refresh uploaded images list
                         await loadUploadedImages();
                     } else {
-                        PopupManager.failure('Failed to upload app icons. Please try again.');
+                        PopupManager.failure(
+                            t('common.errorTitle'),
+                            t('settings.appearance.uploadError')
+                        );
                     }
                 } catch (error) {
-                    PopupManager.failure('Failed to upload app icons. Please try again.');
+                    PopupManager.failure(
+                        t('common.errorTitle'),
+                        t('settings.appearance.uploadError')
+                    );
                     console.error('Error uploading app icons:', error);
                 }
             }
 
             if (Object.keys(updatedConfig).length > 0) {
                 const hasBackgroundImage = data.backgroundFile instanceof File;
-
                 await updateConfig(updatedConfig); // Update only the provided fields
 
                 // If a background image was uploaded, refresh the uploaded images list
@@ -526,11 +565,14 @@ export const SettingsForm = () => {
 
                 // Show success message (only if no app icons were uploaded, to avoid duplicate messages)
                 if (!data.appIconFiles || data.appIconFiles.length === 0) {
-                    PopupManager.success('Settings updated successfully!');
+                    PopupManager.success(
+                        t('common.successTitle'),
+                        t('settings.general.saveSuccess')
+                    );
                 }
+
                 // Refresh the form with new config values (optional)
                 const refreshedConfig = await DashApi.getConfig();
-
                 // Get the correct provider ID based on the saved config
                 const savedSearchProviderId = refreshedConfig?.searchProvider
                     ? (() => {
@@ -561,16 +603,20 @@ export const SettingsForm = () => {
             }
         } catch (error) {
             // Show error message
-            PopupManager.failure('Failed to update settings. Please try again.');
+            PopupManager.failure(
+                t('common.errorTitle'),
+                t('settings.general.saveError')
+            );
             console.error('Error updating settings:', error);
         }
     };
 
     const resetBackground = async () => {
         PopupManager.deleteConfirmation({
-            title: 'Reset Background',
-            text: 'This will restore the default background and remove all uploaded background images.',
-            confirmText: 'Yes, Reset',
+            title: t('settings.appearance.resetBackgroundConfirmTitle'),
+            text: t('settings.appearance.resetBackgroundConfirmText'),
+            confirmText: t('settings.appearance.resetBackgroundConfirmButton'),
+            denyText: t('common.deny'),
             confirmAction: async () => {
                 try {
                     // First clean up all background images in the root directory
@@ -578,10 +624,15 @@ export const SettingsForm = () => {
 
                     // Then update the config to use the default background
                     await updateConfig({ backgroundImage: '' });
-
-                    PopupManager.success('Background has been reset');
+                    PopupManager.success(
+                        t('common.successTitle'),
+                        t('settings.appearance.resetBackgroundSuccess')
+                    );
                 } catch (error) {
-                    PopupManager.failure('Failed to reset background. Please try again.');
+                    PopupManager.failure(
+                        t('common.errorTitle'),
+                        t('settings.appearance.resetBackgroundError')
+                    );
                     console.error('Error resetting background:', error);
                 }
             }
@@ -596,7 +647,10 @@ export const SettingsForm = () => {
             setUploadedImages(images);
         } catch (error) {
             console.error('Error loading uploaded images:', error);
-            PopupManager.failure('Failed to load uploaded images');
+            PopupManager.failure(
+                t('common.errorTitle'),
+                t('settings.appearance.loadImagesError')
+            );
         } finally {
             setLoadingImages(false);
         }
@@ -605,8 +659,10 @@ export const SettingsForm = () => {
     // Delete uploaded image
     const deleteUploadedImage = async (imagePath: string, imageName: string, imageType: string) => {
         PopupManager.deleteConfirmation({
-            title: 'Delete Image',
-            text: `Are you sure you want to delete "${imageName}"? This action cannot be undone.`,
+            title: t('settings.appearance.deleteImageConfirmTitle'),
+            text: t('settings.appearance.deleteImageConfirmText', { name: imageName }),
+            confirmText: t('common.yesDelete'),
+            denyText: t('common.deny'),
             confirmAction: async () => {
                 try {
                     const success = await DashApi.deleteUploadedImage(imagePath);
@@ -615,38 +671,35 @@ export const SettingsForm = () => {
                         if (imageType === 'background') {
                             try {
                                 await updateConfig({ backgroundImage: '' });
-                                ToastManager.success('Background image deleted and reset to default');
+                                ToastManager.success(t('settings.appearance.deleteBackgroundSuccess'));
                             } catch (configError) {
                                 console.error('Error resetting background config:', configError);
-                                ToastManager.success('Image deleted successfully, but failed to reset background config');
+                                ToastManager.success(t('settings.appearance.deleteBackgroundConfigError'));
                             }
                         } else {
-                            ToastManager.success(`${imageName} deleted successfully`);
+                            ToastManager.success(t('settings.appearance.deleteSuccess', { name: imageName }));
                         }
-                        await loadUploadedImages(); // Refresh the list
+                        await loadUploadedImages();  // Refresh the list
                     } else {
-                        PopupManager.failure('Failed to delete image');
+                        PopupManager.failure(
+                            t('common.errorTitle'),
+                            t('settings.appearance.deleteError')
+                        );
                     }
                 } catch (error) {
                     console.error('Error deleting image:', error);
-                    PopupManager.failure('Failed to delete image');
+                    PopupManager.failure(
+                        t('common.errorTitle'),
+                        t('settings.appearance.deleteError')
+                    );
                 }
             }
         });
     };
 
-    // Format file size for display
-    const formatFileSize = (bytes: number): string => {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    };
-
     // Load images when component mounts or when appearance tab is selected
     useEffect(() => {
-        if (tabValue === 1) { // Appearance tab
+        if (tabValue === 1) { 
             loadUploadedImages();
         }
     }, [tabValue]);
@@ -655,7 +708,7 @@ export const SettingsForm = () => {
         <FormContainer onSuccess={handleSubmit} formContext={formContext}>
             <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant='h4' sx={{ p: 2 }}>Settings</Typography>
+                    <Typography variant='h4' sx={{ p: 2 }}>{t('settings.title')}</Typography>
                     <Box sx={{ p: 2 }}>
                         <Button
                             variant='contained'
@@ -667,7 +720,7 @@ export const SettingsForm = () => {
                                 }
                             }}
                         >
-                            Save Changes
+                            {t('settings.save')}
                         </Button>
                     </Box>
                 </Box>
@@ -708,10 +761,10 @@ export const SettingsForm = () => {
                             }
                         }}
                     >
-                        <Tab icon={<FaCog style={{ fontSize: '1.2rem' }} />} label='General' {...a11yProps(0)} />
-                        <Tab icon={<FaImage style={{ fontSize: '1.2rem' }} />} label='Appearance' {...a11yProps(1)} />
-                        <Tab icon={<FaClockRotateLeft style={{ fontSize: '1.2rem' }} />} label='Backup' {...a11yProps(2)} />
-                        <Tab icon={<FaKeyboard style={{ fontSize: '1.2rem' }} />} label='Hotkeys' {...a11yProps(3)} />
+                        <Tab icon={<FaCog style={{ fontSize: '1.2rem' }} />} label={t('settings.tabs.general')} {...a11yProps(0)} />
+                        <Tab icon={<FaImage style={{ fontSize: '1.2rem' }} />} label={t('settings.tabs.appearance')} {...a11yProps(1)} />
+                        <Tab icon={<FaClockRotateLeft style={{ fontSize: '1.2rem' }} />} label={t('settings.tabs.backup')} {...a11yProps(2)} />
+                        <Tab icon={<FaKeyboard style={{ fontSize: '1.2rem' }} />} label={t('settings.tabs.hotkeys')} {...a11yProps(3)} />
                     </Tabs>
 
                     <TabPanel value={tabValue} index={0}>
@@ -720,7 +773,7 @@ export const SettingsForm = () => {
                             flexDirection: 'column',
                             gap: 3
                         }}>
-                            <Typography variant='h6'>General Settings</Typography>
+                            <Typography variant='h6'>{t('settings.general.title')}</Typography>
 
                             <Box sx={{
                                 display: 'grid',
@@ -731,7 +784,31 @@ export const SettingsForm = () => {
                                 <Typography variant='body1' sx={{
                                     alignSelf: 'center',
                                     fontSize: { xs: '0.875rem', sm: '1rem' }
-                                }}>Custom Title</Typography>
+                                }}>
+                                    {t('settings.language')}
+                                </Typography>
+                                <Box>
+                                    <FormControl fullWidth size="small" sx={{ width: '95%' }}>
+                                        <Select
+                                            value={userLanguage}
+                                            onChange={(e) => handleLanguageChange(e.target.value)}
+                                            sx={{
+                                                '& .MuiOutlinedInput-root': {
+                                                    '& fieldset': { borderColor: theme.palette.text.primary },
+                                                },
+                                                color: 'text.primary'
+                                            }}
+                                        >
+                                            <MenuItem value="en">English</MenuItem>
+                                            <MenuItem value="pl">Polski</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                </Box>
+
+                                <Typography variant='body1' sx={{
+                                    alignSelf: 'center',
+                                    fontSize: { xs: '0.875rem', sm: '1rem' }
+                                }}>{t('settings.general.customTitle')}</Typography>
                                 <Box>
                                     <TextFieldElement
                                         name='title'
@@ -743,7 +820,7 @@ export const SettingsForm = () => {
                                 <Typography variant='body1' sx={{
                                     alignSelf: 'center',
                                     fontSize: { xs: '0.875rem', sm: '1rem' }
-                                }}>Enable Search</Typography>
+                                }}>{t('settings.general.enableSearch')}</Typography>
                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                     <CheckboxElement
                                         name='search'
@@ -754,7 +831,7 @@ export const SettingsForm = () => {
                                 <Typography variant='body1' sx={{
                                     alignSelf: 'center',
                                     fontSize: { xs: '0.875rem', sm: '1rem' }
-                                }}>Show Internet Indicator</Typography>
+                                }}>{t('settings.general.showInternet')}</Typography>
                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                     <CheckboxElement
                                         name='showInternetIndicator'
@@ -767,7 +844,7 @@ export const SettingsForm = () => {
                                         <Typography variant='body1' sx={{
                                             alignSelf: 'center',
                                             fontSize: { xs: '0.875rem', sm: '1rem' }
-                                        }}>Search Provider</Typography>
+                                        }}>{t('settings.general.searchProvider')}</Typography>
                                         <Box>
                                             <SelectElement
                                                 name='searchProviderId'
@@ -797,7 +874,7 @@ export const SettingsForm = () => {
                                                 <Typography variant='body1' sx={{
                                                     alignSelf: 'center',
                                                     fontSize: { xs: '0.875rem', sm: '1rem' }
-                                                }}>Provider Name</Typography>
+                                                }}>{t('settings.general.providerName')}</Typography>
                                                 <Box>
                                                     <TextFieldElement
                                                         name='searchProvider.name'
@@ -819,18 +896,21 @@ export const SettingsForm = () => {
                                                 <Box sx={{
                                                     alignSelf: 'center'
                                                 }}>
-                                                    <Typography variant='body1' sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>Search URL</Typography>
+                                                    <Typography variant='body1' sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>{t('settings.general.searchUrl')}</Typography>
                                                     <Typography variant='caption' sx={{
                                                         display: 'block',
                                                         fontSize: { xs: '0.7rem', sm: '0.75rem' }
                                                     }}>
-                                                            Use {'{query}'} as placeholder
+                                                        {t('settings.general.searchUrlPlaceholder')}
                                                     </Typography>
                                                 </Box>
                                                 <Box>
                                                     <TextFieldElement
                                                         name='searchProvider.url'
-                                                        helperText={isMobile ? 'Example: ...search?q={query}' : 'Example: https://www.google.com/search?q={query}'}
+                                                        helperText={isMobile
+                                                            ? t('settings.general.searchUrlHelperMobile')
+                                                            : t('settings.general.searchUrlHelperDesktop')
+                                                        }
                                                         sx={{
                                                             width: '95%',
                                                             '& .MuiInputBase-root': {
@@ -870,8 +950,10 @@ export const SettingsForm = () => {
                                     color='error'
                                     onClick={() => {
                                         PopupManager.deleteConfirmation({
-                                            title: 'Reset All Settings',
-                                            text: 'Are you sure you want to reset all settings? This cannot be undone.',
+                                            title: t('settings.general.resetConfirmTitle'),
+                                            text: t('settings.general.resetConfirmText'),
+                                            confirmText: t('common.yesDelete'),
+                                            denyText: t('common.deny'),
                                             confirmAction: async () => {
                                                 await updateConfig({
                                                     title: 'Lab Dash',
@@ -881,13 +963,17 @@ export const SettingsForm = () => {
                                                     showInternetIndicator: true
                                                 });
                                                 await refreshDashboard();
-                                                PopupManager.success('All settings have been reset', () => navigate('/'));
+                                                PopupManager.success(
+                                                    t('common.successTitle'),
+                                                    t('settings.general.resetSuccess'),
+                                                    () => navigate('/')
+                                                );
                                             }
                                         });
                                     }}
                                     sx={{ minWidth: { xs: 'auto', sm: '200px' } }}
                                 >
-                                        Reset All Settings
+                                    {t('settings.general.reset')}
                                 </Button>
                             </Box>
 
@@ -900,7 +986,7 @@ export const SettingsForm = () => {
                             flexDirection: 'column',
                             gap: 3
                         }}>
-                            <Typography variant='h6'>Appearance Settings</Typography>
+                            <Typography variant='h6'>{t('settings.appearance.title')}</Typography>
 
                             <Box sx={{
                                 display: 'grid',
@@ -911,14 +997,14 @@ export const SettingsForm = () => {
                                 <Typography variant='body1' sx={{
                                     alignSelf: 'center',
                                     fontSize: { xs: '0.875rem', sm: '1rem' }
-                                }}>Background Image</Typography>
+                                }}>{t('settings.appearance.background')}</Typography>
                                 <Box sx={{ position: 'relative' }}>
                                     <FileInput
                                         name='backgroundFile'
                                         sx={{ width: '95%' }}
                                     />
                                     {backgroundFile && (
-                                        <Tooltip title='Clear'>
+                                        <Tooltip title={t('settings.appearance.clearIcons')}>
                                             <CloseIcon
                                                 onClick={() => formContext.resetField('backgroundFile')}
                                                 sx={{
@@ -928,7 +1014,7 @@ export const SettingsForm = () => {
                                                     transform: 'translateY(-50%)',
                                                     cursor: 'pointer',
                                                     fontSize: 22,
-                                                    color: 'rgba(255, 255, 255, 0.7)',
+                                                    color: 'rgba(255, 255, 255, 0.7)'
                                                 }}
                                             />
                                         </Tooltip>
@@ -938,7 +1024,7 @@ export const SettingsForm = () => {
                                 <Typography variant='body1' sx={{
                                     alignSelf: 'center',
                                     fontSize: { xs: '0.875rem', sm: '1rem' }
-                                }}>Upload App Icons</Typography>
+                                }}>{t('settings.appearance.uploadIcons')}</Typography>
                                 <Box sx={{ position: 'relative' }}>
                                     <MultiFileInput
                                         name='appIconFiles'
@@ -946,7 +1032,7 @@ export const SettingsForm = () => {
                                         sx={{ width: '95%' }}
                                     />
                                     {appIconFiles && appIconFiles.length > 0 && (
-                                        <Tooltip title='Clear'>
+                                        <Tooltip title={t('settings.appearance.clearIcons')}>
                                             <CloseIcon
                                                 onClick={() => formContext.resetField('appIconFiles')}
                                                 sx={{
@@ -956,7 +1042,7 @@ export const SettingsForm = () => {
                                                     transform: 'translateY(-50%)',
                                                     cursor: 'pointer',
                                                     fontSize: 22,
-                                                    color: 'rgba(255, 255, 255, 0.7)',
+                                                    color: 'rgba(255, 255, 255, 0.7)'
                                                 }}
                                             />
                                         </Tooltip>
@@ -978,29 +1064,29 @@ export const SettingsForm = () => {
                                     onClick={async () => {
                                         try {
                                             const response = await DashApi.clearIconCache();
-                                            ToastManager.success(response.message || 'Icon cache cleared successfully');
+                                            ToastManager.success(t('settings.appearance.cacheCleared'));
                                         } catch (error) {
                                             console.error('Error clearing icon cache:', error);
-                                            ToastManager.error('Failed to clear icon cache');
+                                            ToastManager.error(t('settings.appearance.clearCacheError'));
                                         }
                                     }}
                                 >
-                                    Clear Icon Cache
+                                    {t('settings.appearance.clearCache')}
                                 </Button>
                                 <Button variant='contained' onClick={resetBackground} color='error'>
-                                        Reset Background
+                                    {t('settings.appearance.resetBackground')}
                                 </Button>
                             </Box>
 
                             {/* Image Management Section */}
                             <Box>
-                                <Typography variant='h6' sx={{ mb: 2 }}>Uploaded Images</Typography>
+                                <Typography variant='h6' sx={{ mb: 2 }}>{t('settings.appearance.uploadedImages')}</Typography>
 
                                 {loadingImages ? (
-                                    <Typography>Loading images...</Typography>
+                                    <Typography>{t('settings.appearance.loadingImages')}</Typography>
                                 ) : uploadedImages.length === 0 ? (
                                     <Typography variant='body2' sx={{ fontStyle: 'italic' }}>
-                                        No uploaded images found.
+                                        {t('settings.appearance.noImages')}
                                     </Typography>
                                 ) : (
                                     <Box sx={{
@@ -1016,7 +1102,6 @@ export const SettingsForm = () => {
                                                 key={index}
                                                 image={image}
                                                 onDelete={() => deleteUploadedImage(image.path, image.name, image.type)}
-                                                formatFileSize={formatFileSize}
                                             />
                                         ))}
                                     </Box>
@@ -1031,7 +1116,7 @@ export const SettingsForm = () => {
                             flexDirection: 'column',
                             gap: 3
                         }}>
-                            <Typography variant='h6'>Backup Settings</Typography>
+                            <Typography variant='h6'>{t('settings.backup.title')}</Typography>
 
                             <Box sx={{
                                 display: 'grid',
@@ -1044,7 +1129,7 @@ export const SettingsForm = () => {
                                     fontSize: { xs: '0.875rem', sm: '1rem' },
                                     width: '10rem'
 
-                                }}>Export Configuration</Typography>
+                                }}>{t('settings.backup.export')}</Typography>
                                 <Box ml={2}>
                                     <Button
                                         variant='contained'
@@ -1053,14 +1138,20 @@ export const SettingsForm = () => {
                                             try {
                                                 // Use the server-side export API instead of client-side JSON generation
                                                 await DashApi.exportConfig();
-                                                PopupManager.success('Configuration exported successfully!');
+                                                PopupManager.success(
+                                                    t('common.successTitle'),
+                                                    t('settings.backup.exportSuccess')
+                                                );
                                             } catch (error) {
-                                                PopupManager.failure('Failed to export configuration');
+                                                PopupManager.failure(
+                                                    t('common.errorTitle'),
+                                                    t('settings.backup.exportError')
+                                                );
                                                 console.error('Error exporting configuration:', error);
                                             }
                                         }}
                                     >
-                                        Export
+                                        {t('settings.backup.exportBtn')}
                                     </Button>
                                 </Box>
 
@@ -1068,7 +1159,7 @@ export const SettingsForm = () => {
                                     alignSelf: 'center',
                                     fontSize: { xs: '0.875rem', sm: '1rem' },
                                     width: '10rem'
-                                }}>Restore Configuration</Typography>
+                                }}>{t('settings.backup.restore')}</Typography>
                                 <Box ml={2}>
                                     <FileInput
                                         name='configFile'
@@ -1089,7 +1180,7 @@ export const SettingsForm = () => {
                                     alignSelf: 'center',
                                     fontSize: { xs: '0.875rem', sm: '1rem' },
                                     width: '10rem'
-                                }}>Layout Sync</Typography>
+                                }}>{t('settings.backup.layoutSync')}</Typography>
                                 <Box ml={2}>
                                     <Button
                                         variant='contained'
@@ -1097,12 +1188,15 @@ export const SettingsForm = () => {
                                         onClick={async () => {
                                             try {
                                                 PopupManager.deleteConfirmation({
-                                                    title: 'Copy Desktop Layout to Mobile',
-                                                    text: 'This will overwrite your current mobile layout with your desktop layout. Continue?',
-                                                    confirmText: 'Yes, Copy',
+                                                    title: t('settings.backup.copyLayoutConfirmTitle'),
+                                                    text: t('settings.backup.copyLayoutConfirmText'),
+                                                    confirmText: t('settings.backup.copyLayoutConfirmButton'),
                                                     confirmAction: async () => {
                                                         if (!config?.layout?.desktop) {
-                                                            PopupManager.failure('No desktop layout found to copy');
+                                                            PopupManager.failure(
+                                                                t('common.errorTitle'),
+                                                                t('settings.backup.noLayoutError')
+                                                            );
                                                             return;
                                                         }
 
@@ -1113,21 +1207,27 @@ export const SettingsForm = () => {
                                                                 mobile: [...config.layout.desktop]
                                                             }
                                                         };
-
+                                                        
                                                         // Save the updated layout
                                                         await updateConfig(updatedLayout);
                                                         await refreshDashboard();
 
-                                                        PopupManager.success('Desktop layout successfully copied to mobile');
+                                                        PopupManager.success(
+                                                            t('common.successTitle'),
+                                                            t('settings.backup.copyLayoutSuccess')
+                                                        );
                                                     }
                                                 });
                                             } catch (error) {
-                                                PopupManager.failure('Failed to copy desktop layout to mobile');
+                                                PopupManager.failure(
+                                                    t('common.errorTitle'),
+                                                    t('settings.backup.copyLayoutError')
+                                                );
                                                 console.error('Error copying layout:', error);
                                             }
                                         }}
                                     >
-                                        Copy Desktop Layout to Mobile
+                                        {t('settings.backup.copyLayout')}
                                     </Button>
                                 </Box>
                             </Box>
@@ -1140,9 +1240,9 @@ export const SettingsForm = () => {
                             flexDirection: 'column',
                             gap: 3
                         }}>
-                            <Typography variant='h6'>Keyboard Shortcuts</Typography>
+                            <Typography variant='h6'>{t('settings.hotkeys.title')}</Typography>
                             <Typography variant='body1' sx={{ mb: 2 }}>
-                                Use these keyboard shortcuts to quickly navigate and control your dashboard.
+                                {t('settings.hotkeys.description')}
                             </Typography>
 
                             <Box sx={{
@@ -1153,7 +1253,7 @@ export const SettingsForm = () => {
                                 {/* Search Hotkeys */}
                                 <Box>
                                     <Typography variant='subtitle1' sx={{ mb: 1, fontWeight: 600 }}>
-                                        Search
+                                        {t('settings.hotkeys.search')}
                                     </Typography>
                                     <Box sx={{
                                         display: 'flex',
@@ -1169,7 +1269,7 @@ export const SettingsForm = () => {
                                             borderRadius: 1,
                                             border: '1px solid rgba(255, 255, 255, 0.12)'
                                         }}>
-                                            <Typography variant='body1'>Focus search bar</Typography>
+                                            <Typography variant='body1'>{t('settings.hotkeys.focusSearch')}</Typography>
                                             <Box sx={{
                                                 display: 'flex',
                                                 gap: 0.5,
@@ -1186,7 +1286,7 @@ export const SettingsForm = () => {
                                 {/* Page Navigation Hotkeys */}
                                 <Box>
                                     <Typography variant='subtitle1' sx={{ mb: 1, fontWeight: 600 }}>
-                                        Page Navigation
+                                        {t('settings.hotkeys.navigation')}
                                     </Typography>
                                     <Box sx={{
                                         display: 'flex',
@@ -1203,7 +1303,7 @@ export const SettingsForm = () => {
                                             borderRadius: 1,
                                             border: '1px solid rgba(255, 255, 255, 0.12)'
                                         }}>
-                                            <Typography variant='body1'>Go to Home page</Typography>
+                                            <Typography variant='body1'>{t('settings.hotkeys.goHome')}</Typography>
                                             <Box sx={{
                                                 display: 'flex',
                                                 gap: 0.5,
@@ -1226,7 +1326,7 @@ export const SettingsForm = () => {
                                                 borderRadius: 1,
                                                 border: '1px solid rgba(255, 255, 255, 0.12)'
                                             }}>
-                                                <Typography variant='body1'>Go to {page.name}</Typography>
+                                                <Typography variant='body1'>{t('settings.hotkeys.goTo', { name: page.name })}</Typography>
                                                 <Box sx={{
                                                     display: 'flex',
                                                     gap: 0.5,
@@ -1248,7 +1348,7 @@ export const SettingsForm = () => {
                                             borderRadius: 1,
                                             border: '1px solid rgba(255, 255, 255, 0.12)'
                                         }}>
-                                            <Typography variant='body1'>Go to Settings page</Typography>
+                                            <Typography variant='body1'>{t('settings.hotkeys.goSettings')}</Typography>
                                             <Box sx={{
                                                 display: 'flex',
                                                 gap: 0.5,

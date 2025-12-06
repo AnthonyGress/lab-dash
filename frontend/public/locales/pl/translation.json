@@ -1,0 +1,965 @@
+{
+  "common": {
+    "next": "Dalej",
+    "back": "Wstecz",
+    "searchPlaceholder": "Szukaj...",
+    "searchFor": "Szukaj w {{provider}}: \"{{query}}\"",
+    "successTitle": "Sukces",
+    "errorTitle": "Błąd",
+    "loadingTitle": "Ładowanie",
+    "done": "Gotowe",
+    "yes": "Tak",
+    "cancel": "Anuluj",
+    "yesDelete": "Tak, Usuń",
+    "cannotUndo": "Tej operacji nie można cofnąć",
+    "confirm": "Potwierdź",
+    "deny": "Odrzuć",
+    "close": "Zamknij",
+    "retry": "Ponów",
+    "unknown": "Nieznany",
+    "edit": "Edytuj",
+    "duplicate": "Duplikuj",
+    "delete": "Usuń",
+    "moveToPage": "Przenieś na stronę"
+  },
+  "navigation": {
+    "home": "Strona główna",
+    "editDashboard": "Edytuj pulpit",
+    "settings": "Ustawienia",
+    "donate": "Wspomóż",
+    "donateSubtitle": "Wesprzyj ten projekt",
+    "updateAvailable": "Dostępna aktualizacja",
+    "version": "Wersja",
+    "recentlyUpdated": "Ostatnio zaktualizowane",
+    "addItem": "Dodaj element",
+    "admin": "Administrator",
+    "user": "Użytkownik",
+    "editPageTitle": "Edytuj Stronę",
+    "pageUpdateSuccess": "Strona zaktualizowana pomyślnie",
+    "pageUpdateFailed": "Nie udało się zaktualizować strony",
+    "internet": {
+      "online": "Połączono z internetem",
+      "offline": "Brak połączenia z internetem",
+      "checking": "Sprawdzanie połączenia..."
+    }
+  },
+  "dashboard": {
+    "deleteItemTitle": "Usunąć {{name}}?",
+    "deleteItemText": "Tej operacji nie można cofnąć",
+    "deleteSuccess": "{{name}} usunięto pomyślnie",
+    "editItemTitle": "Edytuj element",
+    "item": "Element",
+    "app": "Aplikacja"
+  },
+  "auth": {
+    "login": "Zaloguj się",
+    "username": "Nazwa użytkownika",
+    "password": "Hasło",
+    "logout": "Wyloguj",
+    "title": "Logowanie",
+    "submit": "Zaloguj",
+    "success": "Zalogowano pomyślnie!",
+    "failed": "Logowanie nie powiodło się",
+    "loggedOutSuccess": "Wylogowano pomyślnie",
+    "logoutError": "Błąd wylogowania"
+  },
+  "setup": {
+    "steps": {
+      "language": "Wybór języka",
+      "welcome": "Powitanie",
+      "features": "Funkcje",
+      "customization": "Dostosowywanie",
+      "privacy": "Prywatność",
+      "admin": "Konto Administratora"
+    },
+    "languageSelect": {
+      "title": "Witaj w Lab Dash",
+      "subtitle": "Wybierz swój język, aby rozpocząć",
+      "description": "Możesz zmienić ten wybór później w ustawieniach.",
+      "label": "Wybierz język"
+    },
+    "welcome": {
+      "title": "Twój Osobisty Pulpit",
+      "text1": "Witaj w Lab Dash, konfigurowalnym pulpicie nawigacyjnym dla Twojego środowiska serwerowego.",
+      "text2": "Kreator pomoże Ci skonfigurować system i rozpocząć pracę. Zajmie to tylko chwilę."
+    },
+    "features": {
+      "title": "Potężne Narzędzia",
+      "text": "Lab Dash oferuje układ siatki, w którym możesz dodawać różne widżety:",
+      "bullets": {
+        "links": "Skróty do Twoich narzędzi i usług",
+        "system": "Informacje o systemie",
+        "health": "Monitorowanie stanu usług",
+        "widgets": "Niestandardowe widżety i więcej"
+      }
+    },
+    "customization": {
+      "title": "Dopasuj do Siebie",
+      "text": "Możesz łatwo dostosować pulpit poprzez:",
+      "bullets": {
+        "drag": "Przeciąganie i zmianę kolejności widżetów",
+        "background": "Zmianę tła pulpitu",
+        "search": "Dodawanie własnych dostawców wyszukiwania",
+        "config": "Importowanie i eksportowanie konfiguracji"
+      }
+    },
+    "privacy": {
+      "title": "Twoje Dane są Prywatne",
+      "text": "Masz pełną kontrolę nad swoimi danymi i konfiguracją.",
+      "bullets": {
+        "local": "Wszystkie dane są przechowywane lokalnie na Twoim serwerze",
+        "admin": "Tylko administratorzy mogą wprowadzać zmiany",
+        "backup": "Konfiguracje można łatwo kopiować i przywracać"
+      }
+    },
+    "createAccount": {
+      "title": "Utwórz Konto Administratora",
+      "subtitle": "To będzie pierwsze konto użytkownika w Twoim systemie",
+      "username": "Nazwa użytkownika",
+      "password": "Hasło",
+      "confirmPassword": "Potwierdź hasło",
+      "submit": "Utwórz konto i kontynuuj",
+      "passwordMismatch": "Hasła nie pasują do siebie",
+      "usernameLength": "Nazwa użytkownika musi mieć co najmniej 3 znaki",
+      "passwordLength": "Hasło musi mieć co najmniej 6 znaków",
+      "success": "Konto utworzone pomyślnie!",
+      "error": "Nie udało się utworzyć konta"
+    }
+  },
+  "settings": {
+    "title": "Ustawienia",
+    "save": "Zapisz zmiany",
+    "language": "Język interfejsu",
+    "languageUpdated": "Język zaktualizowany pomyślnie",
+    "languageUpdateFailed": "Błąd aktualizacji języka",
+    "tabs": {
+      "general": "Ogólne",
+      "appearance": "Wygląd",
+      "backup": "Kopia zapasowa",
+      "hotkeys": "Skróty"
+    },
+    "general": {
+      "title": "Ustawienia Ogólne",
+      "customTitle": "Własny Tytuł",
+      "enableSearch": "Włącz wyszukiwarkę",
+      "showInternet": "Pokaż wskaźnik internetu",
+      "searchProvider": "Dostawca wyszukiwania",
+      "providerName": "Nazwa dostawcy",
+      "searchUrl": "URL wyszukiwania",
+      "searchUrlPlaceholder": "Użyj {query} jako symbolu zastępczego",
+      "searchUrlHelperMobile": "Przykład: ...search?q={query}",
+      "searchUrlHelperDesktop": "Przykład: https://www.google.com/search?q={query}",
+      "reset": "Resetuj wszystkie ustawienia",
+      "resetConfirmTitle": "Resetuj Wszystkie Ustawienia",
+      "resetConfirmText": "Czy na pewno chcesz zresetować wszystkie ustawienia? Tej operacji nie można cofnąć.",
+      "resetSuccess": "Wszystkie ustawienia zostały zresetowane",
+      "saveSuccess": "Ustawienia zostały zaktualizowane pomyślnie!",
+      "saveError": "Nie udało się zaktualizować ustawień. Spróbuj ponownie."
+    },
+    "appearance": {
+      "title": "Ustawienia Wyglądu",
+      "background": "Obraz tła",
+      "uploadIcons": "Prześlij ikony aplikacji",
+      "clearIcons": "Wyczyść",
+      "clearCache": "Wyczyść pamięć podręczną ikon",
+      "clearCacheSuccess": "Pamięć podręczna ikon wyczyszczona",
+      "clearCacheError": "Nie udało się wyczyścić pamięci podręcznej ikon",
+      "resetBackground": "Resetuj tło",
+      "resetBackgroundConfirmTitle": "Resetuj Tło",
+      "resetBackgroundConfirmText": "To przywróci domyślne tło i usunie wszystkie przesłane obrazy tła.",
+      "resetBackgroundConfirmButton": "Tak, Resetuj",
+      "resetBackgroundSuccess": "Tło zostało zresetowane",
+      "resetBackgroundError": "Nie udało się zresetować tła",
+      "uploadedImages": "Przesłane Obrazy",
+      "loadingImages": "Ładowanie obrazów...",
+      "loadImagesError": "Nie udało się załadować obrazów",
+      "noImages": "Nie znaleziono przesłanych obrazów.",
+      "previewUnavailable": "Podgląd niedostępny",
+      "delete": "Usuń",
+      "deleteImageConfirmTitle": "Usuń Obraz",
+      "deleteImageConfirmText": "Czy na pewno chcesz usunąć \"{{name}}\"? Tej operacji nie można cofnąć.",
+      "deleteSuccess": "{{name}} usunięto pomyślnie",
+      "deleteError": "Nie udało się usunąć obrazu",
+      "deleteBackgroundSuccess": "Usunięto tło i przywrócono domyślne",
+      "deleteBackgroundConfigError": "Obraz usunięty, ale nie udało się zresetować konfiguracji tła",
+      "uploadSuccess": "Przesłano pomyślnie {{count}} ikon aplikacji!",
+      "uploadError": "Nie udało się przesłać ikon aplikacji",
+      "cacheCleared": "Pamięć podręczna ikon wyczyszczona pomyślnie",
+      "selectFile": "Wybierz plik",
+      "selectFiles": "Wybierz do {{maxFiles}} plików",
+      "fileTooLarge": "Plik jest za duży. Maksymalny rozmiar to {{maxMB}}MB",
+      "filesTooLarge": "Niektóre pliki są za duże. Maksymalny rozmiar to {{maxMB}}MB na plik",
+      "tooManyFiles": "Zbyt wiele plików. Maksymalnie {{maxFiles}} plików.",
+      "details": {
+        "size": "Rozmiar:",
+        "uploaded": "Przesłano:",
+        "type": "Typ:"
+      }
+    },
+    "backup": {
+      "title": "Ustawienia Kopii Zapasowej",
+      "export": "Eksportuj konfigurację",
+      "exportBtn": "Eksportuj",
+      "exportSuccess": "Konfiguracja wyeksportowana pomyślnie!",
+      "exportError": "Nie udało się wyeksportować konfiguracji",
+      "restore": "Przywróć konfigurację",
+      "restoreSuccess": "Konfiguracja przywrócona pomyślnie!",
+      "restoreError": "Nie udało się przywrócić konfiguracji. Format pliku może być nieprawidłowy.",
+      "layoutSync": "Synchronizacja Układu",
+      "copyLayout": "Kopiuj układ pulpitu na mobilny",
+      "copyLayoutConfirmTitle": "Kopiuj Układ Pulpitu na Mobilny",
+      "copyLayoutConfirmText": "To nadpisze twój obecny układ mobilny układem pulpitu. Kontynuować?",
+      "copyLayoutConfirmButton": "Tak, Kopiuj",
+      "copyLayoutSuccess": "Układ pulpitu pomyślnie skopiowany na mobilny",
+      "copyLayoutError": "Nie udało się skopiować układu",
+      "noLayoutError": "Nie znaleziono układu pulpitu do skopiowania"
+    },
+    "hotkeys": {
+      "title": "Skróty Klawiszowe",
+      "description": "Używaj tych skrótów klawiszowych, aby szybko nawigować i kontrolować swój pulpit.",
+      "search": "Wyszukiwanie",
+      "focusSearch": "Aktywuj pasek wyszukiwania",
+      "navigation": "Nawigacja Strony",
+      "goHome": "Idź do Strony Głównej",
+      "goSettings": "Idź do Ustawień",
+      "goTo": "Idź do {{name}}"
+    }
+  },
+  "update": {
+    "title": "Dostępna aktualizacja",
+    "available": "Dostępna jest nowa wersja: {{version}}",
+    "notes": "Informacje o wydaniu:",
+    "guide": "Instrukcja aktualizacji",
+    "updateNow": "Zaktualizuj teraz",
+    "updating": "Aktualizowanie...",
+    "error": "Nie udało się zaktualizować kontenera"
+  },
+  "version": {
+    "titleCurrent": "Obecna Wersja",
+    "titleUpdate": "Informacje o Aktualizacji",
+    "header": "Wersja {{version}}",
+    "releaseNotes": "Informacje o wydaniu:",
+    "showingNotes": "Wyświetlanie notatek z wersji {{version}}",
+    "showingNotesUpdated": "Wyświetlanie notatek z wersji {{version}} (zaktualizowano z v{{oldVersion}})",
+    "changesNotFound": "Nie znaleziono zmian między {{oldVersion}} a {{newVersion}}. Wyświetlanie najnowszego dziennika zmian.",
+    "noDetailedNotes": "Brak szczegółowych informacji o wydaniu dla tej wersji.",
+    "noChangelog": "Brak dostępnego dziennika zmian.",
+    "fetchError": "Nie udało się pobrać informacji o wydaniu. Sprawdź połączenie lub spróbuj ponownie później."
+  },
+  "forms": {
+    "addEdit": {
+      "addItem": "Dodaj element",
+      "editItem": "Edytuj element",
+      "update": "Zaktualizuj",
+      "add": "Dodaj",
+      "back": "Wstecz",
+      "selectType": "Wybierz typ elementu",
+      "selectWidget": "Wybierz widżet",
+      "configure": "Konfiguruj {{type}}",
+      "healthCheck": {
+        "http": "Żądanie HTTP",
+        "ping": "Ping hosta"
+      },
+      "helpers": {
+        "optional": "Opcjonalne",
+        "defaultPort": "Domyślnie: 9",
+        "macFormat": "Format: xx:xx:xx:xx:xx:xx",
+        "broadcastDesc": "Adres rozgłoszeniowy dla twojej sieci"
+      },
+      "iconSearch": {
+        "selectIcon": "Wybierz ikonę*",
+        "customSuffix": "(Niestandardowa)",
+        "noIconsFound": "Nie znaleziono ikon",
+        "selectCustomIcon": "Wybierz własną ikonę"
+      },
+      "placeholderConfig": {
+        "placeholderSize": "Rozmiar wypełniacza",
+        "appShortcut": "Skrót aplikacji",
+        "widget": "Widżet",
+        "fullRow": "Pełny wiersz"
+      },
+      "types": {
+        "shortcut": "Skrót",
+        "shortcutDesc": "Link do strony, aplikacji lub usługi",
+        "widget": "Widżet",
+        "widgetDesc": "Interaktywne dane i monitorowanie na żywo",
+        "placeholder": "Odstęp",
+        "placeholderDesc": "Pusty element do organizacji układu",
+        "page": "Strona",
+        "pageDesc": "Dodaj nową stronę do menu nawigacyjnego"
+      },
+      "validation": {
+        "required": "To pole jest wymagane",
+        "invalidUrlExample": "Nieprawidłowy URL. Np.: \"http://192.168.x.x\" lub \"unifi-network://\"",
+        "invalidMac": "Nieprawidłowy format adresu MAC",
+        "invalidIp": "Nieprawidłowy format adresu IP",
+        "portNumber": "Port musi być liczbą"
+      },
+      "fields": {
+        "displayName": "Nazwa wyświetlana",
+        "url": "Adres URL",
+        "openInNewTab": "Otwórz w nowej karcie",
+        "host": "Host / IP",
+        "port": "Port",
+        "useSsl": "Użyj SSL (HTTPS)",
+        "username": "Nazwa użytkownika",
+        "password": "Hasło",
+        "apiKey": "Klucz API",
+        "apiToken": "Token API",
+        "showLabel": "Pokaż etykietę",
+        "adminOnly": "Tylko dla administratora",
+        "pageName": "Nazwa strony",
+        "pageNameRequired": "Nazwa strony jest wymagana",
+        "pageNameInvalid": "Nazwa strony może zawierać tylko litery, cyfry i spacje",
+        "pageNameReserved": "Nazwa strony nie może być \"settings\"",
+        "pageNameDuplicate": "Strona o nazwie \"{{value}}\" już istnieje. Wybierz inną nazwę.",
+        "pageHelper": "Strony są dodawane do menu nawigacyjnego"
+      }
+    }
+  },
+  "widgets": {
+    "titles": {
+      "adguard": "AdGuard Home",
+      "dateTime": "Data i Czas",
+      "diskMonitor": "Monitor Dysków",
+      "downloadClient": "Klient Pobierania",
+      "dual": "Podwójny Widżet",
+      "group": "Grupa",
+      "mediaRequest": "Prośby o Media",
+      "mediaServer": "Serwer Mediów",
+      "notes": "Notatki",
+      "pihole": "Pi-hole",
+      "radarr": "Radarr",
+      "sonarr": "Sonarr",
+      "system": "Monitor Systemu",
+      "weather": "Pogoda"
+    },
+    "descriptions": {
+      "adguard": "Monitorowanie statystyk blokowania DNS AdGuard",
+      "dateTime": "Aktualna data, czas i strefa czasowa",
+      "diskMonitor": "Wykorzystanie przestrzeni dyskowej",
+      "downloadClient": "Zarządzanie pobieraniem (Torrent/Usenet)",
+      "dual": "Dwa widżety w jednym kafelku",
+      "group": "Grupa skrótów w jednym kontenerze",
+      "mediaRequest": "Zarządzanie prośbami (Jellyseerr/Overseerr)",
+      "mediaServer": "Aktywność serwera mediów (Jellyfin/Plex)",
+      "notes": "Szybkie notatki z obsługą Markdown",
+      "pihole": "Statystyki blokowania DNS Pi-hole",
+      "radarr": "Zarządzanie filmami i monitorowanie",
+      "sonarr": "Zarządzanie serialami i monitorowanie",
+      "system": "CPU, RAM, temperatura, sieć",
+      "weather": "Warunki pogodowe i prognoza"
+    },
+    "common": {
+      "loading": "Ładowanie...",
+      "error": "Błąd",
+      "retry": "Ponów",
+      "offline": "Offline",
+      "online": "Online",
+      "authFailed": "Błąd uwierzytelniania",
+      "notConfigured": "Nie skonfigurowano",
+      "healthCheckType": "Typ sprawdzania stanu",
+      "healthCheckUrl": "URL sprawdzania stanu",
+      "hostnameIp": "Nazwa hosta lub adres IP",
+      "macAddress": "Adres MAC",
+      "broadcastAddress": "Adres rozgłoszeniowy (Opcjonalne)",
+      "portOptional": "Port (Opcjonalne)",
+      "wol": {
+        "title": "Wake-on-LAN",
+        "invalidConfig": "Nieprawidłowa konfiguracja Wake-on-LAN",
+        "packetSent": "Pakiet Wake-on-LAN wysłany do {{address}}",
+        "sendFailed": "Nie udało się wysłać pakietu Wake-on-LAN"
+      },
+      "fields": {
+         "host": "Host",
+         "apiKey": "Klucz API",
+         "password": "Hasło",
+         "useSsl": "Użyj SSL",
+         "showName": "Pokaż nazwę"
+      }
+    },
+    "dateTime": {
+      "config": {
+        "searchLocation": "Szukaj lokalizacji",
+        "searchPlaceholder": "Wpisz kod pocztowy lub miasto",
+        "searching": "Szukanie...",
+        "typeToSearch": "Wpisz aby wyszukać...",
+        "noLocationsFound": "Nie znaleziono lokalizacji",
+        "fetchingTimezone": "Pobieranie strefy czasowej...",
+        "timezoneError": "Nie udało się pobrać strefy czasowej",
+        "timezoneErrorInvalid": "Błąd: Nieprawidłowy format odpowiedzi",
+        "apiError": "Błąd: {{message}}",
+        "unknownError": "Nieznany błąd podczas pobierania strefy"
+      }
+    },
+    "diskMonitor": {
+      "config": {
+        "layout": "Układ",
+        "layoutGrid2x2": "Siatka 2x2",
+        "layoutGrid2x4": "Siatka 2x4",
+        "layoutList1x5": "Lista 1x5",
+        "atLeastOneDisk": "Przynajmniej jeden dysk musi być wybrany",
+        "diskLabel": "Dysk {{index}}",
+        "customName": "Nazwa własna",
+        "showMountPath": "Pokaż ścieżkę montowania",
+        "remove": "Usuń",
+        "addDisk": "Dodaj dysk ({{count}}/{{max}})",
+        "showDiskIcons": "Pokaż ikony dysków",
+        "showName": "Pokaż nazwę widżetu",
+        "loadingDisks": "Ładowanie dostępnych dysków...",
+        "noDisksAvailable": "Brak dostępnych dysków do monitorowania",
+        "title": "Układ i wybór dysków"
+      },
+      "title": "Monitor Dysków",
+      "loading": "Ładowanie dysków...",
+      "noDisks": "Brak skonfigurowanych dysków",
+      "errorFetch": "Błąd pobierania informacji o dyskach",
+      "errorNoInfo": "Brak dostępnych informacji o dyskach",
+      "free": "Wolne:",
+      "total": "Całkowite:",
+      "freeShort": "W:",
+      "totalShort": "C:"
+    },
+    "downloadClient": {
+      "config": {
+        "selectClient": "Wybierz klienta pobierania",
+        "apiKey": "Klucz API",
+        "password": "Hasło",
+        "usernameRequired": "Nazwa użytkownika jest wymagana",
+        "passwordRequired": "Hasło jest wymagane",
+        "apiKeyRequired": "Klucz API jest wymagany"
+      },
+      "status": {
+        "downloading": "Pobieranie",
+        "uploading": "Wysyłanie",
+        "seeding": "Wysyłanie (Seed)",
+        "paused": "Wstrzymane",
+        "pausedDL": "Wstrzymane (Pobieranie)",
+        "pausedUP": "Wstrzymane (Wysyłanie)",
+        "stalled": "Zatrzymane",
+        "stalledDL": "Zatrzymane (Pobieranie)",
+        "stalledUP": "Zatrzymane (Wysyłanie)",
+        "completed": "Ukończone",
+        "checking": "Sprawdzanie",
+        "checkingUP": "Sprawdzanie",
+        "queued": "W kolejce",
+        "stopped": "Zatrzymane",
+        "error": "Błąd",
+        "failed": "Niepowodzenie",
+        "warning": "Ostrzeżenie",
+        "unknown": "Nieznany",
+        "metaDL": "Pobieranie metadanych",
+        "forcedDL": "Wymuszone pobieranie",
+        "forcedUP": "Wymuszone wysyłanie",
+        "moving": "Przenoszenie",
+        "missingfiles": "Brakujące pliki",
+        "active": "Aktywne",
+        "extracting": "Rozpakowywanie"
+      },
+      "stats": {
+        "active": "Aktywne",
+        "current": "Obecnie:",
+        "session": "Sesja:",
+        "thisMonth": "W tym miesiącu:",
+        "noActiveItems": "Brak aktywnych elementów"
+      },
+      "actions": {
+        "start": "Start",
+        "stop": "Stop",
+        "resume": "Wznów",
+        "pause": "Pauza",
+        "remove": "Usuń",
+        "deleteFiles": "Usuń pliki",
+        "keepFiles": "Zachowaj pliki",
+        "removeTitle": "Usunąć \"{{name}}\"?"
+      },
+      "errors": {
+        "authFailed": "Błąd uwierzytelniania",
+        "sessionExpired": "Sesja wygasła. Zaloguj się ponownie.",
+        "retry": "Ponów"
+      },
+      "deluge": {
+        "loginAttemptFailed": "Próba połączenia {{current}}/{{max}} nie powiodła się. Ponawiam...",
+        "connectionFailedMaxAttempts": "Błąd połączenia po wielu próbach. Sprawdź ustawienia WebUI Deluge.",
+        "decryptionFailed": "Nie udało się odszyfrować hasła. Zaktualizuj poświadczenia w ustawieniach widżetu.",
+        "missingConfig": "Brak wymaganych pól konfiguracji"
+      },
+      "nzbget": {
+        "loginAttemptFailed": "Próba połączenia {{current}}/{{max}} nie powiodła się. Brak wymaganych pól.",
+        "connectionFailedMaxAttempts": "Błąd połączenia po wielu próbach. Sprawdź ustawienia NZBGet.",
+        "decryptionFailed": "Nie udało się odszyfrować hasła po wielu próbach. Zaktualizuj poświadczenia w ustawieniach widżetu.",
+        "decryptionFailedSimple": "Nie udało się odszyfrować hasła. Zaktualizuj poświadczenia w ustawieniach widżetu."
+      },
+      "qbittorrent": {
+        "loginAttemptFailed": "Próba logowania {{current}}/{{max}} nie powiodła się. Ponawiam...",
+        "loginFailedMaxAttempts": "Logowanie nie powiodło się po wielu próbach. Sprawdź poświadczenia i połączenie.",
+        "connectionFailed": "Błąd połączenia po wielu próbach. Sprawdź ustawienia WebUI qBittorrent.",
+        "decryptionFailed": "Nie udało się odszyfrować hasła. Zaktualizuj poświadczenia w ustawieniach widżetu."
+      },
+      "sabnzbd": {
+        "loginAttemptFailed": "Próba połączenia {{current}}/{{max}} nie powiodła się. Brak wymaganych pól.",
+        "connectionFailedMaxAttempts": "Błąd połączenia po wielu próbach. Sprawdź ustawienia SABnzbd.",
+        "decryptionFailed": "Nie udało się odszyfrować klucza API po wielu próbach. Zaktualizuj poświadczenia w ustawieniach widżetu.",
+        "decryptionFailedSimple": "Nie udało się odszyfrować klucza API. Zaktualizuj poświadczenia w ustawieniach widżetu."
+      },
+      "transmission": {
+        "loginAttemptFailed": "Próba logowania {{current}}/{{max}} nie powiodła się. Ponawiam...",
+        "loginFailedMaxAttempts": "Logowanie nie powiodło się po wielu próbach. Sprawdź poświadczenia i połączenie.",
+        "decryptionFailed": "Nie udało się odszyfrować hasła. Zaktualizuj poświadczenia w ustawieniach widżetu.",
+        "connectionFailed": "Błąd połączenia po wielu próbach. Sprawdź ustawienia Transmission."
+      }
+    },
+    "dual": {
+      "config": {
+        "topWidget": "Górny widżet",
+        "bottomWidget": "Dolny widżet",
+        "widgetType": "Typ widżetu"
+      },
+      "notConfigured": "Widżet nieskonfigurowany",
+      "unknownType": "Nieznany typ widżetu: {{type}}",
+      "renderError": "Błąd renderowania widżetu"
+    },
+    "group": {
+      "config": {
+        "groupName": "Nazwa grupy",
+        "nameRequired": "Nazwa jest wymagana",
+        "layout": "Układ",
+        "showName": "Pokaż nazwę",
+        "items3": "3 Elementy (3x1)",
+        "items6_2x3": "6 Elementów (2x3)",
+        "items6_3x2": "6 Elementów (3x2)",
+        "items8_4x2": "8 Elementów (4x2)"
+      }
+    },
+    "radarr": {
+      "title": "Radarr",
+      "queue": "Kolejka Radarr",
+      "stats": {
+        "moviesTotal": "Wszystkie filmy",
+        "monitoredMovies": "Monitorowane filmy"
+      },
+      "errors": {
+        "missingConfig": "Brak wymaganej konfiguracji. Skonfiguruj host i klucz API.",
+        "fetchFailedQueue": "Nie udało się pobrać kolejki Radarr. Sprawdź konfigurację.",
+        "fetchFailedMovies": "Nie udało się pobrać statystyk filmów Radarr. Sprawdź konfigurację.",
+        "removeFailed": "Nie udało się usunąć elementu z kolejki Radarr."
+      }
+    },
+    "sonarr": {
+      "title": "Sonarr",
+      "queue": "Kolejka Sonarr",
+      "stats": {
+        "seriesTotal": "Wszystkie seriale",
+        "monitoredSeries": "Monitorowane seriale"
+      },
+      "errors": {
+        "missingConfig": "Brak wymaganej konfiguracji. Skonfiguruj host i klucz API.",
+        "fetchFailedQueue": "Nie udało się pobrać kolejki Sonarr. Sprawdź konfigurację.",
+        "fetchFailedSeries": "Nie udało się pobrać statystyk seriali Sonarr. Sprawdź konfigurację.",
+        "removeFailed": "Nie udało się usunąć elementu z kolejki Sonarr."
+      }
+    },
+    "system": {
+      "config": {
+        "tempUnit": "Jednostka temperatury",
+        "fahrenheit": "Fahrenheit (°F)",
+        "celsius": "Celsjusz (°C)",
+        "leftGauge": "Lewy wskaźnik",
+        "middleGauge": "Środkowy wskaźnik",
+        "rightGauge": "Prawy wskaźnik",
+        "cpuUsage": "Użycie CPU",
+        "cpuTemp": "Temperatura CPU",
+        "ramUsage": "Użycie RAM",
+        "network": "Sieć",
+        "none": "Brak",
+        "networkInterface": "Interfejs sieciowy",
+        "noInterfaces": "Brak dostępnych interfejsów",
+        "displayOptions": "Opcje wyświetlania",
+        "showDisk": "Pokaż użycie dysku",
+        "showSysInfo": "Pokaż przycisk info o systemie",
+        "showInternet": "Pokaż status internetu"
+      },
+      "title": "Monitor Systemu",
+      "cpu": "Procesor",
+      "ram": "Pamięć RAM",
+      "temp": "Temperatura",
+      "network": "Sieć",
+      "disk": "Dysk",
+      "diskUsage": "Użycie dysku",
+      "used": "Użyte",
+      "free": "Wolne",
+      "uptime": "Czas pracy",
+      "arch": "Architektura",
+      "os": "System",
+      "kernel": "Jądro",
+      "upload": "Wysyłanie",
+      "download": "Pobieranie",
+      "memory": "Pamięć",
+      "diskMount": "Punkt montowania",
+      "diskTotal": "Całkowity rozmiar",
+      "netInterface": "Interfejs sieciowy",
+      "internetStatus": "Status internetu",
+      "modalTitle": "Informacje o systemie",
+      "gaugeTitles": {
+        "cpu": "CPU",
+        "temp": "TEMP",
+        "ram": "RAM",
+        "net": "SIEĆ"
+      },
+      "internet": {
+        "connected": "Połączono",
+        "disconnected": "Rozłączono",
+        "checking": "Sprawdzanie..."
+      },
+      "errors": {
+        "fetchFailed": "Błąd pobierania danych systemowych",
+        "rateLimit": "Limit zapytań API: {{message}}",
+        "apiError": "Błąd API: {{message}}",
+        "generic": "Wystąpił błąd: {{message}}",
+        "unknown": "Wystąpił nieznany błąd"
+      },
+      "loading": "Ładowanie danych..."
+    },
+    "weather": {
+      "config": {
+        "temperatureUnit": "Jednostka temperatury",
+        "fahrenheit": "Fahrenheit (°F)",
+        "celsius": "Celsjusz (°C)",
+        "searchLocation": "Szukaj lokalizacji",
+        "searchPlaceholder": "Wpisz kod pocztowy lub miasto",
+        "searching": "Szukanie...",
+        "typeToSearch": "Wpisz aby wyszukać...",
+        "noLocationsFound": "Nie znaleziono lokalizacji"
+      },
+      "conditions": {
+        "clear": "Bezchmurnie",
+        "mostlyClear": "Przeważnie bezchmurnie",
+        "partlyCloudy": "Częściowe zachmurzenie",
+        "overcast": "Pochmurno",
+        "fog": "Mgła",
+        "depositingRimeFog": "Marznąca mgła",
+        "drizzle": "Mżawka",
+        "rain": "Deszcz",
+        "heavyRain": "Ulewa",
+        "snow": "Śnieg",
+        "heavySnow": "Śnieżyca",
+        "rainShowers": "Przelotne opady deszczu",
+        "moderateRainShowers": "Umiarkowane przelotne opady",
+        "heavyRainShowers": "Silne przelotne opady",
+        "snowShowers": "Przelotne opady śniegu",
+        "thunderstorm": "Burza",
+        "unknown": "Nieznane"
+      },
+      "sunrise": "Wschód",
+      "sunset": "Zachód",
+      "wind": "Wiatr",
+      "speedUnit": "km/h",
+      "high": "Maks.",
+      "low": "Min.",
+      "unavailable": "Pogoda niedostępna",
+      "setLocation": "Ustaw lokalizację w ustawieniach widżetu",
+      "errors": {
+        "fetchFailed": "Błąd pobierania danych pogodowych",
+        "serviceUnavailable": "Serwis pogodowy tymczasowo niedostępny. Spróbuj ponownie.",
+        "rateLimit": "Limit zapytań API: {{message}}",
+        "apiError": "Błąd API: {{message}}",
+        "generic": "Wystąpił nieznany błąd",
+        "specific": "Błąd: {{message}}"
+      }
+    },
+    "downloads": {
+      "queue": "Kolejka",
+      "active": "Aktywne",
+      "downloading": "Pobieranie",
+      "seeding": "Wysyłanie",
+      "paused": "Wstrzymane",
+      "completed": "Ukończone",
+      "stopped": "Zatrzymane",
+      "eta": "ETA"
+    },
+    "pihole": {
+      "config": {
+        "host": "Host Pi-hole",
+        "portRequired": "Port jest wymagany",
+        "hostRequired": "Host jest wymagany",
+        "apiTokenV5": "Token API (Pi-hole v5)",
+        "passwordV6": "Hasło (Pi-hole v6)",
+        "tokenSet": "Obecny token API jest ustawiony (ukryty). Wyczyść pole, aby usunąć lub wpisz nowy.",
+        "passwordSet": "Obecne hasło jest ustawione (ukryte). Wyczyść pole, aby usunąć lub wpisz nowe.",
+        "passwordHelper": "Wprowadź hasło administratora Pi-hole",
+        "tokenHelper": "Wprowadź token API z ustawień Pi-hole > API/Web interface",
+        "passwordProvided": "Hasło zostało już podane",
+        "tokenProvided": "Token API został już podany",
+        "passwordOrToken": "Wprowadź hasło lub token API powyżej",
+        "tokenOrPassword": "Wprowadź token API lub hasło powyżej"
+      },
+      "blockedToday": "Zablokowane dzisiaj",
+      "percentBlocked": "Procent blokad",
+      "queriesToday": "Zapytania dzisiaj",
+      "domainsOnBlocklist": "Domeny na liście",
+      "disable": "Wyłącz",
+      "enable": "Włącz",
+      "indefinitely": "Na zawsze",
+      "resume": "Wznów",
+      "resumeWithTime": "Wznów ({{time}})",
+      "status": {
+        "disabledWillResume": "Blokowanie wyłączone. Wznowienie za {{time}}",
+        "disabledIndefinitely": "Blokowanie wyłączone na stałe"
+      },
+      "errors": {
+        "authFailed": "Uwierzytelnianie nie powiodło się. Sprawdź dane logowania Pi-hole.",
+        "badRequest": "Nieprawidłowe żądanie: Błędna konfiguracja lub dane uwierzytelniające",
+        "rateLimit": "Zbyt wiele żądań do API Pi-hole. Spróbuj zwiększyć limit max_sessions w konfiguracji Pi-hole.",
+        "connectionFailed": "Połączenie nieudane: {{error}}. Sprawdź czy Pi-hole działa.",
+        "disableFailed": "Nie udało się wyłączyć blokowania Pi-hole",
+        "enableFailed": "Nie udało się włączyć blokowania Pi-hole",
+        "notConfigured": "Skonfiguruj widżet Pi-hole w ustawieniach",
+        "checkConfig": "Sprawdź konfigurację Pi-hole i połączenie sieciowe",
+        "usingAuth": "Metoda: {{method}}"
+      },
+      "duration": {
+        "seconds": "{{count}} sekund",
+        "minute": "1 minuta",
+        "minutes": "{{count}} minut",
+        "hour": "1 godzina"
+      },
+      "authMethods": {
+        "token": "Token API",
+        "password": "Hasło"
+      }
+    },
+    "adguard": {
+      "config": {
+        "host": "Host AdGuard Home",
+        "hostRequired": "Host jest wymagany",
+        "portRequired": "Port jest wymagany",
+        "usernameHelper": "Wprowadź nazwę użytkownika administratora AdGuard Home",
+        "passwordHelper": "Wprowadź hasło administratora AdGuard Home",
+        "usernameSet": "Obecna nazwa użytkownika jest ustawiona (ukryta). Wyczyść pole, aby usunąć lub wpisz nową.",
+        "passwordSet": "Obecne hasło jest ustawione (ukryte). Wyczyść pole, aby usunąć lub wpisz nowe."
+      },
+      "blockedToday": "Zablokowane dzisiaj",
+      "percentBlocked": "Procent blokad",
+      "queriesToday": "Zapytania dzisiaj",
+      "blockedMalware": "Zablokowany malware",
+      "disable": "Wyłącz",
+      "resume": "Wznów",
+      "resumeWithTime": "Wznów ({{time}})",
+      "indefinitely": "Na zawsze",
+      "errors": {
+        "authFailed": "Uwierzytelnianie nie powiodło się. Sprawdź dane logowania AdGuard Home.",
+        "fetchFailed": "Nie udało się pobrać statystyk AdGuard Home",
+        "disableFailed": "Nie udało się wyłączyć ochrony AdGuard Home",
+        "enableFailed": "Nie udało się włączyć ochrony AdGuard Home",
+        "notConfigured": "Skonfiguruj widżet AdGuard Home w ustawieniach",
+        "checkConfig": "Sprawdź konfigurację AdGuard Home i połączenie sieciowe",
+        "basicAuth": "Używanie uwierzytelniania podstawowego"
+      },
+      "duration": {
+        "seconds": "{{count}} sekund",
+        "minute": "1 minuta",
+        "minutes": "{{count}} minut",
+        "hour": "1 godzina"
+      }
+    },
+    "mediaServer": {
+      "config": {
+        "selectServer": "Wybierz serwer multimediów:",
+        "displayName": "Nazwa wyświetlana",
+        "placeholder": "192.168.1.100 albo jellyfin.domena.pl",
+        "host": "Host",
+        "port": "Port",
+        "apiKey": "Klucz API",
+        "apiKeyHelper": "Wygeneruj w Jellyfin: Panel sterowania > Klucze API",
+        "apiKeyRequired": "Klucz API jest wymagany",
+        "useSsl": "Użyj SSL",
+        "showLabel": "Pokaż nazwę"
+      },
+      "watching": "Oglądane ({{count}})",
+      "noActiveItems": "Brak aktywnych elementów",
+      "totalTvShows": "Seriale TV:",
+      "totalMovies": "Filmy:",
+      "types": {
+        "tvShow": "Serial TV",
+        "movie": "Film",
+        "music": "Muzyka",
+        "album": "Album",
+        "book": "Książka",
+        "audiobook": "Audiobook",
+        "media": "Media"
+      },
+      "status": {
+        "paused": "Wstrzymano",
+        "playing": "Odtwarzanie",
+        "unknown": "Nieznane media"
+      },
+      "errors": {
+        "widgetIdMissing": "Brak ID widgetu",
+        "configMissing": "Brak konfiguracji serwera",
+        "notSupported": "{{type}} nie jest jeszcze obsługiwany",
+        "unknown": "Nieznany błąd"
+      }
+    },
+    "mediaRequestManager": {
+      "config": {
+        "selectService": "Wybierz usługę:",
+        "displayName": "Nazwa wyświetlana",
+        "host": "Host",
+        "port": "Port",
+        "apiKey": "Klucz API",
+        "useSsl": "Użyj SSL",
+        "showLabel": "Pokaż nazwę"
+      },
+      "unknownTitle": "Nieznany tytuł",
+      "title": "Prośby o Media",
+      "search": "Szukaj filmów lub seriali...",
+      "loading": "Wyszukiwanie...",
+      "noResults": "Brak wyników",
+      "typeToSearch": "Wpisz, aby wyszukać...",
+      "requestsCount": "Prośby ({{count}})",
+      "request": "Złóż prośbę o {{title}}",
+      "requestMovie": "Złóż prośbę o film",
+      "requestSuccess": "Pomyślnie poproszono o {{title}}",
+      "requestFailed": "Nie udało się poprosić o {{title}}",
+      "requestError": "Wystąpił błąd podczas składania prośby",
+      "title": "Tytuł",
+      "movie": "Film",
+      "tvShow": "Serial TV",
+      "year": "Rok",
+      "selectSeasons": "Wybierz sezony:",
+      "allSeasons": "Wszystkie",
+      "allAvailable": "Wszystkie sezony są już dostępne lub poproszono o nie",
+      "selectSeasonsLabel": "Sezon {{number}}",
+      "seasonsRequested": "{{count}} sezonów zamówionych",
+      "alreadyAvailable": "Już dostępne",
+      "alreadyRequested": "Już zamówione",
+      "failedToLoadSeasons": "Nie udało się załadować informacji o sezonach",
+      "actions": {
+        "requestTitle": "Prośba o {{title}}",
+        "approveTitle": "Zatwierdź prośbę",
+        "declineTitle": "Odrzuć prośbę",
+        "approveConfirm": "Czy na pewno chcesz zatwierdzić prośbę o \"{{title}}\"?",
+        "declineConfirm": "Czy na pewno chcesz odrzucić prośbę o \"{{title}}\"?",
+        "yesApprove": "Tak, zatwierdź",
+        "yesDecline": "Tak, odrzuć",
+        "cancel": "Anuluj"
+      },
+      "status": {
+        "pending": "Oczekujące",
+        "approved": "Zatwierdzone",
+        "declined": "Odrzucone",
+        "partial": "Częściowo dostępne",
+        "available": "Dostępne",
+        "failed": "Niepowodzenie",
+        "processing": "Przetwarzanie",
+        "deleted": "Usunięte"
+      },
+      "mediaInfo": {
+        "requestedBy": "Poproszone przez:",
+        "onDate": "dnia:",
+        "profile": "Profil:",
+        "noRequests": "Brak znalezionych próśb"
+      },
+      "errors": {
+        "configuration": "Błąd konfiguracji",
+        "missingConfig": "Brak wymaganej konfiguracji"
+      }
+    },
+    "queueManagement": {
+      "config": {
+        "apiKeyHelper": "Znajdź klucz API w {{serviceName}}: Ustawienia → Ogólne → Zabezpieczenia → Klucz API",
+        "apiKeyPlaceholder": "Wprowadź klucz API {{serviceName}}"
+      },
+      "noItems": "Brak elementów w kolejce",
+      "eta": "ETA",
+      "status": {
+        "downloading": "Pobieranie",
+        "uploading": "Wysyłanie",
+        "seeding": "Wysyłanie (Seed)",
+        "paused": "Wstrzymane",
+        "pausedDL": "Wstrzymane (Pobieranie)",
+        "pausedUP": "Wstrzymane (Wysyłanie)",
+        "stalled": "Zatrzymane",
+        "stalledDL": "Zatrzymane (Pobieranie)",
+        "stalledUP": "Zatrzymane (Wysyłanie)",
+        "completed": "Ukończone",
+        "checkingUP": "Sprawdzanie",
+        "queued": "W kolejce",
+        "stopped": "Zatrzymane",
+        "error": "Błąd",
+        "failed": "Niepowodzenie",
+        "warning": "Ostrzeżenie"
+      },
+      "actions": {
+        "remove": "Usuń z kolejki",
+        "removeKeep": "Usuń (zachowaj w kliencie)",
+        "blocklist": "Zablokuj i usuń",
+        "removeTitle": "{{action}}?",
+        "removeText": "To spowoduje {{action}} elementu z {{serviceName}} {{clientText}}.",
+        "removeAction": "usuń",
+        "blocklistAction": "zablokuj i usuń",
+        "removeFromClient": "i usuń z klienta pobierania",
+        "keepInClient": "ale zachowaj w kliencie pobierania"
+      },
+      "stats": {
+          "total": "Łącznie:",
+          "monitored": "Monitorowane:"
+      }
+    },
+    "notes": {
+      "config": {
+        "displayName": "Nazwa wyświetlana",
+        "defaultFontSize": "Domyślny rozmiar czcionki",
+        "showLabel": "Pokaż nazwę"
+      },
+      "title": "Notatki",
+      "notesCount": "Notatki ({{count}})",
+      "noNotes": "Jeszcze brak notatek",
+      "noContent": "Brak treści",
+      "loading": "Ładowanie notatek...",
+      "newNote": "Nowa notatka",
+      "editNote": "Edytuj notatkę",
+      "deleteNote": "Usuń notatkę",
+      "deleteConfirmTitle": "Usuń Notatkę",
+      "deleteConfirmText": "Czy na pewno chcesz usunąć \"{{title}}\"?",
+      "deleteConfirmBtn": "Tak, Usuń",
+      "save": "Zapisz",
+      "cancel": "Anuluj",
+      "openInPopup": "Otwórz w oknie",
+      "backToList": "Wróć do listy",
+      "write": "Edycja",
+      "preview": "Podgląd",
+      "placeholders": {
+        "title": "Tytuł notatki...",
+        "content": "Napisz notatkę w Markdown..."
+      },
+      "errors": {
+        "fetchFailed": "Nie udało się pobrać notatek",
+        "saveFailed": "Nie udało się zapisać notatki",
+        "deleteFailed": "Nie udało się usunąć notatki",
+        "titleRequired": "Tytuł jest wymagany"
+      },
+      "markdown": {
+        "heading": "Nagłówek",
+        "code": "kod",
+        "text": "tekst",
+        "quote": "Cytat",
+        "linkText": "tekst linku",
+        "listItem": "Element listy",
+        "taskItem": "Zadanie"
+      },
+      "toolbar": {
+        "heading": "Nagłówek",
+        "bold": "Pogrubienie",
+        "italic": "Kursywa",
+        "inlineCode": "Kod w linii",
+        "codeBlock": "Blok kodu",
+        "quote": "Cytat",
+        "link": "Link",
+        "ul": "Lista punktowana",
+        "ol": "Lista numerowana",
+        "taskList": "Lista zadań"
+      }
+    }
+  }
+}

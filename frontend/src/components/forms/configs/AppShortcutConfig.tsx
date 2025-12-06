@@ -1,17 +1,13 @@
 import { Grid2 as Grid } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { CheckboxElement, SelectElement, TextFieldElement } from 'react-hook-form-mui';
+import { useTranslation } from 'react-i18next';
 
 import { COLORS } from '../../../theme/styles';
 import { theme } from '../../../theme/theme';
 import { FormValues } from '../AddEditForm/types';
 import { IconSearch } from '../IconSearch';
-
-const HEALTH_CHECK_TYPES = [
-    { id: 'http', label: 'HTTP Request' },
-    { id: 'ping', label: 'Ping Host' }
-];
 
 interface AppShortcutConfigProps {
     formContext: UseFormReturn<FormValues>;
@@ -19,12 +15,19 @@ interface AppShortcutConfigProps {
 }
 
 export const AppShortcutConfig = ({ formContext, onCustomIconSelect }: AppShortcutConfigProps) => {
+    const { t } = useTranslation();
     const [editingWolShortcut, setEditingWolShortcut] = useState(false);
     const [previousHealthUrl, setPreviousHealthUrl] = useState('');
     const [previousHealthCheckType, setPreviousHealthCheckType] = useState<'http' | 'ping'>('http');
     const isWol = formContext.watch('isWol', false);
     const healthUrl = formContext.watch('healthUrl', '');
     const healthCheckType = formContext.watch('healthCheckType', 'http') as 'http' | 'ping';
+
+    // Memoize options to allow translation to update when language changes
+    const healthCheckTypes = useMemo(() => [
+        { id: 'http', label: t('forms.addEdit.healthCheck.http') },
+        { id: 'ping', label: t('forms.addEdit.healthCheck.ping') }
+    ], [t]);
 
     // Clear URL validation errors when health URL is provided
     useEffect(() => {
@@ -73,7 +76,7 @@ export const AppShortcutConfig = ({ formContext, onCustomIconSelect }: AppShortc
             <Grid>
                 <TextFieldElement
                     name='shortcutName'
-                    label='Shortcut Name'
+                    label={t('forms.addEdit.fields.displayName')}
                     required
                     variant='outlined'
                     sx={{
@@ -94,10 +97,9 @@ export const AppShortcutConfig = ({ formContext, onCustomIconSelect }: AppShortc
             </Grid>
             <Grid>
                 <CheckboxElement
-                    label='Wake-on-LAN'
+                    label={t('widgets.common.wol.title') || 'Wake-on-LAN'} // Fallback string or add key to translations
                     name='isWol'
                     checked={formContext.watch('isWol')}
-
                     sx={{
                         ml: 1,
                         color: 'white',
@@ -116,7 +118,7 @@ export const AppShortcutConfig = ({ formContext, onCustomIconSelect }: AppShortc
                     <Grid>
                         <TextFieldElement
                             name='url'
-                            label='URL'
+                            label={t('forms.addEdit.fields.url')}
                             required={!healthUrl}
                             variant='outlined'
                             sx={{
@@ -132,7 +134,7 @@ export const AppShortcutConfig = ({ formContext, onCustomIconSelect }: AppShortc
                             rules={{
                                 required: {
                                     value: !healthUrl,
-                                    message: 'This field is required'
+                                    message: t('forms.addEdit.validation.required')
                                 },
                                 validate: (value: any) => {
                                     // If health URL is provided, URL is optional
@@ -142,7 +144,7 @@ export const AppShortcutConfig = ({ formContext, onCustomIconSelect }: AppShortc
 
                                     // If there's a value, validate the URL format
                                     if (value && !value.includes('://')) {
-                                        return 'Invalid url. Ex "http://192.168.x.x" or "unifi-network://"';
+                                        return t('forms.addEdit.validation.invalidUrlExample');
                                     }
 
                                     return true;
@@ -160,9 +162,9 @@ export const AppShortcutConfig = ({ formContext, onCustomIconSelect }: AppShortc
                     </Grid>
                     <Grid>
                         <SelectElement
-                            label='Health Check Type'
+                            label={t('widgets.common.healthCheckType')}
                             name='healthCheckType'
-                            options={HEALTH_CHECK_TYPES}
+                            options={healthCheckTypes}
                             sx={{
                                 width: '100%',
                                 '& .MuiOutlinedInput-root': {
@@ -195,8 +197,11 @@ export const AppShortcutConfig = ({ formContext, onCustomIconSelect }: AppShortc
                     <Grid>
                         <TextFieldElement
                             name='healthUrl'
-                            label={healthCheckType === 'http' ? 'Health Check URL' : 'Hostname or IP Address'}
-                            helperText={'Optional'}
+                            label={healthCheckType === 'http' 
+                                ? t('widgets.common.healthCheckUrl') 
+                                : t('widgets.common.hostnameIp')
+                            }
+                            helperText={t('forms.addEdit.helpers.optional')}
                             variant='outlined'
                             sx={{
                                 width: '100%',
@@ -212,7 +217,7 @@ export const AppShortcutConfig = ({ formContext, onCustomIconSelect }: AppShortc
                                 validate: (value) => {
                                     if (!value) return true;
                                     if (healthCheckType === 'http') {
-                                        return value.includes('://') || 'Invalid URL. Ex: "http://192.168.x.x/health"';
+                                        return value.includes('://') || t('forms.addEdit.validation.invalidUrlExample');
                                     }
                                     return true; // No validation for ping hostnames
                                 },
@@ -235,16 +240,16 @@ export const AppShortcutConfig = ({ formContext, onCustomIconSelect }: AppShortc
                     <Grid>
                         <TextFieldElement
                             name='macAddress'
-                            label='MAC Address'
+                            label={t('widgets.common.macAddress')}
                             required
                             variant='outlined'
                             rules={{
                                 pattern: {
                                     value: /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/,
-                                    message: 'Invalid MAC address format. Expected format: xx:xx:xx:xx:xx:xx or xx-xx-xx-xx-xx-xx'
+                                    message: t('forms.addEdit.validation.invalidMac')
                                 }
                             }}
-                            helperText='Format: xx:xx:xx:xx:xx:xx'
+                            helperText={t('forms.addEdit.helpers.macFormat')}
                             sx={{
                                 width: '100%',
                                 '& .MuiOutlinedInput-root': {
@@ -268,13 +273,13 @@ export const AppShortcutConfig = ({ formContext, onCustomIconSelect }: AppShortc
                     <Grid>
                         <TextFieldElement
                             name='broadcastAddress'
-                            label='Broadcast Address (Optional)'
+                            label={t('widgets.common.broadcastAddress')}
                             variant='outlined'
-                            helperText='The broadcast address for your network'
+                            helperText={t('forms.addEdit.helpers.broadcastDesc')}
                             rules={{
                                 pattern: {
                                     value: /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/,
-                                    message: 'Invalid IP address format. Expected format: xxx.xxx.xxx.xxx'
+                                    message: t('forms.addEdit.validation.invalidIp')
                                 }
                             }}
                             sx={{
@@ -300,13 +305,13 @@ export const AppShortcutConfig = ({ formContext, onCustomIconSelect }: AppShortc
                     <Grid>
                         <TextFieldElement
                             name='port'
-                            label='Port (Optional)'
+                            label={t('widgets.common.portOptional')}
                             variant='outlined'
-                            helperText='Default: 9'
+                            helperText={t('forms.addEdit.helpers.defaultPort')}
                             rules={{
                                 pattern: {
                                     value: /^[0-9]*$/,
-                                    message: 'Port must be a number'
+                                    message: t('forms.addEdit.validation.portNumber')
                                 }
                             }}
                             sx={{
@@ -341,14 +346,14 @@ export const AppShortcutConfig = ({ formContext, onCustomIconSelect }: AppShortc
             </Grid>
             <Grid>
                 <CheckboxElement
-                    label='Show Name'
+                    label={t('forms.addEdit.fields.showLabel')}
                     name='showLabel'
                     sx={{ ml: 1, color: 'white', '& .MuiSvgIcon-root': { fontSize: 30 } }}
                 />
             </Grid>
             <Grid>
                 <CheckboxElement
-                    label='Admin Only'
+                    label={t('forms.addEdit.fields.adminOnly')}
                     name='adminOnly'
                     checked={formContext.watch('adminOnly')}
                     sx={{

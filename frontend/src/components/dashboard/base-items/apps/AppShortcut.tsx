@@ -1,5 +1,6 @@
 import { Box, Grid2 as Grid, Typography, useMediaQuery } from '@mui/material';
 import { useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next'; // Import hook
 
 import { DashApi } from '../../../../api/dash-api';
 import { styles } from '../../../../theme/styles';
@@ -19,6 +20,7 @@ type Props = {
 }
 
 export const AppShortcut = ({ url, name, iconName, showLabel, editMode, config, isPreview, size = 'medium' }: Props) => {
+    const { t } = useTranslation(); // Initialize hook
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const isWolShortcut = config?.isWol === true;
 
@@ -46,7 +48,7 @@ export const AppShortcut = ({ url, name, iconName, showLabel, editMode, config, 
         e.preventDefault();
 
         if (!isWolShortcut || !config?.macAddress) {
-            PopupManager.failure('Invalid Wake-on-LAN configuration');
+            PopupManager.failure(t('common.errorTitle'),t('widgets.common.wol.invalidConfig'));
             return;
         }
 
@@ -60,12 +62,12 @@ export const AppShortcut = ({ url, name, iconName, showLabel, editMode, config, 
             await DashApi.sendWakeOnLan(payload);
 
             // Show success message
-            PopupManager.success(`Wake-on-LAN packet sent to ${config.macAddress}`);
+            PopupManager.success(t('common.successTitle'),t('widgets.common.wol.packetSent', { address: config.macAddress }));
         } catch (error) {
             console.error('Error sending Wake-on-LAN packet:', error);
-            PopupManager.failure('Failed to send Wake-on-LAN packet');
+            PopupManager.failure(t('common.errorTitle'),t('widgets.common.wol.sendFailed'));
         }
-    }, [config, isWolShortcut]);
+    }, [config, isWolShortcut, t]);
 
     const shortcutContent = (
         <Box sx={{

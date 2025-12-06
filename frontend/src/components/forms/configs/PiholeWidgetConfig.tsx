@@ -1,7 +1,9 @@
-import { Grid2 as Grid, Typography } from '@mui/material';
+import { Grid2 as Grid } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
-import { CheckboxElement, TextFieldElement } from 'react-hook-form-mui';
+import { CheckboxElement, TextFieldElement, TextField } from 'react-hook-form-mui'; // Added TextField import (though we use standard MUI TextField for logic, keeping consistent imports)
+import { TextField as MuiTextField } from '@mui/material'; // Import MuiTextField explicitly for controlled inputs
+import { useTranslation } from 'react-i18next';
 
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { theme } from '../../../theme/theme';
@@ -16,6 +18,7 @@ interface PiholeWidgetConfigProps {
 const MASKED_VALUE = '**********'; // 10 asterisks for masked values
 
 export const PiholeWidgetConfig = ({ formContext, existingItem }: PiholeWidgetConfigProps) => {
+    const { t } = useTranslation();
     const isMobile = useIsMobile();
 
     // Track if we're editing an existing item with sensitive data
@@ -32,6 +35,9 @@ export const PiholeWidgetConfig = ({ formContext, existingItem }: PiholeWidgetCo
             '&:hover fieldset': { borderColor: theme.palette.primary.main },
             '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
         },
+        '& .MuiFormHelperText-root': {
+            color: 'rgba(255, 255, 255, 0.7)'
+        }
     };
 
     // Initialize masked values for existing items
@@ -59,56 +65,25 @@ export const PiholeWidgetConfig = ({ formContext, existingItem }: PiholeWidgetCo
     }, [existingItem, formContext]);
 
     // Handle API token changes
-    const handleApiTokenChange = (value: string) => {
-
-
+    const handleApiTokenChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        formContext.setValue('piholeApiToken', value, { shouldValidate: true, shouldDirty: true });
+        
         if (value && value !== MASKED_VALUE) {
             formContext.setValue('piholePassword', '');
         }
     };
 
     // Handle password changes
-    const handlePasswordChange = (value: string) => {
+    const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        formContext.setValue('piholePassword', value, { shouldValidate: true, shouldDirty: true });
 
         // Clear API token if password is being set
         if (value && value !== MASKED_VALUE) {
             formContext.setValue('piholeApiToken', '');
         }
     };
-
-    // Watch for form value changes
-    useEffect(() => {
-        const subscription = formContext.watch((value, { name }) => {
-            if (name === 'piholeApiToken') {
-                handleApiTokenChange(value.piholeApiToken || '');
-            } else if (name === 'piholePassword') {
-                handlePasswordChange(value.piholePassword || '');
-            }
-        });
-
-        return () => subscription.unsubscribe();
-    }, [formContext, hasExistingApiToken, hasExistingPassword]);
-
-    // Mutual exclusivity effect for new values
-    useEffect(() => {
-        const piholeApiToken = formContext.watch('piholeApiToken');
-        const piholePassword = formContext.watch('piholePassword');
-
-        // Only enforce mutual exclusivity for non-masked values
-        if (piholeApiToken && piholeApiToken !== MASKED_VALUE && piholePassword && piholePassword !== MASKED_VALUE) {
-            formContext.setValue('piholePassword', '');
-        }
-    }, [formContext.watch('piholeApiToken')]);
-
-    useEffect(() => {
-        const piholeApiToken = formContext.watch('piholeApiToken');
-        const piholePassword = formContext.watch('piholePassword');
-
-        // Only enforce mutual exclusivity for non-masked values
-        if (piholePassword && piholePassword !== MASKED_VALUE && piholeApiToken && piholeApiToken !== MASKED_VALUE) {
-            formContext.setValue('piholeApiToken', '');
-        }
-    }, [formContext.watch('piholePassword')]);
 
     // Helper function to determine if field should be required
     const isApiTokenRequired = () => {
@@ -141,18 +116,40 @@ export const PiholeWidgetConfig = ({ formContext, existingItem }: PiholeWidgetCo
     // Helper function to get helper text
     const getApiTokenHelperText = () => {
         const password = formContext.watch('piholePassword');
+        const apiToken = formContext.watch('piholeApiToken');
+
         if (password && password !== MASKED_VALUE) {
-            return 'Password already provided';
+            return t('widgets.pihole.config.passwordProvided');
         }
-        return 'Enter the API token from Pi-hole Settings > API/Web interface';
+        
+        if (hasExistingApiToken && apiToken === MASKED_VALUE) {
+            return t('widgets.pihole.config.tokenSet');
+        }
+        
+        if (!apiToken && !password && !hasExistingApiToken && !hasExistingPassword) {
+            return t('widgets.pihole.config.tokenOrPassword');
+        }
+
+        return t('widgets.pihole.config.tokenHelper');
     };
 
     const getPasswordHelperText = () => {
         const apiToken = formContext.watch('piholeApiToken');
+        const password = formContext.watch('piholePassword');
+
         if (apiToken && apiToken !== MASKED_VALUE) {
-            return 'API Token already provided';
+            return t('widgets.pihole.config.tokenProvided');
         }
-        return 'Enter your Pi-hole admin password';
+
+        if (hasExistingPassword && password === MASKED_VALUE) {
+            return t('widgets.pihole.config.passwordSet');
+        }
+
+        if (!apiToken && !password && !hasExistingApiToken && !hasExistingPassword) {
+            return t('widgets.pihole.config.passwordOrToken');
+        }
+
+        return t('widgets.pihole.config.passwordHelper');
     };
 
     return (
@@ -160,7 +157,7 @@ export const PiholeWidgetConfig = ({ formContext, existingItem }: PiholeWidgetCo
             <Grid sx={{ width: '100%', mb: 2 }}>
                 <TextFieldElement
                     name='piholeHost'
-                    label='Pi-hole Host'
+                    label={t('widgets.pihole.config.host')}
                     variant='outlined'
                     fullWidth
                     autoComplete='off'
@@ -174,7 +171,7 @@ export const PiholeWidgetConfig = ({ formContext, existingItem }: PiholeWidgetCo
             <Grid sx={{ width: '100%', mb: 2 }}>
                 <TextFieldElement
                     name='piholePort'
-                    label='Port'
+                    label={t('forms.addEdit.fields.port')}
                     variant='outlined'
                     fullWidth
                     autoComplete='off'
@@ -188,7 +185,7 @@ export const PiholeWidgetConfig = ({ formContext, existingItem }: PiholeWidgetCo
             <Grid sx={{ width: '100%', mb: 2 }}>
                 <TextFieldElement
                     name='piholeName'
-                    label='Display Name'
+                    label={t('forms.addEdit.fields.displayName')}
                     variant='outlined'
                     placeholder='Pi-hole'
                     fullWidth
@@ -199,44 +196,49 @@ export const PiholeWidgetConfig = ({ formContext, existingItem }: PiholeWidgetCo
                 />
             </Grid>
             <Grid sx={{ width: '100%', mb: 2 }}>
-                <TextFieldElement
+                {/* Use controlled MuiTextField for better control over value changes */}
+                <MuiTextField
                     name='piholeApiToken'
-                    label='API Token (Pi-hole v5)'
+                    label={t('widgets.pihole.config.apiTokenV5')}
                     type='password'
                     variant='outlined'
                     fullWidth
                     autoComplete='off'
                     required={isApiTokenRequired()}
                     disabled={isApiTokenDisabled()}
+                    value={formContext.watch('piholeApiToken') || ''}
+                    onChange={handleApiTokenChange}
                     helperText={getApiTokenHelperText()}
+                    error={isApiTokenRequired() && !formContext.watch('piholeApiToken')}
                     sx={textFieldSx}
-                    slotProps={{
-                        inputLabel: { style: { color: theme.palette.text.primary } },
-                        formHelperText: { style: { color: 'rgba(255, 255, 255, 0.7)' } }
+                    InputLabelProps={{
+                        style: { color: theme.palette.text.primary }
                     }}
                 />
             </Grid>
             <Grid sx={{ width: '100%', mb: 2 }}>
-                <TextFieldElement
+                <MuiTextField
                     name='piholePassword'
-                    label='Password (Pi-hole v6)'
+                    label={t('widgets.pihole.config.passwordV6')}
                     type='password'
                     variant='outlined'
                     fullWidth
                     autoComplete='off'
                     required={isPasswordRequired()}
                     disabled={isPasswordDisabled()}
+                    value={formContext.watch('piholePassword') || ''}
+                    onChange={handlePasswordChange}
                     helperText={getPasswordHelperText()}
+                    error={isPasswordRequired() && !formContext.watch('piholePassword')}
                     sx={textFieldSx}
-                    slotProps={{
-                        inputLabel: { style: { color: theme.palette.text.primary } },
-                        formHelperText: { style: { color: 'rgba(255, 255, 255, 0.7)' } }
+                    InputLabelProps={{
+                        style: { color: theme.palette.text.primary }
                     }}
                 />
             </Grid>
             <Grid sx={{ width: '100%' }}>
                 <CheckboxElement
-                    label='Use SSL'
+                    label={t('forms.addEdit.fields.useSsl')}
                     name='piholeSsl'
                     checked={formContext.watch('piholeSsl')}
                     sx={{
@@ -248,7 +250,7 @@ export const PiholeWidgetConfig = ({ formContext, existingItem }: PiholeWidgetCo
             </Grid>
             <Grid sx={{ width: '100%' }}>
                 <CheckboxElement
-                    label='Show Name'
+                    label={t('forms.addEdit.fields.showLabel')}
                     name='showLabel'
                     checked={formContext.watch('showLabel')}
                     sx={{

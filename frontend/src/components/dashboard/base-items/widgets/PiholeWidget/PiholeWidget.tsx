@@ -1,5 +1,6 @@
 import { Box, Button, CircularProgress, Grid2 as Grid, Menu, MenuItem, Paper, Typography } from '@mui/material';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FaGlobe, FaList, FaPercentage } from 'react-icons/fa';
 import { MdBlockFlipped, MdPause, MdPlayArrow } from 'react-icons/md';
 
@@ -40,6 +41,7 @@ const initialStats: PiholeStats = {
 };
 
 export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }) => {
+    const { t } = useTranslation();
     const { config, id } = props;
     const { editMode, config: appConfig } = useAppContext();
 
@@ -214,7 +216,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
                 // Handle status check errors
                 if (statusError.response?.status === 400) {
                     setAuthFailed(true);
-                    setError('Bad Request: Invalid configuration or authentication data');
+                    setError(t('widgets.pihole.errors.badRequest'));
                     return; // Exit early to avoid the stats request
                 } else if (statusError.response?.status === 503 || statusError.message?.includes('socket hang up')) {
                     // Handle connection errors specifically
@@ -281,13 +283,13 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
                 // Only set error state on stats fetch errors
                 if (err.pihole?.requiresReauth) {
                     setAuthFailed(true);
-                    setError('Authentication failed. Please check your Pi-hole credentials in widget settings.');
+                    setError(t('widgets.pihole.errors.authFailed'));
                 } else if (err.response?.status === 401 || err.response?.status === 403) {
                     setAuthFailed(true);
-                    setError('Authentication failed. Please check your Pi-hole credentials in widget settings.');
+                    setError(t('widgets.pihole.errors.authFailed'));
                 } else if (err.response?.status === 400) {
                     setAuthFailed(true);
-                    setError('Bad Request: Invalid configuration or authentication data');
+                    setError(t('widgets.pihole.errors.badRequest'));
                 } else if (err.response?.status === 503 || err.message?.includes('socket hang up')) {
                     // Handle connection errors - don't set permanent error, allow retry
                     console.warn('Pi-hole connection error during stats fetch, will retry:', err.message);
@@ -304,11 +306,11 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
                     } else {
                         // This is a rate limit from Pi-hole itself
                         setAuthFailed(true);
-                        setError('Too many requests to Pi-hole API. The default session expiration is 30 minutes. You can manually clear unused sessions or increase the max_sessions setting in Pi-hole.');
+                        setError(t('widgets.pihole.errors.rateLimit'));
                     }
                 } else if (err.pihole?.code === 'TOO_MANY_REQUESTS') {
                     setAuthFailed(true);
-                    setError('Too many requests to Pi-hole API. The default session expiration is 30 minutes. You can manually clear unused sessions or increase the max_sessions setting in Pi-hole.');
+                    setError(t('widgets.pihole.errors.rateLimit'));
                 } else if (err.message?.includes('Network Error') || err.message?.includes('timeout')) {
                     // Network errors like timeouts or connection refused - don't set permanent error for temporary issues
                     console.warn('Pi-hole network error, will retry:', err.message);
@@ -328,7 +330,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
                     setError(err.message);
                 } else {
                     setAuthFailed(true);
-                    setError('Failed to connect to Pi-hole. Please check your configuration.');
+                    setError(t('widgets.pihole.errors.connectionFailed', { error: 'Unknown' }));
                 }
 
                 // Clear any scheduled checks
@@ -343,7 +345,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
         }
     }, [
         isPiholeV6, isConfigured, piholeConfig, authFailed, isBlocking,
-        disableEndTime, isMountedRef, error
+        disableEndTime, isMountedRef, error, t, id
     ]);
 
     // Set up a single polling cycle for all Pi-hole status checks
@@ -589,8 +591,75 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
         return () => clearInterval(interval);
     }, [disableEndTime, stats.timer, isPiholeV6, remainingTime, updateRemainingTime]);
 
+    // Define handleEnableBlocking first as it's used by handleDisableBlocking
+    const handleEnableBlocking = useCallback(async () => {
+        if (isDisablingBlocking) return; // Prevent action if we're already handling a state change
+
+        setIsDisablingBlocking(true); // Use the same lock for enable operations
+
+        try {
+            setIsLoading(true);
+
+            if (!id) {
+                throw new Error('Widget ID is required for Pi-hole enable');
+            }
+
+            // Call API first, don't update UI state optimistically - use direct method to avoid stale config
+            await DashApi.enablePihole(id);
+
+            // Only update UI after successful API call
+            setIsBlocking(true);
+            setDisableEndTime(null);
+            setRemainingTime('');
+
+            // Clear any disable timer
+            if (disableTimer) {
+                clearTimeout(disableTimer);
+                setDisableTimer(null);
+            }
+
+            setIsLoading(false);
+            // Fetch updated stats after enabling
+            await checkPiholeStatus();
+        } catch (err: any) {
+            // On error, revert UI state
+            setIsBlocking(false);
+            setIsLoading(false);
+
+            // Check if this is an authentication error that requires re-auth
+            if (err.pihole?.requiresReauth) {
+                setAuthFailed(true);
+                setError(t('widgets.pihole.errors.authFailed'));
+            } else if (err.response?.status === 401 || err.response?.status === 403) {
+                setAuthFailed(true);
+                setError(t('widgets.pihole.errors.authFailed'));
+            } else if (err.response?.status === 429) {
+                // Check if this is a rate limit from our backend API
+                if (err.response?.data?.error_source === 'labdash_api') {
+                    setAuthFailed(true);
+                    setError(`Lab-Dash API rate limit exceeded: ${err.response?.data?.message}`);
+                } else {
+                    // This is a rate limit from Pi-hole itself
+                    setAuthFailed(true);
+                    setError(t('widgets.pihole.errors.rateLimit'));
+                }
+            } else if (err.pihole?.code === 'TOO_MANY_REQUESTS') {
+                setAuthFailed(true);
+                setError(t('widgets.pihole.errors.rateLimit'));
+            } else if (err.message?.includes('Network Error') || err.message?.includes('timeout')) {
+                setAuthFailed(true);
+                setError(t('widgets.pihole.errors.connectionFailed', { error: err.message }));
+            } else {
+                // Generic error
+                setError(err.message || t('widgets.pihole.errors.enableFailed'));
+            }
+        } finally {
+            setIsDisablingBlocking(false);
+        }
+    }, [isDisablingBlocking, id, checkPiholeStatus, disableTimer, t]);
+
     // Handle disable blocking with timeout
-    const handleDisableBlocking = async (seconds: number | null) => {
+    const handleDisableBlocking = useCallback(async (seconds: number | null) => {
         if (!isConfigured || (!piholeConfig._hasApiToken && !piholeConfig._hasPassword)) return;
 
         setIsDisablingBlocking(true);
@@ -669,7 +738,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
                     }
                 }
             } else {
-                throw new Error('Failed to disable Pi-hole blocking');
+                throw new Error(t('widgets.pihole.errors.disableFailed'));
             }
         } catch (err: any) {
             // Error handling remains the same
@@ -680,10 +749,10 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
             // Check if this is an authentication error that requires re-auth
             if (err.pihole?.requiresReauth) {
                 setAuthFailed(true);
-                setError('Authentication failed. Please check your Pi-hole credentials in widget settings.');
+                setError(t('widgets.pihole.errors.authFailed'));
             } else if (err.response?.status === 401 || err.response?.status === 403) {
                 setAuthFailed(true);
-                setError('Authentication failed. Please check your Pi-hole credentials in widget settings.');
+                setError(t('widgets.pihole.errors.authFailed'));
             } else if (err.response?.status === 429) {
                 // Check if this is a rate limit from our backend API
                 if (err.response?.data?.error_source === 'labdash_api') {
@@ -692,89 +761,22 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
                 } else {
                     // This is a rate limit from Pi-hole itself
                     setAuthFailed(true);
-                    setError('Too many requests to Pi-hole API. The default session expiration is 30 minutes. You can manually clear unused sessions or increase the max_sessions setting in Pi-hole.');
+                    setError(t('widgets.pihole.errors.rateLimit'));
                 }
             } else if (err.pihole?.code === 'TOO_MANY_REQUESTS') {
                 setAuthFailed(true);
-                setError('Too many requests to Pi-hole API. The default session expiration is 30 minutes. You can manually clear unused sessions or increase the max_sessions setting in Pi-hole.');
+                setError(t('widgets.pihole.errors.rateLimit'));
             } else if (err.message?.includes('Network Error') || err.message?.includes('timeout')) {
                 setAuthFailed(true);
-                setError(`Connection failed: ${err.message}. Please check if Pi-hole is running.`);
+                setError(t('widgets.pihole.errors.connectionFailed', { error: err.message }));
             } else {
                 // Generic error
-                setError(err.message || 'Failed to disable Pi-hole blocking');
+                setError(err.message || t('widgets.pihole.errors.disableFailed'));
             }
         } finally {
             setIsDisablingBlocking(false);
         }
-    };
-
-    // Handle enable blocking
-    const handleEnableBlocking = useCallback(async () => {
-        if (isDisablingBlocking) return; // Prevent action if we're already handling a state change
-
-        setIsDisablingBlocking(true); // Use the same lock for enable operations
-
-        try {
-            setIsLoading(true);
-
-            if (!id) {
-                throw new Error('Widget ID is required for Pi-hole enable');
-            }
-
-            // Call API first, don't update UI state optimistically - use direct method to avoid stale config
-            await DashApi.enablePihole(id);
-
-            // Only update UI after successful API call
-            setIsBlocking(true);
-            setDisableEndTime(null);
-            setRemainingTime('');
-
-            // Clear any disable timer
-            if (disableTimer) {
-                clearTimeout(disableTimer);
-                setDisableTimer(null);
-            }
-
-            setIsLoading(false);
-            // Fetch updated stats after enabling
-            await checkPiholeStatus();
-        } catch (err: any) {
-            // On error, revert UI state
-            setIsBlocking(false);
-            setIsLoading(false);
-
-            // Check if this is an authentication error that requires re-auth
-            if (err.pihole?.requiresReauth) {
-                setAuthFailed(true);
-                setError('Authentication failed. Please check your Pi-hole credentials in widget settings.');
-            } else if (err.response?.status === 401 || err.response?.status === 403) {
-                setAuthFailed(true);
-                setError('Authentication failed. Please check your Pi-hole credentials in widget settings.');
-            } else if (err.response?.status === 429) {
-                // Check if this is a rate limit from our backend API
-                if (err.response?.data?.error_source === 'labdash_api') {
-                    setAuthFailed(true);
-                    setError(`Lab-Dash API rate limit exceeded: ${err.response?.data?.message}`);
-                } else {
-                    // This is a rate limit from Pi-hole itself
-                    setAuthFailed(true);
-                    setError('Too many requests to Pi-hole API. The default session expiration is 30 minutes. You can manually clear unused sessions or increase the max_sessions setting in Pi-hole.');
-                }
-            } else if (err.pihole?.code === 'TOO_MANY_REQUESTS') {
-                setAuthFailed(true);
-                setError('Too many requests to Pi-hole API. The default session expiration is 30 minutes. You can manually clear unused sessions or increase the max_sessions setting in Pi-hole.');
-            } else if (err.message?.includes('Network Error') || err.message?.includes('timeout')) {
-                setAuthFailed(true);
-                setError(`Connection failed: ${err.message}. Please check if Pi-hole is running.`);
-            } else {
-                // Generic error
-                setError(err.message || 'Failed to enable Pi-hole blocking');
-            }
-        } finally {
-            setIsDisablingBlocking(false);
-        }
-    }, [piholeConfig, checkPiholeStatus, disableTimer, isDisablingBlocking]);
+    }, [isConfigured, piholeConfig, id, isPiholeV6, checkPiholeStatus, disableTimer, t, handleEnableBlocking]);
 
     // Clean up disable timer on unmount
     useEffect(() => {
@@ -787,41 +789,10 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
 
     // Reset authentication state and retry
     const handleRetry = () => {
-        // Clear error and reset auth failure state
-        setAuthFailed(false);
         setError(null);
-
-        // Reset all timers and states
-        setDisableEndTime(null);
-        setRemainingTime('');
-        if (disableTimer) {
-            clearTimeout(disableTimer);
-            setDisableTimer(null);
-        }
-
-        // Clear any existing timeouts for polling
-        if (statusCheckIntervalRef.current) {
-            clearTimeout(statusCheckIntervalRef.current);
-            statusCheckIntervalRef.current = null;
-        }
-
-        if (refreshIntervalRef.current) {
-            clearInterval(refreshIntervalRef.current);
-            refreshIntervalRef.current = null;
-        }
-
-        // Recheck configuration
-        const isValid = !!piholeConfig.host && (!!piholeConfig._hasApiToken || !!piholeConfig._hasPassword);
-        setIsConfigured(isValid);
-
-        // Reset stats to initial state
-        setStats(initialStats);
-
-        // Set loading state to show that we're retrying
-        setIsLoading(true);
-
-        // Perform an immediate check with the combined function
-        setTimeout(() => checkPiholeStatus(), 100);
+        setAuthFailed(false);
+        // fetchStats(); // This was the old way, use checkPiholeStatus instead
+        checkPiholeStatus();
     };
 
     // Handle menu open
@@ -834,9 +805,19 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
         setDisableMenuAnchor(null);
     };
 
-    // Format remaining time (use the state value now)
-    const formatRemainingTime = (): string => {
-        return remainingTime;
+    // Handle click on widget items to navigate to Pi-hole admin
+    const handleItemClick = (path: string = '') => {
+        const baseUrl = getBaseUrl();
+        if (baseUrl) {
+            window.open(`${baseUrl}${path}`, '_blank');
+        }
+    };
+
+    // Format percentage for display
+    const formatPercentage = (value: number | string | undefined): string => {
+        if (value === undefined || value === null) return '0%';
+        if (typeof value === 'string') return value;
+        return `${Math.round(value)}%`;
     };
 
     // Create base URL for Pi-hole admin panel
@@ -921,6 +902,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
         window.open(adlistsUrl, '_blank');
     };
 
+    // Error handling - matches Pi-hole widget exactly
     if (error) {
         return (
             <Box sx={{
@@ -937,8 +919,10 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
                 </Typography>
                 <Typography variant='caption' align='center' sx={{ mt: 1, fontSize: '0.8rem' }}>
                     {authFailed ?
-                        `Using ${piholeConfig._hasApiToken ? 'API token' : 'password'} authentication` :
-                        'Check your Pi-hole configuration and network connection'}
+                        t('widgets.pihole.errors.usingAuth', {
+                            method: piholeConfig._hasApiToken ? t('widgets.pihole.authMethods.token') : t('widgets.pihole.authMethods.password')
+                        }) :
+                        t('widgets.pihole.errors.checkConfig')}
                 </Typography>
                 <Button
                     variant='contained'
@@ -946,12 +930,13 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
                     sx={{ mt: 2 }}
                     onClick={handleRetry}
                 >
-                    Retry
+                    {t('common.retry')}
                 </Button>
             </Box>
         );
     }
 
+    // Not configured state - matches Pi-hole widget exactly
     if (!isConfigured) {
         return (
             <Box sx={{
@@ -962,12 +947,13 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
                 alignItems: 'center'
             }}>
                 <Typography variant='subtitle1'>
-                    Please configure the Pi-hole widget in settings
+                    {t('widgets.pihole.errors.notConfigured')}
                 </Typography>
             </Box>
         );
     }
 
+    // Loading state - matches Pi-hole widget exactly
     if (isLoading && !stats.domains_being_blocked) {
         return (
             <Box sx={{
@@ -982,7 +968,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
         );
     }
 
-    // Convert percentage to number if it's a string
+    // Convert percentage to number if it's a string (matches Pi-hole widget)
     const parsePercentage = (value: number | string | undefined): number => {
         if (value === undefined) return 0;
         if (typeof value === 'number') return value;
@@ -992,7 +978,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
         return isNaN(parsed) ? 0 : parsed;
     };
 
-    // Get percentage as a number for the progress circle
+    // Get percentage as a number for display
     const blockPercentage = parsePercentage(stats.ads_percentage_today);
 
     // Format the percentage text
@@ -1048,14 +1034,14 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
                             height: 25,
                             fontSize: '0.7rem',
                             color: 'white',
-                            minWidth: '80px', // Add fixed minimum width to prevent size changes
+                            minWidth: '80px',
                             '&:hover': {
                                 backgroundColor: 'rgba(255, 255, 255, 0.1)'
                             },
                             ml: 'auto'
                         }}
                     >
-                        {isBlocking ? 'Disable' : (remainingTime ? `Resume (${remainingTime})` : 'Resume')}
+                        {isBlocking ? t('widgets.pihole.disable') : (remainingTime ? t('widgets.pihole.resumeWithTime', { time: remainingTime }) : t('widgets.pihole.resume'))}
                     </Button>
                 )}
 
@@ -1066,13 +1052,13 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
                     onClose={handleDisableMenuClose}
                     closeAfterTransition={false}
                 >
-                    <MenuItem onClick={() => handleDisableBlocking(10)}>10 seconds</MenuItem>
-                    <MenuItem onClick={() => handleDisableBlocking(30)}>30 seconds</MenuItem>
-                    <MenuItem onClick={() => handleDisableBlocking(60)}>1 minute</MenuItem>
-                    <MenuItem onClick={() => handleDisableBlocking(300)}>5 minutes</MenuItem>
-                    <MenuItem onClick={() => handleDisableBlocking(1800)}>30 minutes</MenuItem>
-                    <MenuItem onClick={() => handleDisableBlocking(3600)}>1 hour</MenuItem>
-                    <MenuItem onClick={() => handleDisableBlocking(null)}>Indefinitely</MenuItem>
+                    <MenuItem onClick={() => handleDisableBlocking(10)}>{t('widgets.pihole.duration.seconds', { count: 10 })}</MenuItem>
+                    <MenuItem onClick={() => handleDisableBlocking(30)}>{t('widgets.pihole.duration.seconds', { count: 30 })}</MenuItem>
+                    <MenuItem onClick={() => handleDisableBlocking(60)}>{t('widgets.pihole.duration.minute')}</MenuItem>
+                    <MenuItem onClick={() => handleDisableBlocking(300)}>{t('widgets.pihole.duration.minutes', { count: 5 })}</MenuItem>
+                    <MenuItem onClick={() => handleDisableBlocking(1800)}>{t('widgets.pihole.duration.minutes', { count: 30 })}</MenuItem>
+                    <MenuItem onClick={() => handleDisableBlocking(3600)}>{t('widgets.pihole.duration.hour')}</MenuItem>
+                    <MenuItem onClick={() => handleDisableBlocking(null)}>{t('widgets.pihole.indefinitely')}</MenuItem>
                 </Menu>
             </Box>
 
@@ -1101,7 +1087,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
                     >
                         <MdBlockFlipped style={{ fontSize: '1.6rem' }} />
                         <Typography variant='body2' align='center' sx={{ mt: 0, mb: 0, fontSize: '0.75rem' }}>
-                            Blocked Today
+                            {t('widgets.pihole.blockedToday')}
                         </Typography>
                         <Typography variant='subtitle2' align='center' fontWeight='bold' sx={{ fontSize: '0.95rem', lineHeight: 1 }}>
                             {formatNumber(stats.ads_blocked_today || 0)}
@@ -1135,7 +1121,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
                             <FaPercentage style={{ fontSize: '1.6rem' }} />
                         </Box>
                         <Typography variant='body2' align='center' sx={{ mt: 0, mb: 0, fontSize: '0.75rem' }}>
-                            Percent Blocked
+                            {t('widgets.pihole.percentBlocked')}
                         </Typography>
                         <Typography variant='subtitle2' align='center' fontWeight='bold' sx={{ fontSize: '0.95rem', lineHeight: 1 }}>
                             {percentageText}%
@@ -1167,7 +1153,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
                     >
                         <FaGlobe style={{ fontSize: '1.6rem' }} />
                         <Typography variant='body2' align='center' sx={{ mt: 0, mb: 0, fontSize: '0.75rem' }}>
-                            Queries Today
+                            {t('widgets.pihole.queriesToday')}
                         </Typography>
                         <Typography variant='subtitle2' align='center' fontWeight='bold' sx={{ fontSize: '0.95rem', lineHeight: 1 }}>
                             {formatNumber(stats.dns_queries_today || 0)}
@@ -1199,7 +1185,7 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
                     >
                         <FaList style={{ fontSize: '1.6rem' }} />
                         <Typography variant='body2' align='center' sx={{ mt: 0, mb: 0, fontSize: '0.75rem' }}>
-                            Domains on Adlists
+                            {t('widgets.pihole.domainsOnBlocklist')}
                         </Typography>
                         <Typography variant='subtitle2' align='center' fontWeight='bold' sx={{ fontSize: '0.95rem', lineHeight: 1 }}>
                             {formatNumber(stats.domains_being_blocked || 0)}
@@ -1213,8 +1199,8 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
                 <Box sx={{ mt: 0.2, textAlign: 'center' }}>
                     <Typography variant='caption' color='white' sx={{ fontSize: '0.6rem' }}>
                         {remainingTime
-                            ? `Blocking disabled. Will resume in ${remainingTime}`
-                            : 'Blocking disabled indefinitely'}
+                            ? t('widgets.pihole.status.disabledWillResume', { time: remainingTime })
+                            : t('widgets.pihole.status.disabledIndefinitely')}
                     </Typography>
                 </Box>
             )}

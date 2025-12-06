@@ -14,6 +14,7 @@ import { FaEdit, FaHeart, FaInfoCircle, FaSync } from 'react-icons/fa';
 import { FaArrowRightFromBracket, FaGear, FaHouse, FaTrashCan, FaUser } from 'react-icons/fa6';
 import { PiGlobeSimple, PiGlobeSimpleX } from 'react-icons/pi';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { DashApi } from '../../api/dash-api';
 import { useAppContext } from '../../context/useAppContext';
@@ -55,7 +56,8 @@ export const ResponsiveAppBar = ({ children }: Props) => {
     const [openVersionModal, setOpenVersionModal] = useState(false);
     const [internetTooltipOpen, setInternetTooltipOpen] = useState(false);
     const [originalLayoutSnapshot, setOriginalLayoutSnapshot] = useState<DashboardItem[] | null>(null);
-
+    const { t } = useTranslation();
+    
     const { internetStatus } = useInternetStatus();
 
     const {
@@ -199,10 +201,10 @@ export const ResponsiveAppBar = ({ children }: Props) => {
             // Navigate to home page
             navigate('/');
             handleCloseDrawer();
-            ToastManager.success('Logged out');
+            ToastManager.success(t('auth.loggedOutSuccess')); // <-- Zaktualizowane
         } catch (error) {
             console.error('Logout error:', error);
-            ToastManager.error('Logout error');
+            ToastManager.error(t('auth.logoutError')); // <-- Zaktualizowane
         }
     };
 
@@ -261,10 +263,10 @@ export const ResponsiveAppBar = ({ children }: Props) => {
             await refreshDashboard();
 
             handleCloseEditPage();
-            ToastManager.success('Page updated successfully');
+            ToastManager.success(t('navigation.pageUpdateSuccess')); // <-- Zaktualizowane
         } catch (error) {
             console.error('Error updating page:', error);
-            ToastManager.error('Failed to update page');
+            ToastManager.error(t('navigation.pageUpdateFailed')); // <-- Zaktualizowane
         }
     };
 
@@ -394,10 +396,10 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                 }
                                             }}
                                         >
-                                            Done
+                                            {t('common.done')}
                                         </Button>
                                         {/* Add Item button */}
-                                        <Tooltip title='Add Item' placement='bottom' arrow>
+                                        <Tooltip title={t('navigation.addItem')} placement='bottom' arrow>
                                             <IconButton onClick={() => setOpenAddModal(true)}>
                                                 <Add sx={{ color: 'white', fontSize: '2rem' }}/>
                                             </IconButton>
@@ -407,7 +409,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                 {!editMode && showInternetIndicator && (
                                     <Tooltip
                                         key='internet-tooltip'
-                                        title={internetStatus === 'online' ? 'Internet Connected' : internetStatus === 'offline' ? 'No Internet Connection' : 'Checking Internet...'}
+                                        title={internetStatus === 'online' ? t('navigation.internet.online') : internetStatus === 'offline' ? t('navigation.internet.offline') : t('navigation.internet.checking')}
                                         placement='left'
                                         arrow
                                         open={Boolean(internetTooltipOpen)}
@@ -538,7 +540,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                 <ListItemIcon>
                                                     {<FaHouse style={{ color: theme.palette.text.primary, fontSize: 22 }}/> }
                                                 </ListItemIcon>
-                                                <ListItemText primary={'Home'} />
+                                                <ListItemText primary={t('navigation.home')} />
                                             </ListItemButton>
                                         </ListItem>
 
@@ -551,7 +553,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                     <ListItemIcon>
                                                         {<FaEdit style={{ color: theme.palette.text.primary, fontSize: 22 }}/> }
                                                     </ListItemIcon>
-                                                    <ListItemText primary={'Edit Dashboard'} />
+                                                    <ListItemText primary={t('navigation.editDashboard')} />
                                                 </ListItemButton>
                                             </ListItem>
                                         )}
@@ -617,7 +619,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                         <ListItemIcon>
                                                             {<FaGear style={{ color: theme.palette.text.primary, fontSize: 22 }}/> }
                                                         </ListItemIcon>
-                                                        <ListItemText primary={'Settings'} />
+                                                        <ListItemText primary={t('navigation.settings')} />
                                                     </ListItemButton>
                                                 </ListItem>
                                             </NavLink>
@@ -634,7 +636,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                 <ListItemIcon>
                                                     <FaHeart style={{ color: 'red', fontSize: 22 }} />
                                                 </ListItemIcon>
-                                                <ListItemText primary={'Donate'} secondary={'Support this project'} slotProps={{
+                                                <ListItemText primary={t('navigation.donate')} secondary={t('navigation.donateSubtitle')} slotProps={{
                                                     secondary: {
                                                         color: 'text.primary'
                                                     }
@@ -650,8 +652,8 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                         <FaSync style={{ color: theme.palette.text.primary, fontSize: 22 }}/>
                                                     </ListItemIcon>
                                                     <ListItemText
-                                                        primary={'Update Available'}
-                                                        secondary={`Version ${latestVersion}`}
+                                                        primary={t('navigation.updateAvailable')}
+                                                        secondary={`${t('navigation.version')} ${latestVersion}`}
                                                         slotProps={{
                                                             secondary: {
                                                                 color: 'text.primary'
@@ -686,7 +688,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                 <ListItemText
                                                     primary={
                                                         <Typography>
-                                                            {recentlyUpdated ? 'Recently Updated' : 'Version'}
+                                                            {recentlyUpdated ? t('navigation.recentlyUpdated') : t('navigation.version')}
                                                         </Typography>
                                                     }
                                                     secondary={`v${getAppVersion()}`}
@@ -720,8 +722,8 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                             </Avatar>
                                                         </ListItemIcon>
                                                         <ListItemText
-                                                            primary={username || 'User'}
-                                                            secondary={isAdmin ? 'Administrator' : 'User'}
+                                                            primary={username || t('navigation.user')}
+                                                            secondary={isAdmin ? t('navigation.admin') : t('navigation.user')}
                                                             slotProps={{
                                                                 secondary: {
                                                                     color: 'text.primary'
@@ -737,7 +739,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                         <ListItemIcon>
                                                             <FaArrowRightFromBracket style={{ color: theme.palette.text.primary, fontSize: 22 }} />
                                                         </ListItemIcon>
-                                                        <ListItemText primary='Logout' />
+                                                        <ListItemText primary={t('auth.logout')} />
                                                     </ListItemButton>
                                                 </ListItem>
                                             </>
@@ -748,7 +750,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                     <ListItemIcon>
                                                         <FaUser style={{ color: theme.palette.text.primary, fontSize: 22 }}/>
                                                     </ListItemIcon>
-                                                    <ListItemText primary={'Login'} />
+                                                    <ListItemText primary={t('auth.login')} />
                                                 </ListItemButton>
                                             </ListItem>
                                         )}
@@ -758,10 +760,10 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                         </Box>
                     </Toolbar>
                 </Container>
-                <CenteredModal open={openAddModal} handleClose={handleClose} title='Add Item'>
+                <CenteredModal open={openAddModal} handleClose={handleClose} title={t('forms.addEdit.addItem')}>
                     <AddEditForm handleClose={handleClose}/>
                 </CenteredModal>
-                <CenteredModal open={openEditPageModal} handleClose={handleCloseEditPage} title='Edit Page'>
+                <CenteredModal open={openEditPageModal} handleClose={handleCloseEditPage} title={t('navigation.editPageTitle')}>
                     <AddEditForm
                         handleClose={handleCloseEditPage}
                         existingItem={selectedPageForEdit ? {
@@ -813,7 +815,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                             px: 3,
                             gap: 2
                         }}>
-                            <Button variant='contained' onClick={handleSave}  sx={{ backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT, color: 'black', borderRadius: '999px', height: '1.7rem', width: '4.5rem' }}>Done</Button>
+                            <Button variant='contained' onClick={handleSave}  sx={{ backgroundColor: COLORS.LIGHT_GRAY_TRANSPARENT, color: 'black', borderRadius: '999px', height: '1.7rem', width: '4.5rem' }}>{t('common.done')}</Button>
                         </Box>
                         : null
                 }

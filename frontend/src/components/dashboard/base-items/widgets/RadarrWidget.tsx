@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { QueueItem, QueueManagementWidget } from './QueueManagementWidget';
 import { DashApi } from '../../../../api/dash-api';
 import { TWENTY_SEC_IN_MS } from '../../../../constants/constants';
+import { ToastManager } from '../../../toast/ToastManager'; // Import ToastManager for error display
 
 interface RadarrWidgetConfig {
     host?: string;
@@ -19,6 +21,7 @@ interface RadarrWidgetProps {
 }
 
 export const RadarrWidget: React.FC<RadarrWidgetProps> = ({ id, config }) => {
+    const { t } = useTranslation();
     const [isLoading, setIsLoading] = useState(true);
     const [queueItems, setQueueItems] = useState<QueueItem[]>([]);
     const [error, setError] = useState<string | null>(null);
@@ -36,7 +39,7 @@ export const RadarrWidget: React.FC<RadarrWidgetProps> = ({ id, config }) => {
         // Check for required configuration and valid ID
         if (!id || !config?.host || !config?._hasApiKey) {
             setIsLoading(false);
-            setError('Missing required configuration. Please configure host and API key.');
+            setError(t('widgets.radarr.errors.missingConfig'));
             return;
         }
 
@@ -55,12 +58,12 @@ export const RadarrWidget: React.FC<RadarrWidgetProps> = ({ id, config }) => {
             setQueueItems(sortedQueue);
         } catch (err) {
             console.error('Failed to fetch Radarr queue:', err);
-            setError('Failed to connect to Radarr. Please check your configuration.');
+            setError(t('widgets.radarr.errors.fetchFailedQueue'));
             setQueueItems([]);
         } finally {
             setIsLoading(false);
         }
-    }, [id, config?.host, config?._hasApiKey]);
+    }, [id, config?.host, config?._hasApiKey, t]);
 
     const fetchStatistics = useCallback(async () => {
         if (!id || !config?.host || !config?._hasApiKey) {
@@ -98,7 +101,7 @@ export const RadarrWidget: React.FC<RadarrWidgetProps> = ({ id, config }) => {
         // Only fetch if we have the required configuration
         if (!id || !config?.host || !config?._hasApiKey) {
             setIsLoading(false);
-            setError('Missing required configuration. Please configure host and API key.');
+            setError(t('widgets.radarr.errors.missingConfig'));
             return;
         }
 
@@ -145,7 +148,7 @@ export const RadarrWidget: React.FC<RadarrWidgetProps> = ({ id, config }) => {
                 clearTimeout(timeoutId);
             }
         };
-    }, [id, config?.host, config?._hasApiKey, fetchQueueData, fetchStatistics]);
+    }, [id, config?.host, config?._hasApiKey, fetchQueueData, fetchStatistics, t]);
 
     const handleRemoveItem = useCallback(async (itemId: string, removeFromClient: boolean, blocklist: boolean): Promise<boolean> => {
         try {
@@ -155,13 +158,14 @@ export const RadarrWidget: React.FC<RadarrWidgetProps> = ({ id, config }) => {
             return true;
         } catch (err) {
             console.error('Failed to remove Radarr queue item:', err);
+            ToastManager.error(t('widgets.radarr.errors.removeFailed'));
             return false;
         }
-    }, [id, fetchQueueData]);
+    }, [id, fetchQueueData, t]);
 
     return (
         <QueueManagementWidget
-            serviceName='Radarr'
+            serviceName={t('widgets.radarr.title')}
             isLoading={isLoading}
             queueItems={queueItems}
             showLabel={config?.showLabel !== false}
@@ -173,6 +177,11 @@ export const RadarrWidget: React.FC<RadarrWidgetProps> = ({ id, config }) => {
                 port: config.port?.toString() || '7878',
                 ssl: config.ssl || false
             } : undefined}
+            // Props dla statystyk Radarr
+            statsLabels={{
+                total: t('widgets.radarr.stats.moviesTotal'),
+                monitored: t('widgets.radarr.stats.monitoredMovies')
+            }}
         />
     );
 };

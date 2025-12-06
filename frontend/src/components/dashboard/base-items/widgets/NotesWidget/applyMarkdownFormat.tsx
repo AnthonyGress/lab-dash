@@ -4,6 +4,7 @@ export const applyMarkdownFormat = (
     selectionStart: number,
     selectionEnd: number,
     type: string,
+    t: (key: string) => string, // Add translation function argument
     prefix?: string,
     suffix?: string
 ): { newText: string; newSelectionStart: number; newSelectionEnd: number; } => {
@@ -40,7 +41,7 @@ export const applyMarkdownFormat = (
 
     switch (type) {
     case 'heading': {
-        const lines = selectedText || 'Heading';
+        const lines = selectedText || t('widgets.notes.markdown.heading');
         newText = beforeSelection + '## ' + lines + afterSelection;
         newSelectionStart = actualSelectionStart + 3;
         newSelectionEnd = newSelectionStart + lines.length;
@@ -49,14 +50,15 @@ export const applyMarkdownFormat = (
     case 'bold':
     case 'italic':
     case 'code': {
-        const wrappedText = selectedText || (type === 'code' ? 'code' : 'text');
+        const defaultText = type === 'code' ? t('widgets.notes.markdown.code') : t('widgets.notes.markdown.text');
+        const wrappedText = selectedText || defaultText;
         newText = beforeSelection + prefix + wrappedText + suffix + afterSelection;
         newSelectionStart = actualSelectionStart + (prefix?.length || 0);
         newSelectionEnd = newSelectionStart + wrappedText.length;
         break;
     }
     case 'codeblock': {
-        const codeText = selectedText || 'code';
+        const codeText = selectedText || t('widgets.notes.markdown.code');
         const codeBlock = '```\n' + codeText + '\n```';
         newText = beforeSelection + codeBlock + afterSelection;
         newSelectionStart = actualSelectionStart + 4;
@@ -64,14 +66,14 @@ export const applyMarkdownFormat = (
         break;
     }
     case 'quote': {
-        const quoteText = selectedText || 'Quote';
+        const quoteText = selectedText || t('widgets.notes.markdown.quote');
         newText = beforeSelection + '> ' + quoteText + afterSelection;
         newSelectionStart = actualSelectionStart + 2;
         newSelectionEnd = newSelectionStart + quoteText.length;
         break;
     }
     case 'link': {
-        const linkText = selectedText || 'link text';
+        const linkText = selectedText || t('widgets.notes.markdown.linkText');
         const linkFormat = '[' + linkText + '](url)';
         newText = beforeSelection + linkFormat + afterSelection;
         newSelectionStart = actualSelectionStart + linkText.length + 3;
@@ -79,21 +81,21 @@ export const applyMarkdownFormat = (
         break;
     }
     case 'ul': {
-        const listText = selectedText || 'List item';
+        const listText = selectedText || t('widgets.notes.markdown.listItem');
         newText = beforeSelection + '- ' + listText + afterSelection;
         newSelectionStart = actualSelectionStart + 2;
         newSelectionEnd = newSelectionStart + listText.length;
         break;
     }
     case 'ol': {
-        const listText = selectedText || 'List item';
+        const listText = selectedText || t('widgets.notes.markdown.listItem');
         newText = beforeSelection + '1. ' + listText + afterSelection;
         newSelectionStart = actualSelectionStart + 3;
         newSelectionEnd = newSelectionStart + listText.length;
         break;
     }
     case 'task': {
-        const taskText = selectedText || 'Task item';
+        const taskText = selectedText || t('widgets.notes.markdown.taskItem');
         newText = beforeSelection + '- [ ] ' + taskText + afterSelection;
         newSelectionStart = actualSelectionStart + 6;
         newSelectionEnd = newSelectionStart + taskText.length;

@@ -1,10 +1,12 @@
 import { Box, Grid2 as Grid, Typography } from '@mui/material';
 import { Dispatch, SetStateAction } from 'react';
 import { UseFormReturn } from 'react-hook-form';
+import { useTranslation } from 'react-i18next'; // Import hook
 
 import { ITEM_TYPE_OPTIONS } from './constants';
 import { FormValues } from './types';
 import { COLORS } from '../../../theme/styles';
+import { ITEM_TYPE } from '../../../types'; // Import types for matching
 
 type Props = {
     formContext: UseFormReturn<FormValues>
@@ -12,6 +14,8 @@ type Props = {
 }
 
 export const ItemTypeSelector = ({ formContext, setCurrentStep }: Props) => {
+    const { t } = useTranslation(); // Initialize hook
+
     const handleItemTypeSelect = (itemTypeId: string) => {
         formContext.setValue('itemType', itemTypeId);
         if (itemTypeId === 'widget') {
@@ -21,14 +25,31 @@ export const ItemTypeSelector = ({ formContext, setCurrentStep }: Props) => {
         }
     };
 
+    // Helper to get translation keys based on item ID
+    const getItemTranslation = (id: string) => {
+        switch (id) {
+            case ITEM_TYPE.APP_SHORTCUT:
+                return { label: t('forms.addEdit.types.shortcut'), desc: t('forms.addEdit.types.shortcutDesc') };
+            case 'widget':
+                return { label: t('forms.addEdit.types.widget'), desc: t('forms.addEdit.types.widgetDesc') };
+            case ITEM_TYPE.PLACEHOLDER:
+                return { label: t('forms.addEdit.types.placeholder'), desc: t('forms.addEdit.types.placeholderDesc') };
+            case ITEM_TYPE.PAGE:
+                return { label: t('forms.addEdit.types.page'), desc: t('forms.addEdit.types.pageDesc') };
+            default:
+                return { label: '', desc: '' };
+        }
+    };
+
     return (
         <Box sx={{ mb: 2 }}>
             <Typography variant='body2' sx={{ color: 'text.primary', mb: 2, fontSize: '0.875rem' }}>
-                    Choose an Item Type*
+                {t('forms.addEdit.selectType')} {/* Translated label */}
             </Typography>
             <Grid container spacing={2} sx={{ justifyContent: 'center' }}>
                 {ITEM_TYPE_OPTIONS.map((option) => {
                     const IconComponent = option.icon;
+                    const { label, desc } = getItemTranslation(option.id); // Get translated text
 
                     return (
                         <Grid
@@ -77,7 +98,7 @@ export const ItemTypeSelector = ({ formContext, setCurrentStep }: Props) => {
                                             lineHeight: 1.2
                                         }}
                                     >
-                                        {option.label}
+                                        {label || option.label} {/* Use translation or fallback */}
                                     </Typography>
                                     <Typography
                                         variant='caption'
@@ -92,7 +113,7 @@ export const ItemTypeSelector = ({ formContext, setCurrentStep }: Props) => {
                                             textOverflow: 'ellipsis'
                                         }}
                                     >
-                                        {option.description}
+                                        {desc || option.description} {/* Use translation or fallback */}
                                     </Typography>
                                 </Box>
                             </Box>

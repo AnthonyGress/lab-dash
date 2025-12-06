@@ -27,6 +27,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { FaSearch } from 'react-icons/fa';
 import { FaRegThumbsDown, FaRegThumbsUp } from 'react-icons/fa6';
 import { RemoveScroll } from 'react-remove-scroll';
+import { useTranslation } from 'react-i18next';
 
 import { DashApi } from '../../../../api/dash-api';
 import { BACKEND_URL, TWENTY_SEC_IN_MS } from '../../../../constants/constants';
@@ -105,6 +106,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
     error,
     showLabel
 }) => {
+    const { t, i18n } = useTranslation();
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
     const [searchLoading, setSearchLoading] = useState(false);
@@ -294,25 +296,25 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                 setSearchResults([]);
                 setSearchQuery('');
                 setIsDropdownOpen(false);
-                ToastManager.success(`Successfully requested ${title}`);
+                ToastManager.success(t('widgets.mediaRequestManager.requestSuccess', { title }));
             } else {
                 console.error('Request creation failed:', response.error);
-                ToastManager.error(`Failed to request ${title}`);
+                ToastManager.error(t('widgets.mediaRequestManager.requestFailed', { title }));
             }
         } catch (requestError) {
             console.error('Request creation error:', requestError);
-            ToastManager.error('An error occured while requesting');
+            ToastManager.error(t('widgets.mediaRequestManager.requestError'));
         }
     };
 
     const handleApproveRequest = (requestId: number) => {
         const request = allRequests.find(r => r.id === requestId);
-        const title = request ? getTitle(request.media) : 'Unknown';
+        const title = request ? getTitle(request.media) : t('widgets.mediaRequestManager.unknownTitle');
 
         PopupManager.confirmation({
-            title: 'Approve Request',
-            text: `Are you sure you want to approve the request for "${title}"?`,
-            confirmText: 'Yes, Approve',
+            title: t('widgets.mediaRequestManager.actions.approveTitle'),
+            text: t('widgets.mediaRequestManager.actions.approveConfirm', { title }),
+            confirmText: t('widgets.mediaRequestManager.actions.yesApprove'),
             confirmAction: async () => {
                 if (!id || !_hasApiKey) return;
 
@@ -330,12 +332,12 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
 
     const handleDeclineRequest = (requestId: number) => {
         const request = allRequests.find(r => r.id === requestId);
-        const title = request ? getTitle(request.media) : 'Unknown';
+        const title = request ? getTitle(request.media) : t('widgets.mediaRequestManager.unknownTitle');
 
         PopupManager.deleteConfirmation({
-            title: 'Decline Request',
-            text: `Are you sure you want to decline the request for "${title}"?`,
-            confirmText: 'Yes, Decline',
+            title: t('widgets.mediaRequestManager.actions.declineTitle'),
+            text: t('widgets.mediaRequestManager.actions.declineConfirm', { title }),
+            confirmText: t('widgets.mediaRequestManager.actions.yesDecline'),
             confirmAction: async () => {
                 if (!id || !_hasApiKey) return;
 
@@ -358,42 +360,42 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
 
     const getStatusColor = (status: number) => {
         switch (status) {
-        case 1: return 'warning'; // Pending
-        case 2: return 'success'; // Approved
-        case 3: return 'error'; // Declined
-        case 4: return 'success'; // Partially Available
-        case 5: return 'success'; // Available
-        case 6: return 'error'; // Failed
-        default: return 'default';
+            case 1: return 'warning'; // Pending
+            case 2: return 'success'; // Approved
+            case 3: return 'error'; // Declined
+            case 4: return 'success'; // Partially Available
+            case 5: return 'success'; // Available
+            case 6: return 'error'; // Failed
+            default: return 'default';
         }
     };
 
     const getStatusColorSx = (status: number) => {
         switch (status) {
-        case 1: return { backgroundColor: 'warning.dark', color: 'warning.contrastText' }; // Pending
-        case 2: return { backgroundColor: 'success.dark', color: 'success.contrastText' }; // Approved
-        case 3: return { backgroundColor: 'error.dark', color: 'error.contrastText' }; // Declined
-        case 4: return { backgroundColor: 'success.dark', color: 'success.contrastText' }; // Partially Available
-        case 5: return { backgroundColor: 'success.dark', color: 'success.contrastText' }; // Available
-        case 6: return { backgroundColor: 'error.dark', color: 'error.contrastText' }; // Failed
-        default: return { backgroundColor: 'grey.dark', color: 'grey.contrastText' };
+            case 1: return { backgroundColor: 'warning.dark', color: 'warning.contrastText' }; // Pending
+            case 2: return { backgroundColor: 'success.dark', color: 'success.contrastText' }; // Approved
+            case 3: return { backgroundColor: 'error.dark', color: 'error.contrastText' }; // Declined
+            case 4: return { backgroundColor: 'success.dark', color: 'success.contrastText' }; // Partially Available
+            case 5: return { backgroundColor: 'success.dark', color: 'success.contrastText' }; // Available
+            case 6: return { backgroundColor: 'error.dark', color: 'error.contrastText' }; // Failed
+            default: return { backgroundColor: 'grey.dark', color: 'grey.contrastText' };
         }
     };
 
     const getStatusText = (status: number) => {
         switch (status) {
-        case 1: return 'Pending';
-        case 2: return 'Approved';
-        case 3: return 'Declined';
-        case 4: return 'Partial';
-        case 5: return 'Available';
-        case 6: return 'Failed';
-        default: return `Status ${status}`;
+            case 1: return t('widgets.mediaRequestManager.status.pending');
+            case 2: return t('widgets.mediaRequestManager.status.approved');
+            case 3: return t('widgets.mediaRequestManager.status.declined');
+            case 4: return t('widgets.mediaRequestManager.status.partial');
+            case 5: return t('widgets.mediaRequestManager.status.available');
+            case 6: return t('widgets.mediaRequestManager.status.failed');
+            default: return t('widgets.mediaRequestManager.status.unknown', { status });
         }
     };
 
     const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString();
+        return new Date(dateString).toLocaleDateString(i18n.language);
     };
 
     const getPosterUrl = (posterPath?: string) => {
@@ -402,7 +404,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
     };
 
     const getTitle = (item: SearchResult | MediaRequest['media']) => {
-        return item.title || item.name || 'Unknown Title';
+        return item.title || item.name || t('widgets.mediaRequestManager.title');
     };
 
     const getReleaseYear = (item: SearchResult | MediaRequest['media']) => {
@@ -443,9 +445,9 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
         if (!seasons || seasons.length === 0) return '';
         const seasonNumbers = seasons.map(s => s.seasonNumber).sort((a, b) => a - b);
         if (seasonNumbers.length > 4) {
-            return `${seasonNumbers.length} seasons requested`;
+            return t('widgets.mediaRequestManager.seasonsRequested', { count: seasonNumbers.length });
         } else {
-            return `Seasons: ${seasonNumbers.join(', ')}`;
+            return `${t('widgets.mediaRequestManager.selectSeasons')}: ${seasonNumbers.join(', ')}`;
         }
     };
 
@@ -580,8 +582,8 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                                     }
                                 }}
                                 loading={searchLoading}
-                                loadingText='Searching...'
-                                noOptionsText={searchQuery.length < 2 ? 'Type to search...' : 'No results found'}
+                                loadingText={t('widgets.mediaRequestManager.loading')}
+                                noOptionsText={searchQuery.length < 2 ? t('widgets.mediaRequestManager.typeToSearch') : t('widgets.mediaRequestManager.noResults')}
                                 filterOptions={(options) => options} // Don't filter on frontend, show all API results
                                 open={searchQuery.length >= 2 && searchResults.length > 0 && !searchLoading && !confirmationItem} // Close when modal is open
                                 disablePortal={false} // Allow portal for proper dropdown positioning
@@ -660,13 +662,13 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                                                 {getTitle(option)}
                                             </Typography>
                                             <Typography key={`subtitle-${option.id}`} variant='caption' sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                                                {getReleaseYear(option)} • {option.mediaType === 'movie' ? 'Movie' : 'TV Show'}
+                                                {getReleaseYear(option)} • {option.mediaType === 'movie' ? t('widgets.mediaRequestManager.movie') : t('widgets.mediaRequestManager.tvShow')}
                                             </Typography>
                                         </Box>
                                         {option.status?.status === 4 && (
                                             <Chip
                                                 key={`chip-${option.id}`}
-                                                label='Available'
+                                                label={t('widgets.mediaRequestManager.alreadyAvailable')}
                                                 size='small'
                                                 sx={{
                                                     fontSize: '0.7rem',
@@ -681,7 +683,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                                 renderInput={(params) => (
                                     <TextField
                                         {...params}
-                                        placeholder='Search for movies or TV shows...'
+                                        placeholder={t('widgets.mediaRequestManager.search')}
                                         InputProps={{
                                             ...params.InputProps,
                                             startAdornment: (
@@ -734,7 +736,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                 {error ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1, width: '100%', flexDirection: 'column' }}>
                         <Typography variant='body2' sx={{ textAlign: 'center', mb: 1 }}>
-                            Configuration Error
+                            {t('widgets.mediaRequestManager.errors.configuration')}
                         </Typography>
                         <Typography variant='caption' sx={{ color: 'rgba(255,255,255,0.7)', textAlign: 'center' }}>
                             {error}
@@ -748,7 +750,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                             {/* All Requests */}
                             <Box>
                                 <Typography variant='caption' sx={{ px: 1, mb: 0.5, color: 'white' }}>
-                                    Requests ({allRequests.length})
+                                    {t('widgets.mediaRequestManager.requestsCount', { count: allRequests.length })}
                                 </Typography>
                                 <Box sx={{
                                     px: 1.5,
@@ -785,7 +787,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                                             color: 'rgba(255,255,255,0.5)',
                                             fontSize: '0.85rem'
                                         }}>
-                                            No requests found
+                                            {t('widgets.mediaRequestManager.mediaInfo.noRequests')}
                                         </Box>
                                     ) : (
                                         <Box>
@@ -853,7 +855,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                                                                                     mb: 0.05
                                                                                 }}
                                                                             >
-                                                                                {getReleaseYear(request.media)} • {request.media.mediaType === 'movie' ? 'Movie' : 'TV Show'}
+                                                                                {getReleaseYear(request.media)} • {request.media.mediaType === 'movie' ? t('widgets.mediaRequestManager.movie') : t('widgets.mediaRequestManager.tvShow')}
                                                                             </Typography>
 
                                                                             {/* Seasons or blank space for movies */}
@@ -871,7 +873,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
 
                                                                     {/* Profile text */}
                                                                     <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)' }}>
-                                                                        Profile: {request.profileName || 'Default'}
+                                                                        {t('widgets.mediaRequestManager.mediaInfo.profile')}: {request.profileName || t('common.unknown')}
                                                                     </Typography>
                                                                 </Box>
 
@@ -1007,7 +1009,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                         setPreviousSearchQuery('');
                     }
                 }}
-                title={confirmationItem ? `Request ${getTitle(confirmationItem)}` : ''}
+                title={confirmationItem ? t('widgets.mediaRequestManager.request', { title: getTitle(confirmationItem) }) : t('widgets.mediaRequestManager.title')}
                 width='400px'
             >
                 {confirmationItem && (
@@ -1025,11 +1027,11 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                                     {getTitle(confirmationItem)}
                                 </Typography>
                                 <Typography variant='body2' sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                                    {getReleaseYear(confirmationItem)} • {confirmationItem.mediaType === 'movie' ? 'Movie' : 'TV Show'}
+                                    {getReleaseYear(confirmationItem)} • {confirmationItem.mediaType === 'movie' ? t('widgets.mediaRequestManager.movie') : t('widgets.mediaRequestManager.tvShow')}
                                 </Typography>
                                 {confirmationItem.status?.status === 4 && (
                                     <Chip
-                                        label='Already Available'
+                                        label={t('widgets.mediaRequestManager.alreadyAvailable')}
                                         size='small'
                                         sx={{
                                             fontSize: '0.7rem',
@@ -1053,7 +1055,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                         {confirmationItem.mediaType === 'tv' && (
                             <Box sx={{ mb: 2 }}>
                                 <Typography variant='h6' sx={{ color: 'white', mb: 1 }}>
-                                    Select Seasons:
+                                    {t('widgets.mediaRequestManager.selectSeasons')}:
                                 </Typography>
 
                                 {loadingTvDetails ? (
@@ -1091,7 +1093,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                                                         }}
                                                     />
                                                 }
-                                                label={`All (${tvShowDetails.seasons.filter((season: any) => season.seasonNumber > 0).length})`}
+                                                label={t('widgets.mediaRequestManager.allSeasons', { count: tvShowDetails.seasons.filter((season: any) => season.seasonNumber > 0).length })}
                                                 sx={{
                                                     color: 'white',
                                                     display: 'flex',
@@ -1157,26 +1159,26 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                                                                             color: seasonAvailable ? 'rgba(255,255,255,0.5)' : 'white'
                                                                         }}
                                                                     >
-                                                                        Season {season.seasonNumber}
+                                                                        {t('widgets.mediaRequestManager.selectSeasonsLabel', { number: season.seasonNumber })}
                                                                     </Typography>
                                                                     {seasonAvailable && (
                                                                         <Chip
                                                                             label={(() => {
                                                                                 // Check season status first
-                                                                                if (season.status === 2) return 'Pending';
-                                                                                if (season.status === 3) return 'Processing';
-                                                                                if (season.status === 4) return 'Partial';
-                                                                                if (season.status === 5) return 'Available';
-                                                                                if (season.status === 6) return 'Deleted';
+                                                                                if (season.status === 2) return t('widgets.mediaRequestManager.status.pending');
+                                                                                if (season.status === 3) return t('widgets.mediaRequestManager.status.processing');
+                                                                                if (season.status === 4) return t('widgets.mediaRequestManager.status.partial');
+                                                                                if (season.status === 5) return t('widgets.mediaRequestManager.status.available');
+                                                                                if (season.status === 6) return t('widgets.mediaRequestManager.status.deleted');
 
                                                                                 // Check mediaInfo.seasons status
                                                                                 const seasonStatus = tvShowDetails?.mediaInfo?.seasons?.find((s: any) => s.seasonNumber === season.seasonNumber);
                                                                                 if (seasonStatus) {
-                                                                                    if (seasonStatus.status === 2) return 'Pending';
-                                                                                    if (seasonStatus.status === 3) return 'Processing';
-                                                                                    if (seasonStatus.status === 4) return 'Partial';
-                                                                                    if (seasonStatus.status === 5) return 'Available';
-                                                                                    if (seasonStatus.status === 6) return 'Deleted';
+                                                                                    if (seasonStatus.status === 2) return t('widgets.mediaRequestManager.status.pending');
+                                                                                    if (seasonStatus.status === 3) return t('widgets.mediaRequestManager.status.processing');
+                                                                                    if (seasonStatus.status === 4) return t('widgets.mediaRequestManager.status.partial');
+                                                                                    if (seasonStatus.status === 5) return t('widgets.mediaRequestManager.status.available');
+                                                                                    if (seasonStatus.status === 6) return t('widgets.mediaRequestManager.status.deleted');
                                                                                 }
 
                                                                                 return 'Unavailable'; // fallback
@@ -1227,13 +1229,13 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
 
                                         {getAvailableSeasons(tvShowDetails.seasons).length === 0 ? (
                                             <Typography variant='body2' sx={{ color: 'rgba(255,255,255,0.7)', mt: 1 }}>
-                                                All seasons are already available or requested
+                                                {t('widgets.mediaRequestManager.allAvailable')}
                                             </Typography>
                                         ) : null}
                                     </Box>
                                 ) : (
                                     <Typography variant='body2' sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                                        Failed to load season information
+                                        {t('widgets.mediaRequestManager.failedToLoadSeasons')}
                                     </Typography>
                                 )}
                             </Box>
@@ -1254,7 +1256,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                                 }}
                                 sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.3)' }}
                             >
-                                Cancel
+                                {t('widgets.mediaRequestManager.actions.cancel')}
                             </Button>
                             <Button
                                 variant='contained'

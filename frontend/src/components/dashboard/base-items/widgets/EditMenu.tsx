@@ -1,6 +1,7 @@
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { IconButton, Menu, MenuItem } from '@mui/material';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next'; // 1. Import hooka
 import { FaArrowRight, FaCopy, FaFile, FaHouse, FaPenToSquare, FaTrashCan } from 'react-icons/fa6';
 
 import { useAppContext } from '../../../../context/useAppContext';
@@ -14,6 +15,7 @@ type EditMenuProps = {
 };
 
 export const EditMenu: React.FC<EditMenuProps> = ({ editMode, itemId, onEdit, onDelete, onDuplicate }) => {
+    const { t } = useTranslation(); // 2. Inicjalizacja
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [moveMenuAnchor, setMoveMenuAnchor] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
@@ -91,7 +93,7 @@ export const EditMenu: React.FC<EditMenuProps> = ({ editMode, itemId, onEdit, on
                     }}
                 >
                     <FaPenToSquare size={14} />
-                    Edit
+                    {t('common.edit')}
                 </MenuItem>
                 {onDuplicate && (
                     <MenuItem
@@ -104,7 +106,7 @@ export const EditMenu: React.FC<EditMenuProps> = ({ editMode, itemId, onEdit, on
                         }}
                     >
                         <FaCopy size={14} />
-                        Duplicate
+                        {t('common.duplicate')}
                     </MenuItem>
                 )}
                 {hasOtherPages && (
@@ -118,7 +120,7 @@ export const EditMenu: React.FC<EditMenuProps> = ({ editMode, itemId, onEdit, on
                         }}
                     >
                         <FaArrowRight size={14} />
-                        Move to page
+                        {t('common.moveToPage')}
                     </MenuItem>
                 )}
                 <MenuItem
@@ -131,7 +133,7 @@ export const EditMenu: React.FC<EditMenuProps> = ({ editMode, itemId, onEdit, on
                     }}
                 >
                     <FaTrashCan size={14} />
-                    Delete
+                    {t('common.delete')}
                 </MenuItem>
             </Menu>
 
@@ -170,7 +172,7 @@ export const EditMenu: React.FC<EditMenuProps> = ({ editMode, itemId, onEdit, on
                         }}
                     >
                         <FaHouse size={14} />
-                        Home
+                        {t('navigation.home')}
                     </MenuItem>
                 )}
 
