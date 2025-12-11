@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Controller } from 'react-hook-form';
 import { TextFieldElement } from 'react-hook-form-mui';
 import shortid from 'shortid';
+import { useTranslation } from 'react-i18next';
 
 import { VirtualizedListbox } from './VirtualizedListBox';
 import { DashApi } from '../../api/dash-api';
@@ -45,6 +46,7 @@ const getIconDisplayName = (icon: Icon | null): string => {
 };
 
 export const IconSearch = ({ control, errors, onCustomIconSelect }: Props) => {
+    const { t } = useTranslation();
     const [selectedIcon, setSelectedIcon] = useState<Icon | null>(control._defaultValues.icon || null);
     const [iconList, setIconList] = useState<Icon[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -107,7 +109,7 @@ export const IconSearch = ({ control, errors, onCustomIconSelect }: Props) => {
             <Controller
                 name='icon'
                 control={control}
-                rules={{ required: 'This field is required' }}
+                rules={{ required: t('forms.addEdit.validation.required') }}
                 render={({ field, fieldState }) => {
                     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
                         const file = event.target.files?.[0];
@@ -225,14 +227,14 @@ export const IconSearch = ({ control, errors, onCustomIconSelect }: Props) => {
                                             key={shortid.generate()}
                                             crossOrigin='anonymous'
                                         />
-                                        <Typography variant='body2' key={shortid.generate()}
+                                        <Typography key={shortid.generate()} variant='body2'
                                             sx={{
                                                 overflow: 'hidden',
                                                 textOverflow: 'ellipsis',
                                                 whiteSpace: 'nowrap',
                                                 maxWidth: '180px'
                                             }}>
-                                            {getIconDisplayName(option)} {option.source === 'custom' && ' (Custom)'}
+                                            {getIconDisplayName(option)} {option.source === 'custom' && t('forms.addEdit.iconSearch.customSuffix')}
                                         </Typography>
                                     </Box>
                                 )}
@@ -240,7 +242,7 @@ export const IconSearch = ({ control, errors, onCustomIconSelect }: Props) => {
                                     <Box sx={styles.center}>
                                         <TextField
                                             {...params}
-                                            label='Select Icon*'
+                                            label={t('forms.addEdit.iconSearch.selectIcon')}
                                             variant='outlined'
                                             fullWidth
                                             error={!!fieldState?.error}
@@ -284,7 +286,7 @@ export const IconSearch = ({ control, errors, onCustomIconSelect }: Props) => {
                                         }
                                     </Box>
                                 )}
-                                noOptionsText='No icons found'
+                                noOptionsText={t('forms.addEdit.iconSearch.noIconsFound')}
                             />
                             <Box mt={1}>
                                 <Button
@@ -293,7 +295,7 @@ export const IconSearch = ({ control, errors, onCustomIconSelect }: Props) => {
                                     onClick={handleUploadClick}
                                     size='small'
                                 >
-                                    Select Custom Icon
+                                    {t('forms.addEdit.iconSearch.selectCustomIcon')}
                                 </Button>
                             </Box>
                         </>

@@ -1,6 +1,8 @@
-import { Grid2 as Grid, Typography } from '@mui/material';
+import { Grid2 as Grid } from '@mui/material';
+import { useMemo } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { CheckboxElement, SelectElement, TextFieldElement } from 'react-hook-form-mui';
+import { useTranslation } from 'react-i18next';
 
 import { theme } from '../../../theme/theme';
 import { FormValues } from '../AddEditForm/types';
@@ -9,24 +11,26 @@ interface GroupWidgetConfigProps {
     formContext: UseFormReturn<FormValues>;
 }
 
-const MAX_ITEMS_OPTIONS = [
-    { id: '3', label: '3 Items (3x1)' },
-    { id: '6_2x3', label: '6 Items (2x3)' },
-    { id: '6_3x2', label: '6 Items (3x2)' },
-    { id: '8_4x2', label: '8 Items (4x2)' }
-];
-
 export const GroupWidgetConfig = ({ formContext }: GroupWidgetConfigProps) => {
+    const { t } = useTranslation();
+
+    const maxItemsOptions = useMemo(() => [
+        { id: '3', label: t('widgets.group.config.items3') },
+        { id: '6_2x3', label: t('widgets.group.config.items6_2x3') },
+        { id: '6_3x2', label: t('widgets.group.config.items6_3x2') },
+        { id: '8_4x2', label: t('widgets.group.config.items8_4x2') }
+    ], [t]);
+
     return (
         <>
             <Grid>
                 <TextFieldElement
                     name='shortcutName'
-                    label='Group Name'
+                    label={t('widgets.group.config.groupName')}
                     required
                     fullWidth
                     rules={{
-                        required: 'Title is required'
+                        required: t('widgets.group.config.nameRequired')
                     }}
                     sx={{
                         '& .MuiOutlinedInput-root': {
@@ -47,8 +51,8 @@ export const GroupWidgetConfig = ({ formContext }: GroupWidgetConfigProps) => {
                 <Grid size={{ xs: 12, sm: 12, md: 12 }}>
                     <SelectElement
                         name='maxItems'
-                        label='Layout'
-                        options={MAX_ITEMS_OPTIONS}
+                        label={t('widgets.group.config.layout')}
+                        options={maxItemsOptions}
                         defaultValue='3'
                         fullWidth
                         sx={{
@@ -70,7 +74,7 @@ export const GroupWidgetConfig = ({ formContext }: GroupWidgetConfigProps) => {
                 </Grid>
                 <Grid size={{ xs: 12, sm: 12, md: 12 }}>
                     <CheckboxElement
-                        label='Show Name'
+                        label={t('widgets.group.config.showName')}
                         name='showLabel'
                         sx={{
                             ml: 1,

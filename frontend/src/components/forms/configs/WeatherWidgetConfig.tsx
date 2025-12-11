@@ -1,16 +1,12 @@
 import ClearIcon from '@mui/icons-material/Clear';
 import { Autocomplete, Box, FormControlLabel, Grid2 as Grid, Radio, RadioGroup, TextField, Typography } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
+import { useTranslation } from 'react-i18next'; // Import hook
 
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { theme } from '../../../theme/theme';
 import { FormValues } from '../AddEditForm/types';
-
-const TEMPERATURE_UNIT_OPTIONS = [
-    { id: 'fahrenheit', label: 'Fahrenheit (°F)' },
-    { id: 'celsius', label: 'Celsius (°C)' }
-];
 
 interface LocationOption {
     id: string;
@@ -24,11 +20,18 @@ interface WeatherWidgetConfigProps {
 }
 
 export const WeatherWidgetConfig = ({ formContext }: WeatherWidgetConfigProps) => {
+    const { t } = useTranslation(); // Initialize hook
     const isMobile = useIsMobile();
     const [locationSearch, setLocationSearch] = useState('');
     const [locationOptions, setLocationOptions] = useState<LocationOption[]>([]);
     const [selectedLocation, setSelectedLocation] = useState<LocationOption | null>(null);
     const [isSearching, setIsSearching] = useState(false);
+
+    // Define options inside component to allow translation
+    const temperatureUnitOptions = useMemo(() => [
+        { id: 'fahrenheit', label: t('widgets.weather.config.fahrenheit') },
+        { id: 'celsius', label: t('widgets.weather.config.celsius') }
+    ], [t]);
 
     // Watch the temperature unit directly from the form
     const watchedTemperatureUnit = formContext.watch('temperatureUnit');
@@ -121,7 +124,7 @@ export const WeatherWidgetConfig = ({ formContext }: WeatherWidgetConfigProps) =
                             ml: 1
                         }}
                     >
-                        Temperature Unit:
+                        {t('widgets.weather.config.temperatureUnit')}:
                     </Typography>
                     <RadioGroup
                         name='temperatureUnit'
@@ -138,7 +141,7 @@ export const WeatherWidgetConfig = ({ formContext }: WeatherWidgetConfigProps) =
                             }
                         }}
                     >
-                        {TEMPERATURE_UNIT_OPTIONS.map((option) => (
+                        {temperatureUnitOptions.map((option) => (
                             <FormControlLabel
                                 key={option.id}
                                 value={option.id}
@@ -184,12 +187,12 @@ export const WeatherWidgetConfig = ({ formContext }: WeatherWidgetConfigProps) =
                     loading={isSearching}
                     loadingText={
                         <Typography style={{ color: theme.palette.text.primary }}>
-                            Searching...
+                            {t('widgets.weather.config.searching')}
                         </Typography>
                     }
                     noOptionsText={
                         <Typography style={{ color: theme.palette.text.primary }}>
-                            {locationSearch.length < 2 ? 'Type to search...' : 'No locations found'}
+                            {locationSearch.length < 2 ? t('widgets.weather.config.typeToSearch') : t('widgets.weather.config.noLocationsFound')}
                         </Typography>
                     }
                     fullWidth
@@ -202,9 +205,9 @@ export const WeatherWidgetConfig = ({ formContext }: WeatherWidgetConfigProps) =
                     renderInput={(params) => (
                         <TextField
                             {...params}
-                            label='Search location'
+                            label={t('widgets.weather.config.searchLocation')}
                             variant='outlined'
-                            helperText='Enter a zip code or city'
+                            helperText={t('widgets.weather.config.searchPlaceholder')}
                             FormHelperTextProps={{
                                 style: { color: theme.palette.text.primary }
                             }}

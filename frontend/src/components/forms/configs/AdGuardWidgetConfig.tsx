@@ -2,6 +2,7 @@ import { Grid2 as Grid } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { CheckboxElement, TextFieldElement } from 'react-hook-form-mui';
+import { useTranslation } from 'react-i18next';
 
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { theme } from '../../../theme/theme';
@@ -15,6 +16,7 @@ interface AdGuardWidgetConfigProps {
 const MASKED_VALUE = '**********'; // 10 asterisks for masked values
 
 export const AdGuardWidgetConfig = ({ formContext, existingItem }: AdGuardWidgetConfigProps) => {
+    const { t } = useTranslation();
     const isMobile = useIsMobile();
 
     // Track if we're editing an existing item with sensitive data
@@ -75,7 +77,7 @@ export const AdGuardWidgetConfig = ({ formContext, existingItem }: AdGuardWidget
             <Grid sx={{ width: '100%', mb: 2 }}>
                 <TextFieldElement
                     name='adguardHost'
-                    label='AdGuard Home Host'
+                    label={t('widgets.adguard.config.host')}
                     variant='outlined'
                     fullWidth
                     autoComplete='off'
@@ -89,7 +91,7 @@ export const AdGuardWidgetConfig = ({ formContext, existingItem }: AdGuardWidget
             <Grid sx={{ width: '100%', mb: 2 }}>
                 <TextFieldElement
                     name='adguardPort'
-                    label='Port'
+                    label={t('forms.addEdit.fields.port')}
                     variant='outlined'
                     placeholder='3000'
                     fullWidth
@@ -104,7 +106,7 @@ export const AdGuardWidgetConfig = ({ formContext, existingItem }: AdGuardWidget
             <Grid sx={{ width: '100%', mb: 2 }}>
                 <TextFieldElement
                     name='adguardName'
-                    label='Display Name'
+                    label={t('forms.addEdit.fields.displayName')}
                     variant='outlined'
                     placeholder='AdGuard Home'
                     fullWidth
@@ -117,12 +119,12 @@ export const AdGuardWidgetConfig = ({ formContext, existingItem }: AdGuardWidget
             <Grid sx={{ width: '100%', mb: 2 }}>
                 <TextFieldElement
                     name='adguardUsername'
-                    label='Username'
+                    label={t('forms.addEdit.fields.username')}
                     variant='outlined'
                     fullWidth
                     autoComplete='off'
                     required={isUsernameRequired()}
-                    helperText='Enter your AdGuard Home admin username'
+                    helperText={t('widgets.adguard.config.usernameHelper')}
                     sx={textFieldSx}
                     slotProps={{
                         inputLabel: { style: { color: theme.palette.text.primary } },
@@ -133,13 +135,13 @@ export const AdGuardWidgetConfig = ({ formContext, existingItem }: AdGuardWidget
             <Grid sx={{ width: '100%', mb: 2 }}>
                 <TextFieldElement
                     name='adguardPassword'
-                    label='Password'
+                    label={t('forms.addEdit.fields.password')}
                     type='password'
                     variant='outlined'
                     fullWidth
                     autoComplete='off'
                     required={isPasswordRequired()}
-                    helperText='Enter your AdGuard Home admin password'
+                    helperText={t('widgets.adguard.config.passwordHelper')}
                     sx={textFieldSx}
                     slotProps={{
                         inputLabel: { style: { color: theme.palette.text.primary } },
@@ -149,7 +151,7 @@ export const AdGuardWidgetConfig = ({ formContext, existingItem }: AdGuardWidget
             </Grid>
             <Grid sx={{ width: '100%' }}>
                 <CheckboxElement
-                    label='Use SSL'
+                    label={t('forms.addEdit.fields.useSsl')}
                     name='adguardSsl'
                     checked={formContext.watch('adguardSsl')}
                     sx={{
@@ -161,7 +163,7 @@ export const AdGuardWidgetConfig = ({ formContext, existingItem }: AdGuardWidget
             </Grid>
             <Grid sx={{ width: '100%' }}>
                 <CheckboxElement
-                    label='Show Name'
+                    label={t('forms.addEdit.fields.showLabel')}
                     name='showLabel'
                     checked={formContext.watch('showLabel')}
                     sx={{

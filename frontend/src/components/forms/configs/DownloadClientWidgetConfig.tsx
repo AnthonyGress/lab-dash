@@ -1,21 +1,14 @@
 import { Box, FormControlLabel, Grid2 as Grid, Radio, RadioGroup, Typography } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { CheckboxElement, TextFieldElement } from 'react-hook-form-mui';
+import { useTranslation } from 'react-i18next'; // Import hook
 
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { COLORS } from '../../../theme/styles';
 import { theme } from '../../../theme/theme';
 import { DOWNLOAD_CLIENT_TYPE, TORRENT_CLIENT_TYPE } from '../../../types';
 import { FormValues } from '../AddEditForm/types';
-
-const DOWNLOAD_CLIENT_OPTIONS = [
-    { id: DOWNLOAD_CLIENT_TYPE.QBITTORRENT, label: 'qBittorrent' },
-    { id: DOWNLOAD_CLIENT_TYPE.DELUGE, label: 'Deluge' },
-    { id: DOWNLOAD_CLIENT_TYPE.TRANSMISSION, label: 'Transmission' },
-    { id: DOWNLOAD_CLIENT_TYPE.SABNZBD, label: 'SABnzbd' },
-    { id: DOWNLOAD_CLIENT_TYPE.NZBGET, label: 'NZBGet' }
-];
 
 interface DownloadClientWidgetConfigProps {
     formContext: UseFormReturn<FormValues>;
@@ -25,7 +18,16 @@ interface DownloadClientWidgetConfigProps {
 const MASKED_VALUE = '**********'; // 10 asterisks for masked values
 
 export const DownloadClientWidgetConfig = ({ formContext, existingItem }: DownloadClientWidgetConfigProps) => {
+    const { t } = useTranslation(); // Initialize hook
     const isMobile = useIsMobile();
+
+    const DOWNLOAD_CLIENT_OPTIONS = useMemo(() => [
+        { id: DOWNLOAD_CLIENT_TYPE.QBITTORRENT, label: 'qBittorrent' },
+        { id: DOWNLOAD_CLIENT_TYPE.DELUGE, label: 'Deluge' },
+        { id: DOWNLOAD_CLIENT_TYPE.TRANSMISSION, label: 'Transmission' },
+        { id: DOWNLOAD_CLIENT_TYPE.SABNZBD, label: 'SABnzbd' },
+        { id: DOWNLOAD_CLIENT_TYPE.NZBGET, label: 'NZBGet' }
+    ], []); // Labels are proper nouns, usually not translated, but could be wrapped in t() if needed
 
     // Watch the torrent client type directly from the form
     const watchedTorrentClientType = formContext.watch('torrentClientType');
@@ -122,7 +124,7 @@ export const DownloadClientWidgetConfig = ({ formContext, existingItem }: Downlo
                             ml: 1
                         }}
                     >
-                        Select Download Client:
+                        {t('widgets.downloadClient.config.selectClient')}:
                     </Typography>
                     <RadioGroup
                         name='torrentClientType'
@@ -162,7 +164,7 @@ export const DownloadClientWidgetConfig = ({ formContext, existingItem }: Downlo
             <Grid>
                 <TextFieldElement
                     name='tcHost'
-                    label='Host'
+                    label={t('forms.addEdit.fields.host')}
                     variant='outlined'
                     fullWidth
                     autoComplete='off'
@@ -185,7 +187,7 @@ export const DownloadClientWidgetConfig = ({ formContext, existingItem }: Downlo
             <Grid>
                 <TextFieldElement
                     name='tcPort'
-                    label='Port'
+                    label={t('forms.addEdit.fields.port')}
                     variant='outlined'
                     fullWidth
                     autoComplete='off'
@@ -212,13 +214,13 @@ export const DownloadClientWidgetConfig = ({ formContext, existingItem }: Downlo
                 <Grid>
                     <TextFieldElement
                         name='tcUsername'
-                        label='Username'
+                        label={t('forms.addEdit.fields.username')}
                         variant='outlined'
                         fullWidth
                         autoComplete='off'
                         required={watchedTorrentClientType !== DOWNLOAD_CLIENT_TYPE.TRANSMISSION}
                         rules={{
-                            required: watchedTorrentClientType !== DOWNLOAD_CLIENT_TYPE.TRANSMISSION ? 'Username is required' : false
+                            required: watchedTorrentClientType !== DOWNLOAD_CLIENT_TYPE.TRANSMISSION ? t('widgets.downloadClient.config.usernameRequired') : false
                         }}
                         sx={{
                             width: '100%',
@@ -239,14 +241,16 @@ export const DownloadClientWidgetConfig = ({ formContext, existingItem }: Downlo
             <Grid>
                 <TextFieldElement
                     name='tcPassword'
-                    label={torrentClientType === DOWNLOAD_CLIENT_TYPE.SABNZBD ? 'API Key' : 'Password'}
+                    label={torrentClientType === DOWNLOAD_CLIENT_TYPE.SABNZBD ? t('widgets.downloadClient.config.apiKey') : t('widgets.downloadClient.config.password')}
                     type='password'
                     variant='outlined'
                     fullWidth
                     autoComplete='off'
                     required={watchedTorrentClientType !== DOWNLOAD_CLIENT_TYPE.TRANSMISSION && !hasExistingPassword && !userClearedPassword}
                     rules={{
-                        required: (watchedTorrentClientType !== DOWNLOAD_CLIENT_TYPE.TRANSMISSION && !hasExistingPassword && !userClearedPassword) ? (torrentClientType === DOWNLOAD_CLIENT_TYPE.SABNZBD ? 'API Key is required' : 'Password is required') : false
+                        required: (watchedTorrentClientType !== DOWNLOAD_CLIENT_TYPE.TRANSMISSION && !hasExistingPassword && !userClearedPassword) 
+                            ? (torrentClientType === DOWNLOAD_CLIENT_TYPE.SABNZBD ? t('widgets.downloadClient.config.apiKeyRequired') : t('widgets.downloadClient.config.passwordRequired')) 
+                            : false
                     }}
                     sx={{
                         width: '100%',
@@ -265,7 +269,7 @@ export const DownloadClientWidgetConfig = ({ formContext, existingItem }: Downlo
             </Grid>
             <Grid>
                 <CheckboxElement
-                    label='Use SSL'
+                    label={t('forms.addEdit.fields.useSsl')}
                     name='tcSsl'
                     checked={formContext.watch('tcSsl')}
                     sx={{
@@ -277,7 +281,7 @@ export const DownloadClientWidgetConfig = ({ formContext, existingItem }: Downlo
             </Grid>
             <Grid>
                 <CheckboxElement
-                    label='Show Name'
+                    label={t('forms.addEdit.fields.showLabel')}
                     name='showLabel'
                     checked={formContext.watch('showLabel')}
                     sx={{ ml: 1, color: 'white', '& .MuiSvgIcon-root': { fontSize: 30 } }}

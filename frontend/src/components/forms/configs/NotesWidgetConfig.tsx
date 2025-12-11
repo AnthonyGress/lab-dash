@@ -1,6 +1,7 @@
 import { Grid2 as Grid } from '@mui/material';
 import { UseFormReturn } from 'react-hook-form';
 import { CheckboxElement, SelectElement, TextFieldElement } from 'react-hook-form-mui';
+import { useTranslation } from 'react-i18next';
 
 import { FONT_SIZE_SELECT_OPTIONS } from '../../../constants/font-sizes';
 import { FormValues } from '../AddEditForm/types';
@@ -10,13 +11,15 @@ interface NotesWidgetConfigProps {
 }
 
 export const NotesWidgetConfig = ({ formContext }: NotesWidgetConfigProps) => {
+    const { t } = useTranslation();
+
     return (
         <Grid container spacing={2} direction='column'>
             <Grid>
                 <TextFieldElement
                     name='displayName'
-                    label='Display Name'
-                    placeholder='Notes'
+                    label={t('widgets.notes.config.displayName')}
+                    placeholder={t('widgets.titles.notes')}
                     fullWidth
                     sx={{
                         '& .MuiInputLabel-root': {
@@ -40,7 +43,7 @@ export const NotesWidgetConfig = ({ formContext }: NotesWidgetConfigProps) => {
             <Grid>
                 <SelectElement
                     name='defaultNoteFontSize'
-                    label='Default Font Size'
+                    label={t('widgets.notes.config.defaultFontSize')}
                     options={FONT_SIZE_SELECT_OPTIONS}
                     fullWidth
                     sx={{
@@ -70,7 +73,7 @@ export const NotesWidgetConfig = ({ formContext }: NotesWidgetConfigProps) => {
             </Grid>
             <Grid>
                 <CheckboxElement
-                    label='Show Label'
+                    label={t('widgets.notes.config.showLabel')}
                     name='showLabel'
                     sx={{
                         ml: 1,

@@ -2,6 +2,7 @@ import ClearIcon from '@mui/icons-material/Clear';
 import { Autocomplete, Grid2 as Grid, TextField, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
+import { useTranslation } from 'react-i18next'; // Import hook
 
 import { DashApi } from '../../../api/dash-api';
 import { useIsMobile } from '../../../hooks/useIsMobile';
@@ -20,6 +21,7 @@ interface DateTimeWidgetConfigProps {
 }
 
 export const DateTimeWidgetConfig = ({ formContext }: DateTimeWidgetConfigProps) => {
+    const { t } = useTranslation(); // Initialize hook
     const isMobile = useIsMobile();
     const [locationSearch, setLocationSearch] = useState('');
     const [locationOptions, setLocationOptions] = useState<LocationOption[]>([]);
@@ -56,7 +58,7 @@ export const DateTimeWidgetConfig = ({ formContext }: DateTimeWidgetConfigProps)
                 const timezone = response.data.timezone;
                 formContext.setValue('timezone', timezone, { shouldDirty: true });
             } else {
-                setTimezoneError('Failed to fetch timezone: Invalid response format');
+                setTimezoneError(t('widgets.dateTime.config.timezoneErrorInvalid'));
 
                 // Set an empty string timezone to ensure the property exists
                 formContext.setValue('timezone', '', { shouldDirty: true });
@@ -64,9 +66,9 @@ export const DateTimeWidgetConfig = ({ formContext }: DateTimeWidgetConfigProps)
         } catch (error) {
             // More detailed error handling
             if (error instanceof Error) {
-                setTimezoneError(`Error: ${error.message}`);
+                setTimezoneError(t('widgets.dateTime.config.apiError', { message: error.message }));
             } else {
-                setTimezoneError('Unknown error fetching timezone');
+                setTimezoneError(t('widgets.dateTime.config.unknownError'));
             }
 
             // Set an empty string timezone to ensure the property exists
@@ -179,12 +181,12 @@ export const DateTimeWidgetConfig = ({ formContext }: DateTimeWidgetConfigProps)
                     loading={isSearching}
                     loadingText={
                         <Typography style={{ color: theme.palette.text.primary }}>
-                            Searching...
+                            {t('widgets.dateTime.config.searching')}
                         </Typography>
                     }
                     noOptionsText={
                         <Typography style={{ color: theme.palette.text.primary }}>
-                            {locationSearch.length < 2 ? 'Type to search...' : 'No locations found'}
+                            {locationSearch.length < 2 ? t('widgets.dateTime.config.typeToSearch') : t('widgets.dateTime.config.noLocationsFound')}
                         </Typography>
                     }
                     fullWidth
@@ -197,9 +199,9 @@ export const DateTimeWidgetConfig = ({ formContext }: DateTimeWidgetConfigProps)
                     renderInput={(params) => (
                         <TextField
                             {...params}
-                            label='Search location'
+                            label={t('widgets.dateTime.config.searchLocation')}
                             variant='outlined'
-                            helperText={isFetchingTimezone ? 'Fetching timezone...' : (timezoneError || 'Enter a zip code or city')}
+                            helperText={isFetchingTimezone ? t('widgets.dateTime.config.fetchingTimezone') : (timezoneError || t('widgets.dateTime.config.searchPlaceholder'))}
                             FormHelperTextProps={{
                                 style: {
                                     color: timezoneError

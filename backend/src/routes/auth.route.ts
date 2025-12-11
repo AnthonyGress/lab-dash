@@ -19,6 +19,7 @@ interface User {
   passwordHash: string;
   refreshTokens?: string[];  // Store issued refresh tokens
   role: 'admin' | 'user';    // Role for authorization
+  language?: string; 
 }
 
 // Helper function to read users from JSON file
@@ -84,7 +85,7 @@ const getTokenExpiration = (token: string): Date | null => {
 // Signup route
 authRoute.post('/signup', async (req: Request, res: Response) => {
     try {
-        const { username, password } = req.body;
+        const { username, password, language } = req.body;
 
         // Validate input
         if (!username || !password) {
@@ -112,7 +113,8 @@ authRoute.post('/signup', async (req: Request, res: Response) => {
             username,
             passwordHash,
             refreshTokens: [],
-            role
+            role,
+            language: language || 'en'
         });
         writeUsers(users);
 
@@ -184,7 +186,8 @@ authRoute.post('/login', async (req: Request, res: Response) => {
         res.json({
             message: 'Login successful',
             username: username,
-            isAdmin: users[userIndex].role === 'admin'
+            isAdmin: users[userIndex].role === 'admin',
+            language: users[userIndex].language || 'en'
         });
         console.log('login successful');
     } catch (error) {
@@ -357,6 +360,42 @@ authRoute.post('/refresh', async (req: Request, res: Response) => {
         });
     } catch (error) {
         console.error('Refresh token error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// Update user profile
+authRoute.put('/profile', authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const { language } = req.body;
+        // @ts-ignore - user is added by middleware
+        const username = req.user?.username;
+
+        if (!username) {
+            res.status(401).json({ message: 'User not identified' });
+            return;
+        }
+
+        const users = readUsers();
+        const userIndex = users.findIndex(u => u.username === username);
+
+        if (userIndex === -1) {
+            res.status(404).json({ message: 'User not found' });
+            return;
+        }
+
+        if (language) {
+            users[userIndex].language = language;
+        }
+
+        writeUsers(users);
+
+        res.json({
+            message: 'Profile updated successfully',
+            language: users[userIndex].language
+        });
+    } catch (error) {
+        console.error('Profile update error:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 });

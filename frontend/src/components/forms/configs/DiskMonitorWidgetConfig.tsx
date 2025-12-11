@@ -1,8 +1,9 @@
 import { Add, Delete } from '@mui/icons-material';
 import { Box, Button, Checkbox, FormControl, FormControlLabel, Grid2 as Grid, IconButton, InputLabel, MenuItem, Select, TextField, Typography } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { CheckboxElement, SelectElement } from 'react-hook-form-mui';
+import { useTranslation } from 'react-i18next'; // Import hook
 
 import { DashApi } from '../../../api/dash-api';
 import { useIsMobile } from '../../../hooks/useIsMobile';
@@ -32,10 +33,18 @@ interface DiskMonitorWidgetConfigProps {
 }
 
 export const DiskMonitorWidgetConfig = ({ formContext, fieldNamePrefix = '' }: DiskMonitorWidgetConfigProps) => {
+    const { t } = useTranslation(); // Initialize hook
     const isMobile = useIsMobile();
     const [availableDisks, setAvailableDisks] = useState<Array<{id: string, label: string, size: number}>>([]);
     const [selectedDisks, setSelectedDisks] = useState<DiskSelection[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+
+    // Memoize options to allow translation
+    const layoutOptions = useMemo(() => [
+        { id: '2x2', label: t('widgets.diskMonitor.config.layoutGrid2x2') },
+        { id: '2x4', label: t('widgets.diskMonitor.config.layoutGrid2x4') },
+        { id: '1x5', label: t('widgets.diskMonitor.config.layoutList1x5') }
+    ], [t]);
 
     const selectStyling = {
         '& .MuiOutlinedInput-root': {
@@ -229,7 +238,7 @@ export const DiskMonitorWidgetConfig = ({ formContext, fieldNamePrefix = '' }: D
         if (disks.length === 0) {
             formContext.setError(getFieldName('selectedDisks') as any, {
                 type: 'required',
-                message: 'At least one disk must be selected'
+                message: t('widgets.diskMonitor.config.atLeastOneDisk')
             });
         } else {
             formContext.clearErrors(getFieldName('selectedDisks') as any);
@@ -292,20 +301,16 @@ export const DiskMonitorWidgetConfig = ({ formContext, fieldNamePrefix = '' }: D
         <>
             <Grid>
                 <Typography variant='h6' sx={{ color: theme.palette.text.primary, mb: 2 }}>
-                    Layout & Disk Selection
+                    {t('widgets.diskMonitor.config.title')}
                 </Typography>
             </Grid>
 
             {!fieldNamePrefix && (
                 <Grid>
                     <SelectElement
-                        label='Layout'
+                        label={t('widgets.diskMonitor.config.layout')}
                         name={getFieldName('layout') as any}
-                        options={[
-                            { id: '2x2', label: '2x2 Grid' },
-                            { id: '2x4', label: '2x4 Grid' },
-                            { id: '1x5', label: '1x5 List' }
-                        ]}
+                        options={layoutOptions}
                         sx={{
                             ...selectStyling,
                             mb: 2
@@ -316,8 +321,6 @@ export const DiskMonitorWidgetConfig = ({ formContext, fieldNamePrefix = '' }: D
                     />
                 </Grid>
             )}
-
-
 
             <Grid>
                 <Box sx={{
@@ -338,7 +341,7 @@ export const DiskMonitorWidgetConfig = ({ formContext, fieldNamePrefix = '' }: D
                                 textAlign: 'center'
                             }}
                         >
-                            At least one disk must be selected
+                            {t('widgets.diskMonitor.config.atLeastOneDisk')}
                         </Typography>
                     )}
                     {selectedDisks.map((disk, index) => (
@@ -358,12 +361,12 @@ export const DiskMonitorWidgetConfig = ({ formContext, fieldNamePrefix = '' }: D
                                     <InputLabel
                                         sx={{ color: theme.palette.text.primary }}
                                     >
-                                        {`Disk ${index + 1}`}
+                                        {t('widgets.diskMonitor.config.diskLabel', { index: index + 1 })}
                                     </InputLabel>
                                     <Select
                                         value={disk.mount}
                                         onChange={(e) => updateDisk(index, 'mount', e.target.value)}
-                                        label={`Disk ${index + 1}`}
+                                        label={t('widgets.diskMonitor.config.diskLabel', { index: index + 1 })}
                                         sx={{
                                             ...selectStyling,
                                             '& .MuiSelect-select': {
@@ -395,7 +398,7 @@ export const DiskMonitorWidgetConfig = ({ formContext, fieldNamePrefix = '' }: D
                             {/* Custom name row */}
                             <Box sx={{ mb: 1 }}>
                                 <TextField
-                                    label='Custom Name'
+                                    label={t('widgets.diskMonitor.config.customName')}
                                     value={disk.customName}
                                     onChange={(e) => updateDisk(index, 'customName', e.target.value)}
                                     fullWidth
@@ -430,7 +433,7 @@ export const DiskMonitorWidgetConfig = ({ formContext, fieldNamePrefix = '' }: D
                                             }}
                                         />
                                     }
-                                    label='Show Mount Path'
+                                    label={t('widgets.diskMonitor.config.showMountPath')}
                                     sx={{
                                         color: theme.palette.text.primary,
                                         '& .MuiFormControlLabel-label': {
@@ -455,7 +458,7 @@ export const DiskMonitorWidgetConfig = ({ formContext, fieldNamePrefix = '' }: D
                                     disabled={selectedDisks.length <= 1}
                                     fullWidth
                                 >
-                                    Remove
+                                    {t('widgets.diskMonitor.config.remove')}
                                 </Button>
                             </Box>
                         </Box>
@@ -472,14 +475,14 @@ export const DiskMonitorWidgetConfig = ({ formContext, fieldNamePrefix = '' }: D
                             fullWidth
                             disabled={selectedDisks.length >= availableDisks.length}
                         >
-                            Add Disk ({selectedDisks.length}/{getMaxDisks()})
+                            {t('widgets.diskMonitor.config.addDisk', { count: selectedDisks.length, max: getMaxDisks() })}
                         </Button>
                     )}
                 </Box>
             </Grid>
             <Box sx={{ width: '100%' }}>
                 <CheckboxElement
-                    label='Show Disk Icons'
+                    label={t('widgets.diskMonitor.config.showDiskIcons')}
                     name={getFieldName('showIcons') as any}
                     sx={{
                         ml: 1,
@@ -491,7 +494,7 @@ export const DiskMonitorWidgetConfig = ({ formContext, fieldNamePrefix = '' }: D
 
             <Box sx={{ width: '100%' }}>
                 <CheckboxElement
-                    label='Show Name'
+                    label={t('widgets.diskMonitor.config.showName')}
                     name={getFieldName('showName') as any}
                     sx={{
                         ml: 1,
@@ -504,7 +507,7 @@ export const DiskMonitorWidgetConfig = ({ formContext, fieldNamePrefix = '' }: D
             {isLoading && (
                 <Grid>
                     <Typography variant='body2' sx={{ color: theme.palette.text.primary, fontStyle: 'italic' }}>
-                        Loading available disks...
+                        {t('widgets.diskMonitor.config.loadingDisks')}
                     </Typography>
                 </Grid>
             )}
@@ -512,7 +515,7 @@ export const DiskMonitorWidgetConfig = ({ formContext, fieldNamePrefix = '' }: D
             {!isLoading && availableDisks.length === 0 && (
                 <Grid>
                     <Typography variant='body2' sx={{ color: 'warning.main', fontStyle: 'italic' }}>
-                        No disks available for monitoring
+                        {t('widgets.diskMonitor.config.noDisksAvailable')}
                     </Typography>
                 </Grid>
             )}

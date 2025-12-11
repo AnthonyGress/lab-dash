@@ -1,6 +1,6 @@
-import { ErrorOutline } from '@mui/icons-material';
-import { Box, Button, Card, CardContent, CircularProgress, Grid2 as Grid, Skeleton, Tooltip, Typography, useMediaQuery } from '@mui/material';
+import { Box, Button, CardContent, CircularProgress, Grid2 as Grid, Tooltip, Typography, useMediaQuery } from '@mui/material';
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next'; // Import hook
 import { BsCloudLightningRainFill } from 'react-icons/bs';
 import { BsCloudSunFill } from 'react-icons/bs';
 import { BsCloudSnowFill } from 'react-icons/bs';
@@ -39,36 +39,32 @@ interface WeatherWidgetProps {
     };
 }
 
-const getDay = (dateString: string) => {
-    if (dateString) {
-        return new Date(dateString).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
-    }
-};
-
-const weatherDescriptions: Record<number, { description: string; icon: JSX.Element }> = {
-    0: { description: 'Clear', icon: <BsSunFill style={{ fontSize: '2.4rem' }} /> },
-    1: { description: 'Mostly clear', icon: <BsSunFill style={{ fontSize: '2.4rem' }}/> },
-    2: { description: 'Partly cloudy', icon: <BsCloudSunFill style={{ fontSize: '2.4rem' }}/> },
-    3: { description: 'Overcast', icon: <BsCloudSunFill style={{ fontSize: '2.4rem' }}/> },
-    45: { description: 'Fog', icon: <BsCloudHaze2Fill style={{ fontSize: '2.4rem' }}/> },
-    48: { description: 'Depositing rime fog', icon: <BsCloudHaze2Fill style={{ fontSize: '2.4rem' }}/> },
-    51: { description: 'Drizzle', icon: <BsCloudDrizzleFill style={{ fontSize: '2.4rem' }}/> },
-    53: { description: 'Drizzle', icon: <BsCloudDrizzleFill style={{ fontSize: '2.4rem' }}/> },
-    55: { description: 'Drizzle', icon: <BsCloudDrizzleFill style={{ fontSize: '2.4rem' }}/> },
-    61: { description: 'Rain', icon: <BsFillCloudRainFill style={{ fontSize: '2.4rem' }}/> },
-    63: { description: 'Rain', icon: <BsFillCloudRainFill style={{ fontSize: '2.4rem' }}/> },
-    65: { description: 'Heavy Rain', icon: <BsCloudRainHeavyFill style={{ fontSize: '2.4rem' }}/> },
-    71: { description: 'Snow', icon: <BsCloudSnowFill style={{ fontSize: '2.4rem' }}/> },
-    73: { description: 'Snow', icon: <BsCloudSnowFill style={{ fontSize: '2.4rem' }}/> },
-    75: { description: 'Heavy Snow', icon: <BsCloudSnowFill style={{ fontSize: '2.4rem' }}/> },
-    80: { description: 'Rain showers', icon: <BsFillCloudRainFill style={{ fontSize: '2.4rem' }}/> },
-    81: { description: 'Moderate Rain Showers', icon: <BsCloudRainHeavyFill style={{ fontSize: '2.4rem' }}/> },
-    82: { description: 'Heavy Rain Showers', icon: <BsCloudRainHeavyFill style={{ fontSize: '2.4rem' }}/> },
-    85: { description: 'Snow showers', icon: <BsCloudSnowFill style={{ fontSize: '2.4rem' }}/> },
-    95: { description: 'Thunderstorm', icon: <BsCloudLightningRainFill style={{ fontSize: '2.4rem' }}/> },
+// Map weather codes to translation keys and icons
+const weatherCodeMap: Record<number, { key: string; icon: JSX.Element }> = {
+    0: { key: 'clear', icon: <BsSunFill style={{ fontSize: '2.4rem' }} /> },
+    1: { key: 'mostlyClear', icon: <BsSunFill style={{ fontSize: '2.4rem' }}/> },
+    2: { key: 'partlyCloudy', icon: <BsCloudSunFill style={{ fontSize: '2.4rem' }}/> },
+    3: { key: 'overcast', icon: <BsCloudSunFill style={{ fontSize: '2.4rem' }}/> },
+    45: { key: 'fog', icon: <BsCloudHaze2Fill style={{ fontSize: '2.4rem' }}/> },
+    48: { key: 'depositingRimeFog', icon: <BsCloudHaze2Fill style={{ fontSize: '2.4rem' }}/> },
+    51: { key: 'drizzle', icon: <BsCloudDrizzleFill style={{ fontSize: '2.4rem' }}/> },
+    53: { key: 'drizzle', icon: <BsCloudDrizzleFill style={{ fontSize: '2.4rem' }}/> },
+    55: { key: 'drizzle', icon: <BsCloudDrizzleFill style={{ fontSize: '2.4rem' }}/> },
+    61: { key: 'rain', icon: <BsFillCloudRainFill style={{ fontSize: '2.4rem' }}/> },
+    63: { key: 'rain', icon: <BsFillCloudRainFill style={{ fontSize: '2.4rem' }}/> },
+    65: { key: 'heavyRain', icon: <BsCloudRainHeavyFill style={{ fontSize: '2.4rem' }}/> },
+    71: { key: 'snow', icon: <BsCloudSnowFill style={{ fontSize: '2.4rem' }}/> },
+    73: { key: 'snow', icon: <BsCloudSnowFill style={{ fontSize: '2.4rem' }}/> },
+    75: { key: 'heavySnow', icon: <BsCloudSnowFill style={{ fontSize: '2.4rem' }}/> },
+    80: { key: 'rainShowers', icon: <BsFillCloudRainFill style={{ fontSize: '2.4rem' }}/> },
+    81: { key: 'moderateRainShowers', icon: <BsCloudRainHeavyFill style={{ fontSize: '2.4rem' }}/> },
+    82: { key: 'heavyRainShowers', icon: <BsCloudRainHeavyFill style={{ fontSize: '2.4rem' }}/> },
+    85: { key: 'snowShowers', icon: <BsCloudSnowFill style={{ fontSize: '2.4rem' }}/> },
+    95: { key: 'thunderstorm', icon: <BsCloudLightningRainFill style={{ fontSize: '2.4rem' }}/> },
 };
 
 export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
+    const { t, i18n } = useTranslation(); // Initialize hook
     const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -81,6 +77,13 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
     const locationSet = useRef(false);
     const abortControllerRef = useRef<AbortController | null>(null);
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+    // Helper to format day name using current locale
+    const getDay = (dateString: string) => {
+        if (dateString) {
+            return new Date(dateString).toLocaleDateString(i18n.language, { weekday: 'short', timeZone: 'UTC' });
+        }
+    };
 
     // Handle config changes and location setup
     useEffect(() => {
@@ -110,8 +113,6 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
             locationSet.current = true;
             setIsLoading(false);
         }
-
-        // Moved clickOutside handler to a separate useEffect to avoid recreating on config changes
 
         return () => {
             if (timerRef.current !== null) {
@@ -190,18 +191,18 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
 
             // Handle specific error types
             if (err?.response?.status === 429 && err?.response?.data?.error_source === 'labdash_api') {
-                setErrorMessage(`API Rate limit: ${err.response?.data?.message}`);
+                setErrorMessage(t('widgets.weather.errors.rateLimit', { message: err.response.data.message }));
             } else if (err?.response?.status === 500) {
                 // Handle 500 errors specifically - likely from Open-Meteo API
-                setErrorMessage('Weather service temporarily unavailable. Please try again.');
+                setErrorMessage(t('widgets.weather.errors.serviceUnavailable'));
             } else if (err?.response?.status >= 400) {
                 // Handle other API errors
                 const message = err?.response?.data?.message || err?.response?.data?.error || 'Error fetching weather data';
-                setErrorMessage(`API error: ${message}`);
+                setErrorMessage(t('widgets.weather.errors.apiError', { message }));
             } else if (err?.message) {
-                setErrorMessage(`Error: ${err.message}`);
+                setErrorMessage(t('widgets.weather.errors.specific', { message: err.message }));
             } else {
-                setErrorMessage('An unknown error occurred');
+                setErrorMessage(t('widgets.weather.errors.generic'));
             }
         }
     };
@@ -246,7 +247,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
                 timerRef.current = null;
             }
         };
-    }, [location, locationSet.current, errorMessage]);
+    }, [location, locationSet.current, errorMessage, t]); // Added t dependency
 
     const convertTemperature = (temp: number) => (isFahrenheit ? Math.round((temp * 9) / 5 + 32) : Math.round(temp));
 
@@ -274,7 +275,6 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
 
         if (isUS) {
             // For US locations, try to find the state
-            // States can be in the format "Florida" or "FL"
             const statePattern = /\b(AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|Alabama|Alaska|Arizona|Arkansas|California|Colorado|Connecticut|Delaware|Florida|Georgia|Hawaii|Idaho|Illinois|Indiana|Iowa|Kansas|Kentucky|Louisiana|Maine|Maryland|Massachusetts|Michigan|Minnesota|Mississippi|Missouri|Montana|Nebraska|Nevada|New\s+Hampshire|New\s+Jersey|New\s+Mexico|New\s+York|North\s+Carolina|North\s+Dakota|Ohio|Oklahoma|Oregon|Pennsylvania|Rhode\s+Island|South\s+Carolina|South\s+Dakota|Tennessee|Texas|Utah|Vermont|Virginia|Washington|West\s+Virginia|Wisconsin|Wyoming)\b/i;
 
             // Find the part that contains a state
@@ -319,10 +319,13 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
     };
 
     const renderCurrentWeatherItem = () => {
+        // Get description and icon from map
+        const weatherInfo = weatherData ? (weatherCodeMap[weatherData.current.weathercode] || { key: 'unknown', icon: <BsCloudSunFill style={{ fontSize: '2.4rem' }} /> }) : null;
+
         return weatherData &&
         <Box mt={locationName ? 3 : 0.5} mb={1}>
             <Box sx={styles.center}>
-                <Box>{weatherDescriptions[weatherData?.current?.weathercode]?.icon}</Box>
+                <Box>{weatherInfo?.icon}</Box>
                 <Box ml={1} sx={{ fontSize: '1.4rem' }}>{convertTemperature(weatherData.current?.temperature_2m)}°{isFahrenheit ? 'F' : 'C'}</Box>
             </Box>
         </Box>;
@@ -331,8 +334,13 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
     const renderWeatherItem = () => {
         return weatherData && Array.from({ length: forecastDays }, (_, index) => {
             const weatherCode = weatherData.daily?.weathercode[index];
-            const weatherInfo = weatherDescriptions[weatherCode] || { description: 'Unknown', icon: <BsCloudSunFill style={{ fontSize: '2.4rem' }} /> };
-            const date = new Date(weatherData.daily?.time[index]).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
+            // Use map to get key and icon
+            const weatherMapItem = weatherCodeMap[weatherCode];
+            const icon = weatherMapItem ? weatherMapItem.icon : <BsCloudSunFill style={{ fontSize: '2.4rem' }} />;
+            const description = weatherMapItem ? t(`widgets.weather.conditions.${weatherMapItem.key}`) : t('widgets.weather.conditions.unknown');
+
+            // Use i18n language for date formatting
+            const date = new Date(weatherData.daily?.time[index]).toLocaleDateString(i18n.language, { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
             const sunrise = weatherData.daily?.sunrise[index] || 'N/A';
             const sunset = weatherData.daily?.sunset[index] || 'N/A';
 
@@ -350,21 +358,21 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
                         title={
                             <Box sx={{ p: 2 }}>
                                 <Typography variant='body2' align={'center'} sx={{ fontWeight: 'bold' }}>{date}</Typography>
-                                <Typography variant='body2' align={'center'} mb={2}>{weatherInfo.description}</Typography>
+                                <Typography variant='body2' align={'center'} mb={2}>{description}</Typography>
                                 <Typography variant='body2'>
-                                    <strong>High:</strong> {convertTemperature(weatherData.daily.temperature_2m_max[index])}°{isFahrenheit ? 'F' : 'C'}
+                                    <strong>{t('widgets.weather.high')}:</strong> {convertTemperature(weatherData.daily.temperature_2m_max[index])}°{isFahrenheit ? 'F' : 'C'}
                                 </Typography>
                                 <Typography variant='body2'>
-                                    <strong>Low:</strong> {convertTemperature(weatherData.daily.temperature_2m_min[index])}°{isFahrenheit ? 'F' : 'C'}
+                                    <strong>{t('widgets.weather.low')}:</strong> {convertTemperature(weatherData.daily.temperature_2m_min[index])}°{isFahrenheit ? 'F' : 'C'}
                                 </Typography>
                                 <Typography variant='body2'>
-                                    <strong>Wind Speed:</strong> {weatherData.current.windspeed_10m} mph
+                                    <strong>{t('widgets.weather.wind')}:</strong> {weatherData.current.windspeed_10m} {t('widgets.weather.speedUnit')}
                                 </Typography>
                                 <Typography variant='body2'>
-                                    <strong>Sunrise:</strong> {new Date(sunrise).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                                    <strong>{t('widgets.weather.sunrise')}:</strong> {new Date(sunrise).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                                 </Typography>
                                 <Typography variant='body2'>
-                                    <strong>Sunset:</strong> {new Date(sunset).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                                    <strong>{t('widgets.weather.sunset')}:</strong> {new Date(sunset).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                                 </Typography>
                             </Box>
                         }
@@ -397,7 +405,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
                                     mt: -0.25,
                                 }}
                             >
-                                {weatherInfo.icon}
+                                {icon}
                             </Box>
                             <Box sx={{ fontSize: { xs: '1rem', sm: '1rem', xl: '1.25rem' }, textAlign: 'center', mt: -0.5, lineHeight: 1.1 }}>
                                 {convertTemperature(weatherData.daily?.temperature_2m_max[index])}°
@@ -423,7 +431,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
                 p: 2
             }}>
                 <Typography variant='subtitle1' align='center' sx={{ mb: 1 }}>
-                    {!errorMessage || errorMessage === 'null' ? 'Error fetching weather data' : errorMessage}
+                    {!errorMessage || errorMessage === 'null' ? t('widgets.weather.errors.fetchFailed') : errorMessage}
                 </Typography>
                 <Button
                     variant='contained'
@@ -432,7 +440,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
                     disabled={isLoading}
                     sx={{ mt: 2 }}
                 >
-                    {isLoading ? 'Retrying...' : 'Retry'}
+                    {isLoading ? t('common.retry') + '...' : t('common.retry')}
                 </Button>
             </Box>
         );
@@ -489,10 +497,10 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
                     }}
                 >
                     <Typography variant='subtitle1'>
-                        Weather unavailable
+                        {t('widgets.weather.unavailable')}
                     </Typography>
                     <Typography variant='caption' sx={{ mt: 1 }}>
-                        Please set a location in the widget settings
+                        {t('widgets.weather.setLocation')}
                     </Typography>
                 </Box>
             )}

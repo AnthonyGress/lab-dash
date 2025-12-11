@@ -4,6 +4,7 @@ import { nanoid } from 'nanoid';
 import React, { Dispatch, RefObject, SetStateAction, useState } from 'react';
 import { FaSearch } from 'react-icons/fa';
 import { RemoveScroll } from 'react-remove-scroll';
+import { useTranslation } from 'react-i18next';
 
 import { useAppContext } from '../../context/useAppContext';
 import { COLORS, styles } from '../../theme/styles';
@@ -29,6 +30,7 @@ export const SearchBar = ({
     autocompleteOptions = [],
     inputRef
 }: Props) => {
+    const { t } = useTranslation();
     const { config } = useAppContext();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -106,7 +108,7 @@ export const SearchBar = ({
                     if (filtered.length === 0 && state.inputValue.trim() !== '') {
                         return [
                             {
-                                label: `Search ${searchProvider.name} for "${state.inputValue}"`,
+                                label: t('common.searchFor', { provider: searchProvider.name, query: state.inputValue }),
                                 url: getSearchUrl(state.inputValue),
                             },
                         ];

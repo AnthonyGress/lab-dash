@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { DownloadClientWidget } from './DownloadClientWidget';
 import { DashApi } from '../../../../api/dash-api';
@@ -16,6 +17,8 @@ type DelugeWidgetConfig = {
 
 export const DelugeWidget = (props: { config?: DelugeWidgetConfig; id?: string }) => {
     const { config, id } = props;
+    const { t } = useTranslation();
+
     const [isLoading, setIsLoading] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [authError, setAuthError] = useState('');
@@ -89,11 +92,14 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig; id?: string }
                 // Only set login as failed if we've reached the maximum attempts
                 if (loginAttemptsRef.current >= MAX_LOGIN_ATTEMPTS) {
                     console.log('Max login attempts reached, setting failed flag');
-                    setAuthError('Login failed after multiple attempts. Check your credentials and connection.');
+                    setAuthError(t('widgets.downloadClient.errors.deluge.connectionFailedMaxAttempts'));
                     setLoginAttemptFailed(true);
                 } else {
                     // If we haven't reached max attempts, show a message but don't set loginAttemptFailed
-                    setAuthError(`Login attempt ${loginAttemptsRef.current}/${MAX_LOGIN_ATTEMPTS} failed. Retrying...`);
+                    setAuthError(t('widgets.downloadClient.errors.deluge.loginAttemptFailed', { 
+                        current: loginAttemptsRef.current, 
+                        max: MAX_LOGIN_ATTEMPTS 
+                    }));
 
                     // Schedule another attempt after a short delay
                     setTimeout(() => {
@@ -119,15 +125,18 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig; id?: string }
             if (loginAttemptsRef.current >= MAX_LOGIN_ATTEMPTS) {
                 // Check for decryption error
                 if (error.response?.data?.error?.includes('Failed to decrypt password')) {
-                    setAuthError('Failed to decrypt password. Please update your credentials in the widget settings.');
+                    setAuthError(t('widgets.downloadClient.errors.deluge.decryptionFailed'));
                 } else {
-                    setAuthError('Connection error after multiple attempts. Check your Deluge WebUI settings.');
+                    setAuthError(t('widgets.downloadClient.errors.deluge.connectionFailedMaxAttempts'));
                 }
                 setIsAuthenticated(false);
                 setLoginAttemptFailed(true);
             } else {
                 // If we haven't reached max attempts, show a retry message
-                setAuthError(`Login attempt ${loginAttemptsRef.current}/${MAX_LOGIN_ATTEMPTS} failed. Retrying...`);
+                setAuthError(t('widgets.downloadClient.errors.deluge.loginAttemptFailed', { 
+                    current: loginAttemptsRef.current, 
+                    max: MAX_LOGIN_ATTEMPTS 
+                }));
 
                 // Schedule another attempt
                 setTimeout(() => {
@@ -142,7 +151,7 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig; id?: string }
                 setIsLoading(false);
             }
         }
-    }, [loginCredentials, isAuthenticated, isLoading]);
+    }, [loginCredentials, isAuthenticated, isLoading, id, t]);
 
     // Auto-login when component mounts or credentials change
     useEffect(() => {
@@ -173,7 +182,7 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig; id?: string }
             // Check for decryption error
             if (statsData.decryptionError) {
                 setIsAuthenticated(false);
-                setAuthError('Failed to decrypt password. Please update your credentials in the widget settings.');
+                setAuthError(t('widgets.downloadClient.errors.deluge.decryptionFailed'));
                 return;
             }
 
@@ -183,10 +192,10 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig; id?: string }
             // If we get an auth error, set isAuthenticated to false to show login form
             if ((error as any)?.response?.status === 401) {
                 setIsAuthenticated(false);
-                setAuthError('Session expired. Please login again.');
+                setAuthError(t('widgets.downloadClient.errors.sessionExpired'));
             }
         }
-    }, [loginCredentials, isAuthenticated, loginAttemptFailed]);
+    }, [loginCredentials, isAuthenticated, loginAttemptFailed, id, t]);
 
     const fetchTorrents = useCallback(async () => {
         if (loginAttemptFailed || !isAuthenticated) return;
@@ -198,7 +207,7 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig; id?: string }
             }
             const torrentsData = await DashApi.delugeGetTorrents(id);
             // Sort by progress (downloading first) then by name
-            const sortedTorrents = torrentsData.sort((a, b) => {
+            const sortedTorrents = torrentsData.sort((a: any, b: any) => {
                 // Prioritize downloading torrents
                 if (a.state === 'downloading' && b.state !== 'downloading') return -1;
                 if (a.state !== 'downloading' && b.state === 'downloading') return 1;
@@ -216,10 +225,10 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig; id?: string }
             console.error('Error fetching Deluge torrents:', error);
             if ((error as any)?.response?.status === 401) {
                 setIsAuthenticated(false);
-                setAuthError('Session expired. Please login again.');
+                setAuthError(t('widgets.downloadClient.errors.sessionExpired'));
             }
         }
-    }, [loginCredentials, isAuthenticated, loginAttemptFailed]);
+    }, [loginCredentials, isAuthenticated, loginAttemptFailed, id, t]);
 
     // Handle input changes
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -302,7 +311,7 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig; id?: string }
             console.error('Error resuming Deluge torrent:', error);
             return false;
         }
-    }, [loginCredentials, fetchTorrents]);
+    }, [loginCredentials, fetchTorrents, id]);
 
     const handlePauseTorrent = useCallback(async (hash: string) => {
         try {
@@ -326,7 +335,7 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig; id?: string }
             console.error('Error pausing Deluge torrent:', error);
             return false;
         }
-    }, [loginCredentials, fetchTorrents]);
+    }, [loginCredentials, fetchTorrents, id]);
 
     const handleDeleteTorrent = useCallback(async (hash: string, deleteFiles: boolean) => {
         try {
@@ -350,7 +359,7 @@ export const DelugeWidget = (props: { config?: DelugeWidgetConfig; id?: string }
             console.error('Error deleting Deluge torrent:', error);
             return false;
         }
-    }, [loginCredentials, fetchTorrents]);
+    }, [loginCredentials, fetchTorrents, id]);
 
     return (
         <DownloadClientWidget

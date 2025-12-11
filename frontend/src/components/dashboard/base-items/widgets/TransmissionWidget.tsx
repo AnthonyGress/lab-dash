@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { DownloadClientWidget } from './DownloadClientWidget';
 import { DashApi } from '../../../../api/dash-api';
@@ -8,10 +9,10 @@ const getTransmissionState = (status: number): string => {
     switch (status) {
     case 0: return 'stopped';        // TR_STATUS_STOPPED
     case 1: return 'checkingResumeData'; // TR_STATUS_CHECK_WAIT
-    case 2: return 'checkingDL';     // TR_STATUS_CHECK
-    case 3: return 'stalledDL';      // TR_STATUS_DOWNLOAD_WAIT
-    case 4: return 'downloading';    // TR_STATUS_DOWNLOAD
-    case 5: return 'stalledUP';      // TR_STATUS_SEED_WAIT
+    case 2: return 'checkingDL';       // TR_STATUS_CHECK
+    case 3: return 'stalledDL';        // TR_STATUS_DOWNLOAD_WAIT
+    case 4: return 'downloading';      // TR_STATUS_DOWNLOAD
+    case 5: return 'stalledUP';        // TR_STATUS_SEED_WAIT
     case 6: return 'seeding';        // TR_STATUS_SEED
     default: return 'unknown';
     }
@@ -30,6 +31,8 @@ type TransmissionWidgetConfig = {
 
 export const TransmissionWidget = (props: { config?: TransmissionWidgetConfig; id?: string }) => {
     const { config, id } = props;
+    const { t } = useTranslation();
+
     const [isLoading, setIsLoading] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [authError, setAuthError] = useState('');
@@ -87,11 +90,14 @@ export const TransmissionWidget = (props: { config?: TransmissionWidgetConfig; i
 
                 // Only set login as failed if we've reached the maximum attempts
                 if (loginAttemptsRef.current >= MAX_LOGIN_ATTEMPTS) {
-                    setAuthError('Login failed after multiple attempts. Check your credentials and connection.');
+                    setAuthError(t('widgets.downloadClient.errors.transmission.loginFailedMaxAttempts'));
                     setLoginAttemptFailed(true);
                 } else {
                     // If we haven't reached max attempts, show a message but don't set loginAttemptFailed
-                    setAuthError(`Login attempt ${loginAttemptsRef.current}/${MAX_LOGIN_ATTEMPTS} failed. Retrying...`);
+                    setAuthError(t('widgets.downloadClient.errors.transmission.loginAttemptFailed', { 
+                        current: loginAttemptsRef.current, 
+                        max: MAX_LOGIN_ATTEMPTS 
+                    }));
 
                     // Schedule another attempt after a short delay
                     setTimeout(() => {
@@ -115,15 +121,18 @@ export const TransmissionWidget = (props: { config?: TransmissionWidgetConfig; i
             if (loginAttemptsRef.current >= MAX_LOGIN_ATTEMPTS) {
                 // Check for decryption error
                 if (error.response?.data?.error?.includes('Failed to decrypt password')) {
-                    setAuthError('Failed to decrypt password. Please update your credentials in the widget settings.');
+                    setAuthError(t('widgets.downloadClient.errors.transmission.decryptionFailed'));
                 } else {
-                    setAuthError('Connection error after multiple attempts. Check your Transmission settings.');
+                    setAuthError(t('widgets.downloadClient.errors.transmission.connectionFailed'));
                 }
                 setIsAuthenticated(false);
                 setLoginAttemptFailed(true);
             } else {
                 // If we haven't reached max attempts, show a retry message
-                setAuthError(`Login attempt ${loginAttemptsRef.current}/${MAX_LOGIN_ATTEMPTS} failed. Retrying...`);
+                setAuthError(t('widgets.downloadClient.errors.transmission.loginAttemptFailed', { 
+                    current: loginAttemptsRef.current, 
+                    max: MAX_LOGIN_ATTEMPTS 
+                }));
 
                 // Schedule another attempt
                 setTimeout(() => {
@@ -138,7 +147,7 @@ export const TransmissionWidget = (props: { config?: TransmissionWidgetConfig; i
                 setIsLoading(false);
             }
         }
-    }, [loginCredentials, isAuthenticated]);
+    }, [config?.username, config?._hasPassword, id, loginCredentials, isAuthenticated, t]); // Added t dependency
 
     const fetchStats = useCallback(async () => {
         if (!isAuthenticated) return;
@@ -149,7 +158,7 @@ export const TransmissionWidget = (props: { config?: TransmissionWidgetConfig; i
             // Check for decryption error
             if (statsData.decryptionError) {
                 setIsAuthenticated(false);
-                setAuthError('Failed to decrypt password. Please update your credentials in the widget settings.');
+                setAuthError(t('widgets.downloadClient.errors.transmission.decryptionFailed'));
                 return;
             }
 
@@ -175,10 +184,10 @@ export const TransmissionWidget = (props: { config?: TransmissionWidgetConfig; i
             // If we get an auth error, set isAuthenticated to false to show login form
             if ((error as any)?.response?.status === 401) {
                 setIsAuthenticated(false);
-                setAuthError('Session expired. Please login again.');
+                setAuthError(t('widgets.downloadClient.errors.sessionExpired'));
             }
         }
-    }, [loginCredentials, isAuthenticated]);
+    }, [isAuthenticated, id, t]); // Added t dependency
 
     const fetchTorrents = useCallback(async () => {
         if (!isAuthenticated) return;
@@ -226,10 +235,10 @@ export const TransmissionWidget = (props: { config?: TransmissionWidgetConfig; i
             console.error('Error fetching Transmission torrents:', error);
             if ((error as any)?.response?.status === 401) {
                 setIsAuthenticated(false);
-                setAuthError('Session expired. Please login again.');
+                setAuthError(t('widgets.downloadClient.errors.sessionExpired'));
             }
         }
-    }, [loginCredentials, isAuthenticated]);
+    }, [loginCredentials, isAuthenticated, config?._hasPassword, id, t]); // Added t dependency
 
     // Handle input changes
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -320,12 +329,12 @@ export const TransmissionWidget = (props: { config?: TransmissionWidgetConfig; i
             console.error('Error starting Transmission torrent:', error);
             // Check for decryption error
             if (error.response?.data?.error?.includes('Failed to decrypt password')) {
-                setAuthError('Failed to decrypt password. Please update your credentials in the widget settings.');
+                setAuthError(t('widgets.downloadClient.errors.transmission.decryptionFailed'));
                 setIsAuthenticated(false);
             }
             return false;
         }
-    }, [loginCredentials, fetchTorrents, torrents]);
+    }, [fetchTorrents, torrents, id, t]); // Added t dependency
 
     const handleStopTorrent = useCallback(async (hash: string) => {
         try {
@@ -349,12 +358,12 @@ export const TransmissionWidget = (props: { config?: TransmissionWidgetConfig; i
             console.error('Error stopping Transmission torrent:', error);
             // Check for decryption error
             if (error.response?.data?.error?.includes('Failed to decrypt password')) {
-                setAuthError('Failed to decrypt password. Please update your credentials in the widget settings.');
+                setAuthError(t('widgets.downloadClient.errors.transmission.decryptionFailed'));
                 setIsAuthenticated(false);
             }
             return false;
         }
-    }, [loginCredentials, fetchTorrents, torrents]);
+    }, [fetchTorrents, torrents, id, t]); // Added t dependency
 
     const handleDeleteTorrent = useCallback(async (hash: string, deleteFiles: boolean) => {
         try {
@@ -378,12 +387,12 @@ export const TransmissionWidget = (props: { config?: TransmissionWidgetConfig; i
             console.error('Error deleting Transmission torrent:', error);
             // Check for decryption error
             if (error.response?.data?.error?.includes('Failed to decrypt password')) {
-                setAuthError('Failed to decrypt password. Please update your credentials in the widget settings.');
+                setAuthError(t('widgets.downloadClient.errors.transmission.decryptionFailed'));
                 setIsAuthenticated(false);
             }
             return false;
         }
-    }, [loginCredentials, fetchTorrents, torrents]);
+    }, [fetchTorrents, torrents, id, t]); // Added t dependency
 
     return (
         <DownloadClientWidget

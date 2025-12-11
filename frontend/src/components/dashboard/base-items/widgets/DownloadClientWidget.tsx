@@ -1,6 +1,7 @@
 import { ArrowDownward, ArrowUpward, CheckCircle, Delete, Download, MoreVert, Pause, PlayArrow, Stop, Upload, Warning } from '@mui/icons-material';
 import { Box, Button, CardContent, CircularProgress, Grid, IconButton, LinearProgress, Link, Menu, MenuItem, TextField, Tooltip, Typography, useMediaQuery } from '@mui/material';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next'; // Import hook
 
 import { PopupManager } from '../../../../components/modals/PopupManager';
 import { BACKEND_URL } from '../../../../constants/constants';
@@ -91,26 +92,9 @@ const formatEta = (seconds?: number): string => {
     }
 };
 
-// Format status text for tooltip display
-const formatStatusText = (state: string): string => {
-    switch (state) {
-    case 'downloading': return 'Downloading';
-    case 'uploading': return 'Uploading';
-    case 'seeding': return 'Seeding';
-    case 'pausedDL': return 'Paused (Download)';
-    case 'pausedUP': return 'Paused (Upload)';
-    case 'stalledDL': return 'Stalled (Download)';
-    case 'stalledUP': return 'Stalled (Upload)';
-    case 'completed': return 'Completed';
-    case 'checkingUP': return 'Checking';
-    case 'stopped': return 'Stopped';
-    case 'error': return 'Error';
-    default: return state.charAt(0).toUpperCase() + state.slice(1);
-    }
-};
-
 // Get status icon based on torrent state
 const getStatusIcon = (state: string) => {
+    // Map state to icon logic - keep as is, logic is universal
     switch (state) {
     case 'downloading': return <Download sx={{ color: 'white' }} fontSize='small' />;
     case 'uploading':
@@ -137,11 +121,27 @@ interface DownloadItemProps {
 }
 
 const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmin, onResume, onPause, onDelete }) => {
+    const { t } = useTranslation(); // Hook
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
     const [menuOpen, setMenuOpen] = useState(false);
     const [isActionLoading, setIsActionLoading] = useState(false);
     const { editMode } = useAppContext();
+
+    // Format status text for tooltip display using translations
+    const getStatusText = (state: string): string => {
+        // Try to find translation key in widgets.downloadClient.status
+        // If state matches a key (e.g., 'downloading'), it will be translated
+        // If not, fallback to capitalized state name
+        const key = `widgets.downloadClient.status.${state}`;
+        const translation = t(key);
+        
+        // If translation returns key (missing translation), format manually
+        if (translation === key) {
+             return state.charAt(0).toUpperCase() + state.slice(1);
+        }
+        return translation;
+    };
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
         setMenuAnchorEl(event.currentTarget);
@@ -186,8 +186,8 @@ const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmi
             handleMenuClose();
 
             PopupManager.threeButtonDialog({
-                title: `Remove "${torrent.name}"?`,
-                confirmText: 'Delete Files',
+                title: t('widgets.downloadClient.actions.removeTitle', { name: torrent.name }),
+                confirmText: t('widgets.downloadClient.actions.deleteFiles'),
                 confirmAction: async () => {
                     // Delete torrent and files
                     setIsActionLoading(true);
@@ -199,7 +199,7 @@ const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmi
                         setIsActionLoading(false);
                     }
                 },
-                denyText: 'Keep Files',
+                denyText: t('widgets.downloadClient.actions.keepFiles'),
                 denyAction: async () => {
                     // Delete torrent only, keep files
                     setIsActionLoading(true);
@@ -221,6 +221,13 @@ const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmi
     // Show menu button only if admin and actions are available and not in edit mode
     const showMenuButton = isAdmin && !editMode && (onResume || onPause || onDelete);
 
+    // Translate Paused/Stopped display text
+    const getPausedStoppedText = () => {
+        return (clientName === 'qBittorrent' || clientName === 'Transmission') 
+            ? t('widgets.downloadClient.status.stopped') 
+            : t('widgets.downloadClient.status.paused');
+    };
+
     return (
         <Box sx={{
             mb: 1.5,
@@ -237,7 +244,7 @@ const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmi
         }}>
             <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                 <Tooltip
-                    title={formatStatusText(torrent.state)}
+                    title={getStatusText(torrent.state)}
                     placement='top'
                     enterDelay={500}
                     arrow
@@ -325,7 +332,7 @@ const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmi
                                     sx={{ fontSize: '0.9rem', py: 1 }}
                                 >
                                     <PlayArrow fontSize='small' sx={{ mr: 1 }} />
-                                    Start
+                                    {t('widgets.downloadClient.actions.start')}
                                 </MenuItem>
                             )}
 
@@ -340,7 +347,7 @@ const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmi
                                     sx={{ fontSize: '0.9rem', py: 1 }}
                                 >
                                     <Stop fontSize='small' sx={{ mr: 1 }} />
-                                    Stop
+                                    {t('widgets.downloadClient.actions.stop')}
                                 </MenuItem>
                             )}
                         </>
@@ -355,7 +362,7 @@ const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmi
                                     sx={{ fontSize: '0.9rem', py: 1 }}
                                 >
                                     <PlayArrow fontSize='small' sx={{ mr: 1 }} />
-                                    Resume
+                                    {t('widgets.downloadClient.actions.resume')}
                                 </MenuItem>
                             )}
 
@@ -367,7 +374,7 @@ const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmi
                                     sx={{ fontSize: '0.9rem', py: 1 }}
                                 >
                                     <Pause fontSize='small' sx={{ mr: 1 }} />
-                                    Pause
+                                    {t('widgets.downloadClient.actions.pause')}
                                 </MenuItem>
                             )}
                         </>
@@ -382,7 +389,7 @@ const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmi
                                     sx={{ fontSize: '0.9rem', py: 1 }}
                                 >
                                     <PlayArrow fontSize='small' sx={{ mr: 1 }} />
-                                    Start
+                                    {t('widgets.downloadClient.actions.start')}
                                 </MenuItem>
                             )}
 
@@ -394,7 +401,7 @@ const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmi
                                     sx={{ fontSize: '0.9rem', py: 1 }}
                                 >
                                     <PlayArrow fontSize='small' sx={{ mr: 1 }} />
-                                    Resume
+                                    {t('widgets.downloadClient.actions.resume')}
                                 </MenuItem>
                             )}
 
@@ -405,14 +412,14 @@ const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmi
                                 sx={{ fontSize: '0.9rem', py: 1 }}
                             >
                                 <Pause fontSize='small' sx={{ mr: 1 }} />
-                                Pause
+                                {t('widgets.downloadClient.actions.pause')}
                             </MenuItem>
                         </>
                     )}
 
                     <MenuItem onClick={handleDelete} disabled={!onDelete} sx={{ fontSize: '0.9rem', py: 1 }}>
                         <Delete fontSize='small' sx={{ mr: 1 }} />
-                        Remove
+                        {t('widgets.downloadClient.actions.remove')}
                     </MenuItem>
                 </Menu>
             </Box>
@@ -447,7 +454,7 @@ const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmi
                     )}
 
                     {(torrent.state === 'stopped' || torrent.state === 'error' || torrent.state.includes('paused')) &&
-                    `${(clientName === 'qBittorrent' || clientName === 'Transmission') ? 'Stopped' : 'Paused'}`}
+                    getPausedStoppedText()}
                 </Typography>
                 <Typography
                     variant='caption'
@@ -475,6 +482,7 @@ export const DownloadClientWidget: React.FC<DownloadClientWidgetProps> = ({
     onPauseTorrent,
     onDeleteTorrent
 }) => {
+    const { t } = useTranslation(); // Hook
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const { isAdmin, editMode } = useAppContext();
 
@@ -550,7 +558,10 @@ export const DownloadClientWidget: React.FC<DownloadClientWidgetProps> = ({
                             align='center'
                             sx={{ mb: 2, color: 'white' }}
                         >
-                            {authError}
+                            {/* Try to translate error messages if they are standard keys, otherwise show as is */}
+                            {authError === 'Session expired. Please login again.' 
+                                ? t('widgets.downloadClient.errors.sessionExpired') 
+                                : authError}
                         </Typography>
                     ) : (
                         <Typography
@@ -558,7 +569,7 @@ export const DownloadClientWidget: React.FC<DownloadClientWidgetProps> = ({
                             align='center'
                             sx={{ mb: 2, color: 'white' }}
                         >
-                            Authentication failed
+                            {t('widgets.downloadClient.errors.authFailed')}
                         </Typography>
                     )}
 
@@ -571,7 +582,7 @@ export const DownloadClientWidget: React.FC<DownloadClientWidgetProps> = ({
                             onClick={handleLogin}
                             sx={{ mt: 2 }}
                         >
-                            Retry
+                            {t('widgets.downloadClient.errors.retry')}
                         </Button>
                     )}
                 </Box>
@@ -633,7 +644,7 @@ export const DownloadClientWidget: React.FC<DownloadClientWidgetProps> = ({
                     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
                         <Box sx={{ flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', mb: 1, width: '100%' }}>
                             <Typography variant='caption' sx={{ px: 1, mb: 0.5, color: 'white' }}>
-                                Active ({stats.torrents?.downloading || 0})
+                                {t('widgets.downloadClient.stats.active')} ({stats.torrents?.downloading || 0})
                             </Typography>
 
                             <Box sx={{
@@ -696,7 +707,7 @@ export const DownloadClientWidget: React.FC<DownloadClientWidgetProps> = ({
                                             bottom: 0,
                                             zIndex: 1
                                         }}>
-                                            No active items
+                                            {t('widgets.downloadClient.stats.noActiveItems')}
                                         </Box>
                                         {/* Hidden sample torrent item to maintain width - but not visible */}
                                         <Box sx={{
@@ -767,10 +778,10 @@ export const DownloadClientWidget: React.FC<DownloadClientWidgetProps> = ({
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
                                 <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                                     <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary', mb: 0.5 }}>
-                                        Current:
+                                        {t('widgets.downloadClient.stats.current')}
                                     </Typography>
                                     <Typography variant='caption' sx={{ fontSize: '0.75rem', color: 'text.primary' }}>
-                                        {clientName === 'SABnzbd' ? 'This month:' : 'Session:'}
+                                        {clientName === 'SABnzbd' ? t('widgets.downloadClient.stats.thisMonth') : t('widgets.downloadClient.stats.session')}
                                     </Typography>
                                 </Box>
 

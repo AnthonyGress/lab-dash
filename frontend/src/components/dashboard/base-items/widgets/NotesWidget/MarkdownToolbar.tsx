@@ -10,6 +10,7 @@ import {
 } from '@mui/icons-material';
 import { Box, FormControl, IconButton, MenuItem, Select, Tooltip } from '@mui/material';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next'; // Import hook
 import { GoHeading } from 'react-icons/go';
 
 import { FONT_SIZE_SELECT_OPTIONS } from '../../../../../constants/font-sizes';
@@ -28,6 +29,7 @@ export const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({
     onFontSizeChange,
     hideFontSize = false
 }) => {
+    const { t } = useTranslation(); // Initialize hook
     const [isSelectOpen, setIsSelectOpen] = useState(false);
 
     const iconButtonStyle = {
@@ -117,7 +119,7 @@ export const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({
                 </FormControl>
             )}
 
-            <Tooltip title='Heading'>
+            <Tooltip title={t('widgets.notes.toolbar.heading')}>
                 <IconButton
                     size='small'
                     onClick={() => onFormat('heading')}
@@ -127,7 +129,7 @@ export const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({
                 </IconButton>
             </Tooltip>
 
-            <Tooltip title='Bold'>
+            <Tooltip title={t('widgets.notes.toolbar.bold')}>
                 <IconButton
                     size='small'
                     onClick={() => onFormat('bold', '**', '**')}
@@ -137,7 +139,7 @@ export const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({
                 </IconButton>
             </Tooltip>
 
-            <Tooltip title='Italic'>
+            <Tooltip title={t('widgets.notes.toolbar.italic')}>
                 <IconButton
                     size='small'
                     onClick={() => onFormat('italic', '_', '_')}
@@ -147,7 +149,7 @@ export const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({
                 </IconButton>
             </Tooltip>
 
-            <Tooltip title='Inline Code'>
+            <Tooltip title={t('widgets.notes.toolbar.inlineCode')}>
                 <IconButton
                     size='small'
                     onClick={() => onFormat('code', '`', '`')}
@@ -157,7 +159,7 @@ export const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({
                 </IconButton>
             </Tooltip>
 
-            <Tooltip title='Code Block'>
+            <Tooltip title={t('widgets.notes.toolbar.codeBlock')}>
                 <IconButton
                     size='small'
                     onClick={() => onFormat('codeblock')}
@@ -167,7 +169,7 @@ export const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({
                 </IconButton>
             </Tooltip>
 
-            <Tooltip title='Quote'>
+            <Tooltip title={t('widgets.notes.toolbar.quote')}>
                 <IconButton
                     size='small'
                     onClick={() => onFormat('quote')}
@@ -177,7 +179,7 @@ export const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({
                 </IconButton>
             </Tooltip>
 
-            <Tooltip title='Link'>
+            <Tooltip title={t('widgets.notes.toolbar.link')}>
                 <IconButton
                     size='small'
                     onClick={() => onFormat('link')}
@@ -187,7 +189,7 @@ export const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({
                 </IconButton>
             </Tooltip>
 
-            <Tooltip title='Unordered List'>
+            <Tooltip title={t('widgets.notes.toolbar.ul')}>
                 <IconButton
                     size='small'
                     onClick={() => onFormat('ul')}
@@ -197,7 +199,7 @@ export const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({
                 </IconButton>
             </Tooltip>
 
-            <Tooltip title='Numbered List'>
+            <Tooltip title={t('widgets.notes.toolbar.ol')}>
                 <IconButton
                     size='small'
                     onClick={() => onFormat('ol')}
@@ -207,7 +209,7 @@ export const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({
                 </IconButton>
             </Tooltip>
 
-            <Tooltip title='Task List'>
+            <Tooltip title={t('widgets.notes.toolbar.taskList')}>
                 <IconButton
                     size='small'
                     onClick={() => onFormat('task')}

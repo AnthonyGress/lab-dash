@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { UseFormReturn } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 
 import { FormValues } from './types';
 import { DashboardItem, DOWNLOAD_CLIENT_TYPE, ITEM_TYPE } from '../../../types';
@@ -11,6 +12,8 @@ type UseExistingItemProps = {
 };
 
 export const useExistingItem = ({ existingItem, formContext, setCustomIconFile }: UseExistingItemProps) => {
+    const { t } = useTranslation();
+
     useEffect(() => {
         // Determine initial values based on existingItem
         const initialItemType = existingItem?.type === ITEM_TYPE.WEATHER_WIDGET ||
@@ -208,7 +211,7 @@ export const useExistingItem = ({ existingItem, formContext, setCustomIconFile }
             mediaRequestManagerApiKey: existingItem?.type === ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET ? (existingItem?.config?._hasApiKey ? '**********' : '') : '',
 
             // Notes widget values
-            displayName: existingItem?.type === ITEM_TYPE.NOTES_WIDGET ? (existingItem?.config?.displayName || 'Notes') : 'Notes',
+            displayName: existingItem?.type === ITEM_TYPE.NOTES_WIDGET ? (existingItem?.config?.displayName || 'Notes') : t('widgets.titles.notes'),
             defaultNoteFontSize: existingItem?.type === ITEM_TYPE.NOTES_WIDGET ? (existingItem?.config?.defaultNoteFontSize || '16px') : '16px',
 
             location: location,

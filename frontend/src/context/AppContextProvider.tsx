@@ -12,12 +12,14 @@ import { theme } from '../theme/theme';
 import { Config, DashboardItem, DashboardLayout, NewItem, Page } from '../types';
 import { checkForUpdates } from '../utils/updateChecker';
 import { getAppVersion } from '../utils/version';
+import { useTranslation } from 'react-i18next';
 
 type Props = {
     children: ReactNode
 };
 
 export const AppContextProvider = ({ children }: Props) => {
+    const { i18n } = useTranslation(); // Access i18n instance
     const [config, setConfig] = useState<Config>();
     const [dashboardLayout, setDashboardLayout] = useState<DashboardItem[]>([]);
     const [editMode, setEditMode] = useState(false);

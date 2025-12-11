@@ -1,6 +1,7 @@
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { useTranslation } from 'react-i18next';
 
 import { CenteredModal } from './CenteredModal';
 import { useAppContext } from '../../context/useAppContext';
@@ -8,30 +9,31 @@ import { compareVersions } from '../../utils/updateChecker';
 import { getAppVersion } from '../../utils/version';
 
 interface GitHubRelease {
-  body: string;
-  html_url: string;
-  tag_name: string;
-  name: string;
-  published_at: string;
-  author: {
-    login: string;
-    avatar_url: string;
-  };
+    body: string;
+    html_url: string;
+    tag_name: string;
+    name: string;
+    published_at: string;
+    author: {
+        login: string;
+        avatar_url: string;
+    };
 }
 
 interface ReleaseInfo {
-  version: string;
-  notes: string;
-  date: string;
-  isExactMatch?: boolean;
+    version: string;
+    notes: string;
+    date: string;
+    isExactMatch?: boolean;
 }
 
 interface VersionModalProps {
-  open: boolean;
-  handleClose: () => void;
+    open: boolean;
+    handleClose: () => void;
 }
 
 export const VersionModal = ({ open, handleClose }: VersionModalProps) => {
+    const { t, i18n } = useTranslation();
     const [releaseInfo, setReleaseInfo] = useState<ReleaseInfo | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const { config, recentlyUpdated } = useAppContext();
@@ -78,7 +80,8 @@ export const VersionModal = ({ open, handleClose }: VersionModalProps) => {
     };
 
     const formatDate = (dateString: string): string => {
-        return new Date(dateString).toLocaleDateString(undefined, {
+        // Uses i18n language setting for date formatting
+        return new Date(dateString).toLocaleDateString(i18n.language, {
             year: 'numeric',
             month: 'short',
             day: 'numeric'
@@ -140,7 +143,7 @@ export const VersionModal = ({ open, handleClose }: VersionModalProps) => {
                         const notes = cleanReleaseNotes(closestRelease.body || '');
                         setReleaseInfo({
                             version: closestRelease.tag_name,
-                            notes: notes || `Changes between ${lastSeenVersion} and ${currentVersion} could not be found. Showing the latest available changelog.`,
+                            notes: notes || t('version.changesNotFound', { oldVersion: lastSeenVersion, newVersion: currentVersion }),
                             date: formatDate(closestRelease.published_at),
                             isExactMatch: false
                         });
@@ -151,7 +154,7 @@ export const VersionModal = ({ open, handleClose }: VersionModalProps) => {
                             const notes = cleanReleaseNotes(latestRelease.body || '');
                             setReleaseInfo({
                                 version: latestRelease.tag_name,
-                                notes: notes || 'No detailed release notes available.',
+                                notes: notes || t('version.noDetailedNotes'),
                                 date: formatDate(latestRelease.published_at),
                                 isExactMatch: false
                             });
@@ -159,8 +162,8 @@ export const VersionModal = ({ open, handleClose }: VersionModalProps) => {
                             // No releases found at all
                             setReleaseInfo({
                                 version: currentVersion,
-                                notes: 'No changelog information available.',
-                                date: new Date().toLocaleDateString(),
+                                notes: t('version.noChangelog'),
+                                date: new Date().toLocaleDateString(i18n.language),
                                 isExactMatch: false
                             });
                         }
@@ -182,7 +185,7 @@ export const VersionModal = ({ open, handleClose }: VersionModalProps) => {
                             const latestNotes = cleanReleaseNotes(latestRelease.body || '');
                             setReleaseInfo({
                                 version: latestRelease.tag_name,
-                                notes: latestNotes || 'No detailed release notes available.',
+                                notes: latestNotes || t('version.noDetailedNotes'),
                                 date: formatDate(latestRelease.published_at),
                                 isExactMatch: false
                             });
@@ -190,7 +193,7 @@ export const VersionModal = ({ open, handleClose }: VersionModalProps) => {
                             // No other releases to show
                             setReleaseInfo({
                                 version: currentVersionRelease.tag_name,
-                                notes: 'No changelog information available for this version.',
+                                notes: t('version.noDetailedNotes'),
                                 date: formatDate(currentVersionRelease.published_at),
                                 isExactMatch: false
                             });
@@ -219,7 +222,7 @@ export const VersionModal = ({ open, handleClose }: VersionModalProps) => {
                     } else {
                         setReleaseInfo({
                             version: currentRelease.tag_name,
-                            notes: 'No detailed release notes available for this version.',
+                            notes: t('version.noDetailedNotes'),
                             date: formatDate(currentRelease.published_at),
                             isExactMatch: false
                         });
@@ -246,7 +249,7 @@ export const VersionModal = ({ open, handleClose }: VersionModalProps) => {
                         } else {
                             setReleaseInfo({
                                 version: closestRelease.tag_name,
-                                notes: 'No detailed release notes available for this version.',
+                                notes: t('version.noDetailedNotes'),
                                 date: formatDate(closestRelease.published_at),
                                 isExactMatch: false
                             });
@@ -258,14 +261,14 @@ export const VersionModal = ({ open, handleClose }: VersionModalProps) => {
 
                         setReleaseInfo({
                             version: latestRelease.tag_name,
-                            notes: notes || 'No detailed release notes available.',
+                            notes: notes || t('version.noDetailedNotes'),
                             date: formatDate(latestRelease.published_at),
                             isExactMatch: false
                         });
                     } else {
                         setReleaseInfo({
                             version: currentVersion,
-                            notes: 'Release notes not found for this version.',
+                            notes: t('version.noChangelog'),
                             date: 'N/A',
                             isExactMatch: false
                         });
@@ -276,7 +279,7 @@ export const VersionModal = ({ open, handleClose }: VersionModalProps) => {
             console.error('Failed to fetch release info:', error);
             setReleaseInfo({
                 version: getAppVersion(),
-                notes: 'Unable to fetch release notes. Check your connection or try again later.',
+                notes: t('version.fetchError'),
                 date: 'N/A',
                 isExactMatch: false
             });
@@ -288,16 +291,16 @@ export const VersionModal = ({ open, handleClose }: VersionModalProps) => {
     // Dynamic title based on whether we're showing update changelog
     const getTitle = () => {
         if (recentlyUpdated && config?.lastSeenVersion) {
-            return 'Update Information';
+            return t('version.titleUpdate');
         }
-        return 'Current Version';
+        return t('version.titleCurrent');
     };
 
     return (
         <CenteredModal open={open} handleClose={handleClose} title={getTitle()}>
             <Box sx={{ p: 2 }}>
                 <Typography variant='h6' gutterBottom>
-                    Version {getAppVersion()}
+                    {t('version.header', { version: getAppVersion() })}
                 </Typography>
 
                 {isLoading ? (
@@ -307,17 +310,17 @@ export const VersionModal = ({ open, handleClose }: VersionModalProps) => {
                 ) : releaseInfo ? (
                     <Box sx={{ my: 2, maxHeight: '350px', overflowY: 'auto' }}>
                         <Typography variant='subtitle1' fontWeight='bold' gutterBottom>
-                            Release Notes:
+                            {t('version.releaseNotes')}
                         </Typography>
                         <Box sx={{ mb: 2 }}>
                             {(!releaseInfo.isExactMatch ||
-                              releaseInfo.version !== getAppVersion() &&
-                              releaseInfo.version !== `v${getAppVersion()}` &&
-                              `v${releaseInfo.version}` !== getAppVersion()) && (
+                                releaseInfo.version !== getAppVersion() &&
+                                releaseInfo.version !== `v${getAppVersion()}` &&
+                                `v${releaseInfo.version}` !== getAppVersion()) && (
                                 <Typography variant='body2' color='warning.main' sx={{ mb: 1 }}>
                                     {recentlyUpdated && config?.lastSeenVersion
-                                        ? `Showing notes from version ${releaseInfo.version} (updated from v${config.lastSeenVersion})`
-                                        : `Showing notes from version ${releaseInfo.version}`
+                                        ? t('version.showingNotesUpdated', { version: releaseInfo.version, oldVersion: config.lastSeenVersion })
+                                        : t('version.showingNotes', { version: releaseInfo.version })
                                     }
                                 </Typography>
                             )}

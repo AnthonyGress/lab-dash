@@ -1,6 +1,7 @@
-import { ArrowDownward, ArrowUpward, ErrorOutline } from '@mui/icons-material';
+import { ArrowDownward, ArrowUpward } from '@mui/icons-material';
 import { Box, Button, CircularProgress, Grid2 as Grid, IconButton, Paper, Tooltip, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next'; // Import hook
 import { IoInformationCircleOutline } from 'react-icons/io5';
 import { PiGlobeSimple, PiGlobeSimpleX } from 'react-icons/pi';
 
@@ -11,7 +12,7 @@ import { useInternetStatus } from '../../../../../hooks/useInternetStatus';
 import { useIsMobile } from '../../../../../hooks/useIsMobile';
 import { COLORS } from '../../../../../theme/styles';
 import { theme } from '../../../../../theme/theme';
-import { convertSecondsToUptime, formatBytes } from '../../../../../utils/utils';
+import { convertSecondsToUptime } from '../../../../../utils/utils';
 import { CenteredModal } from '../../../../modals/CenteredModal';
 
 // Gauge types for configuration
@@ -31,6 +32,7 @@ interface SystemMonitorWidgetProps {
 }
 
 export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetProps) => {
+    const { t } = useTranslation(); // Initialize hook
     const [systemInformation, setSystemInformation] = useState<any>();
     const [memoryInformation, setMemoryInformation] = useState<any>(0);
     const [diskInformation, setDiskInformation] = useState<any>();
@@ -218,13 +220,13 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
         switch (gaugeType) {
         case 'cpu':
             return <GaugeWidget
-                title='CPU'
+                title={t('widgets.system.gaugeTitles.cpu')}
                 value={systemInformation?.cpu?.currentLoad ? Math.round(systemInformation?.cpu?.currentLoad) : 0}
                 isDualWidget={isDualWidget}
             />;
         case 'temp':
             return <GaugeWidget
-                title='TEMP'
+                title={t('widgets.system.gaugeTitles.temp')}
                 value={systemInformation?.cpu?.main ? formatTemperature(systemInformation?.cpu?.main) : 0}
                 temperature
                 isFahrenheit={isFahrenheit}
@@ -232,7 +234,7 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
             />;
         case 'ram':
             return <GaugeWidget
-                title='RAM'
+                title={t('widgets.system.gaugeTitles.ram')}
                 value={memoryInformation}
                 isDualWidget={isDualWidget}
             />;
@@ -240,7 +242,7 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
             return (
                 <Box position='relative'>
                     <GaugeWidget
-                        title='NET'
+                        title={t('widgets.system.gaugeTitles.net')}
                         value={downloadSpeed.normalizedValue} // Use normalized value (MB/s) for the gauge fill
                         total={interfaceSpeed}
                         isDualWidget={isDualWidget}
@@ -384,18 +386,18 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
             // Handle API rate limit errors
             if (err?.response?.status === 429 && err?.response?.data?.error_source === 'labdash_api') {
                 console.error(`Lab-Dash API rate limit: ${err.response?.data?.message}`);
-                setErrorMessage(`API Rate limit: ${err.response?.data?.message}`);
+                setErrorMessage(t('widgets.system.errors.rateLimit', { message: err.response?.data?.message }));
             } else if (err?.response?.status >= 400) {
                 // Handle other API errors
                 const message = err?.response?.data?.message || 'Error fetching system data';
                 console.error(`API error: ${message}`);
-                setErrorMessage(`API error: ${message}`);
+                setErrorMessage(t('widgets.system.errors.apiError', { message }));
             } else if (err?.message) {
                 // Handle network or other errors
                 console.error(`Error: ${err.message}`);
-                setErrorMessage(`Error: ${err.message}`);
+                setErrorMessage(t('widgets.system.errors.generic', { message: err.message }));
             } else {
-                setErrorMessage('An unknown error occurred');
+                setErrorMessage(t('widgets.system.errors.unknown'));
             }
         }
     };
@@ -463,7 +465,7 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
                 p: 2
             }}>
                 <Typography variant='subtitle1' align='center' sx={{ mb: 1 }}>
-                    {!errorMessage || errorMessage === 'null' ? 'Error fetching system data' : errorMessage}
+                    {!errorMessage || errorMessage === 'null' ? t('widgets.system.errors.fetchFailed') : errorMessage}
                 </Typography>
                 <Button
                     variant='contained'
@@ -472,7 +474,7 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
                     disabled={isLoading}
                     sx={{ mt: 2 }}
                 >
-                    {isLoading ? 'Retrying...' : 'Retry'}
+                    {isLoading ? t('common.retry') + '...' : t('common.retry')}
                 </Button>
             </Box>
         );
@@ -489,7 +491,7 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
                 alignItems: 'center'
             }}>
                 <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant='body2' sx={{ mb: 2 }}>Loading system data...</Typography>
+                    <Typography variant='body2' sx={{ mb: 2 }}>{t('widgets.system.loading')}</Typography>
                     <CircularProgress size={30} />
                 </Box>
             </Box>
@@ -519,7 +521,7 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
                     onClick={(e) => e.stopPropagation()}
                 >
                     <Tooltip
-                        title={internetStatus === 'online' ? 'Internet Connected' : internetStatus === 'offline' ? 'No Internet Connection' : 'Checking Internet...'}
+                        title={internetStatus === 'online' ? t('navigation.internet.online') : internetStatus === 'offline' ? t('navigation.internet.offline') : t('navigation.internet.checking')}
                         arrow
                         placement='left'
                         open={internetTooltipOpen}
@@ -589,31 +591,31 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
             <Box p={1} width={'92%'} mt={isDualWidget ? -2 : -1}>
                 {showDiskUsage && <DiskUsageBar totalSpace={diskInformation?.totalSpace ? diskInformation?.totalSpace : 0} usedSpace={diskInformation?.usedSpace ? diskInformation?.usedSpace : 0} usedPercentage={diskInformation?.usedPercentage ? diskInformation?.usedPercentage : 0}/>}
             </Box>
-            <CenteredModal open={openSystemModal} handleClose={() => setOpenSystemModal(false)} title='System Information' width={isMobile ? '90vw' :'30vw'} height='60vh'>
+            <CenteredModal open={openSystemModal} handleClose={() => setOpenSystemModal(false)} title={t('widgets.system.modalTitle')} width={isMobile ? '90vw' :'30vw'} height='60vh'>
                 <Box component={Paper} p={2} sx={{ backgroundColor: COLORS.GRAY }} elevation={0}>
                     {showSystemInfo && (
                         <>
-                            <Typography><b>Processor:</b> {systemInformation?.cpu?.physicalCores} Core {systemInformation?.cpu?.manufacturer} {systemInformation?.cpu?.brand}</Typography>
-                            <Typography><b>Architecture:</b> {systemInformation?.system?.arch} </Typography>
-                            <Typography><b>Memory:</b> {`${systemInformation?.memory?.totalInstalled} GB`} </Typography>
-                            <Typography><b>OS:</b> {systemInformation?.system?.distro} {systemInformation?.system?.codename} {systemInformation?.system?.release}</Typography>
-                            <Typography><b>Kernel:</b> {systemInformation?.system?.kernel}</Typography>
-                            <Typography><b>Uptime:</b> {convertSecondsToUptime(systemInformation?.system?.uptime)}</Typography>
-                            <Typography><b>CPU Temperature:</b> {systemInformation?.cpu?.main ? formatTemperature(systemInformation?.cpu?.main) : 0}°{isFahrenheit ? 'F' : 'C'}</Typography>
-                            <Typography><b>Internet Status:</b> {internetStatus === 'online' ? 'Connected' : internetStatus === 'offline' ? 'Disconnected' : '⏳ Checking...'}</Typography>
-                            <Typography><b>Disk Mount:</b> {diskInformation?.mount}</Typography>
-                            <Typography><b>Disk Usage:</b> {`${diskInformation?.usedPercentage?.toFixed(0)}%`}</Typography>
-                            <Typography><b>Disk Total:</b> {`${diskInformation?.totalSpace} GB`}</Typography>
+                            <Typography><b>{t('widgets.system.cpu')}:</b> {systemInformation?.cpu?.physicalCores} Core {systemInformation?.cpu?.manufacturer} {systemInformation?.cpu?.brand}</Typography>
+                            <Typography><b>{t('widgets.system.arch')}:</b> {systemInformation?.system?.arch} </Typography>
+                            <Typography><b>{t('widgets.system.memory')}:</b> {`${systemInformation?.memory?.totalInstalled} GB`} </Typography>
+                            <Typography><b>{t('widgets.system.os')}:</b> {systemInformation?.system?.distro} {systemInformation?.system?.codename} {systemInformation?.system?.release}</Typography>
+                            <Typography><b>{t('widgets.system.kernel')}:</b> {systemInformation?.system?.kernel}</Typography>
+                            <Typography><b>{t('widgets.system.uptime')}:</b> {convertSecondsToUptime(systemInformation?.system?.uptime)}</Typography>
+                            <Typography><b>{t('widgets.system.temp')}:</b> {systemInformation?.cpu?.main ? formatTemperature(systemInformation?.cpu?.main) : 0}°{isFahrenheit ? 'F' : 'C'}</Typography>
+                            <Typography><b>{t('widgets.system.internetStatus')}:</b> {internetStatus === 'online' ? t('widgets.system.internet.connected') : internetStatus === 'offline' ? t('widgets.system.internet.disconnected') : t('widgets.system.internet.checking')}</Typography>
+                            <Typography><b>{t('widgets.system.diskMount')}:</b> {diskInformation?.mount}</Typography>
+                            <Typography><b>{t('widgets.system.diskUsage')}:</b> {`${diskInformation?.usedPercentage?.toFixed(0)}%`}</Typography>
+                            <Typography><b>{t('widgets.system.diskTotal')}:</b> {`${diskInformation?.totalSpace} GB`}</Typography>
                         </>
                     )}
                     {systemInformation?.network && (
                         <>
-                            <Typography><b>Network Interface:</b> {systemInformation.network.iface}</Typography>
+                            <Typography><b>{t('widgets.system.netInterface')}:</b> {systemInformation.network.iface}</Typography>
                             <Typography>
-                                <b>Upload Speed:</b> {formatNetworkSpeed(systemInformation.network.tx_sec).value} {formatNetworkSpeed(systemInformation.network.tx_sec).unit}
+                                <b>{t('widgets.system.upload')}:</b> {formatNetworkSpeed(systemInformation.network.tx_sec).value} {formatNetworkSpeed(systemInformation.network.tx_sec).unit}
                             </Typography>
                             <Typography>
-                                <b>Download Speed:</b> {formatNetworkSpeed(systemInformation.network.rx_sec).value} {formatNetworkSpeed(systemInformation.network.rx_sec).unit}
+                                <b>{t('widgets.system.download')}:</b> {formatNetworkSpeed(systemInformation.network.rx_sec).value} {formatNetworkSpeed(systemInformation.network.rx_sec).unit}
                             </Typography>
                         </>
                     )}

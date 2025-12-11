@@ -1,6 +1,8 @@
 import { Grid2 as Grid } from '@mui/material';
+import { useMemo } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { CheckboxElement, SelectElement } from 'react-hook-form-mui';
+import { useTranslation } from 'react-i18next';
 
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { COLORS } from '../../../theme/styles';
@@ -11,20 +13,22 @@ interface PlaceholderConfigProps {
     formContext: UseFormReturn<FormValues>;
 }
 
-const PLACEHOLDER_SIZE_OPTIONS = [
-    { id: 'app', label: 'App Shortcut' },
-    { id: 'widget', label: 'Widget' },
-    { id: 'row', label: 'Full Row' },
-];
-
 export const PlaceholderConfig = ({ formContext }: PlaceholderConfigProps) => {
+    const { t } = useTranslation();
     const isMobile = useIsMobile();
+
+    // Memoize options to allow translation
+    const PLACEHOLDER_SIZE_OPTIONS = useMemo(() => [
+        { id: 'app', label: t('forms.addEdit.placeholderConfig.appShortcut') },
+        { id: 'widget', label: t('forms.addEdit.placeholderConfig.widget') },
+        { id: 'row', label: t('forms.addEdit.placeholderConfig.fullRow') },
+    ], [t]);
 
     return (
         <>
             <Grid>
                 <SelectElement
-                    label='Placeholder Size'
+                    label={t('forms.addEdit.placeholderConfig.placeholderSize')}
                     name='placeholderSize'
                     options={PLACEHOLDER_SIZE_OPTIONS}
                     required
@@ -62,7 +66,7 @@ export const PlaceholderConfig = ({ formContext }: PlaceholderConfigProps) => {
 
             <Grid>
                 <CheckboxElement
-                    label='Admin Only'
+                    label={t('forms.addEdit.fields.adminOnly')}
                     name='adminOnly'
                     checked={formContext.watch('adminOnly')}
                     sx={{

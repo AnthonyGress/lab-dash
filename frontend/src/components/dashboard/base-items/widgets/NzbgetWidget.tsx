@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { DownloadClientWidget } from './DownloadClientWidget';
 import { DashApi } from '../../../../api/dash-api';
@@ -15,6 +16,7 @@ type NzbgetWidgetConfig = {
 
 export const NzbgetWidget = (props: { config?: NzbgetWidgetConfig; id?: string }) => {
     const { config, id } = props;
+    const { t } = useTranslation();
 
     const [isLoading, setIsLoading] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -60,11 +62,14 @@ export const NzbgetWidget = (props: { config?: NzbgetWidgetConfig; id?: string }
                 loginAttemptsRef.current += 1;
 
                 if (loginAttemptsRef.current >= MAX_LOGIN_ATTEMPTS) {
-                    setAuthError('Connection error after multiple attempts. Please check your NZBGet settings.');
+                    setAuthError(t('widgets.downloadClient.errors.nzbget.connectionFailedMaxAttempts'));
                     setIsAuthenticated(false);
                     setLoginAttemptFailed(true);
                 } else {
-                    setAuthError(`Login attempt ${loginAttemptsRef.current}/${MAX_LOGIN_ATTEMPTS} failed. Missing required fields.`);
+                    setAuthError(t('widgets.downloadClient.errors.nzbget.loginAttemptFailed', { 
+                        current: loginAttemptsRef.current, 
+                        max: MAX_LOGIN_ATTEMPTS 
+                    }));
 
                     // Schedule another attempt
                     setTimeout(() => {
@@ -87,11 +92,15 @@ export const NzbgetWidget = (props: { config?: NzbgetWidgetConfig; id?: string }
                 loginAttemptsRef.current += 1;
 
                 if (loginAttemptsRef.current >= MAX_LOGIN_ATTEMPTS) {
-                    setAuthError('Failed to decrypt password after multiple attempts. Please update your credentials in the widget settings.');
+                    setAuthError(t('widgets.downloadClient.errors.nzbget.decryptionFailed'));
                     setIsAuthenticated(false);
                     setLoginAttemptFailed(true);
                 } else {
-                    setAuthError(`Login attempt ${loginAttemptsRef.current}/${MAX_LOGIN_ATTEMPTS} failed. Retrying...`);
+                    // Reusing the generic login attempt message logic
+                    setAuthError(t('widgets.downloadClient.errors.nzbget.loginAttemptFailed', { 
+                        current: loginAttemptsRef.current, 
+                        max: MAX_LOGIN_ATTEMPTS 
+                    }));
 
                     // Schedule another attempt
                     setTimeout(() => {
@@ -119,15 +128,18 @@ export const NzbgetWidget = (props: { config?: NzbgetWidgetConfig; id?: string }
             if (loginAttemptsRef.current >= MAX_LOGIN_ATTEMPTS) {
                 // Check for decryption error
                 if (error.response?.data?.error?.includes('Failed to decrypt')) {
-                    setAuthError('Failed to decrypt password. Please update your credentials in the widget settings.');
+                    setAuthError(t('widgets.downloadClient.errors.nzbget.decryptionFailedSimple'));
                 } else {
-                    setAuthError('Connection error after multiple attempts. Check your NZBGet settings.');
+                    setAuthError(t('widgets.downloadClient.errors.nzbget.connectionFailedMaxAttempts'));
                 }
                 setIsAuthenticated(false);
                 setLoginAttemptFailed(true);
             } else {
                 // If we haven't reached max attempts, show a retry message
-                setAuthError(`Login attempt ${loginAttemptsRef.current}/${MAX_LOGIN_ATTEMPTS} failed. Retrying...`);
+                setAuthError(t('widgets.downloadClient.errors.nzbget.loginAttemptFailed', { 
+                    current: loginAttemptsRef.current, 
+                    max: MAX_LOGIN_ATTEMPTS 
+                }));
 
                 // Schedule another attempt
                 setTimeout(() => {
@@ -142,7 +154,7 @@ export const NzbgetWidget = (props: { config?: NzbgetWidgetConfig; id?: string }
                 setIsLoading(false);
             }
         }
-    }, [loginCredentials, config, isAuthenticated, id]);
+    }, [loginCredentials, config, isAuthenticated, id, t]); // Added t dependency
 
     const fetchStats = useCallback(async () => {
         if (!isAuthenticated || loginAttemptFailed) return;
@@ -153,7 +165,7 @@ export const NzbgetWidget = (props: { config?: NzbgetWidgetConfig; id?: string }
             // Check for decryption error
             if (statsData.decryptionError) {
                 setIsAuthenticated(false);
-                setAuthError('Failed to decrypt password. Please update your credentials in the widget settings.');
+                setAuthError(t('widgets.downloadClient.errors.nzbget.decryptionFailedSimple'));
                 return;
             }
 
@@ -177,12 +189,12 @@ export const NzbgetWidget = (props: { config?: NzbgetWidgetConfig; id?: string }
             // If we get an auth error, set isAuthenticated to false to trigger retry
             if ((error as any)?.response?.status === 401 || (error as any)?.response?.status === 403) {
                 setIsAuthenticated(false);
-                setAuthError('Authentication failed. Retrying...');
+                setAuthError(t('widgets.downloadClient.errors.authFailed') + '. ' + t('widgets.downloadClient.errors.retry')); // Tłumaczenie
                 loginAttemptsRef.current = 0; // Reset counter for retry
                 setLoginAttemptFailed(false);
             }
         }
-    }, [isAuthenticated, loginAttemptFailed, id]);
+    }, [isAuthenticated, loginAttemptFailed, id, t]); // Added t dependency
 
     const fetchDownloads = useCallback(async () => {
         if (!isAuthenticated || loginAttemptFailed) return;
@@ -201,12 +213,12 @@ export const NzbgetWidget = (props: { config?: NzbgetWidgetConfig; id?: string }
             console.error('Error fetching NZBGet downloads:', error);
             if ((error as any)?.response?.status === 401 || (error as any)?.response?.status === 403) {
                 setIsAuthenticated(false);
-                setAuthError('Authentication failed. Retrying...');
+                setAuthError(t('widgets.downloadClient.errors.authFailed') + '. ' + t('widgets.downloadClient.errors.retry'));
                 loginAttemptsRef.current = 0;
                 setLoginAttemptFailed(false);
             }
         }
-    }, [isAuthenticated, loginAttemptFailed, id, config?._hasPassword]);
+    }, [isAuthenticated, loginAttemptFailed, id, config?._hasPassword, t]);
 
     // Handle input changes
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

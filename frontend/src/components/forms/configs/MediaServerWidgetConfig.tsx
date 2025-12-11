@@ -2,6 +2,7 @@ import { Box, FormControlLabel, Grid2 as Grid, Radio, RadioGroup, Typography } f
 import { useEffect, useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { CheckboxElement, TextFieldElement } from 'react-hook-form-mui';
+import { useTranslation } from 'react-i18next';
 
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { theme } from '../../../theme/theme';
@@ -17,6 +18,7 @@ interface MediaServerWidgetConfigProps {
 }
 
 export const MediaServerWidgetConfig = ({ formContext }: MediaServerWidgetConfigProps) => {
+    const { t } = useTranslation();
     const isMobile = useIsMobile();
 
     // Watch the media server type directly from the form
@@ -62,7 +64,7 @@ export const MediaServerWidgetConfig = ({ formContext }: MediaServerWidgetConfig
                             ml: 1
                         }}
                     >
-                        Select Media Server:
+                        {t('widgets.mediaServer.config.selectServer')}
                     </Typography>
                     <RadioGroup
                         name='mediaServerType'
@@ -102,7 +104,7 @@ export const MediaServerWidgetConfig = ({ formContext }: MediaServerWidgetConfig
 
             <Grid>
                 <TextFieldElement
-                    label='Display Name'
+                    label={t('widgets.mediaServer.config.displayName')}
                     name='mediaServerName'
                     fullWidth
                     sx={textFieldStyling}
@@ -116,7 +118,7 @@ export const MediaServerWidgetConfig = ({ formContext }: MediaServerWidgetConfig
             <Grid>
                 <TextFieldElement
                     name='msHost'
-                    label='Host'
+                    label={t('widgets.mediaServer.config.host')}
                     variant='outlined'
                     fullWidth
                     autoComplete='off'
@@ -125,14 +127,14 @@ export const MediaServerWidgetConfig = ({ formContext }: MediaServerWidgetConfig
                     slotProps={{
                         inputLabel: { style: { color: theme.palette.text.primary } }
                     }}
-                    placeholder='192.168.1.100 or jellyfin.example.com'
+                    placeholder={t('widgets.mediaServer.config.placeholder')}
                 />
             </Grid>
 
             <Grid>
                 <TextFieldElement
                     name='msPort'
-                    label='Port'
+                    label={t('widgets.mediaServer.config.port')}
                     variant='outlined'
                     fullWidth
                     autoComplete='off'
@@ -147,7 +149,7 @@ export const MediaServerWidgetConfig = ({ formContext }: MediaServerWidgetConfig
             <Grid>
                 <TextFieldElement
                     name='msApiKey'
-                    label='API Key'
+                    label={t('widgets.mediaServer.config.apiKey')}
                     type='password'
                     variant='outlined'
                     fullWidth
@@ -157,15 +159,15 @@ export const MediaServerWidgetConfig = ({ formContext }: MediaServerWidgetConfig
                     slotProps={{
                         inputLabel: { style: { color: theme.palette.text.primary } }
                     }}
-                    helperText='Generate in Jellyfin: Dashboard > API Keys'
+                    helperText={t('widgets.mediaServer.config.apiKeyHelper')}
                     rules={{
-                        required: 'API Key is required',
+                        required: t('widgets.mediaServer.config.apiKeyRequired'),
                         validate: (value: string) => {
                             // Allow masked value for existing widgets
                             if (value === '**********') return true;
                             // Require actual value for new widgets or when changed
                             if (!value || value.trim() === '') {
-                                return 'API Key is required';
+                                return t('widgets.mediaServer.config.apiKeyRequired');
                             }
                             return true;
                         }
@@ -175,7 +177,7 @@ export const MediaServerWidgetConfig = ({ formContext }: MediaServerWidgetConfig
 
             <Grid>
                 <CheckboxElement
-                    label='Use SSL'
+                    label={t('widgets.mediaServer.config.useSsl')}
                     name='msSsl'
                     checked={formContext.watch('msSsl')}
                     sx={{
@@ -188,7 +190,7 @@ export const MediaServerWidgetConfig = ({ formContext }: MediaServerWidgetConfig
 
             <Grid>
                 <CheckboxElement
-                    label='Show Label'
+                    label={t('widgets.mediaServer.config.showLabel')}
                     name='showLabel'
                     checked={formContext.watch('showLabel') !== false}
                     sx={{

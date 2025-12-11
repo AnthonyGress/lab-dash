@@ -16,15 +16,17 @@ interface LoginResponse {
   message: string;
   username: string;
   isAdmin: boolean;
+  language?: string;
 }
 
 export class DashApi {
     // Authentication methods
-    public static async signup(username: string, password: string): Promise<SignupResponse> {
+    public static async signup(username: string, password: string, language: string = 'en'): Promise<SignupResponse> {
         try {
             const res = await axios.post(`${BACKEND_URL}/api/auth/signup`, {
                 username,
-                password
+                password,
+                language
             });
 
             return res.data;
@@ -62,6 +64,21 @@ export class DashApi {
                 throw new Error(error.response.data.message || 'Login failed');
             } else {
                 throw new Error('Network error occurred during login');
+            }
+        }
+    }
+
+    public static async updateProfile(data: { language: string }): Promise<any> {
+        try {
+            const res = await axios.put(`${BACKEND_URL}/api/auth/profile`, data, {
+                withCredentials: true
+            });
+            return res.data;
+        } catch (error: any) {
+            if (error.response) {
+                throw new Error(error.response.data.message || 'Failed to update profile');
+            } else {
+                throw new Error('Network error occurred');
             }
         }
     }
