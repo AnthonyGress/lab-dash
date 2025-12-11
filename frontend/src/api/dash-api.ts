@@ -2427,4 +2427,66 @@ export class DashApi {
             throw error;
         }
     }
+
+    // GitHub Widget methods
+    public static async getGitHubStats(itemId: string, config?: any): Promise<any> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/github/stats`, {
+                itemId,
+                config
+            }, {
+                timeout: 30000
+            });
+            return res.data;
+        } catch (error: any) {
+            console.error('Error fetching GitHub stats:', error);
+            throw error;
+        }
+    }
+
+    public static async validateGitHubToken(token: string): Promise<{ valid: boolean; user?: { login: string; avatarUrl: string; name: string }; error?: string }> {
+        try {
+            const res = await axios.post(`${BACKEND_URL}/api/github/validate`, { token }, {
+                timeout: 10000
+            });
+            return res.data;
+        } catch (error: any) {
+            if (error.response?.status === 401) {
+                return { valid: false, error: 'Invalid token' };
+            }
+            throw error;
+        }
+    }
+
+    // Network Info methods
+    public static async getPublicIp(): Promise<{ ip: string }> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/network/public-ip`, {
+                timeout: 10000
+            });
+            return res.data;
+        } catch (error: any) {
+            console.error('Error fetching public IP:', error);
+            throw error;
+        }
+    }
+
+    public static async getPingStats(host: string): Promise<{
+        host: string;
+        latency: number | null;
+        unit: string;
+        status: 'online' | 'offline';
+        message?: string;
+    }> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/network/ping`, {
+                params: { host },
+                timeout: 10000
+            });
+            return res.data;
+        } catch (error: any) {
+            console.error('Error fetching ping stats:', error);
+            throw error;
+        }
+    }
 }
