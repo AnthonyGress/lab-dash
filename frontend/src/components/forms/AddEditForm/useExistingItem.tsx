@@ -23,11 +23,13 @@ export const useExistingItem = ({ existingItem, formContext, setCustomIconFile }
                                existingItem?.type === ITEM_TYPE.TORRENT_CLIENT || // Legacy support
                                existingItem?.type === ITEM_TYPE.MEDIA_SERVER_WIDGET ||
                                existingItem?.type === ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET ||
+                               existingItem?.type === ITEM_TYPE.NETWORK_INFO_WIDGET ||
                                existingItem?.type === ITEM_TYPE.NOTES_WIDGET ||
                                existingItem?.type === ITEM_TYPE.SONARR_WIDGET ||
                                existingItem?.type === ITEM_TYPE.RADARR_WIDGET ||
                                existingItem?.type === ITEM_TYPE.DUAL_WIDGET ||
-                               existingItem?.type === ITEM_TYPE.GROUP_WIDGET
+                               existingItem?.type === ITEM_TYPE.GROUP_WIDGET ||
+                               existingItem?.type === ITEM_TYPE.GITHUB_WIDGET
             ? 'widget'
             : (existingItem?.type === ITEM_TYPE.BLANK_WIDGET ||
                existingItem?.type === ITEM_TYPE.BLANK_ROW ||
@@ -51,9 +53,11 @@ export const useExistingItem = ({ existingItem, formContext, setCustomIconFile }
                                   existingItem?.type === ITEM_TYPE.TORRENT_CLIENT || // Legacy support - map to DOWNLOAD_CLIENT
                                   existingItem?.type === ITEM_TYPE.MEDIA_SERVER_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET ||
+                                  existingItem?.type === ITEM_TYPE.NETWORK_INFO_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.NOTES_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.SONARR_WIDGET ||
-                                  existingItem?.type === ITEM_TYPE.RADARR_WIDGET
+                                  existingItem?.type === ITEM_TYPE.RADARR_WIDGET ||
+                                  existingItem?.type === ITEM_TYPE.GITHUB_WIDGET
             ? (existingItem?.type === ITEM_TYPE.TORRENT_CLIENT ? ITEM_TYPE.DOWNLOAD_CLIENT : existingItem?.type)
             : existingItem?.type === ITEM_TYPE.DUAL_WIDGET ||
                                     existingItem?.type === ITEM_TYPE.GROUP_WIDGET
@@ -66,9 +70,11 @@ export const useExistingItem = ({ existingItem, formContext, setCustomIconFile }
                                   existingItem?.type === ITEM_TYPE.ADGUARD_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.MEDIA_SERVER_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET ||
+                                  existingItem?.type === ITEM_TYPE.NETWORK_INFO_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.NOTES_WIDGET ||
                                   existingItem?.type === ITEM_TYPE.SONARR_WIDGET ||
-                                  existingItem?.type === ITEM_TYPE.RADARR_WIDGET)
+                                  existingItem?.type === ITEM_TYPE.RADARR_WIDGET ||
+                                  existingItem?.type === ITEM_TYPE.GITHUB_WIDGET)
             ? (existingItem?.config?.showLabel !== undefined ? existingItem.config.showLabel : true)
             : (existingItem?.showLabel !== undefined ? existingItem.showLabel : false);
 
@@ -208,8 +214,27 @@ export const useExistingItem = ({ existingItem, formContext, setCustomIconFile }
             mediaRequestManagerApiKey: existingItem?.type === ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET ? (existingItem?.config?._hasApiKey ? '**********' : '') : '',
 
             // Notes widget values
-            displayName: existingItem?.type === ITEM_TYPE.NOTES_WIDGET ? (existingItem?.config?.displayName || 'Notes') : 'Notes',
+            displayName: existingItem?.type === ITEM_TYPE.NOTES_WIDGET
+                ? (existingItem?.config?.displayName || 'Notes')
+                : existingItem?.type === ITEM_TYPE.NETWORK_INFO_WIDGET
+                    ? (existingItem?.config?.displayName || 'Network Info')
+                    : existingItem?.type === ITEM_TYPE.GITHUB_WIDGET
+                        ? (existingItem?.config?.displayName || 'GitHub')
+                        : 'Notes',
             defaultNoteFontSize: existingItem?.type === ITEM_TYPE.NOTES_WIDGET ? (existingItem?.config?.defaultNoteFontSize || '16px') : '16px',
+
+            // Network Info widget values
+            targetHost: existingItem?.type === ITEM_TYPE.NETWORK_INFO_WIDGET ? (existingItem?.config?.targetHost || '8.8.8.8') : '8.8.8.8',
+            refreshInterval: existingItem?.type === ITEM_TYPE.NETWORK_INFO_WIDGET ? (existingItem?.config?.refreshInterval || 30000) : 30000,
+            showTargetHost: existingItem?.type === ITEM_TYPE.NETWORK_INFO_WIDGET ? (existingItem?.config?.showTargetHost !== false) : true,
+
+            // GitHub widget values
+            githubToken: existingItem?.type === ITEM_TYPE.GITHUB_WIDGET ? (existingItem?.config?._hasToken ? '**********' : '') : '',
+            githubRefreshInterval: existingItem?.type === ITEM_TYPE.GITHUB_WIDGET ? (existingItem?.config?.refreshInterval || 3600000) : 3600000,
+            githubIncludeForks: existingItem?.type === ITEM_TYPE.GITHUB_WIDGET ? (existingItem?.config?.includeForks || false) : false,
+            githubIncludeArchived: existingItem?.type === ITEM_TYPE.GITHUB_WIDGET ? (existingItem?.config?.includeArchived || false) : false,
+            githubRepoFilter: existingItem?.type === ITEM_TYPE.GITHUB_WIDGET ? (existingItem?.config?.repoFilter || '') : '',
+            githubExcludeRepos: existingItem?.type === ITEM_TYPE.GITHUB_WIDGET ? (existingItem?.config?.excludeRepos || '') : '',
 
             location: location,
             gauge1: systemMonitorGauges[0] || 'cpu',

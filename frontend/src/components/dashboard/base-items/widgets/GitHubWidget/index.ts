@@ -1,0 +1,1 @@
+export { GitHubWidget } from './GitHubWidget';

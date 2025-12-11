@@ -5,9 +5,11 @@ import { DateTimeWidgetConfig } from './DateTimeWidgetConfig';
 import { DiskMonitorWidgetConfig } from './DiskMonitorWidgetConfig';
 import { DownloadClientWidgetConfig } from './DownloadClientWidgetConfig';
 import { DualWidgetConfig } from './DualWidgetConfig';
+import { GitHubWidgetConfig } from './GitHubWidgetConfig';
 import { GroupWidgetConfig } from './GroupWidgetConfig';
 import { MediaRequestManagerWidgetConfig } from './MediaRequestManagerWidgetConfig';
 import { MediaServerWidgetConfig } from './MediaServerWidgetConfig';
+import { NetworkInfoWidgetConfig } from './NetworkInfoWidgetConfig';
 import { NotesWidgetConfig } from './NotesWidgetConfig';
 import { PiholeWidgetConfig } from './PiholeWidgetConfig';
 import { RadarrWidgetConfig } from './RadarrWidgetConfig';
@@ -49,12 +51,16 @@ export const WidgetConfig = ({ formContext, widgetType, existingItem }: WidgetCo
         return <MediaServerWidgetConfig formContext={formContext} />;
     case ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET:
         return <MediaRequestManagerWidgetConfig formContext={formContext} />;
+    case ITEM_TYPE.NETWORK_INFO_WIDGET:
+        return <NetworkInfoWidgetConfig formContext={formContext} />;
     case ITEM_TYPE.NOTES_WIDGET:
         return <NotesWidgetConfig formContext={formContext} />;
     case ITEM_TYPE.SONARR_WIDGET:
         return <SonarrWidgetConfig formContext={formContext} />;
     case ITEM_TYPE.RADARR_WIDGET:
         return <RadarrWidgetConfig formContext={formContext} />;
+    case ITEM_TYPE.GITHUB_WIDGET:
+        return <GitHubWidgetConfig formContext={formContext} />;
     default:
         return null;
     }

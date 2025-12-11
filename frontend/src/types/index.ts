@@ -12,6 +12,8 @@ export enum ITEM_TYPE {
     NOTES_WIDGET = 'notes-widget',
     SONARR_WIDGET = 'sonarr-widget',
     RADARR_WIDGET = 'radarr-widget',
+    NETWORK_INFO_WIDGET = 'network-info-widget',
+    GITHUB_WIDGET = 'github-widget',
     DUAL_WIDGET = 'dual-widget',
     GROUP_WIDGET = 'group-widget',
     APP_SHORTCUT = 'app-shortcut',

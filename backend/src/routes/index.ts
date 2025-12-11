@@ -5,10 +5,12 @@ import { appShortcutRoute } from './app-shortcut.route';
 import { authRoute } from './auth.route';
 import { configRoute } from './config.route';
 import { delugeRoute } from './deluge.route';
+import { githubRoute } from './github.route';
 import { healthRoute } from './health.route';
 import { iconsRoute } from './icons.route';
 import { jellyfinRoute } from './jellyfin.route';
 import { jellyseerRoute } from './jellyseerr.route';
+import { networkRoute } from './network.route';
 import { notesRoute } from './notes.route';
 import { nzbgetRoute } from './nzbget.route';
 import { piholeV6Route } from './pihole-v6.route';
@@ -62,6 +64,12 @@ router.use('/widgets', apiLimiter, widgetsRoute);
 
 // Notes routes
 router.use('/notes', apiLimiter, notesRoute);
+
+// Network info routes
+router.use('/network', apiLimiter, networkRoute);
+
+// GitHub routes
+router.use('/github', apiLimiter, githubRoute);
 
 // Torrent client routes
 router.use('/qbittorrent', torrentApiLimiter, qbittorrentRoute);

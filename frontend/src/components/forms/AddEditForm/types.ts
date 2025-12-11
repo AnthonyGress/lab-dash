@@ -77,6 +77,19 @@ export type FormValues = {
     displayName?: string;
     defaultNoteFontSize?: string;
 
+    // Network Info widget
+    targetHost?: string;
+    refreshInterval?: number;
+    showTargetHost?: boolean;
+
+    // GitHub widget
+    githubToken?: string;
+    githubRefreshInterval?: number;
+    githubIncludeForks?: boolean;
+    githubIncludeArchived?: boolean;
+    githubRepoFilter?: string;
+    githubExcludeRepos?: string;
+
     // Torrent client widget
     torrentClient?: string;
     torrentUrl?: string;

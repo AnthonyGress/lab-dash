@@ -33,9 +33,11 @@ import { SortableDateTimeWidget } from './sortable-items/widgets/SortableDateTim
 import { SortableDeluge } from './sortable-items/widgets/SortableDeluge';
 import { SortableDiskMonitor } from './sortable-items/widgets/SortableDiskMonitor';
 import { SortableDualWidget } from './sortable-items/widgets/SortableDualWidget';
+import { SortableGitHub } from './sortable-items/widgets/SortableGitHub';
 import { SortableGroupWidget } from './sortable-items/widgets/SortableGroupWidget';
 import { SortableMediaRequestManager } from './sortable-items/widgets/SortableMediaRequestManager';
 import { SortableMediaServer } from './sortable-items/widgets/SortableMediaServer';
+import { SortableNetworkInfo } from './sortable-items/widgets/SortableNetworkInfo';
 import { SortableNotes } from './sortable-items/widgets/SortableNotes';
 import { SortablePihole } from './sortable-items/widgets/SortablePihole';
 import { SortableQBittorrent } from './sortable-items/widgets/SortableQBittorrent';
@@ -682,6 +684,8 @@ export const DashboardGrid: React.FC = () => {
             return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
         case ITEM_TYPE.DISK_MONITOR_WIDGET:
             return <SortableDiskMonitor key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)} />;
+        case ITEM_TYPE.GITHUB_WIDGET:
+            return <SortableGitHub key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)} />;
         case ITEM_TYPE.PIHOLE_WIDGET:
             return <SortablePihole key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
         case ITEM_TYPE.ADGUARD_WIDGET:
@@ -719,6 +723,16 @@ export const DashboardGrid: React.FC = () => {
             />;
         case ITEM_TYPE.MEDIA_SERVER_WIDGET:
             return <SortableMediaServer
+                key={item.id}
+                id={item.id}
+                editMode={editMode}
+                config={item.config}
+                onDelete={() => handleDelete(item.id)}
+                onEdit={() => handleEdit(item)}
+                onDuplicate={() => handleDuplicate(item)}
+            />;
+        case ITEM_TYPE.NETWORK_INFO_WIDGET:
+            return <SortableNetworkInfo
                 key={item.id}
                 id={item.id}
                 editMode={editMode}
@@ -904,6 +918,8 @@ export const DashboardGrid: React.FC = () => {
                                         return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
                                     case ITEM_TYPE.DISK_MONITOR_WIDGET:
                                         return <SortableDiskMonitor key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay />;
+                                    case ITEM_TYPE.GITHUB_WIDGET:
+                                        return <SortableGitHub key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay />;
                                     case ITEM_TYPE.PIHOLE_WIDGET:
                                         return <SortablePihole key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
                                     case ITEM_TYPE.ADGUARD_WIDGET:
@@ -936,6 +952,14 @@ export const DashboardGrid: React.FC = () => {
                                         />;
                                     case ITEM_TYPE.MEDIA_SERVER_WIDGET:
                                         return <SortableMediaServer
+                                            key={item.id}
+                                            id={item.id}
+                                            editMode={editMode}
+                                            config={item.config}
+                                            isOverlay
+                                        />;
+                                    case ITEM_TYPE.NETWORK_INFO_WIDGET:
+                                        return <SortableNetworkInfo
                                             key={item.id}
                                             id={item.id}
                                             editMode={editMode}

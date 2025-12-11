@@ -90,6 +90,7 @@ export const getConnectionInfo = (item: DashboardItem) => {
     let password = config.password;
     let apiToken = config.apiToken;
     let apiKey = config.apiKey;
+    let token = config.token; // For GitHub widget
 
     if (password && isEncrypted(password)) {
         password = decrypt(password);
@@ -107,6 +108,14 @@ export const getConnectionInfo = (item: DashboardItem) => {
         }
     }
 
+    if (token && isEncrypted(token)) {
+        token = decrypt(token);
+
+        if (!token) {
+            console.error(`Token decryption failed for item ${item.id}! Check if the SECRET environment variable is set correctly.`);
+        }
+    }
+
     return {
         // Spread original config first
         ...config,
@@ -118,13 +127,15 @@ export const getConnectionInfo = (item: DashboardItem) => {
         password: password, // This will be the decrypted password
         apiToken: apiToken, // This will be the decrypted apiToken
         apiKey: apiKey, // This will be the decrypted apiKey for media servers
+        token: token, // This will be the decrypted token for GitHub widget
         // For torrent clients
         clientType: config.clientType,
         // For other services
         displayName: config.displayName,
         // Security flags (these may or may not be present depending on context)
         _hasPassword: config._hasPassword,
-        _hasApiToken: config._hasApiToken
+        _hasApiToken: config._hasApiToken,
+        _hasToken: config._hasToken
     };
 };
 
