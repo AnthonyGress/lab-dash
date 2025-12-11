@@ -404,7 +404,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
     };
 
     const getTitle = (item: SearchResult | MediaRequest['media']) => {
-        return item.title || item.name || t('widgets.mediaRequestManager.title');
+        return item.title || item.name || t('widgets.mediaRequestManager.unknownTitle');
     };
 
     const getReleaseYear = (item: SearchResult | MediaRequest['media']) => {
@@ -1009,7 +1009,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                         setPreviousSearchQuery('');
                     }
                 }}
-                title={confirmationItem ? t('widgets.mediaRequestManager.request', { title: getTitle(confirmationItem) }) : t('widgets.mediaRequestManager.title')}
+                title={confirmationItem ? t('widgets.mediaRequestManager.request', { title: getTitle(confirmationItem) }) : ''}
                 width='400px'
             >
                 {confirmationItem && (

@@ -15,8 +15,12 @@ dotenv.config();
 const app: Application = express();
 const PORT = Number(process.env.PORT) || 2022;
 
-const iconsPath = path.join(__dirname, './node_modules/@loganmarchione/homelab-svg-assets/assets');
-const iconListPath = path.join(__dirname, './node_modules/@loganmarchione/homelab-svg-assets/icons.json');
+// We use process.cwd() to point to the application's root directory (/app in Docker),
+// instead of relying on the index.js file location (__dirname), which changes after compilation.
+const rootDir = process.cwd();
+
+const iconsPath = path.join(rootDir, 'node_modules/@loganmarchione/homelab-svg-assets/assets');
+const iconListPath = path.join(rootDir, 'node_modules/@loganmarchione/homelab-svg-assets/icons.json');
 
 // allow running the server behind a proxy
 app.set('trust proxy', 1);

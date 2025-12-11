@@ -7,6 +7,7 @@
     "successTitle": "Sukces",
     "errorTitle": "Błąd",
     "loadingTitle": "Ładowanie",
+    "loading": "Ładowanie zasobów...",
     "done": "Gotowe",
     "yes": "Tak",
     "cancel": "Anuluj",
@@ -811,7 +812,6 @@
         "showLabel": "Pokaż nazwę"
       },
       "unknownTitle": "Nieznany tytuł",
-      "title": "Prośby o Media",
       "search": "Szukaj filmów lub seriali...",
       "loading": "Wyszukiwanie...",
       "noResults": "Brak wyników",

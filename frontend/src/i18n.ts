@@ -10,13 +10,19 @@ i18n
     .init({
         fallbackLng: 'en',
         supportedLngs: ['en', 'pl'],
-        debug: false,
+        
+        // Forces language-only resolution (e.g., 'pl' instead of 'pl-PL') to match folder structure
+        load: 'languageOnly', 
+        
+        // Enable debug in development to log missing keys or loading errors
+        debug: import.meta.env.DEV, 
         
         interpolation: {
             escapeValue: false,
         },
         
         backend: {
+            // Path to translation files. In Vite, 'public/locales' is served at root '/locales'
             loadPath: '/locales/{{lng}}/translation.json',
         },
 
@@ -24,6 +30,11 @@ i18n
             order: ['localStorage', 'navigator'],
             lookupLocalStorage: 'i18nextLng',
             caches: ['localStorage'],
+        },
+        
+        react: {
+            // Ensure Suspense is enabled for async translation loading
+            useSuspense: true,
         }
     });
 

@@ -51,7 +51,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
     const getConfigureTitle = () => {
         if (selectedItemType === 'widget') {
             // Find widget label translation based on ID
-            const widgetId = selectedWidgetType;
+            const widgetId = selectedWidgetType || '';
             const keyMap: Record<string, string> = {
                  [ITEM_TYPE.ADGUARD_WIDGET]: 'adguard',
                  [ITEM_TYPE.DATE_TIME_WIDGET]: 'dateTime',

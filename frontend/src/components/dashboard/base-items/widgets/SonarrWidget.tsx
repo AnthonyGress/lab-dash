@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { QueueItem, QueueManagementWidget } from './QueueManagementWidget';
 import { DashApi } from '../../../../api/dash-api';
 import { TWENTY_SEC_IN_MS } from '../../../../constants/constants';
+import { ToastManager } from '../../../../components/toast/ToastManager';
 
 interface SonarrWidgetConfig {
     host?: string;

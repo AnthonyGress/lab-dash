@@ -566,8 +566,8 @@ export const SettingsForm = () => {
                 // Show success message (only if no app icons were uploaded, to avoid duplicate messages)
                 if (!data.appIconFiles || data.appIconFiles.length === 0) {
                     PopupManager.success(
-                        t('common.successTitle'),
-                        t('settings.general.saveSuccess')
+                        i18n.t('common.successTitle', { lng: userLanguage }),
+                        i18n.t('settings.general.saveSuccess', { lng: userLanguage })
                     );
                 }
 

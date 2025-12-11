@@ -1,5 +1,5 @@
 { 
-  "common": {
+  "common": { 
     "next": "Next",
     "back": "Back",
     "searchPlaceholder": "Search...",
@@ -7,6 +7,7 @@
     "successTitle": "Success",
     "errorTitle": "Error",
     "loadingTitle": "Loading",
+    "loading": "Loading Resources...",
     "done": "Done",
     "yes": "Yes",
     "cancel": "Cancel",
@@ -34,6 +35,9 @@
     "addItem": "Add Item",
     "admin": "Administrator",
     "user": "User",
+    "editPageTitle": "Edit Page",
+    "pageUpdateSuccess": "Page updated successfully",
+    "pageUpdateFailed": "Failed to update page",
     "internet": {
       "online": "Internet Connected",
       "offline": "No Internet Connection",
@@ -56,7 +60,9 @@
     "title": "Login",
     "submit": "Login",
     "success": "Login successful!",
-    "failed": "Login failed"
+    "failed": "Login failed",
+    "loggedOutSuccess": "Logged out successfully",
+    "logoutError": "Logout error"
   },
   "setup": {
     "steps": {
@@ -309,12 +315,6 @@
       "healthCheck": {
         "http": "HTTP Request",
         "ping": "Ping Host"
-      },
-      "helpers": {
-        "optional": "Optional",
-        "defaultPort": "Default: 9",
-        "macFormat": "Format: xx:xx:xx:xx:xx:xx",
-        "broadcastDesc": "The broadcast address for your network"
       }
     }
   },
@@ -357,6 +357,8 @@
       "retry": "Retry",
       "offline": "Offline",
       "online": "Online",
+      "authFailed": "Authentication failed",
+      "notConfigured": "Not configured",
       "healthCheckType": "Health check type",
       "healthCheckUrl": "Health check URL",
       "hostnameIp": "Hostname or IP",
@@ -810,7 +812,6 @@
         "showLabel": "Show Label"
       },
       "unknownTitle": "Unknown Title",
-      "title": "Media Requests",
       "search": "Search for movies or TV shows...",
       "loading": "Searching...",
       "noResults": "No results found",
@@ -960,5 +961,5 @@
         "taskList": "Task List"
       }
     }
-  },
+  }
 }

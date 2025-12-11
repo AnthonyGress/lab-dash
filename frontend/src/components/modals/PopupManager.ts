@@ -17,6 +17,7 @@ export type ConfirmationOptions = {
     confirmAction: () => any,
     confirmText?: string,
     denyAction?: () => any,
+    denyText?: string;
     text?: string;
     html?: string;
 }
@@ -72,7 +73,7 @@ export class PopupManager {
             icon: 'info',
             showDenyButton: true,
             denyButtonColor: grey[500],
-            denyButtonText: 'Cancel',
+            denyButtonText: options.denyText || 'Cancel',
             reverseButtons: true
         }).then((result: any) => {
             if (result.isConfirmed) {

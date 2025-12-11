@@ -1,6 +1,6 @@
 import { ThemeProvider } from '@mui/material';
 import { CssBaseline } from '@mui/material';
-import { StrictMode } from 'react';
+import { StrictMode, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter as Router } from 'react-router-dom';
 
@@ -8,6 +8,7 @@ import './i18n';
 
 import { DashApi } from './api/dash-api.ts';
 import { App } from './App.tsx';
+import { LoadingScreen } from './components/LoadingScreen.tsx'; // Import isolated component
 import { ToastInitializer } from './components/toast/ToastInitializer.tsx';
 import { ToastProvider } from './components/toast/ToastManager.tsx';
 import { AppContextProvider } from './context/AppContextProvider.tsx';
@@ -24,7 +25,13 @@ createRoot(document.getElementById('root')!).render(
                     <AppContextProvider>
                         <ToastInitializer />
                         <CssBaseline />
-                        <App />
+                        {/* Suspense wrapper added for i18n support. 
+                           Handles async loading of translation files and prevents rendering 
+                           before resources are ready.
+                        */}
+                        <Suspense fallback={<LoadingScreen />}>
+                            <App />
+                        </Suspense>
                     </AppContextProvider>
                 </ToastProvider>
             </Router>

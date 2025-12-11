@@ -1,53 +1,51 @@
-# Build (Backend)
-FROM node:22-slim AS backend-build
+# STAGE 1: Build Frontend
+FROM node:20-alpine AS frontend-builder
+WORKDIR /app/frontend
 
-WORKDIR /usr/src/app
-COPY ./backend ./
+# Copy root package.json to parent directory (/app/package.json)
+# This allows vite.config.ts to resolve the root version from "../package.json"
+COPY package.json /app/package.json
 
-# Check architecture and install Python 3 for ARM
-RUN apt-get update && \
-    ARCH=$(uname -m) && \
-    echo "Detected architecture: $ARCH" && \
-    if [ "$ARCH" = "armv7l" ] || [ "$ARCH" = "armhf" ] || [ "$ARCH" = "arm" ]; then \
-      echo "Installing Python 3 for ARM architecture" && \
-      apt-get install -y python3 python3-pip; \
-    else \
-      echo "Skipping Python 3 installation for architecture: $ARCH"; \
-    fi
+# Copy frontend dependency files
+COPY frontend/package*.json ./
+RUN npm ci
 
-RUN npm install --omit-optional
+# Copy source code and build
+COPY frontend/ .
 RUN npm run build
 
-# Build (Frontend)
-FROM node:22-slim AS frontend-build
-WORKDIR /usr/src/app
-# Copy root package.json for version access
-COPY ./package.json ../package.json
-COPY ./frontend ./
-RUN npm install
-ENV NODE_ENV=production
+# STAGE 2: Build Backend
+FROM node:20-alpine AS backend-builder
+WORKDIR /app/backend
+COPY backend/package*.json ./
+RUN npm ci
+COPY backend/ .
 RUN npm run build
+# Prune development dependencies to reduce final image size
+RUN npm prune --production
 
-# Deploy (Backend)
-FROM node:22-slim AS backend-deploy
-
+# STAGE 3: Final Runtime Image
+FROM node:20-alpine
 WORKDIR /app
+
+# Install curl (optional, for healthchecks)
+RUN apk add --no-cache curl
+
+# Copy built backend (esbuild output)
+COPY --from=backend-builder /app/backend/dist ./dist
+COPY --from=backend-builder /app/backend/package.json ./
+COPY --from=backend-builder /app/backend/node_modules ./node_modules
+
+# Copy built frontend assets
+# Place them in ./dist/public so the Express backend can serve them correctly
+COPY --from=frontend-builder /app/frontend/dist ./dist/public
+
+# Environment variables
 ENV NODE_ENV=production
-EXPOSE 2022
+ENV PORT=3000
 
-# Install runtime dependencies and Python 3 for ARM
-RUN apt-get update && \
-    apt-get install -y iputils-ping lm-sensors ca-certificates && \
-    ARCH=$(uname -m) && \
-    echo "Detected architecture: $ARCH" && \
-    if [ "$ARCH" = "armv7l" ] || [ "$ARCH" = "armhf" ] || [ "$ARCH" = "arm" ]; then \
-      echo "Installing Python 3 for ARM architecture" && \
-      apt-get install -y python3 python3-pip; \
-    fi
+# Expose port
+EXPOSE 3000
 
-COPY --from=backend-build /usr/src/app/dist/config ../config
-COPY --from=backend-build /usr/src/app/dist/index.js ./
-COPY --from=backend-build /usr/src/app/dist/package.json ./
-COPY --from=frontend-build /usr/src/app/dist ./public
-RUN npm i --omit-dev --omit-optional
-CMD [ "node", "index.js" ]
+# Start command
+CMD ["node", "dist/index.js"]
