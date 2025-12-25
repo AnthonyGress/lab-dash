@@ -9,6 +9,8 @@ import {
     FaCloudSun,
     FaDownload,
     FaFilm,
+    FaGithub,
+    FaGlobe,
     FaHdd,
     FaLayerGroup,
     FaMicrochip,
@@ -56,6 +58,12 @@ export const WIDGET_OPTIONS = [
         description: 'Combine two widgets into one item'
     },
     {
+        id: ITEM_TYPE.GITHUB_WIDGET,
+        label: 'GitHub',
+        icon: FaGithub,
+        description: 'Monitor repository stats, PRs, issues, and CI status'
+    },
+    {
         id: ITEM_TYPE.GROUP_WIDGET,
         label: 'Group',
         icon: FaLayerGroup,
@@ -66,6 +74,12 @@ export const WIDGET_OPTIONS = [
         label: 'Media Request Manager',
         icon: FaFilm,
         description: 'Request media and manage approvals'
+    },
+    {
+        id: ITEM_TYPE.NETWORK_INFO_WIDGET,
+        label: 'Network Info',
+        icon: FaGlobe,
+        description: 'Display public IP address and network latency'
     },
     {
         id: ITEM_TYPE.MEDIA_SERVER_WIDGET,
