@@ -148,7 +148,7 @@ export const DownloadClientWidgetConfig = ({ formContext, existingItem }: Downlo
                                         sx={{
                                             color: 'white',
                                             '&.Mui-checked': {
-                                                color: theme.palette.primary.main
+                                                color: 'primary.main'
                                             }
                                         }}
                                     />
@@ -173,8 +173,8 @@ export const DownloadClientWidgetConfig = ({ formContext, existingItem }: Downlo
                             '& fieldset': {
                                 borderColor: 'text.primary',
                             },
-                            '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                            '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                            '&:hover fieldset': { borderColor: 'primary.main' },
+                            '&.Mui-focused fieldset': { borderColor: 'primary.main', },
                         },
                     }}
                     slotProps={{
@@ -196,8 +196,8 @@ export const DownloadClientWidgetConfig = ({ formContext, existingItem }: Downlo
                             '& fieldset': {
                                 borderColor: 'text.primary',
                             },
-                            '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                            '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                            '&:hover fieldset': { borderColor: 'primary.main' },
+                            '&.Mui-focused fieldset': { borderColor: 'primary.main', },
                         },
                     }}
                     slotProps={{
@@ -206,8 +206,8 @@ export const DownloadClientWidgetConfig = ({ formContext, existingItem }: Downlo
                 />
             </Grid>
             {/* Show username field for qBittorrent, Transmission, and NZBGet (not SABnzbd - it uses API key) */}
-            {(torrentClientType === DOWNLOAD_CLIENT_TYPE.QBITTORRENT || 
-              torrentClientType === DOWNLOAD_CLIENT_TYPE.TRANSMISSION || 
+            {(torrentClientType === DOWNLOAD_CLIENT_TYPE.QBITTORRENT ||
+              torrentClientType === DOWNLOAD_CLIENT_TYPE.TRANSMISSION ||
               torrentClientType === DOWNLOAD_CLIENT_TYPE.NZBGET) && (
                 <Grid>
                     <TextFieldElement
@@ -226,8 +226,8 @@ export const DownloadClientWidgetConfig = ({ formContext, existingItem }: Downlo
                                 '& fieldset': {
                                     borderColor: 'text.primary',
                                 },
-                                '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                                '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                '&:hover fieldset': { borderColor: 'primary.main' },
+                                '&.Mui-focused fieldset': { borderColor: 'primary.main', },
                             },
                         }}
                         slotProps={{
@@ -254,8 +254,8 @@ export const DownloadClientWidgetConfig = ({ formContext, existingItem }: Downlo
                             '& fieldset': {
                                 borderColor: 'text.primary',
                             },
-                            '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                            '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                            '&:hover fieldset': { borderColor: 'primary.main' },
+                            '&.Mui-focused fieldset': { borderColor: 'primary.main', },
                         },
                     }}
                     slotProps={{

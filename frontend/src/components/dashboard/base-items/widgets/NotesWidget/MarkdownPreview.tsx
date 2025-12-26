@@ -67,7 +67,7 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, fontS
                 fontStyle: 'italic'
             },
             '& a': {
-                color: theme.palette.primary.main,
+                color: 'primary.main',
                 textDecoration: 'underline'
             },
             '& strong': {

@@ -93,6 +93,7 @@ export type Config = {
     isSetupComplete?: boolean;
     lastSeenVersion?: string;
     defaultNoteFontSize?: string;
+    themeColor?: string;
 }
 
 export type UploadImageResponse = {

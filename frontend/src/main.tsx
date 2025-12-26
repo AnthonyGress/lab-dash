@@ -1,4 +1,3 @@
-import { ThemeProvider } from '@mui/material';
 import { CssBaseline } from '@mui/material';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -9,14 +8,14 @@ import { App } from './App.tsx';
 import { ToastInitializer } from './components/toast/ToastInitializer.tsx';
 import { ToastProvider } from './components/toast/ToastManager.tsx';
 import { AppContextProvider } from './context/AppContextProvider.tsx';
-import { theme } from './theme/theme.ts';
+import { ThemeContextProvider } from './theme/ThemeContext.tsx';
 import './theme/index.css';
 
 DashApi.setupAxiosInterceptors();
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
-        <ThemeProvider theme={theme}>
+        <ThemeContextProvider>
             <Router>
                 <ToastProvider>
                     <AppContextProvider>
@@ -26,6 +25,6 @@ createRoot(document.getElementById('root')!).render(
                     </AppContextProvider>
                 </ToastProvider>
             </Router>
-        </ThemeProvider>
+        </ThemeContextProvider>
     </StrictMode>
 );

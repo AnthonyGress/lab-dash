@@ -616,7 +616,8 @@ export const DashboardGrid: React.FC = () => {
     const createDateTimeConfig = (config: any) => {
         return {
             location: config?.location || null,
-            timezone: config?.timezone || undefined
+            timezone: config?.timezone || undefined,
+            use24Hour: config?.use24Hour || false
         };
     };
 

@@ -281,7 +281,7 @@ export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) 
                                 left: 0,
                                 width: `${displayUsagePercent}%`,
                                 height: '100%',
-                                backgroundColor: theme.palette.primary.main,
+                                backgroundColor: 'primary.main',
                                 cursor: 'pointer'
                             }}
                         />

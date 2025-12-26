@@ -13,6 +13,7 @@ type DateTimeConfig = {
         longitude: number;
     } | null;
     timezone?: string;
+    use24Hour?: boolean;
 };
 
 type Props = {
@@ -40,7 +41,8 @@ export const SortableDateTimeWidget: React.FC<Props> = ({
     // Only extract the properties we need, ignore the rest
     const dateTimeConfig: DateTimeConfig = {
         location: config?.location || null,
-        timezone: config?.timezone || undefined
+        timezone: config?.timezone || undefined,
+        use24Hour: config?.use24Hour || false
     };
 
     return (

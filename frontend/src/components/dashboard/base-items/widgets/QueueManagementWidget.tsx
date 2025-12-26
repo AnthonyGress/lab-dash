@@ -317,7 +317,7 @@ const QueueItemComponent: React.FC<QueueItemComponentProps> = ({ item, serviceNa
                     '& .MuiLinearProgress-bar': {
                         backgroundColor:
                             item.state === 'downloading' ? 'primary.main' :
-                                item.state.includes('seed') || item.state.includes('upload') ? theme.palette.primary.main :
+                                item.state.includes('seed') || item.state.includes('upload') ? 'primary.main' :
                                     item.progress === 1 ? 'success.main' : 'warning.main'
                     }
                 }}

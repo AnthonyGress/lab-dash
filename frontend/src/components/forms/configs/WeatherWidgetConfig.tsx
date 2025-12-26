@@ -147,7 +147,7 @@ export const WeatherWidgetConfig = ({ formContext }: WeatherWidgetConfigProps) =
                                         sx={{
                                             color: 'white',
                                             '&.Mui-checked': {
-                                                color: theme.palette.primary.main
+                                                color: 'primary.main'
                                             }
                                         }}
                                     />
@@ -215,8 +215,8 @@ export const WeatherWidgetConfig = ({ formContext }: WeatherWidgetConfigProps) =
                                     '& fieldset': {
                                         borderColor: 'text.primary',
                                     },
-                                    '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                    '&:hover fieldset': { borderColor: 'primary.main' },
+                                    '&.Mui-focused fieldset': { borderColor: 'primary.main' },
                                 }
                             }}
                             InputLabelProps={{

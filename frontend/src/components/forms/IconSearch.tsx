@@ -209,11 +209,11 @@ export const IconSearch = ({ control, errors, onCustomIconSelect }: Props) => {
                                             backgroundColor: `${COLORS.LIGHT_GRAY_HOVER} !important`
                                         },
                                         '&.Mui-selected': {
-                                            backgroundColor: `${theme.palette.primary.main} !important`,
+                                            backgroundColor: `${'primary.main'} !important`,
                                             color: 'white',
                                         },
                                         '&.Mui-selected:hover': {
-                                            backgroundColor: `${theme.palette.primary.main} !important`,
+                                            backgroundColor: `${'primary.main'} !important`,
                                             color: 'white',
                                         }
                                     }} key={shortid.generate()}>
@@ -248,8 +248,8 @@ export const IconSearch = ({ control, errors, onCustomIconSelect }: Props) => {
                                             sx={{
                                                 '& .MuiOutlinedInput-root': {
                                                     '& fieldset': { borderColor: theme.palette.text.primary },
-                                                    '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                                                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
+                                                    '&:hover fieldset': { borderColor: 'primary.main' },
+                                                    '&.Mui-focused fieldset': { borderColor: 'primary.main' },
                                                     '&.MuiInputBase-root.MuiOutlinedInput-root.Mui-error fieldset': {
                                                         borderColor: theme.palette.error.main,
                                                     },

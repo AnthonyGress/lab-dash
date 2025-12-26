@@ -30,8 +30,8 @@ export const MediaServerWidgetConfig = ({ formContext }: MediaServerWidgetConfig
             '& fieldset': {
                 borderColor: 'text.primary',
             },
-            '&:hover fieldset': { borderColor: theme.palette.primary.main },
-            '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
+            '&:hover fieldset': { borderColor: 'primary.main' },
+            '&.Mui-focused fieldset': { borderColor: 'primary.main' },
         },
         width: '100%',
         minWidth: isMobile ? '50vw' : '20vw'
@@ -88,7 +88,7 @@ export const MediaServerWidgetConfig = ({ formContext }: MediaServerWidgetConfig
                                         sx={{
                                             color: 'white',
                                             '&.Mui-checked': {
-                                                color: theme.palette.primary.main
+                                                color: 'primary.main'
                                             }
                                         }}
                                     />

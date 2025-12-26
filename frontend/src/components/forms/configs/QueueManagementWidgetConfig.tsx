@@ -32,8 +32,8 @@ export const QueueManagementWidgetConfig: React.FC<QueueManagementWidgetConfigPr
                             '& fieldset': {
                                 borderColor: 'text.primary',
                             },
-                            '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                            '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
+                            '&:hover fieldset': { borderColor: 'primary.main' },
+                            '&.Mui-focused fieldset': { borderColor: 'primary.main' },
                         },
                         width: '100%',
                         minWidth: isMobile ? '65vw' : '20vw'
@@ -56,8 +56,8 @@ export const QueueManagementWidgetConfig: React.FC<QueueManagementWidgetConfigPr
                             '& fieldset': {
                                 borderColor: 'text.primary',
                             },
-                            '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                            '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
+                            '&:hover fieldset': { borderColor: 'primary.main' },
+                            '&.Mui-focused fieldset': { borderColor: 'primary.main' },
                         },
                         width: '100%',
                         minWidth: isMobile ? '65vw' : '20vw'
@@ -80,8 +80,8 @@ export const QueueManagementWidgetConfig: React.FC<QueueManagementWidgetConfigPr
                             '& fieldset': {
                                 borderColor: 'text.primary',
                             },
-                            '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                            '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
+                            '&:hover fieldset': { borderColor: 'primary.main' },
+                            '&.Mui-focused fieldset': { borderColor: 'primary.main' },
                         },
                         width: '100%',
                         minWidth: isMobile ? '65vw' : '20vw'
@@ -118,8 +118,8 @@ export const QueueManagementWidgetConfig: React.FC<QueueManagementWidgetConfigPr
                             '& fieldset': {
                                 borderColor: 'text.primary',
                             },
-                            '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                            '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
+                            '&:hover fieldset': { borderColor: 'primary.main' },
+                            '&.Mui-focused fieldset': { borderColor: 'primary.main' },
                         },
                         width: '100%',
                         minWidth: isMobile ? '65vw' : '20vw'
