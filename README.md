@@ -46,9 +46,6 @@ services:
         - /docker/lab-dash/uploads:/app/public/uploads
         - /var/run/docker.sock:/var/run/docker.sock
       restart: unless-stopped
-      labels:
-        - "com.centurylinklabs.watchtower.enable=true"
-
 ```
 
 # Usage
