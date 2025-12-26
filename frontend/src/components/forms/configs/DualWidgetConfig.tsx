@@ -1717,6 +1717,15 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 />
             </Box>
         );
+    };
+
+    // Create a custom wrapper for PiholeWidgetConfig to ensure API token and password fields work correctly
+    const PiholeConfigWrapper = ({ position }: { position: 'top' | 'bottom' }) => {
+        // Track field values with local state
+        const [host, setHost] = useState('');
+        const [port, setPort] = useState('');
+        const [apiToken, setApiToken] = useState('');
+        const [password, setPassword] = useState('');
         const [formInitialized, setFormInitialized] = useState(false);
 
         // Track if we have existing sensitive data (similar to regular PiholeWidgetConfig)
