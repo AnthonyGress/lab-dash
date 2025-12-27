@@ -65,7 +65,6 @@ export const createWidgetConfig = async (
 
         return config;
     } else if (widgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
-        console.log('Creating disk monitor config with data:', {
             selectedDisks: data.selectedDisks,
             showIcons: data.showIcons,
             showMountPath: data.showMountPath,
@@ -481,6 +480,56 @@ export const createWidgetConfig = async (
             displayName: data.displayName || 'Notes',
             defaultNoteFontSize: data.defaultNoteFontSize || '16px'
         };
+    } else if (widgetType === ITEM_TYPE.NETWORK_INFO_WIDGET) {
+        return {
+            targetHost: data.targetHost || '8.8.8.8',
+            refreshInterval: data.refreshInterval || 30000,
+            showLabel: data.showLabel !== undefined ? data.showLabel : true,
+            displayName: data.displayName || 'Network Info',
+            showTargetHost: data.showTargetHost !== undefined ? data.showTargetHost : true
+        };
+    } else if (widgetType === ITEM_TYPE.GITHUB_WIDGET) {
+        // GitHub widget configuration
+        let encryptedToken = '';
+        let hasExistingToken = false;
+
+        // Check if we're editing an existing item with a token
+        if (existingItem?.config) {
+            hasExistingToken = !!existingItem.config._hasToken;
+        }
+
+        // Only process token if it's not the masked value
+        if (data.githubToken && data.githubToken !== '**********') {
+            if (!isEncrypted(data.githubToken)) {
+                try {
+                    encryptedToken = await DashApi.encryptPassword(data.githubToken);
+                } catch (error) {
+                    console.error('Error encrypting GitHub token:', error);
+                }
+            } else {
+                encryptedToken = data.githubToken;
+            }
+        }
+
+        const config: any = {
+            showLabel: data.showLabel !== undefined ? data.showLabel : true,
+            displayName: data.displayName || 'GitHub',
+            refreshInterval: data.githubRefreshInterval || 3600000,
+            includeForks: data.githubIncludeForks || false,
+            includeArchived: data.githubIncludeArchived || false,
+            repoFilter: data.githubRepoFilter || '',
+            excludeRepos: data.githubExcludeRepos || ''
+        };
+
+        // Include token if it was actually changed (not masked)
+        if (encryptedToken) {
+            config.token = encryptedToken;
+            config._hasToken = true;
+        } else if (hasExistingToken) {
+            config._hasToken = true;
+        }
+
+        return config;
     }
 
     return {};

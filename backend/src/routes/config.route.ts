@@ -173,6 +173,12 @@ const filterSensitiveData = (config: any): any => {
                 delete newConfig.apiKey;
             }
 
+            // Handle GitHub widget sensitive data
+            if (item.type === 'github-widget' && newConfig.token) {
+                newConfig._hasToken = true;
+                delete newConfig.token;
+            }
+
             // Handle dual widget sensitive data
             if (item.type === 'dual-widget') {
                 if (newConfig.topWidget?.config) {
@@ -303,6 +309,9 @@ const restoreSensitiveData = (newConfig: any, existingConfig: any): any => {
                 if (sourceItem.config.apiKey) {
                     restoredItemConfig.apiKey = sourceItem.config.apiKey;
                 }
+                if (sourceItem.config.token) {
+                    restoredItemConfig.token = sourceItem.config.token;
+                }
 
                 // Handle dual widget credential copying
                 if (newItem.type === 'dual-widget' && sourceItem.config.topWidget?.config) {
@@ -343,6 +352,7 @@ const restoreSensitiveData = (newConfig: any, existingConfig: any): any => {
                 delete restoredItemConfig._hasApiKey;
                 delete restoredItemConfig._hasPassword;
                 delete restoredItemConfig._hasUsername;
+                delete restoredItemConfig._hasToken;
                 delete restoredItemConfig._duplicatedFrom;
                 if (restoredItemConfig.topWidget?.config) {
                     delete restoredItemConfig.topWidget.config._hasApiToken;
@@ -368,6 +378,7 @@ const restoreSensitiveData = (newConfig: any, existingConfig: any): any => {
             delete restoredItemConfig._hasApiKey;
             delete restoredItemConfig._hasPassword;
             delete restoredItemConfig._hasUsername;
+            delete restoredItemConfig._hasToken;
             delete restoredItemConfig._duplicatedFrom;
             if (restoredItemConfig.topWidget?.config) {
                 delete restoredItemConfig.topWidget.config._hasApiToken;
@@ -443,6 +454,13 @@ const restoreSensitiveData = (newConfig: any, existingConfig: any): any => {
             }
         }
 
+        // Handle GitHub widget sensitive data
+        if (newItem.type === 'github-widget') {
+            if (newItem.config._hasToken && !newItem.config.token && existingItem.config.token) {
+                restoredItemConfig.token = existingItem.config.token;
+            }
+        }
+
         // Handle dual widget sensitive data
         if (newItem.type === 'dual-widget') {
             if (restoredItemConfig.topWidget?.config && existingItem.config.topWidget?.config) {
@@ -476,6 +494,7 @@ const restoreSensitiveData = (newConfig: any, existingConfig: any): any => {
         delete restoredItemConfig._hasApiKey;
         delete restoredItemConfig._hasPassword;
         delete restoredItemConfig._hasUsername;
+        delete restoredItemConfig._hasToken;
         delete restoredItemConfig._duplicatedFrom;
         if (restoredItemConfig.topWidget?.config) {
             delete restoredItemConfig.topWidget.config._hasApiToken;
