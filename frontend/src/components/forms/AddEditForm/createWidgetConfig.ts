@@ -65,7 +65,6 @@ export const createWidgetConfig = async (
 
         return config;
     } else if (widgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
-        console.log('Creating disk monitor config with data:', {
             selectedDisks: data.selectedDisks,
             showIcons: data.showIcons,
             showMountPath: data.showMountPath,
@@ -491,36 +490,25 @@ export const createWidgetConfig = async (
         };
     } else if (widgetType === ITEM_TYPE.GITHUB_WIDGET) {
         // GitHub widget configuration
-        console.log('[GitHub Config] Starting config creation');
-        console.log('[GitHub Config] data.githubToken exists:', !!data.githubToken);
-        console.log('[GitHub Config] data.githubToken length:', data.githubToken?.length || 0);
-
         let encryptedToken = '';
         let hasExistingToken = false;
 
         // Check if we're editing an existing item with a token
         if (existingItem?.config) {
             hasExistingToken = !!existingItem.config._hasToken;
-            console.log('[GitHub Config] existingItem has token:', hasExistingToken);
         }
 
         // Only process token if it's not the masked value
         if (data.githubToken && data.githubToken !== '**********') {
-            console.log('[GitHub Config] Token provided, checking if encrypted');
             if (!isEncrypted(data.githubToken)) {
-                console.log('[GitHub Config] Token is not encrypted, encrypting...');
                 try {
                     encryptedToken = await DashApi.encryptPassword(data.githubToken);
-                    console.log('[GitHub Config] Encryption result:', encryptedToken ? 'success' : 'empty');
                 } catch (error) {
-                    console.error('[GitHub Config] Error encrypting GitHub token:', error);
+                    console.error('Error encrypting GitHub token:', error);
                 }
             } else {
-                console.log('[GitHub Config] Token is already encrypted');
                 encryptedToken = data.githubToken;
             }
-        } else {
-            console.log('[GitHub Config] No token provided or masked value');
         }
 
         const config: any = {
@@ -535,15 +523,12 @@ export const createWidgetConfig = async (
 
         // Include token if it was actually changed (not masked)
         if (encryptedToken) {
-            console.log('[GitHub Config] Adding encrypted token to config');
             config.token = encryptedToken;
             config._hasToken = true;
         } else if (hasExistingToken) {
-            console.log('[GitHub Config] Keeping _hasToken flag from existing item');
             config._hasToken = true;
         }
 
-        console.log('[GitHub Config] Final config:', JSON.stringify(config, null, 2));
         return config;
     }
 

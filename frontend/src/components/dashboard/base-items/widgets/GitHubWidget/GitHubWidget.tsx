@@ -246,29 +246,33 @@ export const GitHubWidget = ({ config, editMode, id }: GitHubWidgetProps) => {
     return (
         <Box
             sx={{
-                p: 1,
+                p: 0.5,
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column'
             }}
         >
             {/* Header */}
-            {showLabel && (
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <FaGithub style={{ marginRight: '8px', fontSize: '1.1rem' }} />
-                        <Typography variant='h6' sx={{ fontSize: '0.9rem', fontWeight: 500 }}>
-                            {displayName}
-                        </Typography>
-                        <Typography variant='caption' sx={{ ml: 1, opacity: 0.7 }}>
-                            ({stats.totalRepos} repos)
-                        </Typography>
-                    </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    {showLabel && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                            <FaGithub style={{ marginRight: '8px', fontSize: '1.1rem' }} />
+                            <Typography variant='h6' sx={{ mb: 0, fontSize: '1rem' }}>
+                                {displayName}
+                            </Typography>
+                            <Typography variant='caption' sx={{ ml: 1, opacity: 0.7 }}>
+                                ({stats.totalRepos} repos)
+                            </Typography>
+                        </Box>
+                    )}
+                </Box>
+                {showLabel && (
                     <Typography variant='caption' sx={{ opacity: 0.6, fontSize: '0.65rem' }}>
                         {formatTimeAgo(stats.lastChecked)}
                     </Typography>
-                </Box>
-            )}
+                )}
+            </Box>
 
             {/* Stats Grid - 2x4 layout */}
             <Grid container spacing={0.4} sx={{ flex: 1 }}>
@@ -450,9 +454,19 @@ const DetailModal = ({ open, onClose, type, stats }: DetailModalProps) => {
             case 'issues':
                 return (
                     <Box>
-                        <Typography variant='subtitle2' sx={{ mb: 1 }}>
-                            Assigned to you: {stats.issues.assignedToYou}
-                        </Typography>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                            <Typography variant='subtitle2'>
+                                Assigned to you: {stats.issues.assignedToYou}
+                            </Typography>
+                            <Link
+                                href={`https://github.com/issues?q=is%3Aopen+is%3Aissue+author%3A${stats.user.login}`}
+                                target='_blank'
+                                rel='noopener'
+                                sx={{ fontSize: '0.8rem' }}
+                            >
+                                View all on GitHub →
+                            </Link>
+                        </Box>
                         <Typography variant='subtitle2' sx={{ mb: 2 }}>Recent Issues:</Typography>
                         {stats.issues.recent.length > 0 ? (
                             stats.issues.recent.map((issue, idx) => (
@@ -487,10 +501,20 @@ const DetailModal = ({ open, onClose, type, stats }: DetailModalProps) => {
             case 'prs':
                 return (
                     <Box>
-                        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                            <Typography variant='body2'>Open: {stats.prs.total}</Typography>
-                            <Typography variant='body2'>Awaiting Review: {stats.prs.awaitingReview}</Typography>
-                            <Typography variant='body2'>Your PRs: {stats.prs.yourPRs}</Typography>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                            <Box sx={{ display: 'flex', gap: 2 }}>
+                                <Typography variant='body2'>Open: {stats.prs.total}</Typography>
+                                <Typography variant='body2'>Awaiting Review: {stats.prs.awaitingReview}</Typography>
+                                <Typography variant='body2'>Your PRs: {stats.prs.yourPRs}</Typography>
+                            </Box>
+                            <Link
+                                href={`https://github.com/pulls?q=is%3Aopen+is%3Apr+author%3A${stats.user.login}`}
+                                target='_blank'
+                                rel='noopener'
+                                sx={{ fontSize: '0.8rem' }}
+                            >
+                                View all on GitHub →
+                            </Link>
                         </Box>
                         {stats.prs.recent.filter(pr => pr.awaitingYourReview).length > 0 && (
                             <>
@@ -528,11 +552,21 @@ const DetailModal = ({ open, onClose, type, stats }: DetailModalProps) => {
             case 'ci':
                 return (
                     <Box>
-                        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                            <Typography variant='body2' sx={{ color: '#27ae60' }}>Passing: {stats.ci.passing}</Typography>
-                            <Typography variant='body2' sx={{ color: '#e74c3c' }}>Failing: {stats.ci.failing}</Typography>
-                            <Typography variant='body2' sx={{ color: '#f39c12' }}>Pending: {stats.ci.pending}</Typography>
-                            <Typography variant='body2' sx={{ color: '#95a5a6' }}>No CI: {stats.ci.none}</Typography>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                            <Box sx={{ display: 'flex', gap: 2 }}>
+                                <Typography variant='body2' sx={{ color: '#27ae60' }}>Passing: {stats.ci.passing}</Typography>
+                                <Typography variant='body2' sx={{ color: '#e74c3c' }}>Failing: {stats.ci.failing}</Typography>
+                                <Typography variant='body2' sx={{ color: '#f39c12' }}>Pending: {stats.ci.pending}</Typography>
+                                <Typography variant='body2' sx={{ color: '#95a5a6' }}>No CI: {stats.ci.none}</Typography>
+                            </Box>
+                            <Link
+                                href={`https://github.com/${stats.user.login}?tab=repositories`}
+                                target='_blank'
+                                rel='noopener'
+                                sx={{ fontSize: '0.8rem' }}
+                            >
+                                View repos on GitHub →
+                            </Link>
                         </Box>
                         {stats.ci.failingRepos.length > 0 && (
                             <>

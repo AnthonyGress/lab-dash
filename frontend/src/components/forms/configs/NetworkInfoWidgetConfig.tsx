@@ -91,10 +91,6 @@ export const NetworkInfoWidgetConfig = ({ formContext }: NetworkInfoWidgetConfig
                     fullWidth
                     helperText='Hostname or IP address to ping (e.g., google.com, 8.8.8.8)'
                     sx={inputStyling}
-                    slotProps={{
-                        inputLabel: { style: { color: theme.palette.text.primary } },
-                        formHelperText: { style: { color: theme.palette.text.secondary } }
-                    }}
                 />
             </Grid>
 
@@ -106,9 +102,6 @@ export const NetworkInfoWidgetConfig = ({ formContext }: NetworkInfoWidgetConfig
                     required
                     fullWidth
                     sx={selectStyling}
-                    slotProps={{
-                        inputLabel: { style: { color: theme.palette.text.primary } }
-                    }}
                 />
             </Grid>
 
@@ -119,10 +112,6 @@ export const NetworkInfoWidgetConfig = ({ formContext }: NetworkInfoWidgetConfig
                     fullWidth
                     helperText='Custom name for the widget header (optional)'
                     sx={inputStyling}
-                    slotProps={{
-                        inputLabel: { style: { color: theme.palette.text.primary } },
-                        formHelperText: { style: { color: theme.palette.text.secondary } }
-                    }}
                 />
             </Grid>
 

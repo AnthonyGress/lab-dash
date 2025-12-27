@@ -183,9 +183,8 @@ export const NetworkInfoWidget = ({ config, editMode }: NetworkInfoWidgetProps) 
     }
 
     const statBoxStyle = {
-        p: '10px 8px',
-        height: '100%',
-        minHeight: '65px',
+        p: '8px 6px',
+        minHeight: '60px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -196,26 +195,28 @@ export const NetworkInfoWidget = ({ config, editMode }: NetworkInfoWidgetProps) 
     };
 
     return (
-        <Box sx={{ p: 1, height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ p: 0.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
             {/* Header */}
-            {showLabel && (
-                <Box sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    mb: 1
-                }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <FaNetworkWired style={{ marginRight: '8px', fontSize: '1.1rem' }} />
-                        <Typography variant='h6' sx={{ fontSize: '0.95rem', fontWeight: 500 }}>
-                            {displayName}
-                        </Typography>
-                    </Box>
+            <Box sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                mb: 0.5,
+            }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    {showLabel && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                            <FaNetworkWired style={{ marginRight: '8px', fontSize: '1.1rem' }} />
+                            <Typography variant='h6' sx={{ mb: 0, fontSize: '1rem' }}>
+                                {displayName}
+                            </Typography>
+                        </Box>
+                    )}
                 </Box>
-            )}
+            </Box>
 
             {/* Stats Grid - 2x2 layout */}
-            <Grid container spacing={0.5} sx={{ flex: 1 }}>
+            <Grid container spacing={0.4} sx={{ flex: 1 }}>
                 {/* Public IP */}
                 <Grid size={{ xs: 6 }}>
                     <Paper

@@ -135,7 +135,12 @@ export const getConnectionInfo = (item: DashboardItem) => {
         // Security flags (these may or may not be present depending on context)
         _hasPassword: config._hasPassword,
         _hasApiToken: config._hasApiToken,
-        _hasToken: config._hasToken
+        _hasToken: config._hasToken,
+        // GitHub widget properties
+        includeForks: config.includeForks,
+        includeArchived: config.includeArchived,
+        repoFilter: config.repoFilter,
+        excludeRepos: config.excludeRepos
     };
 };
 

@@ -92,10 +92,6 @@ export const GitHubWidgetConfig = ({ formContext }: GitHubWidgetConfigProps) => 
                     fullWidth
                     helperText='Personal Access Token with repo scope. Create at github.com/settings/tokens'
                     sx={inputStyling}
-                    slotProps={{
-                        inputLabel: { style: { color: theme.palette.text.primary } },
-                        formHelperText: { style: { color: theme.palette.text.secondary } }
-                    }}
                 />
             </Grid>
 
@@ -107,9 +103,6 @@ export const GitHubWidgetConfig = ({ formContext }: GitHubWidgetConfigProps) => 
                     required
                     fullWidth
                     sx={selectStyling}
-                    slotProps={{
-                        inputLabel: { style: { color: theme.palette.text.primary } }
-                    }}
                 />
             </Grid>
 
@@ -120,10 +113,6 @@ export const GitHubWidgetConfig = ({ formContext }: GitHubWidgetConfigProps) => 
                     fullWidth
                     helperText='Custom name for the widget header (optional)'
                     sx={inputStyling}
-                    slotProps={{
-                        inputLabel: { style: { color: theme.palette.text.primary } },
-                        formHelperText: { style: { color: theme.palette.text.secondary } }
-                    }}
                 />
             </Grid>
 
@@ -134,10 +123,6 @@ export const GitHubWidgetConfig = ({ formContext }: GitHubWidgetConfigProps) => 
                     fullWidth
                     helperText='Comma-separated list of repo names to include (empty = all)'
                     sx={inputStyling}
-                    slotProps={{
-                        inputLabel: { style: { color: theme.palette.text.primary } },
-                        formHelperText: { style: { color: theme.palette.text.secondary } }
-                    }}
                 />
             </Grid>
 
@@ -148,10 +133,6 @@ export const GitHubWidgetConfig = ({ formContext }: GitHubWidgetConfigProps) => 
                     fullWidth
                     helperText='Comma-separated list of repo names to exclude'
                     sx={inputStyling}
-                    slotProps={{
-                        inputLabel: { style: { color: theme.palette.text.primary } },
-                        formHelperText: { style: { color: theme.palette.text.secondary } }
-                    }}
                 />
             </Grid>
 
