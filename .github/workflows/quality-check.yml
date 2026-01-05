@@ -6,6 +6,8 @@ on:
 
 jobs:
   quality-check:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Checkout git repo
