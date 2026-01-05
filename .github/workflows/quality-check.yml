@@ -2,7 +2,6 @@ name: quality-check
 
 on:
   pull_request:
-    branches: [ dev, main ]
 
 jobs:
   quality-check:
