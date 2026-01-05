@@ -95,6 +95,10 @@ export const AppContextProvider = ({ children }: Props) => {
             const freshConfig = await DashApi.getConfig();
             if (freshConfig) {
                 setConfig(freshConfig);
+                // Store theme color in localStorage for immediate access
+                if (freshConfig.themeColor) {
+                    localStorage.setItem('dashConfig', JSON.stringify({ themeColor: freshConfig.themeColor }));
+                }
                 if (freshConfig.pages) {
                     setPages(freshConfig.pages);
                 }
@@ -706,6 +710,10 @@ export const AppContextProvider = ({ children }: Props) => {
             setConfig((prev) => {
                 if (!prev) {
                     const newConfig = { ...updatedConfig, layout: { desktop: [], mobile: [] } };
+                    // Store theme color in localStorage for immediate access on reload
+                    if (newConfig.themeColor) {
+                        localStorage.setItem('dashConfig', JSON.stringify({ themeColor: newConfig.themeColor }));
+                    }
                     return newConfig;
                 }
 
@@ -714,6 +722,12 @@ export const AppContextProvider = ({ children }: Props) => {
                     ...updatedConfig,
                     layout: prev.layout ?? { desktop: [], mobile: [] } // Ensures layout is always defined
                 };
+
+                // Store theme color in localStorage for immediate access on reload
+                if (mergedConfig.themeColor) {
+                    const storedConfig = { themeColor: mergedConfig.themeColor };
+                    localStorage.setItem('dashConfig', JSON.stringify(storedConfig));
+                }
 
                 return mergedConfig;
             });

@@ -45,19 +45,19 @@ export const DiskMonitorWidgetConfig = ({ formContext, fieldNamePrefix = '' }: D
             '.MuiSvgIcon-root ': {
                 fill: theme.palette.text.primary,
             },
-            '&:hover fieldset': { borderColor: theme.palette.primary.main },
-            '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+            '&:hover fieldset': { borderColor: 'primary.main' },
+            '&.Mui-focused fieldset': { borderColor: 'primary.main', },
         },
         width: '100%',
         '& .MuiMenuItem-root:hover': {
             backgroundColor: `${COLORS.LIGHT_GRAY_HOVER} !important`,
         },
         '& .MuiMenuItem-root.Mui-selected': {
-            backgroundColor: `${theme.palette.primary.main} !important`,
+            backgroundColor: `${'primary.main'} !important`,
             color: 'white',
         },
         '& .MuiMenuItem-root.Mui-selected:hover': {
-            backgroundColor: `${theme.palette.primary.main} !important`,
+            backgroundColor: `${'primary.main'} !important`,
             color: 'white',
         }
     };
@@ -98,9 +98,8 @@ export const DiskMonitorWidgetConfig = ({ formContext, fieldNamePrefix = '' }: D
                 const systemInfo = await DashApi.getSystemInformation();
 
                 if (systemInfo?.disk && Array.isArray(systemInfo.disk)) {
-                    // Filter out network shares or unwanted mounts
+                    // Filter out unwanted mounts
                     const validDisks = systemInfo.disk.filter((disk: DiskInfo) =>
-                        !disk.fs.startsWith('//') &&
                         disk.size > 0 &&
                         disk.mount !== '/dev' &&
                         disk.mount !== '/proc' &&
@@ -373,10 +372,10 @@ export const DiskMonitorWidgetConfig = ({ formContext, fieldNamePrefix = '' }: D
                                                 borderColor: theme.palette.text.primary
                                             },
                                             '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                borderColor: theme.palette.primary.main
+                                                borderColor: 'primary.main'
                                             },
                                             '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                borderColor: theme.palette.primary.main
+                                                borderColor: 'primary.main'
                                             },
                                             '& .MuiSelect-icon': {
                                                 color: theme.palette.text.primary
@@ -402,8 +401,8 @@ export const DiskMonitorWidgetConfig = ({ formContext, fieldNamePrefix = '' }: D
                                     sx={{
                                         '& .MuiOutlinedInput-root': {
                                             '& fieldset': { borderColor: theme.palette.text.primary },
-                                            '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                                            '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main }
+                                            '&:hover fieldset': { borderColor: 'primary.main' },
+                                            '&.Mui-focused fieldset': { borderColor: 'primary.main' }
                                         }
                                     }}
                                     InputLabelProps={{
@@ -425,7 +424,7 @@ export const DiskMonitorWidgetConfig = ({ formContext, fieldNamePrefix = '' }: D
                                             sx={{
                                                 color: theme.palette.text.primary,
                                                 '&.Mui-checked': {
-                                                    color: theme.palette.primary.main
+                                                    color: 'primary.main'
                                                 }
                                             }}
                                         />

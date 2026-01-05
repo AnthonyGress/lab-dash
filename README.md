@@ -46,9 +46,6 @@ services:
         - /docker/lab-dash/uploads:/app/public/uploads
         - /var/run/docker.sock:/var/run/docker.sock
       restart: unless-stopped
-      labels:
-        - "com.centurylinklabs.watchtower.enable=true"
-
 ```
 
 # Usage
@@ -102,6 +99,13 @@ npm run dev
 - `docker compose down`
 - `docker compose pull`
 - `docker compose up -d`
+
+# Contributing
+Contributions to Lab Dash are welcome! Please follow these guidelines:
+
+- **One feature per PR** - Keep pull requests focused on a single feature or fix
+- **Review AI-generated code** - If using AI tools, all code must be thoroughly reviewed and tested before submitting
+- **Maintain consistency** - New code must align with the app's existing style, theme, and overall user experience
 
 # Disclaimer
 This code is provided for informational and educational purposes only. I am not associated with any of the services/applications mentioned in this project.

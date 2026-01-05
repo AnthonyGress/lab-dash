@@ -426,7 +426,7 @@ const DownloadItem: React.FC<DownloadItemProps> = ({ torrent, clientName, isAdmi
                     '& .MuiLinearProgress-bar': {
                         backgroundColor:
                             torrent.state === 'downloading' ? 'primary.main' :
-                                torrent.state.includes('seed') || torrent.state.includes('upload') ? theme.palette.primary.main :
+                                torrent.state.includes('seed') || torrent.state.includes('upload') ? 'primary.main' :
                                     torrent.progress === 1 ? 'success.main' : 'warning.main'
                     }
                 }}

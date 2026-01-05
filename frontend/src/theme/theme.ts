@@ -2,6 +2,22 @@ import { createTheme } from '@mui/material/styles';
 
 import { COLORS } from './styles';
 
+// Get custom theme color from localStorage or use default
+const getThemeColor = (): string => {
+    try {
+        const storedConfig = localStorage.getItem('dashConfig');
+        if (storedConfig) {
+            const config = JSON.parse(storedConfig);
+            return config.themeColor || '#734CDE';
+        }
+    } catch (error) {
+        console.error('Error reading theme color from localStorage:', error);
+    }
+    return '#734CDE'; // Default purple
+};
+
+const primaryColor = getThemeColor();
+
 export const theme = createTheme({
     breakpoints: {
         values: {
@@ -22,7 +38,7 @@ export const theme = createTheme({
     },
     palette: {
         primary: {
-            main: '#734CDE',
+            main: primaryColor,
         },
         secondary: {
             main: '#242424',
@@ -63,11 +79,11 @@ export const theme = createTheme({
                         backgroundColor: `${COLORS.LIGHT_GRAY_HOVER} !important`, // Custom hover color globally
                     },
                     '&.Mui-selected': {
-                        backgroundColor: `${COLORS.PURPLE} !important`,
+                        backgroundColor: `${primaryColor} !important`,
                         color: 'white',
                     },
                     '&.Mui-selected:hover': {
-                        backgroundColor: `${COLORS.PURPLE} !important`,
+                        backgroundColor: `${primaryColor} !important`,
                         color: 'white',
                     },
                 },

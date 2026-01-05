@@ -12,6 +12,7 @@ type DateTimeWidgetConfig = {
         longitude: number;
     } | null;
     timezone?: string;
+    use24Hour?: boolean;
 };
 
 type DateTimeWidgetProps = {
@@ -135,27 +136,63 @@ export const DateTimeWidget = ({ config }: DateTimeWidgetProps) => {
 
     // Create formatter functions with the timezone
     const getFormattedTime = () => {
-        try {
-            if (config?.timezone) {
-                const options: Intl.DateTimeFormatOptions = {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    timeZone: config.timezone
-                };
-                return new Intl.DateTimeFormat([], options).format(dateTime);
-            }
+        const use24Hour = config?.use24Hour === true;
 
-            // Fallback to local time if no timezone provided
-            return dateTime.toLocaleTimeString([], {
-                hour: 'numeric',
-                minute: '2-digit'
-            });
+        try {
+            if (use24Hour) {
+                // For 24-hour format, manually format to avoid locale issues
+                let hours: number;
+                let minutes: number;
+
+                if (config?.timezone) {
+                    // Get hours and minutes in the specified timezone
+                    const formatter = new Intl.DateTimeFormat('en-US', {
+                        hour: 'numeric',
+                        minute: 'numeric',
+                        hour12: false,
+                        timeZone: config.timezone
+                    });
+                    const parts = formatter.formatToParts(dateTime);
+                    hours = parseInt(parts.find(p => p.type === 'hour')?.value || '0');
+                    minutes = parseInt(parts.find(p => p.type === 'minute')?.value || '0');
+                } else {
+                    hours = dateTime.getHours();
+                    minutes = dateTime.getMinutes();
+                }
+
+                // Format as HH:MM
+                return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+            } else {
+                // For 12-hour format, use standard formatting
+                if (config?.timezone) {
+                    const options: Intl.DateTimeFormatOptions = {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        timeZone: config.timezone,
+                        hour12: true
+                    };
+                    return new Intl.DateTimeFormat('en-US', options).format(dateTime);
+                } else {
+                    return dateTime.toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                    });
+                }
+            }
         } catch (error) {
             console.error('Error formatting time with timezone:', error);
-            return dateTime.toLocaleTimeString([], {
-                hour: 'numeric',
-                minute: '2-digit'
-            });
+            if (use24Hour) {
+                const hours = dateTime.getHours();
+                const minutes = dateTime.getMinutes();
+                return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+            } else {
+                return dateTime.toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                });
+            }
         }
     };
 

@@ -28,6 +28,7 @@ export type FormValues = {
     layout?: '2x2' | '2x4' | '1x6';
     // DateTime widget
     timezone?: string;
+    use24Hour?: boolean;
     // Pihole widget
     piholeUrl?: string;
     piholeApiKey?: string;
@@ -96,6 +97,7 @@ export type FormValues = {
     top_temperatureUnit?: string;
     top_location?: { name: string; latitude: number; longitude: number } | null;
     top_timezone?: string;
+    top_use24Hour?: boolean;
     top_gauge1?: string;
     top_gauge2?: string;
     top_gauge3?: string;
@@ -125,6 +127,7 @@ export type FormValues = {
     bottom_temperatureUnit?: string;
     bottom_location?: { name: string; latitude: number; longitude: number } | null;
     bottom_timezone?: string;
+    bottom_use24Hour?: boolean;
     bottom_gauge1?: string;
     bottom_gauge2?: string;
     bottom_gauge3?: string;

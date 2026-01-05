@@ -23,7 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 build
-backend/src/config/config.json
+backend/src/config/config*.json
 backend/src/config/users.json
 backend/src/config/backups
 backend/src/public/uploads

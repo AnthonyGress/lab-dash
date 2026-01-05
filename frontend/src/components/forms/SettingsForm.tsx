@@ -12,6 +12,7 @@ import { DashApi } from '../../api/dash-api';
 import { BACKEND_URL } from '../../constants/constants';
 import { useAppContext } from '../../context/useAppContext';
 import { COLORS } from '../../theme/styles';
+import { useThemeColor } from '../../theme/ThemeContext';
 import { Config, SearchProvider } from '../../types';
 import { PopupManager } from '../modals/PopupManager';
 import { ToastManager } from '../toast/ToastManager';
@@ -32,6 +33,7 @@ type FormValues = {
     searchProviderId: string;
     searchProvider?: SearchProvider;
     showInternetIndicator: boolean;
+    themeColor: string;
     configFile?: File | null;
     appIconFiles?: File[] | null;
 }
@@ -196,6 +198,7 @@ export const SettingsForm = () => {
     const [isCustomProvider, setIsCustomProvider] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
     const { config, updateConfig, refreshDashboard, pages } = useAppContext();
+    const { setThemeColor: updateThemeColor } = useThemeColor();
     const [tabValue, setTabValue] = useState(0);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -241,7 +244,7 @@ export const SettingsForm = () => {
                 background-color: ${COLORS.LIGHT_GRAY_HOVER} !important;
             }
             .MuiPopover-root .MuiPaper-root .MuiMenuItem-root.Mui-selected {
-                background-color: ${theme.palette.primary.main} !important;
+                background-color: ${'primary.main'} !important;
             }
             .MuiPopover-root .MuiPaper-root .MuiMenuItem-root.Mui-selected:hover {
                 background-color: ${COLORS.LIGHT_GRAY_HOVER} !important;
@@ -297,6 +300,7 @@ export const SettingsForm = () => {
                         : ''
             },
             showInternetIndicator: config?.showInternetIndicator !== false, // Default to true
+            themeColor: config?.themeColor || '#734CDE',
             configFile: null,
             appIconFiles: null
         }
@@ -309,6 +313,7 @@ export const SettingsForm = () => {
     const searchProviderName = formContext.watch('searchProvider.name', '');
     const searchProviderUrl = formContext.watch('searchProvider.url', '');
     const showInternetIndicator = formContext.watch('showInternetIndicator', true);
+    const themeColor = formContext.watch('themeColor', '#734CDE');
     const configFile = formContext.watch('configFile', null);
     const appIconFiles = formContext.watch('appIconFiles', null);
 
@@ -361,6 +366,9 @@ export const SettingsForm = () => {
             // Internet indicator change
             if (showInternetIndicator !== (config?.showInternetIndicator !== false)) return true;
 
+            // Theme color change
+            if (themeColor !== (config?.themeColor || '#734CDE')) return true;
+
             // Search provider changes
             if (searchEnabled) {
                 if (searchProviderId === 'custom') {
@@ -402,6 +410,7 @@ export const SettingsForm = () => {
         searchProviderName,
         searchProviderUrl,
         showInternetIndicator,
+        themeColor,
         config
     ]);
 
@@ -431,6 +440,11 @@ export const SettingsForm = () => {
 
             if (data.showInternetIndicator !== undefined) {
                 updatedConfig.showInternetIndicator = data.showInternetIndicator;
+            }
+
+            // Handle theme color
+            if (data.themeColor && data.themeColor !== config?.themeColor) {
+                updatedConfig.themeColor = data.themeColor;
             }
 
             // Handle search provider if search is enabled
@@ -556,8 +570,14 @@ export const SettingsForm = () => {
                         url: refreshedConfig?.searchProvider?.url || ''
                     },
                     showInternetIndicator: refreshedConfig?.showInternetIndicator !== false,
+                    themeColor: refreshedConfig?.themeColor || '#734CDE',
                     appIconFiles: null
                 });
+
+                // If theme color was changed, update the theme immediately
+                if (updatedConfig.themeColor) {
+                    updateThemeColor(updatedConfig.themeColor);
+                }
             }
         } catch (error) {
             // Show error message
@@ -783,8 +803,8 @@ export const SettingsForm = () => {
                                                 sx={{
                                                     '& .MuiOutlinedInput-root': {
                                                         '& fieldset': { borderColor: theme.palette.text.primary },
-                                                        '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                                                        '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
+                                                        '&:hover fieldset': { borderColor: 'primary.main' },
+                                                        '&.Mui-focused fieldset': { borderColor: 'primary.main' },
                                                     },
                                                     '.MuiSvgIcon-root ': { fill: theme.palette.text.primary },
                                                     width: '95%'
@@ -908,6 +928,58 @@ export const SettingsForm = () => {
                                 gap: { xs: 1, sm: 2 },
                                 alignItems: 'center'
                             }}>
+                                <Typography variant='body1' sx={{
+                                    alignSelf: 'center',
+                                    fontSize: { xs: '0.875rem', sm: '1rem' }
+                                }}>Accent Color</Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                    <TextFieldElement
+                                        name='themeColor'
+                                        type='color'
+                                        sx={{
+                                            width: '40px',
+                                            '& .MuiOutlinedInput-root': {
+                                                height: '40px',
+                                                padding: 0,
+                                                '& fieldset': {
+                                                    border: '2px solid rgba(255, 255, 255, 0.23)'
+                                                },
+                                                '& input[type="color"]': {
+                                                    cursor: 'pointer',
+                                                    border: 'none',
+                                                    padding: 0,
+                                                    margin: 0,
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    borderRadius: '4px',
+                                                    '&::-webkit-color-swatch-wrapper': {
+                                                        padding: 0
+                                                    },
+                                                    '&::-webkit-color-swatch': {
+                                                        border: 'none',
+                                                        borderRadius: '4px'
+                                                    },
+                                                    '&::-moz-color-swatch': {
+                                                        border: 'none',
+                                                        borderRadius: '4px'
+                                                    }
+                                                }
+                                            }
+                                        }}
+                                    />
+                                    <Typography sx={{ color: 'text.primary' }}>
+                                        {themeColor}
+                                    </Typography>
+                                    <Button
+                                        variant='contained'
+                                        size='small'
+                                        onClick={() => formContext.setValue('themeColor', '#734CDE')}
+                                        sx={{ fontSize: '0.75rem' }}
+                                    >
+                                        Reset to Default
+                                    </Button>
+                                </Box>
+
                                 <Typography variant='body1' sx={{
                                     alignSelf: 'center',
                                     fontSize: { xs: '0.875rem', sm: '1rem' }

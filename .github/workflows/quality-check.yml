@@ -1,0 +1,37 @@
+name: quality-check
+
+on:
+  pull_request:
+
+jobs:
+  quality-check:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout git repo
+        uses: actions/checkout@v4
+
+      - name: Install Node and NPM
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: |
+          npm install
+
+      - name: Build - Backend
+        run: |
+          cd backend
+          npm run build
+
+      - name: Build - Frontend
+        run: |
+          cd frontend
+          npm run build
+
+      - name: Build - Docker
+        run: |
+          npm run docker:build
+

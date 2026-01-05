@@ -183,7 +183,8 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
             } else if (data.widgetType === ITEM_TYPE.DATE_TIME_WIDGET) {
                 config = {
                     location: data.location || undefined,
-                    timezone: data.timezone || null
+                    timezone: data.timezone || null,
+                    use24Hour: data.use24Hour || false
                 };
             } else if (data.widgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET) {
                 config = {
@@ -705,8 +706,8 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                                 color: 'text.primary',
                                                 borderColor: 'text.primary',
                                                 '&:hover': {
-                                                    borderColor: theme.palette.primary.main,
-                                                    backgroundColor: `${theme.palette.primary.main}10`
+                                                    borderColor: 'primary.main',
+                                                    backgroundColor: `${'primary.main'}10`
                                                 }
                                             }}
                                             startIcon={<ArrowBackIosIcon />}
@@ -756,8 +757,8 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                                 color: 'text.primary',
                                                 borderColor: 'text.primary',
                                                 '&:hover': {
-                                                    borderColor: theme.palette.primary.main,
-                                                    backgroundColor: `${theme.palette.primary.main}10`
+                                                    borderColor: 'primary.main',
+                                                    backgroundColor: `${'primary.main'}10`
                                                 }
                                             }}
                                             startIcon={<ArrowBackIosIcon />}
@@ -796,8 +797,8 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                                                             '& fieldset': {
                                                                 borderColor: 'text.primary',
                                                             },
-                                                            '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                                                            '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
+                                                            '&:hover fieldset': { borderColor: 'primary.main' },
+                                                            '&.Mui-focused fieldset': { borderColor: 'primary.main' },
                                                         },
                                                         width: '100%',
                                                         minWidth: isMobile ? '65vw' : '20vw'

@@ -29,8 +29,8 @@ export const PiholeWidgetConfig = ({ formContext, existingItem }: PiholeWidgetCo
             '& fieldset': {
                 borderColor: 'text.primary',
             },
-            '&:hover fieldset': { borderColor: theme.palette.primary.main },
-            '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+            '&:hover fieldset': { borderColor: 'primary.main' },
+            '&.Mui-focused fieldset': { borderColor: 'primary.main' },
         },
     };
 

@@ -1,7 +1,7 @@
 import ClearIcon from '@mui/icons-material/Clear';
 import { Autocomplete, Grid2 as Grid, TextField, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { UseFormReturn } from 'react-hook-form';
+import { CheckboxElement, UseFormReturn } from 'react-hook-form-mui';
 
 import { DashApi } from '../../../api/dash-api';
 import { useIsMobile } from '../../../hooks/useIsMobile';
@@ -17,9 +17,14 @@ interface LocationOption {
 
 interface DateTimeWidgetConfigProps {
     formContext: UseFormReturn<FormValues>;
+    fieldNamePrefix?: string;
 }
 
-export const DateTimeWidgetConfig = ({ formContext }: DateTimeWidgetConfigProps) => {
+export const DateTimeWidgetConfig = ({ formContext, fieldNamePrefix = '' }: DateTimeWidgetConfigProps) => {
+    // Helper to get field name with optional prefix
+    const getFieldName = (baseName: string) => {
+        return fieldNamePrefix ? `${fieldNamePrefix}${baseName}` : baseName;
+    };
     const isMobile = useIsMobile();
     const [locationSearch, setLocationSearch] = useState('');
     const [locationOptions, setLocationOptions] = useState<LocationOption[]>([]);
@@ -30,13 +35,13 @@ export const DateTimeWidgetConfig = ({ formContext }: DateTimeWidgetConfigProps)
 
     // Initialize location state if it exists in form values
     useEffect(() => {
-        const locationValue = formContext.getValues('location');
+        const locationValue = formContext.getValues(getFieldName('location') as any);
         if (locationValue) {
             setSelectedLocation(locationValue as LocationOption);
             setLocationSearch(locationValue.name || '');
 
             // If location exists but no timezone, try to fetch it
-            const timezone = formContext.getValues('timezone');
+            const timezone = formContext.getValues(getFieldName('timezone') as any);
             if (locationValue && !timezone && locationValue.latitude && locationValue.longitude) {
                 fetchTimezoneForLocation(locationValue.latitude, locationValue.longitude);
             }
@@ -54,12 +59,12 @@ export const DateTimeWidgetConfig = ({ formContext }: DateTimeWidgetConfigProps)
             if (response && response.data && response.data.timezone) {
                 // Set the timezone in the form
                 const timezone = response.data.timezone;
-                formContext.setValue('timezone', timezone, { shouldDirty: true });
+                formContext.setValue(getFieldName('timezone') as any, timezone, { shouldDirty: true });
             } else {
                 setTimezoneError('Failed to fetch timezone: Invalid response format');
 
                 // Set an empty string timezone to ensure the property exists
-                formContext.setValue('timezone', '', { shouldDirty: true });
+                formContext.setValue(getFieldName('timezone') as any, '', { shouldDirty: true });
             }
         } catch (error) {
             // More detailed error handling
@@ -70,7 +75,7 @@ export const DateTimeWidgetConfig = ({ formContext }: DateTimeWidgetConfigProps)
             }
 
             // Set an empty string timezone to ensure the property exists
-            formContext.setValue('timezone', '', { shouldDirty: true });
+            formContext.setValue(getFieldName('timezone') as any, '', { shouldDirty: true });
         } finally {
             setIsFetchingTimezone(false);
         }
@@ -133,8 +138,8 @@ export const DateTimeWidgetConfig = ({ formContext }: DateTimeWidgetConfigProps)
     const handleLocationSelected = (newLocation: LocationOption | null) => {
         if (!newLocation) {
             setSelectedLocation(null);
-            formContext.setValue('location', null);
-            formContext.setValue('timezone', '');
+            formContext.setValue(getFieldName('location') as any, null);
+            formContext.setValue(getFieldName('timezone') as any, '');
             return;
         }
 
@@ -142,7 +147,7 @@ export const DateTimeWidgetConfig = ({ formContext }: DateTimeWidgetConfigProps)
         setSelectedLocation(newLocation);
 
         // Update form with location data
-        formContext.setValue('location', {
+        formContext.setValue(getFieldName('location') as any, {
             name: newLocation.name,
             latitude: newLocation.latitude,
             longitude: newLocation.longitude
@@ -214,8 +219,8 @@ export const DateTimeWidgetConfig = ({ formContext }: DateTimeWidgetConfigProps)
                                     '& fieldset': {
                                         borderColor: 'text.primary',
                                     },
-                                    '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                    '&:hover fieldset': { borderColor: 'primary.main' },
+                                    '&.Mui-focused fieldset': { borderColor: 'primary.main', },
                                 }
                             }}
                             InputLabelProps={{
@@ -223,6 +228,17 @@ export const DateTimeWidgetConfig = ({ formContext }: DateTimeWidgetConfigProps)
                             }}
                         />
                     )}
+                />
+            </Grid>
+            <Grid>
+                <CheckboxElement
+                    label='Use 24-hour format'
+                    name={getFieldName('use24Hour')}
+                    sx={{
+                        ml: 1,
+                        color: 'white',
+                        '& .MuiSvgIcon-root': { fontSize: 30 }
+                    }}
                 />
             </Grid>
         </>

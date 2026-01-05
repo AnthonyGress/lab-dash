@@ -89,8 +89,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
             '.MuiSvgIcon-root ': {
                 fill: theme.palette.text.primary,
             },
-            '&:hover fieldset': { borderColor: theme.palette.primary.main },
-            '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+            '&:hover fieldset': { borderColor: 'primary.main' },
+            '&.Mui-focused fieldset': { borderColor: 'primary.main', },
         },
         width: '100%',
         minWidth: isMobile ? '50vw' : '20vw',
@@ -98,11 +98,11 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
             backgroundColor: `${COLORS.LIGHT_GRAY_HOVER} !important`,
         },
         '& .MuiMenuItem-root.Mui-selected': {
-            backgroundColor: `${theme.palette.primary.main} !important`,
+            backgroundColor: `${'primary.main'} !important`,
             color: 'white',
         },
         '& .MuiMenuItem-root.Mui-selected:hover': {
-            backgroundColor: `${theme.palette.primary.main} !important`,
+            backgroundColor: `${'primary.main'} !important`,
             color: 'white',
         }
     };
@@ -406,6 +406,11 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
             if (fields.timezone !== undefined) {
                 formContext.setValue(getFieldName(position, 'timezone'), fields.timezone);
             }
+
+            // Handle use24Hour
+            if (fields.use24Hour !== undefined) {
+                formContext.setValue(getFieldName(position, 'use24Hour'), fields.use24Hour);
+            }
         }
         else if (widgetType && widgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET) {
             if (fields.temperatureUnit) {
@@ -526,10 +531,12 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
         else if (widgetType === ITEM_TYPE.DATE_TIME_WIDGET) {
             defaultFields = {
                 location: null,
-                timezone: ''
+                timezone: '',
+                use24Hour: false
             };
             formContext.setValue(getFieldName(position, 'location'), null);
             formContext.setValue(getFieldName(position, 'timezone'), '');
+            formContext.setValue(getFieldName(position, 'use24Hour'), false);
         }
         else if (widgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET) {
             defaultFields = {
@@ -652,6 +659,10 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
 
             // Ensure timezone is properly stored as a string, never null
             fields.timezone = timezone || '';
+
+            // Get use24Hour value
+            const use24Hour = formContext.getValues(getFieldName(position, 'use24Hour'));
+            fields.use24Hour = use24Hour || false;
 
             // Get location data and ensure it has proper structure
             const locationValue = formContext.getValues(getFieldName(position, 'location'));
@@ -946,10 +957,14 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 };
             }
 
+            // Get use24Hour value
+            const use24Hour = formContext.getValues(getFieldName(position, 'use24Hour')) || false;
+
             // Always include the timezone field, even if it's an empty string (never undefined or null)
             config = {
                 location: processedLocation,
-                timezone: timezone // This is already guaranteed to be a string (empty if not set)
+                timezone: timezone, // This is already guaranteed to be a string (empty if not set)
+                use24Hour: use24Hour
             };
         }
         else if (widgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET) {
@@ -1406,7 +1421,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                                     sx={{
                                         color: 'white',
                                         '&.Mui-checked': {
-                                            color: theme.palette.primary.main
+                                            color: 'primary.main'
                                         }
                                     }}
                                 />
@@ -1420,7 +1435,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                                     sx={{
                                         color: 'white',
                                         '&.Mui-checked': {
-                                            color: theme.palette.primary.main
+                                            color: 'primary.main'
                                         }
                                     }}
                                 />
@@ -1659,7 +1674,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                                     sx={{
                                         color: 'white',
                                         '&.Mui-checked': {
-                                            color: theme.palette.primary.main
+                                            color: 'primary.main'
                                         }
                                     }}
                                 />
@@ -1673,7 +1688,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                                     sx={{
                                         color: 'white',
                                         '&.Mui-checked': {
-                                            color: theme.palette.primary.main
+                                            color: 'primary.main'
                                         }
                                     }}
                                 />
@@ -1693,44 +1708,13 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
 
     // Wrapper for DateTime widget config with position-specific field names
     const DateTimeConfigWrapper = ({ position }: { position: 'top' | 'bottom' }) => {
-        // Create a wrapper context that correctly handles location and timezone updates
-        const wrapperContext = {
-            ...formContext,
-            register: (name: any, options: any) => formContext.register(getFieldName(position, name as string) as any, options),
-            watch: (name: any) => formContext.watch(getFieldName(position, name as string) as any),
-            setValue: (name: any, value: any, options: any) => {
-                // Handle timezone specially - when it's set from the API callback in DateTimeWidgetConfig
-                if (name === 'timezone') {
-                    return formContext.setValue(getFieldName(position, 'timezone') as any, value, options);
-                }
-
-                // Normal field value setting
-                return formContext.setValue(getFieldName(position, name as string) as any, value, options);
-            },
-            getValues: (name?: any) => {
-                if (name) {
-                    return formContext.getValues(getFieldName(position, name as string) as any);
-                }
-                // If no name is provided, get all values with position prefix
-                const allValues = formContext.getValues();
-                const positionValues: Record<string, any> = {};
-
-                // Filter and transform keys
-                Object.keys(allValues).forEach(key => {
-                    if (key.startsWith(`${position}_`)) {
-                        const newKey = key.replace(`${position}_`, '');
-                        positionValues[newKey] = allValues[key as keyof typeof allValues];
-                    }
-                });
-
-                return positionValues;
-            }
-        } as UseFormReturn<FormValues>;
-
         // Wrap with consistent styling to match single widget display
         return (
             <Box sx={{ width: '100%' }}>
-                <DateTimeWidgetConfig formContext={wrapperContext} />
+                <DateTimeWidgetConfig
+                    formContext={formContext as any}
+                    fieldNamePrefix={position === 'top' ? 'top_' : 'bottom_'}
+                />
             </Box>
         );
     };
@@ -1938,8 +1922,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                                 '& fieldset': {
                                     borderColor: 'text.primary',
                                 },
-                                '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                                '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                '&:hover fieldset': { borderColor: 'primary.main' },
+                                '&.Mui-focused fieldset': { borderColor: 'primary.main', },
                             },
                             '& .MuiFormHelperText-root': {
                                 color: 'rgba(255, 0, 0, 0.7)'
@@ -1969,8 +1953,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                                 '& fieldset': {
                                     borderColor: 'text.primary',
                                 },
-                                '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                                '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                '&:hover fieldset': { borderColor: 'primary.main' },
+                                '&.Mui-focused fieldset': { borderColor: 'primary.main', },
                             },
                             '& .MuiFormHelperText-root': {
                                 color: 'rgba(255, 0, 0, 0.7)'
@@ -1995,8 +1979,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                                 '& fieldset': {
                                     borderColor: 'text.primary',
                                 },
-                                '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                                '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                '&:hover fieldset': { borderColor: 'primary.main' },
+                                '&.Mui-focused fieldset': { borderColor: 'primary.main', },
                             },
                         }}
                         slotProps={{
@@ -2031,8 +2015,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                                 '& fieldset': {
                                     borderColor: 'text.primary',
                                 },
-                                '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                                '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                '&:hover fieldset': { borderColor: 'primary.main' },
+                                '&.Mui-focused fieldset': { borderColor: 'primary.main', },
                             },
                             '& .MuiFormHelperText-root': {
                                 color: 'rgba(255, 255, 255, 0.7)'
@@ -2070,8 +2054,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                                 '& fieldset': {
                                     borderColor: 'text.primary',
                                 },
-                                '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                                '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                '&:hover fieldset': { borderColor: 'primary.main' },
+                                '&.Mui-focused fieldset': { borderColor: 'primary.main', },
                             },
                             '& .MuiFormHelperText-root': {
                                 color: 'rgba(255, 255, 255, 0.7)'
@@ -2284,8 +2268,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                                 '& fieldset': {
                                     borderColor: 'text.primary',
                                 },
-                                '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                                '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                '&:hover fieldset': { borderColor: 'primary.main' },
+                                '&.Mui-focused fieldset': { borderColor: 'primary.main', },
                             },
                             '& .MuiFormHelperText-root': {
                                 color: 'rgba(255, 0, 0, 0.7)'
@@ -2315,8 +2299,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                                 '& fieldset': {
                                     borderColor: 'text.primary',
                                 },
-                                '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                                '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                '&:hover fieldset': { borderColor: 'primary.main' },
+                                '&.Mui-focused fieldset': { borderColor: 'primary.main', },
                             },
                             '& .MuiFormHelperText-root': {
                                 color: 'rgba(255, 0, 0, 0.7)'
@@ -2341,8 +2325,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                                 '& fieldset': {
                                     borderColor: 'text.primary',
                                 },
-                                '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                                '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                '&:hover fieldset': { borderColor: 'primary.main' },
+                                '&.Mui-focused fieldset': { borderColor: 'primary.main', },
                             },
                         }}
                         slotProps={{
@@ -2372,8 +2356,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                                 '& fieldset': {
                                     borderColor: 'text.primary',
                                 },
-                                '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                                '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                '&:hover fieldset': { borderColor: 'primary.main' },
+                                '&.Mui-focused fieldset': { borderColor: 'primary.main', },
                             },
                             '& .MuiFormHelperText-root': {
                                 color: 'rgba(255, 255, 255, 0.7)'
@@ -2407,8 +2391,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                                 '& fieldset': {
                                     borderColor: 'text.primary',
                                 },
-                                '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                                '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                                '&:hover fieldset': { borderColor: 'primary.main' },
+                                '&.Mui-focused fieldset': { borderColor: 'primary.main', },
                             },
                             '& .MuiFormHelperText-root': {
                                 color: 'rgba(255, 255, 255, 0.7)'
@@ -2517,16 +2501,16 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                             flex: isMobile ? 1 : 'initial',
                             minHeight: isMobile ? '42px' : '48px',
                             '&:hover': {
-                                color: theme.palette.primary.main,
+                                color: 'primary.main',
                                 opacity: 0.8
                             },
                             '&.Mui-selected': {
-                                color: theme.palette.primary.main,
+                                color: 'primary.main',
                                 fontWeight: 'bold'
                             }
                         },
                         '& .MuiTabs-indicator': {
-                            backgroundColor: theme.palette.primary.main,
+                            backgroundColor: 'primary.main',
                             height: 3
                         }
                     }}

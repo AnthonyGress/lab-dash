@@ -47,7 +47,8 @@ export const createWidgetConfig = async (
 
         return {
             location: processedLocation,
-            timezone: timezone // This is guaranteed to be a string
+            timezone: timezone, // This is guaranteed to be a string
+            use24Hour: data.use24Hour || false
         };
     } else if (widgetType === ITEM_TYPE.SYSTEM_MONITOR_WIDGET) {
         const config = {
@@ -411,6 +412,7 @@ export const createWidgetConfig = async (
                 temperatureUnit: data.top_temperatureUnit,
                 location: data.top_location,
                 timezone: data.top_timezone,
+                use24Hour: data.top_use24Hour,
                 gauge1: data.top_gauge1,
                 gauge2: data.top_gauge2,
                 gauge3: data.top_gauge3,
@@ -436,6 +438,7 @@ export const createWidgetConfig = async (
                 temperatureUnit: data.bottom_temperatureUnit,
                 location: data.bottom_location,
                 timezone: data.bottom_timezone,
+                use24Hour: data.bottom_use24Hour,
                 gauge1: data.bottom_gauge1,
                 gauge2: data.bottom_gauge2,
                 gauge3: data.bottom_gauge3,

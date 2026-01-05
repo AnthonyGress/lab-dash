@@ -38,6 +38,7 @@ export type Config = {
     isSetupComplete?: boolean;
     lastSeenVersion?: string;
     notes?: Note[];
+    themeColor?: string;
 }
 
 export type Note = {

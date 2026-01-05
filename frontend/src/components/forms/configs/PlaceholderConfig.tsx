@@ -37,8 +37,8 @@ export const PlaceholderConfig = ({ formContext }: PlaceholderConfigProps) => {
                             '.MuiSvgIcon-root ': {
                                 fill: theme.palette.text.primary,
                             },
-                            '&:hover fieldset': { borderColor: theme.palette.primary.main },
-                            '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, },
+                            '&:hover fieldset': { borderColor: 'primary.main' },
+                            '&.Mui-focused fieldset': { borderColor: 'primary.main', },
                         },
                         width: '100%',
                         minWidth: isMobile ? '65vw' : '20vw',
@@ -46,11 +46,11 @@ export const PlaceholderConfig = ({ formContext }: PlaceholderConfigProps) => {
                             backgroundColor: `${COLORS.LIGHT_GRAY_HOVER} !important`,
                         },
                         '& .MuiMenuItem-root.Mui-selected': {
-                            backgroundColor: `${theme.palette.primary.main} !important`,
+                            backgroundColor: `${'primary.main'} !important`,
                             color: 'white',
                         },
                         '& .MuiMenuItem-root.Mui-selected:hover': {
-                            backgroundColor: `${theme.palette.primary.main} !important`,
+                            backgroundColor: `${'primary.main'} !important`,
                             color: 'white',
                         }
                     }}

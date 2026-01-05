@@ -503,7 +503,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                     borderColor: 'rgba(255,255,255,0.5)',
                                 },
                                 '&.Mui-focused fieldset': {
-                                    borderColor: theme.palette.primary.main,
+                                    borderColor: 'primary.main',
                                 },
                             },
                             '& .MuiInputBase-input': {
@@ -532,7 +532,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                         minHeight: '32px',
                                         minWidth: 'auto',
                                         '& .MuiTabs-indicator': {
-                                            backgroundColor: theme.palette.primary.main,
+                                            backgroundColor: 'primary.main',
                                         },
                                         '& .MuiTab-root': {
                                             color: 'rgba(255,255,255,0.7)',
@@ -591,7 +591,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                     minHeight: '32px',
                                     minWidth: 'auto',
                                     '& .MuiTabs-indicator': {
-                                        backgroundColor: theme.palette.primary.main,
+                                        backgroundColor: 'primary.main',
                                     },
                                     '& .MuiTab-root': {
                                         color: 'rgba(255,255,255,0.7)',
@@ -657,7 +657,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                             borderColor: 'rgba(255,255,255,0.5)',
                                         },
                                         '&.Mui-focused fieldset': {
-                                            borderColor: theme.palette.primary.main,
+                                            borderColor: 'primary.main',
                                         },
                                     },
                                     '& .MuiInputBase-inputMultiline': {
@@ -966,7 +966,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                         borderColor: 'rgba(255,255,255,0.5)',
                                     },
                                     '&.Mui-focused fieldset': {
-                                        borderColor: theme.palette.primary.main,
+                                        borderColor: 'primary.main',
                                     },
                                 },
                                 '& .MuiInputBase-input': {
@@ -991,7 +991,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                     minHeight: '32px',
                                     minWidth: 'auto',
                                     '& .MuiTabs-indicator': {
-                                        backgroundColor: theme.palette.primary.main,
+                                        backgroundColor: 'primary.main',
                                     },
                                     '& .MuiTab-root': {
                                         color: 'rgba(255,255,255,0.7)',
@@ -1056,7 +1056,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                                 borderColor: 'rgba(255,255,255,0.5)',
                                             },
                                             '&.Mui-focused fieldset': {
-                                                borderColor: theme.palette.primary.main,
+                                                borderColor: 'primary.main',
                                             },
                                         },
                                         '& .MuiInputBase-inputMultiline': {

@@ -146,6 +146,7 @@ export const useExistingItem = ({ existingItem, formContext, setCustomIconFile }
             torrentClientType: existingItem?.config?.clientType || DOWNLOAD_CLIENT_TYPE.QBITTORRENT,
             temperatureUnit: temperatureUnit,
             timezone: existingItem?.config?.timezone || '',
+            use24Hour: existingItem?.config?.use24Hour || false,
             adminOnly: existingItem?.adminOnly || false,
             isWol: existingItem?.config?.isWol || false,
             macAddress: existingItem?.config?.macAddress || '',
@@ -232,6 +233,7 @@ export const useExistingItem = ({ existingItem, formContext, setCustomIconFile }
             top_temperatureUnit: 'fahrenheit',
             top_location: null,
             top_timezone: '',
+            top_use24Hour: false,
             top_gauge1: 'cpu',
             top_gauge2: 'temp',
             top_gauge3: 'ram',
@@ -258,6 +260,7 @@ export const useExistingItem = ({ existingItem, formContext, setCustomIconFile }
             bottom_temperatureUnit: 'fahrenheit',
             bottom_location: null,
             bottom_timezone: '',
+            bottom_use24Hour: false,
             bottom_gauge1: 'cpu',
             bottom_gauge2: 'temp',
             bottom_gauge3: 'ram',
@@ -352,6 +355,7 @@ export const useExistingItem = ({ existingItem, formContext, setCustomIconFile }
                     else if (topWidget.type === ITEM_TYPE.DATE_TIME_WIDGET) {
                         formContext.setValue('top_location', topConfig.location || null);
                         formContext.setValue('top_timezone', topConfig.timezone || '');
+                        formContext.setValue('top_use24Hour', topConfig.use24Hour || false);
                     }
                 }, 0);
             }
@@ -423,6 +427,7 @@ export const useExistingItem = ({ existingItem, formContext, setCustomIconFile }
                     else if (bottomWidget.type === ITEM_TYPE.DATE_TIME_WIDGET) {
                         formContext.setValue('bottom_location', bottomConfig.location || null);
                         formContext.setValue('bottom_timezone', bottomConfig.timezone || '');
+                        formContext.setValue('bottom_use24Hour', bottomConfig.use24Hour || false);
                     }
                 }, 0);
             }

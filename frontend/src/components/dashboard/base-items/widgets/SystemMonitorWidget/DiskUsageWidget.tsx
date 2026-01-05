@@ -48,7 +48,7 @@ export const DiskUsageBar: React.FC<DiskUsageBarProps> = ({ totalSpace, usedSpac
                     <Box
                         sx={{
                             width: `${usedPercentage}%`,
-                            backgroundColor: theme.palette.primary.main,
+                            backgroundColor: 'primary.main',
                             height: '100%',
                             cursor: 'pointer',
                         }}
