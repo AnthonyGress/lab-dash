@@ -482,10 +482,12 @@ export const DownloadClientWidget: React.FC<DownloadClientWidgetProps> = ({
     const getBaseUrl = () => {
         if (!loginCredentials.host) return '';
 
+        // Strip any existing protocol prefix
+        const cleanHost = loginCredentials.host.replace(/^https?:\/\//, '');
         const protocol = loginCredentials.ssl ? 'https' : 'http';
         const port = loginCredentials.port ? `:${loginCredentials.port}` : '';
 
-        return `${protocol}://${loginCredentials.host}${port}`;
+        return `${protocol}://${cleanHost}${port}`;
     };
 
     // Handle opening the torrent client web UI

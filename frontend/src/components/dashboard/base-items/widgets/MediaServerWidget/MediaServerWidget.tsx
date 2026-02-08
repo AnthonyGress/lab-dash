@@ -145,9 +145,11 @@ const SessionItem: React.FC<SessionItemProps> = ({ session, clientType, config }
     const getImageUrl = (item: JellyfinSession['NowPlayingItem'], serverConfig: any): string | undefined => {
         if (!item?.ImageTags?.Primary || !serverConfig?.host) return undefined;
 
+        // Strip any existing protocol prefix
+        const cleanHost = serverConfig.host.replace(/^https?:\/\//, '');
         const protocol = serverConfig.ssl ? 'https' : 'http';
         const port = serverConfig.port ? `:${serverConfig.port}` : '';
-        const baseUrl = `${protocol}://${serverConfig.host}${port}`;
+        const baseUrl = `${protocol}://${cleanHost}${port}`;
 
         return `${baseUrl}/Items/${item.Id}/Images/Primary?tag=${item.ImageTags.Primary}&maxHeight=80&maxWidth=80&quality=90`;
     };
@@ -415,10 +417,12 @@ export const MediaServerWidget: React.FC<MediaServerWidgetProps> = ({
     const getBaseUrl = () => {
         if (!config?.host) return '';
 
+        // Strip any existing protocol prefix
+        const cleanHost = config.host.replace(/^https?:\/\//, '');
         const protocol = config.ssl ? 'https' : 'http';
         const port = config.port ? `:${config.port}` : '';
 
-        return `${protocol}://${config.host}${port}`;
+        return `${protocol}://${cleanHost}${port}`;
     };
 
     // Handle opening the media server web UI

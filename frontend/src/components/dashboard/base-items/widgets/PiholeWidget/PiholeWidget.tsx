@@ -843,11 +843,13 @@ export const PiholeWidget = (props: { config?: PiholeWidgetConfig; id?: string }
     const getBaseUrl = () => {
         if (!piholeConfig.host) return '';
 
+        // Strip any existing protocol prefix
+        const cleanHost = piholeConfig.host.replace(/^https?:\/\//, '');
         const protocol = piholeConfig.ssl ? 'https' : 'http';
         const port = piholeConfig.port ? `:${piholeConfig.port}` : '';
 
         // The base API URL is the same for both v5 and v6
-        return `${protocol}://${piholeConfig.host}${port}/admin`;
+        return `${protocol}://${cleanHost}${port}/admin`;
     };
 
     // Handle opening the Pi-hole admin dashboard (default page)

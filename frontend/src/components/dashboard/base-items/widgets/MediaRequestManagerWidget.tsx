@@ -121,7 +121,9 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
     const { editMode, isAdmin, isLoggedIn } = useAppContext();
 
     const serviceName = service === 'jellyseerr' ? 'Jellyseerr' : 'Overseerr';
-    const serviceUrl = `${ssl ? 'https' : 'http'}://${host}:${port}`;
+    // Strip any existing protocol prefix
+    const cleanHost = host?.replace(/^https?:\/\//, '') || host;
+    const serviceUrl = `${ssl ? 'https' : 'http'}://${cleanHost}:${port}`;
 
     const fetchRequests = useCallback(async () => {
         if (!id || !host || !_hasApiKey) {
@@ -529,8 +531,8 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                             alignItems: 'center',
                             visibility: editMode ? 'hidden' : 'visible'
                         }}>
-                            <RemoveScroll 
-                                enabled={isDropdownOpen && searchResults.length > 0} 
+                            <RemoveScroll
+                                enabled={isDropdownOpen && searchResults.length > 0}
                                 removeScrollBar={false}
                                 style={{ width: '100%' }}
                             >
@@ -547,189 +549,189 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                                     onOpen={() => setIsDropdownOpen(true)}
                                     onClose={() => setIsDropdownOpen(false)}
                                     onChange={(_, newValue) => {
-                                    if (newValue && typeof newValue !== 'string') {
+                                        if (newValue && typeof newValue !== 'string') {
                                         // Dismiss keyboard on mobile
-                                        const activeElement = document.activeElement as HTMLElement;
-                                        if (activeElement && activeElement.blur) {
-                                            activeElement.blur();
-                                        }
-
-                                        setPreviousSearchQuery(searchQuery); // Save current search query
-                                        handleItemClick(newValue);
-                                        setSearchQuery(''); // Clear search after selection
-                                        setIsDropdownOpen(false);
-                                    }
-                                }}
-                                onKeyDown={(event) => {
-                                    if (event.key === 'Enter' && searchResults.length > 0 && !searchLoading) {
-                                        event.preventDefault();
-                                        // Select the first item in the search results
-                                        const firstItem = searchResults[0];
-                                        if (firstItem) {
-                                            // Dismiss keyboard
                                             const activeElement = document.activeElement as HTMLElement;
                                             if (activeElement && activeElement.blur) {
                                                 activeElement.blur();
                                             }
 
-                                            setPreviousSearchQuery(searchQuery);
-                                            handleItemClick(firstItem);
-                                            setSearchQuery('');
+                                            setPreviousSearchQuery(searchQuery); // Save current search query
+                                            handleItemClick(newValue);
+                                            setSearchQuery(''); // Clear search after selection
                                             setIsDropdownOpen(false);
                                         }
-                                    }
-                                }}
-                                loading={searchLoading}
-                                loadingText='Searching...'
-                                noOptionsText={searchQuery.length < 2 ? 'Type to search...' : 'No results found'}
-                                filterOptions={(options) => options} // Don't filter on frontend, show all API results
-                                open={searchQuery.length >= 2 && searchResults.length > 0 && !searchLoading && !confirmationItem} // Close when modal is open
-                                disablePortal={false} // Allow portal for proper dropdown positioning
-                                disableClearable={false}
-                                componentsProps={{
-                                    popper: {
-                                        placement: 'bottom-start', // Always place dropdown below
-                                        modifiers: [
-                                            {
-                                                name: 'flip',
-                                                enabled: false, // Disable flipping to top
-                                            },
-                                            {
-                                                name: 'preventOverflow',
-                                                enabled: false, // Allow overflow if needed
-                                            }
-                                        ]
-                                    }
-                                }}
-                                sx={{
-                                    width: '100%',
-                                    '& .MuiOutlinedInput-root': {
-                                        borderRadius: 2,
-                                        height: '36px', // Slightly taller for better usability
-                                        '& fieldset': {
-                                            border: '1px solid rgba(255, 255, 255, 0.3) !important',
-                                        },
-                                        '&:hover fieldset': {
-                                            border: '1px solid rgba(255, 255, 255, 0.5) !important',
-                                        },
-                                        '&.Mui-focused fieldset': {
-                                            border: '1px solid rgba(255, 255, 255, 0.7) !important',
-                                        },
-                                    },
-                                    '& .MuiAutocomplete-clearIndicator': {
-                                        color: 'white',
-                                        alignSelf: 'center', // Center the clear icon vertically
-                                    },
-                                    '& .MuiAutocomplete-popupIndicator': {
-                                        display: 'none', // Hide the dropdown arrow
-                                    },
-                                    '& .MuiAutocomplete-endAdornment': {
-                                        top: '50%', // Center vertically
-                                        transform: 'translateY(-50%)', // Perfect centering
-                                        right: '9px', // Adjust positioning
-                                    },
-                                }}
-                                renderOption={(props, option) => (
-                                    <Box
-                                        component='li'
-                                        {...props}
-                                        key={`search-result-${option.id}`}
-                                        sx={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 1,
-                                            py: 1,
-                                            opacity: option.status?.status === 4 ? 0.6 : 1,
-                                            cursor: option.status?.status === 4 ? 'default' : 'pointer',
-                                            '&:hover': {
-                                                backgroundColor: option.status?.status === 4 ? 'transparent' : 'rgba(255,255,255,0.05)'
-                                            }
-                                        }}
+                                    }}
+                                    onKeyDown={(event) => {
+                                        if (event.key === 'Enter' && searchResults.length > 0 && !searchLoading) {
+                                            event.preventDefault();
+                                            // Select the first item in the search results
+                                            const firstItem = searchResults[0];
+                                            if (firstItem) {
+                                            // Dismiss keyboard
+                                                const activeElement = document.activeElement as HTMLElement;
+                                                if (activeElement && activeElement.blur) {
+                                                    activeElement.blur();
+                                                }
 
-                                    >
-                                        <Avatar
-                                            key={`avatar-${option.id}`}
-                                            src={getPosterUrl(option.posterPath) || undefined}
-                                            sx={{ width: 36, height: 54 }}
-                                            variant='rounded'
-                                        >
-                                            {option.mediaType === 'movie' ? <MovieIcon /> : <TvIcon />}
-                                        </Avatar>
-                                        <Box key={`content-${option.id}`} sx={{ flex: 1, minWidth: 0 }}>
-                                            <Typography key={`title-${option.id}`} variant='body2' sx={{ color: 'white', fontWeight: 500 }}>
-                                                {getTitle(option)}
-                                            </Typography>
-                                            <Typography key={`subtitle-${option.id}`} variant='caption' sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                                                {getReleaseYear(option)} • {option.mediaType === 'movie' ? 'Movie' : 'TV Show'}
-                                            </Typography>
-                                        </Box>
-                                        {option.status?.status === 4 && (
-                                            <Chip
-                                                key={`chip-${option.id}`}
-                                                label='Available'
-                                                size='small'
-                                                sx={{
-                                                    fontSize: '0.7rem',
-                                                    height: '1rem',
-                                                    backgroundColor: 'success.dark',
-                                                    color: 'success.contrastText'
-                                                }}
-                                            />
-                                        )}
-                                    </Box>
-                                )}
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        placeholder='Search for movies or TV shows...'
-                                        InputProps={{
-                                            ...params.InputProps,
-                                            startAdornment: (
-                                                <InputAdornment position='start' sx={{ color: 'text.primary' }}>
-                                                    <FaSearch />
-                                                </InputAdornment>
-                                            ),
-                                            endAdornment: (
-                                                <>
-                                                    {searchLoading && (
-                                                        <InputAdornment position='end'>
-                                                            <CircularProgress size={16} sx={{ color: 'white' }} />
-                                                        </InputAdornment>
-                                                    )}
-                                                    {params.InputProps.endAdornment}
-                                                </>
-                                            ),
-                                            sx: { height: '36px' }, // Match container height
-                                        }}
-                                        sx={{
-                                            height: '36px', // Match the container height
-                                        }}
-                                    />
-                                )}
-                                slotProps={{
-                                    listbox: {
-                                        sx: {
-                                            maxHeight: 400, // Increased height for more results
-                                            '& .MuiAutocomplete-option': {
-                                                minHeight: 'unset',
-                                                lineHeight: '1.5'
+                                                setPreviousSearchQuery(searchQuery);
+                                                handleItemClick(firstItem);
+                                                setSearchQuery('');
+                                                setIsDropdownOpen(false);
                                             }
                                         }
-                                    },
-                                    paper: {
-                                        sx: {
-                                            backgroundColor: 'rgba(30, 30, 30, 0.95)',
-                                            backdropFilter: 'blur(10px)',
-                                            border: '1px solid rgba(255,255,255,0.1)',
-                                            maxHeight: 450 // Ensure paper can accommodate the listbox
+                                    }}
+                                    loading={searchLoading}
+                                    loadingText='Searching...'
+                                    noOptionsText={searchQuery.length < 2 ? 'Type to search...' : 'No results found'}
+                                    filterOptions={(options) => options} // Don't filter on frontend, show all API results
+                                    open={searchQuery.length >= 2 && searchResults.length > 0 && !searchLoading && !confirmationItem} // Close when modal is open
+                                    disablePortal={false} // Allow portal for proper dropdown positioning
+                                    disableClearable={false}
+                                    componentsProps={{
+                                        popper: {
+                                            placement: 'bottom-start', // Always place dropdown below
+                                            modifiers: [
+                                                {
+                                                    name: 'flip',
+                                                    enabled: false, // Disable flipping to top
+                                                },
+                                                {
+                                                    name: 'preventOverflow',
+                                                    enabled: false, // Allow overflow if needed
+                                                }
+                                            ]
                                         }
-                                    }
-                                }}
-                            />
+                                    }}
+                                    sx={{
+                                        width: '100%',
+                                        '& .MuiOutlinedInput-root': {
+                                            borderRadius: 2,
+                                            height: '36px', // Slightly taller for better usability
+                                            '& fieldset': {
+                                                border: '1px solid rgba(255, 255, 255, 0.3) !important',
+                                            },
+                                            '&:hover fieldset': {
+                                                border: '1px solid rgba(255, 255, 255, 0.5) !important',
+                                            },
+                                            '&.Mui-focused fieldset': {
+                                                border: '1px solid rgba(255, 255, 255, 0.7) !important',
+                                            },
+                                        },
+                                        '& .MuiAutocomplete-clearIndicator': {
+                                            color: 'white',
+                                            alignSelf: 'center', // Center the clear icon vertically
+                                        },
+                                        '& .MuiAutocomplete-popupIndicator': {
+                                            display: 'none', // Hide the dropdown arrow
+                                        },
+                                        '& .MuiAutocomplete-endAdornment': {
+                                            top: '50%', // Center vertically
+                                            transform: 'translateY(-50%)', // Perfect centering
+                                            right: '9px', // Adjust positioning
+                                        },
+                                    }}
+                                    renderOption={(props, option) => (
+                                        <Box
+                                            component='li'
+                                            {...props}
+                                            key={`search-result-${option.id}`}
+                                            sx={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 1,
+                                                py: 1,
+                                                opacity: option.status?.status === 4 ? 0.6 : 1,
+                                                cursor: option.status?.status === 4 ? 'default' : 'pointer',
+                                                '&:hover': {
+                                                    backgroundColor: option.status?.status === 4 ? 'transparent' : 'rgba(255,255,255,0.05)'
+                                                }
+                                            }}
+
+                                        >
+                                            <Avatar
+                                                key={`avatar-${option.id}`}
+                                                src={getPosterUrl(option.posterPath) || undefined}
+                                                sx={{ width: 36, height: 54 }}
+                                                variant='rounded'
+                                            >
+                                                {option.mediaType === 'movie' ? <MovieIcon /> : <TvIcon />}
+                                            </Avatar>
+                                            <Box key={`content-${option.id}`} sx={{ flex: 1, minWidth: 0 }}>
+                                                <Typography key={`title-${option.id}`} variant='body2' sx={{ color: 'white', fontWeight: 500 }}>
+                                                    {getTitle(option)}
+                                                </Typography>
+                                                <Typography key={`subtitle-${option.id}`} variant='caption' sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                                                    {getReleaseYear(option)} • {option.mediaType === 'movie' ? 'Movie' : 'TV Show'}
+                                                </Typography>
+                                            </Box>
+                                            {option.status?.status === 4 && (
+                                                <Chip
+                                                    key={`chip-${option.id}`}
+                                                    label='Available'
+                                                    size='small'
+                                                    sx={{
+                                                        fontSize: '0.7rem',
+                                                        height: '1rem',
+                                                        backgroundColor: 'success.dark',
+                                                        color: 'success.contrastText'
+                                                    }}
+                                                />
+                                            )}
+                                        </Box>
+                                    )}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            placeholder='Search for movies or TV shows...'
+                                            InputProps={{
+                                                ...params.InputProps,
+                                                startAdornment: (
+                                                    <InputAdornment position='start' sx={{ color: 'text.primary' }}>
+                                                        <FaSearch />
+                                                    </InputAdornment>
+                                                ),
+                                                endAdornment: (
+                                                    <>
+                                                        {searchLoading && (
+                                                            <InputAdornment position='end'>
+                                                                <CircularProgress size={16} sx={{ color: 'white' }} />
+                                                            </InputAdornment>
+                                                        )}
+                                                        {params.InputProps.endAdornment}
+                                                    </>
+                                                ),
+                                                sx: { height: '36px' }, // Match container height
+                                            }}
+                                            sx={{
+                                                height: '36px', // Match the container height
+                                            }}
+                                        />
+                                    )}
+                                    slotProps={{
+                                        listbox: {
+                                            sx: {
+                                                maxHeight: 400, // Increased height for more results
+                                                '& .MuiAutocomplete-option': {
+                                                    minHeight: 'unset',
+                                                    lineHeight: '1.5'
+                                                }
+                                            }
+                                        },
+                                        paper: {
+                                            sx: {
+                                                backgroundColor: 'rgba(30, 30, 30, 0.95)',
+                                                backdropFilter: 'blur(10px)',
+                                                border: '1px solid rgba(255,255,255,0.1)',
+                                                maxHeight: 450 // Ensure paper can accommodate the listbox
+                                            }
+                                        }
+                                    }}
+                                />
                             </RemoveScroll>
                         </Box>
                     </ClickAwayListener>
-            </Box>
+                </Box>
 
                 {error ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1, width: '100%', flexDirection: 'column' }}>

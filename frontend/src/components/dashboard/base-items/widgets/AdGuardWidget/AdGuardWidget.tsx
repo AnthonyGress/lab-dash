@@ -96,10 +96,12 @@ export const AdGuardWidget = (props: { config?: AdGuardWidgetConfig; id?: string
     const getBaseUrl = () => {
         if (!adguardConfig.host) return '';
 
+        // Strip any existing protocol prefix
+        const cleanHost = adguardConfig.host.replace(/^https?:\/\//, '');
         const protocol = adguardConfig.ssl ? 'https' : 'http';
         const port = adguardConfig.port ? `:${adguardConfig.port}` : '';
 
-        return `${protocol}://${adguardConfig.host}${port}`;
+        return `${protocol}://${cleanHost}${port}`;
     };
 
     // Helper function to safely update state only if component is still mounted
