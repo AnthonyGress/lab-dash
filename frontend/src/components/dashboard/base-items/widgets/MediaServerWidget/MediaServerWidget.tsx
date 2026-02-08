@@ -39,7 +39,7 @@ interface JellyfinSession {
 
 interface MediaServerWidgetProps {
     config?: {
-        clientType?: 'jellyfin' | 'plex';
+        clientType?: 'jellyfin' | 'plex' | 'emby';
         displayName?: string;
         host?: string;
         port?: string;
@@ -330,8 +330,8 @@ export const MediaServerWidget: React.FC<MediaServerWidgetProps> = ({
 
         try {
             setIsLoading(true);
-            // For now, only support Jellyfin
-            if (config.clientType === 'jellyfin' || !config.clientType) {
+            // Jellyfin and Emby use the same API
+            if (config.clientType === 'jellyfin' || config.clientType === 'emby' || !config.clientType) {
                 const data = await DashApi.getJellyfinSessions(id);
 
                 setSessions(data.sessions || []);
@@ -361,8 +361,8 @@ export const MediaServerWidget: React.FC<MediaServerWidgetProps> = ({
 
         try {
             setLibraryStats(prev => ({ ...prev, isLoading: true }));
-            // For now, only support Jellyfin
-            if (config.clientType === 'jellyfin' || !config.clientType) {
+            // Jellyfin and Emby use the same API
+            if (config.clientType === 'jellyfin' || config.clientType === 'emby' || !config.clientType) {
                 const data = await DashApi.getJellyfinLibraryStats(id);
                 setLibraryStats({
                     tvShows: data.tvShows || 0,
@@ -411,7 +411,7 @@ export const MediaServerWidget: React.FC<MediaServerWidgetProps> = ({
         };
     }, [config, id, fetchSessions, fetchLibraryStats]);
 
-    const clientName = config?.displayName || (config?.clientType === 'plex' ? 'Plex' : 'Jellyfin');
+    const clientName = config?.displayName || (config?.clientType === 'plex' ? 'Plex' : config?.clientType === 'emby' ? 'Emby' : 'Jellyfin');
 
     // Create base URL for media server web UI
     const getBaseUrl = () => {
@@ -473,7 +473,7 @@ export const MediaServerWidget: React.FC<MediaServerWidgetProps> = ({
                         {config?.showLabel !== false && (
                             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 1 }}>
                                 <img
-                                    src={`${BACKEND_URL}/icons/${config?.clientType === 'plex' ? 'plex.svg' : 'jellyfin.svg'}`}
+                                    src={`${BACKEND_URL}/icons/${config?.clientType === 'plex' ? 'plex.svg' : config?.clientType === 'emby' ? 'emby.svg' : 'jellyfin.svg'}`}
                                     alt={clientName}
                                     style={{
                                         width: '24px',
@@ -538,7 +538,7 @@ export const MediaServerWidget: React.FC<MediaServerWidgetProps> = ({
                                 onClick={handleOpenWebUI}
                             >
                                 <img
-                                    src={`${BACKEND_URL}/icons/${config?.clientType === 'plex' ? 'plex.svg' : 'jellyfin.svg'}`}
+                                    src={`${BACKEND_URL}/icons/${config?.clientType === 'plex' ? 'plex.svg' : config?.clientType === 'emby' ? 'emby.svg' : 'jellyfin.svg'}`}
                                     alt={clientName}
                                     style={{
                                         width: '24px',
