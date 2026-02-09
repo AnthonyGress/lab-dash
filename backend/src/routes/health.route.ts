@@ -50,7 +50,7 @@ healthRoute.get('/', async (req: Request, res: Response): Promise<void> => {
 
         // For HTTP health checks (default)
         const response = await axios.get(url, {
-            timeout: 5000,
+            timeout: 10000, // Increased to 10 seconds to handle slower services
             httpsAgent,
             responseType: 'text',
             validateStatus: () => true // Accept any HTTP status code
@@ -63,5 +63,18 @@ healthRoute.get('/', async (req: Request, res: Response): Promise<void> => {
     } catch (error) {
         console.log('service is offline', req.query.url);
         res.json({ status: 'offline' });
+    }
+});
+
+// Endpoint to get public IP address
+healthRoute.get('/public-ip', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const response = await axios.get('https://api.ipify.org?format=json', {
+            timeout: 5000
+        });
+        res.json({ ip: response.data.ip });
+    } catch (error) {
+        console.error('Failed to fetch public IP:', error);
+        res.status(500).json({ error: 'Failed to fetch public IP' });
     }
 });

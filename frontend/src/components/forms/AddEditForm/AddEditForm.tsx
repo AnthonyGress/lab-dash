@@ -192,7 +192,8 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                     gauges: [data.gauge1, data.gauge2, data.gauge3],
                     showDiskUsage: data.showDiskUsage !== false, // Default to true
                     showSystemInfo: data.showSystemInfo !== false, // Default to true
-                    showInternetStatus: data.showInternetStatus !== false // Default to true
+                    showInternetStatus: data.showInternetStatus !== false, // Default to true
+                    showPublicIP: data.showPublicIP || false
                 };
 
                 // Add network interface to config if a network gauge is included
@@ -469,6 +470,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                         showDiskUsage: data.top_showDiskUsage,
                         showSystemInfo: data.top_showSystemInfo,
                         showInternetStatus: data.top_showInternetStatus,
+                        showPublicIP: data.top_showPublicIP,
                         selectedDisks: data.top_selectedDisks,
                         showIcons: data.top_showIcons,
                         showMountPath: data.top_showMountPath,
@@ -501,6 +503,7 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                         showDiskUsage: data.bottom_showDiskUsage,
                         showSystemInfo: data.bottom_showSystemInfo,
                         showInternetStatus: data.bottom_showInternetStatus,
+                        showPublicIP: data.bottom_showPublicIP,
                         selectedDisks: data.bottom_selectedDisks,
                         showIcons: data.bottom_showIcons,
                         showMountPath: data.bottom_showMountPath,

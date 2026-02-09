@@ -220,6 +220,7 @@ export const useExistingItem = ({ existingItem, formContext, setCustomIconFile }
             showDiskUsage: existingItem?.config?.showDiskUsage !== false, // Default to true
             showSystemInfo: existingItem?.config?.showSystemInfo !== false, // Default to true
             showInternetStatus: existingItem?.config?.showInternetStatus !== false, // Default to true
+            showPublicIP: existingItem?.config?.showPublicIP || false,
 
             // Disk monitor widget values
             selectedDisks: existingItem?.type === ITEM_TYPE.DISK_MONITOR_WIDGET ? (existingItem?.config?.selectedDisks || []) : [],
@@ -241,6 +242,7 @@ export const useExistingItem = ({ existingItem, formContext, setCustomIconFile }
             top_showDiskUsage: true,
             top_showSystemInfo: true,
             top_showInternetStatus: true,
+            top_showPublicIP: false,
             top_selectedDisks: [],
             top_showIcons: true,
             top_layout: '2x2',
@@ -268,6 +270,7 @@ export const useExistingItem = ({ existingItem, formContext, setCustomIconFile }
             bottom_showDiskUsage: true,
             bottom_showSystemInfo: true,
             bottom_showInternetStatus: true,
+            bottom_showPublicIP: false,
             bottom_selectedDisks: [],
             bottom_showIcons: true,
             bottom_layout: '2x2',
@@ -318,6 +321,7 @@ export const useExistingItem = ({ existingItem, formContext, setCustomIconFile }
                         formContext.setValue('top_showDiskUsage', topConfig.showDiskUsage !== false);
                         formContext.setValue('top_showSystemInfo', topConfig.showSystemInfo !== false);
                         formContext.setValue('top_showInternetStatus', topConfig.showInternetStatus !== false);
+                        formContext.setValue('top_showPublicIP', topConfig.showPublicIP || false);
                     }
 
                     // Handle top disk monitor widget
@@ -390,6 +394,7 @@ export const useExistingItem = ({ existingItem, formContext, setCustomIconFile }
                         formContext.setValue('bottom_showDiskUsage', bottomConfig.showDiskUsage !== false);
                         formContext.setValue('bottom_showSystemInfo', bottomConfig.showSystemInfo !== false);
                         formContext.setValue('bottom_showInternetStatus', bottomConfig.showInternetStatus !== false);
+                        formContext.setValue('bottom_showPublicIP', bottomConfig.showPublicIP || false);
                     }
 
                     // Handle bottom disk monitor widget

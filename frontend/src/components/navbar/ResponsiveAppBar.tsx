@@ -54,6 +54,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
     const [openUpdateModal, setOpenUpdateModal] = useState(false);
     const [openVersionModal, setOpenVersionModal] = useState(false);
     const [internetTooltipOpen, setInternetTooltipOpen] = useState(false);
+    const [publicIP, setPublicIP] = useState<string | null>(null);
     const [originalLayoutSnapshot, setOriginalLayoutSnapshot] = useState<DashboardItem[] | null>(null);
 
     const { internetStatus } = useInternetStatus();
@@ -83,6 +84,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
     } = useAppContext();
 
     const showInternetIndicator = config?.showInternetIndicator !== false;
+    const showPublicIP = config?.showPublicIP || false;
 
     const location = useLocation();
     const navigate = useNavigate();
@@ -109,6 +111,19 @@ export const ResponsiveAppBar = ({ children }: Props) => {
     useEffect(() => {
         setInternetTooltipOpen(false);
     }, [editMode]);
+
+    // Fetch public IP when showPublicIP is enabled
+    useEffect(() => {
+        if (showPublicIP && internetStatus === 'online') {
+            const fetchPublicIP = async () => {
+                const ip = await DashApi.getPublicIP();
+                setPublicIP(ip);
+            };
+            fetchPublicIP();
+        } else {
+            setPublicIP(null);
+        }
+    }, [showPublicIP, internetStatus]);
 
     const handleClose = () => setOpenAddModal(false);
     const handleCloseEditPage = () => {
@@ -142,14 +157,14 @@ export const ResponsiveAppBar = ({ children }: Props) => {
         // Only save if there were actual changes made
         if (originalLayoutSnapshot) {
             const hasChanges = JSON.stringify(originalLayoutSnapshot) !== JSON.stringify(dashboardLayout);
-            
+
             if (hasChanges) {
                 console.log('Layout changes detected, saving...');
                 saveLayout(dashboardLayout);
             } else {
                 console.log('No layout changes detected, skipping save');
             }
-            
+
             // Clear the snapshot
             setOriginalLayoutSnapshot(null);
         } else {
@@ -407,7 +422,18 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                 {!editMode && showInternetIndicator && (
                                     <Tooltip
                                         key='internet-tooltip'
-                                        title={internetStatus === 'online' ? 'Internet Connected' : internetStatus === 'offline' ? 'No Internet Connection' : 'Checking Internet...'}
+                                        title={
+                                            <Box>
+                                                <Typography variant='body2'>
+                                                    {internetStatus === 'online' ? 'Internet Connected' : internetStatus === 'offline' ? 'No Internet Connection' : 'Checking Internet...'}
+                                                </Typography>
+                                                {showPublicIP && publicIP && internetStatus === 'online' && (
+                                                    <Typography variant='caption' sx={{ display: 'block', mt: 0.5 }}>
+                                                        IP: {publicIP}
+                                                    </Typography>
+                                                )}
+                                            </Box>
+                                        }
                                         placement='left'
                                         arrow
                                         open={Boolean(internetTooltipOpen)}

@@ -35,6 +35,7 @@ type FormValues = {
     searchProviderId: string;
     searchProvider?: SearchProvider;
     showInternetIndicator: boolean;
+    showPublicIP: boolean;
     themeColor: string;
     configFile?: File | null;
     appIconFiles?: File[] | null;
@@ -304,6 +305,7 @@ export const SettingsForm = () => {
                         : ''
             },
             showInternetIndicator: config?.showInternetIndicator !== false, // Default to true
+            showPublicIP: config?.showPublicIP || false,
             themeColor: config?.themeColor || '#734CDE',
             configFile: null,
             appIconFiles: null
@@ -319,6 +321,7 @@ export const SettingsForm = () => {
     const searchProviderName = formContext.watch('searchProvider.name', '');
     const searchProviderUrl = formContext.watch('searchProvider.url', '');
     const showInternetIndicator = formContext.watch('showInternetIndicator', true);
+    const showPublicIP = formContext.watch('showPublicIP', false);
     const themeColor = formContext.watch('themeColor', '#734CDE');
     const configFile = formContext.watch('configFile', null);
     const appIconFiles = formContext.watch('appIconFiles', null);
@@ -376,6 +379,9 @@ export const SettingsForm = () => {
             // Internet indicator change
             if (showInternetIndicator !== (config?.showInternetIndicator !== false)) return true;
 
+            // Show public IP change
+            if (showPublicIP !== (config?.showPublicIP || false)) return true;
+
             // Theme color change
             if (themeColor !== (config?.themeColor || '#734CDE')) return true;
 
@@ -422,6 +428,7 @@ export const SettingsForm = () => {
         searchProviderName,
         searchProviderUrl,
         showInternetIndicator,
+        showPublicIP,
         themeColor,
         config
     ]);
@@ -455,6 +462,10 @@ export const SettingsForm = () => {
 
             if (data.showInternetIndicator !== undefined) {
                 updatedConfig.showInternetIndicator = data.showInternetIndicator;
+            }
+
+            if (data.showPublicIP !== undefined) {
+                updatedConfig.showPublicIP = data.showPublicIP;
             }
 
             // Handle theme color
@@ -587,6 +598,7 @@ export const SettingsForm = () => {
                         url: refreshedConfig?.searchProvider?.url || ''
                     },
                     showInternetIndicator: refreshedConfig?.showInternetIndicator !== false,
+                    showPublicIP: refreshedConfig?.showPublicIP || false,
                     themeColor: refreshedConfig?.themeColor || '#734CDE',
                     appIconFiles: null
                 });
@@ -795,6 +807,17 @@ export const SettingsForm = () => {
                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                     <CheckboxElement
                                         name='showInternetIndicator'
+                                        sx={{ color: 'text.primary' }}
+                                    />
+                                </Box>
+
+                                <Typography variant='body1' sx={{
+                                    alignSelf: 'center',
+                                    fontSize: { xs: '0.875rem', sm: '1rem' }
+                                }}>Show Public IP in Tooltip</Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                    <CheckboxElement
+                                        name='showPublicIP'
                                         sx={{ color: 'text.primary' }}
                                     />
                                 </Box>
