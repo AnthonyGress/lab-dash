@@ -107,7 +107,9 @@ export const App = () => {
     }, [pages, navigate]);
 
     const backgroundImage = config?.backgroundImage
-        ? `url('${BACKEND_URL}/uploads/${config?.backgroundImage}')`
+        ? (config.backgroundImage.startsWith('http://') || config.backgroundImage.startsWith('https://')
+            ? `url('${config.backgroundImage}')`
+            : `url('${BACKEND_URL}/uploads/${config.backgroundImage}')`)
         : 'url(\'/space4k-min.webp\')';
 
     const globalStyles = (
