@@ -10,7 +10,7 @@ type SetupFormProps = {
 
 export const SetupForm: React.FC<SetupFormProps> = ({ onSuccess }) => {
     const [showSetupModal, setShowSetupModal] = useState(true);
-    const { updateConfig } = useAppContext();
+    const { updateConfig, refreshDashboard } = useAppContext();
 
     const handleSetupComplete = async () => {
         // Mark setup as complete and save initial items to the layout
@@ -26,6 +26,10 @@ export const SetupForm: React.FC<SetupFormProps> = ({ onSuccess }) => {
                 mobile: initialItems
             }
         });
+
+        // Refresh dashboard to load the initial items
+        await refreshDashboard();
+
         onSuccess();
     };
 
