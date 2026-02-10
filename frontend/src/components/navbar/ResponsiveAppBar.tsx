@@ -84,7 +84,8 @@ export const ResponsiveAppBar = ({ children }: Props) => {
     } = useAppContext();
 
     const showInternetIndicator = config?.showInternetIndicator !== false;
-    const showPublicIP = config?.showPublicIP || false;
+    const showIP = config?.showIP ?? (config as any)?.showPublicIP ?? false;
+    const ipDisplayType = config?.ipDisplayType || 'wan';
 
     const location = useLocation();
     const navigate = useNavigate();
@@ -112,18 +113,29 @@ export const ResponsiveAppBar = ({ children }: Props) => {
         setInternetTooltipOpen(false);
     }, [editMode]);
 
-    // Fetch public IP when showPublicIP is enabled
+    // Fetch IP addresses when showIP is enabled
     useEffect(() => {
-        if (showPublicIP && internetStatus === 'online') {
-            const fetchPublicIP = async () => {
-                const ip = await DashApi.getPublicIP();
-                setPublicIP(ip);
+        if (showIP && internetStatus === 'online') {
+            const fetchIPs = async () => {
+                const ips = await DashApi.getIPAddresses();
+                const ipType = config?.ipDisplayType || 'wan';
+
+                if (ipType === 'both') {
+                    const parts = [];
+                    if (ips.wan) parts.push(`WAN: ${ips.wan}`);
+                    if (ips.lan) parts.push(`LAN: ${ips.lan}`);
+                    setPublicIP(parts.join(' • '));
+                } else if (ipType === 'lan') {
+                    setPublicIP(ips.lan);
+                } else {
+                    setPublicIP(ips.wan);
+                }
             };
-            fetchPublicIP();
+            fetchIPs();
         } else {
             setPublicIP(null);
         }
-    }, [showPublicIP, internetStatus]);
+    }, [showIP, internetStatus, config?.ipDisplayType]);
 
     const handleClose = () => setOpenAddModal(false);
     const handleCloseEditPage = () => {
@@ -427,9 +439,9 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                                 <Typography variant='body2'>
                                                     {internetStatus === 'online' ? 'Internet Connected' : internetStatus === 'offline' ? 'No Internet Connection' : 'Checking Internet...'}
                                                 </Typography>
-                                                {showPublicIP && publicIP && internetStatus === 'online' && (
+                                                {showIP && publicIP && internetStatus === 'online' && (
                                                     <Typography variant='caption' sx={{ display: 'block', mt: 0.5 }}>
-                                                        IP: {publicIP}
+                                                        {(config?.ipDisplayType || 'wan') === 'wan' ? 'WAN: ' : (config?.ipDisplayType || 'wan') === 'lan' ? 'LAN: ' : ''}{publicIP}
                                                     </Typography>
                                                 )}
                                             </Box>

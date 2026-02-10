@@ -7,6 +7,7 @@ import { PiGlobeSimple, PiGlobeSimpleX } from 'react-icons/pi';
 import { DiskUsageBar } from './DiskUsageWidget';
 import { GaugeWidget } from './GaugeWidget';
 import { DashApi } from '../../../../../api/dash-api';
+import { useAppContext } from '../../../../../context/useAppContext';
 import { useInternetStatus } from '../../../../../hooks/useInternetStatus';
 import { useIsMobile } from '../../../../../hooks/useIsMobile';
 import { COLORS } from '../../../../../theme/styles';
@@ -26,12 +27,14 @@ interface SystemMonitorWidgetProps {
         showDiskUsage?: boolean;
         showSystemInfo?: boolean;
         showInternetStatus?: boolean;
-        showPublicIP?: boolean;
+        showIP?: boolean;
+        ipDisplayType?: 'wan' | 'lan' | 'both';
     };
     editMode?: boolean;
 }
 
 export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetProps) => {
+    const { config: globalConfig } = useAppContext();
     const [systemInformation, setSystemInformation] = useState<any>();
     const [memoryInformation, setMemoryInformation] = useState<any>(0);
     const [diskInformation, setDiskInformation] = useState<any>();
@@ -63,7 +66,7 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
     const showDiskUsage = config?.showDiskUsage !== false;
     const showSystemInfo = config?.showSystemInfo !== false;
     const showInternetStatus = config?.showInternetStatus !== false;
-    const showPublicIP = config?.showPublicIP || false;
+    const showIP = config?.showIP ?? (config as any)?.showPublicIP ?? false;
 
     const isMobile = useIsMobile();
 
@@ -441,18 +444,29 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
         };
     }, [internetTooltipOpen]);
 
-    // Fetch public IP when showPublicIP is enabled
+    // Fetch IP addresses when showIP is enabled
     useEffect(() => {
-        if (showPublicIP && internetStatus === 'online') {
-            const fetchPublicIP = async () => {
-                const ip = await DashApi.getPublicIP();
-                setPublicIP(ip);
+        if (showIP && internetStatus === 'online') {
+            const fetchIPs = async () => {
+                const ips = await DashApi.getIPAddresses();
+                const ipType = config?.ipDisplayType || 'wan';
+
+                if (ipType === 'both') {
+                    const parts = [];
+                    if (ips.wan) parts.push(`WAN: ${ips.wan}`);
+                    if (ips.lan) parts.push(`LAN: ${ips.lan}`);
+                    setPublicIP(parts.join(' • '));
+                } else if (ipType === 'lan') {
+                    setPublicIP(ips.lan);
+                } else {
+                    setPublicIP(ips.wan);
+                }
             };
-            fetchPublicIP();
+            fetchIPs();
         } else {
             setPublicIP(null);
         }
-    }, [showPublicIP, internetStatus]);
+    }, [showIP, internetStatus, config?.ipDisplayType]);
 
     // Determine layout styles based on dual widget position
     const containerStyles = {
@@ -540,9 +554,9 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
                                 <Typography variant='body2'>
                                     {internetStatus === 'online' ? 'Internet Connected' : internetStatus === 'offline' ? 'No Internet Connection' : 'Checking Internet...'}
                                 </Typography>
-                                {showPublicIP && publicIP && internetStatus === 'online' && (
+                                {showIP && publicIP && internetStatus === 'online' && (
                                     <Typography variant='caption' sx={{ display: 'block', mt: 0.5 }}>
-                                        IP: {publicIP}
+                                        {(config?.ipDisplayType || 'wan') === 'wan' ? 'WAN: ' : (config?.ipDisplayType || 'wan') === 'lan' ? 'LAN: ' : ''}{publicIP}
                                     </Typography>
                                 )}
                             </Box>

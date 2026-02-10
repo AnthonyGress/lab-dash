@@ -163,7 +163,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                         showDiskUsage: topConfig.showDiskUsage !== false,
                         showSystemInfo: topConfig.showSystemInfo !== false,
                         showInternetStatus: topConfig.showInternetStatus !== false,
-                        showPublicIP: topConfig.showPublicIP || false
+                        showIP: topConfig.showIP ?? topConfig.showPublicIP ?? false,
+                        ipDisplayType: topConfig.ipDisplayType || 'wan'
                     };
                     formContext.setValue('top_temperatureUnit', topConfig.temperatureUnit || 'fahrenheit');
                     formContext.setValue('top_gauge1', gauges[0] || 'cpu');
@@ -173,7 +174,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                     formContext.setValue('top_showDiskUsage', topConfig.showDiskUsage !== false);
                     formContext.setValue('top_showSystemInfo', topConfig.showSystemInfo !== false);
                     formContext.setValue('top_showInternetStatus', topConfig.showInternetStatus !== false);
-                    formContext.setValue('top_showPublicIP', topConfig.showPublicIP || false);
+                    formContext.setValue('top_showIP', topConfig.showIP ?? topConfig.showPublicIP ?? false);
+                    formContext.setValue('top_ipDisplayType', topConfig.ipDisplayType || 'wan');
                 }
                 else if (existingTopWidgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
                     topWidgetFields = {
@@ -291,7 +293,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                         showDiskUsage: bottomConfig.showDiskUsage !== false,
                         showSystemInfo: bottomConfig.showSystemInfo !== false,
                         showInternetStatus: bottomConfig.showInternetStatus !== false,
-                        showPublicIP: bottomConfig.showPublicIP || false
+                        showIP: bottomConfig.showIP ?? bottomConfig.showPublicIP ?? false,
+                        ipDisplayType: bottomConfig.ipDisplayType || 'wan'
                     };
                     formContext.setValue('bottom_temperatureUnit', bottomConfig.temperatureUnit || 'fahrenheit');
                     formContext.setValue('bottom_gauge1', gauges[0] || 'cpu');
@@ -301,7 +304,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                     formContext.setValue('bottom_showDiskUsage', bottomConfig.showDiskUsage !== false);
                     formContext.setValue('bottom_showSystemInfo', bottomConfig.showSystemInfo !== false);
                     formContext.setValue('bottom_showInternetStatus', bottomConfig.showInternetStatus !== false);
-                    formContext.setValue('bottom_showPublicIP', bottomConfig.showPublicIP || false);
+                    formContext.setValue('bottom_showIP', bottomConfig.showIP ?? bottomConfig.showPublicIP ?? false);
+                    formContext.setValue('bottom_ipDisplayType', bottomConfig.ipDisplayType || 'wan');
                 }
                 else if (existingBottomWidgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
                     bottomWidgetFields = {
@@ -552,7 +556,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 showDiskUsage: true,
                 showSystemInfo: true,
                 showInternetStatus: true,
-                showPublicIP: false
+                showIP: false,
+                ipDisplayType: 'wan'
             };
             formContext.setValue(getFieldName(position, 'temperatureUnit'), 'fahrenheit');
             formContext.setValue(getFieldName(position, 'gauge1'), 'cpu');
@@ -562,7 +567,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
             formContext.setValue(getFieldName(position, 'showDiskUsage'), true);
             formContext.setValue(getFieldName(position, 'showSystemInfo'), true);
             formContext.setValue(getFieldName(position, 'showInternetStatus'), true);
-            formContext.setValue(getFieldName(position, 'showPublicIP'), false);
+            formContext.setValue(getFieldName(position, 'showIP'), false);
+            formContext.setValue(getFieldName(position, 'ipDisplayType'), 'wan');
         }
         else if (widgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
             defaultFields = {
@@ -703,7 +709,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
             fields.showDiskUsage = formContext.getValues(getFieldName(position, 'showDiskUsage'));
             fields.showSystemInfo = formContext.getValues(getFieldName(position, 'showSystemInfo'));
             fields.showInternetStatus = formContext.getValues(getFieldName(position, 'showInternetStatus'));
-            fields.showPublicIP = formContext.getValues(getFieldName(position, 'showPublicIP'));
+            fields.showIP = formContext.getValues(getFieldName(position, 'showIP'));
+            fields.ipDisplayType = formContext.getValues(getFieldName(position, 'ipDisplayType'));
         }
         else if (widgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
             fields.selectedDisks = formContext.getValues(getFieldName(position, 'selectedDisks'));
@@ -984,7 +991,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
             const showDiskUsage = formContext.getValues(getFieldName(position, 'showDiskUsage'));
             const showSystemInfo = formContext.getValues(getFieldName(position, 'showSystemInfo'));
             const showInternetStatus = formContext.getValues(getFieldName(position, 'showInternetStatus'));
-            const showPublicIP = formContext.getValues(getFieldName(position, 'showPublicIP'));
+            const showIP = formContext.getValues(getFieldName(position, 'showIP'));
+            const ipDisplayType = formContext.getValues(getFieldName(position, 'ipDisplayType'));
 
             config = {
                 temperatureUnit: temperatureUnit || 'fahrenheit',
@@ -997,7 +1005,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 showDiskUsage: showDiskUsage !== false,
                 showSystemInfo: showSystemInfo !== false,
                 showInternetStatus: showInternetStatus !== false,
-                showPublicIP: showPublicIP || false
+                showIP: showIP || false,
+                ipDisplayType: ipDisplayType || 'wan'
             };
         }
         else if (widgetType === ITEM_TYPE.PIHOLE_WIDGET) {
@@ -1581,8 +1590,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
 
                 <Box sx={{ width: '100%', mb: 2 }}>
                     <CheckboxElement
-                        label='Show Public IP in Tooltip'
-                        name={getFieldName(position, 'showPublicIP')}
+                        label='Show IP in Tooltip'
+                        name={getFieldName(position, 'showIP')}
                         sx={{
                             ml: 1,
                             color: 'white',
@@ -1590,6 +1599,26 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                         }}
                     />
                 </Box>
+
+                {formContext.watch(getFieldName(position, 'showIP')) && (
+                    <Box sx={{ width: '100%', mb: 2 }}>
+                        <SelectElement
+                            label='IP Display Type'
+                            name={getFieldName(position, 'ipDisplayType')}
+                            options={[
+                                { id: 'wan', label: 'WAN (Public IP)' },
+                                { id: 'lan', label: 'LAN (Local IP)' },
+                                { id: 'both', label: 'Both WAN & LAN' }
+                            ]}
+                            required
+                            fullWidth
+                            sx={selectStyling}
+                            slotProps={{
+                                inputLabel: { style: { color: theme.palette.text.primary } }
+                            }}
+                        />
+                    </Box>
+                )}
             </>
         );
     };

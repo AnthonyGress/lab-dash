@@ -35,7 +35,8 @@ type FormValues = {
     searchProviderId: string;
     searchProvider?: SearchProvider;
     showInternetIndicator: boolean;
-    showPublicIP: boolean;
+    showIP: boolean;
+    ipDisplayType: 'wan' | 'lan' | 'both';
     themeColor: string;
     configFile?: File | null;
     appIconFiles?: File[] | null;
@@ -305,7 +306,8 @@ export const SettingsForm = () => {
                         : ''
             },
             showInternetIndicator: config?.showInternetIndicator !== false, // Default to true
-            showPublicIP: config?.showPublicIP || false,
+            showIP: config?.showIP ?? (config as any)?.showPublicIP ?? false,
+            ipDisplayType: config?.ipDisplayType || 'wan',
             themeColor: config?.themeColor || '#734CDE',
             configFile: null,
             appIconFiles: null
@@ -321,7 +323,8 @@ export const SettingsForm = () => {
     const searchProviderName = formContext.watch('searchProvider.name', '');
     const searchProviderUrl = formContext.watch('searchProvider.url', '');
     const showInternetIndicator = formContext.watch('showInternetIndicator', true);
-    const showPublicIP = formContext.watch('showPublicIP', false);
+    const showIP = formContext.watch('showIP', false);
+    const ipDisplayType = formContext.watch('ipDisplayType', 'wan');
     const themeColor = formContext.watch('themeColor', '#734CDE');
     const configFile = formContext.watch('configFile', null);
     const appIconFiles = formContext.watch('appIconFiles', null);
@@ -379,8 +382,11 @@ export const SettingsForm = () => {
             // Internet indicator change
             if (showInternetIndicator !== (config?.showInternetIndicator !== false)) return true;
 
-            // Show public IP change
-            if (showPublicIP !== (config?.showPublicIP || false)) return true;
+            // Show IP change
+            if (showIP !== (config?.showIP ?? (config as any)?.showPublicIP ?? false)) return true;
+
+            // IP display type change
+            if (ipDisplayType !== (config?.ipDisplayType || 'wan')) return true;
 
             // Theme color change
             if (themeColor !== (config?.themeColor || '#734CDE')) return true;
@@ -428,7 +434,8 @@ export const SettingsForm = () => {
         searchProviderName,
         searchProviderUrl,
         showInternetIndicator,
-        showPublicIP,
+        showIP,
+        ipDisplayType,
         themeColor,
         config
     ]);
@@ -464,8 +471,14 @@ export const SettingsForm = () => {
                 updatedConfig.showInternetIndicator = data.showInternetIndicator;
             }
 
-            if (data.showPublicIP !== undefined) {
-                updatedConfig.showPublicIP = data.showPublicIP;
+            if (data.showIP !== undefined) {
+                updatedConfig.showIP = data.showIP;
+                // Remove old field name if it exists
+                delete (updatedConfig as any).showPublicIP;
+            }
+
+            if (data.ipDisplayType !== undefined) {
+                updatedConfig.ipDisplayType = data.ipDisplayType;
             }
 
             // Handle theme color
@@ -598,7 +611,8 @@ export const SettingsForm = () => {
                         url: refreshedConfig?.searchProvider?.url || ''
                     },
                     showInternetIndicator: refreshedConfig?.showInternetIndicator !== false,
-                    showPublicIP: refreshedConfig?.showPublicIP || false,
+                    showIP: refreshedConfig?.showIP ?? (refreshedConfig as any)?.showPublicIP ?? false,
+                    ipDisplayType: refreshedConfig?.ipDisplayType || 'wan',
                     themeColor: refreshedConfig?.themeColor || '#734CDE',
                     appIconFiles: null
                 });
@@ -814,13 +828,43 @@ export const SettingsForm = () => {
                                 <Typography variant='body1' sx={{
                                     alignSelf: 'center',
                                     fontSize: { xs: '0.875rem', sm: '1rem' }
-                                }}>Show Public IP in Tooltip</Typography>
+                                }}>Show IP in Tooltip</Typography>
                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                     <CheckboxElement
-                                        name='showPublicIP'
+                                        name='showIP'
                                         sx={{ color: 'text.primary' }}
                                     />
                                 </Box>
+
+                                {showIP && (
+                                    <>
+                                        <Typography variant='body1' sx={{
+                                            alignSelf: 'center',
+                                            fontSize: { xs: '0.875rem', sm: '1rem' }
+                                        }}>IP Display Type</Typography>
+                                        <Box>
+                                            <SelectElement
+                                                name='ipDisplayType'
+                                                options={[
+                                                    { id: 'wan', label: 'WAN (Public IP)' },
+                                                    { id: 'lan', label: 'LAN (Local IP)' },
+                                                    { id: 'both', label: 'Both WAN & LAN' }
+                                                ]}
+                                                valueKey='id'
+                                                labelKey='label'
+                                                sx={{
+                                                    '& .MuiOutlinedInput-root': {
+                                                        '& fieldset': { borderColor: theme.palette.text.primary },
+                                                        '&:hover fieldset': { borderColor: 'primary.main' },
+                                                        '&.Mui-focused fieldset': { borderColor: 'primary.main' },
+                                                    },
+                                                    '.MuiSvgIcon-root ': { fill: theme.palette.text.primary },
+                                                    width: '95%'
+                                                }}
+                                            />
+                                        </Box>
+                                    </>
+                                )}
 
                                 {searchEnabled && (
                                     <>

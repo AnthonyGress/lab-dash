@@ -90,7 +90,8 @@ export type Config = {
     search?: boolean;
     searchProvider?: SearchProvider;
     showInternetIndicator?: boolean;
-    showPublicIP?: boolean;
+    showIP?: boolean;
+    ipDisplayType?: 'wan' | 'lan' | 'both';
     isSetupComplete?: boolean;
     lastSeenVersion?: string;
     defaultNoteFontSize?: string;

@@ -40,7 +40,8 @@ export type Config = {
     notes?: Note[];
     themeColor?: string;
     showInternetIndicator?: boolean;
-    showPublicIP?: boolean;
+    showIP?: boolean;
+    ipDisplayType?: 'wan' | 'lan' | 'both';
 }
 
 export type Note = {
