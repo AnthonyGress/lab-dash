@@ -26,6 +26,7 @@ interface SystemMonitorWidgetProps {
         showDiskUsage?: boolean;
         showSystemInfo?: boolean;
         showInternetStatus?: boolean;
+        showPublicIP?: boolean;
     };
     editMode?: boolean;
 }
@@ -48,6 +49,7 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [internetTooltipOpen, setInternetTooltipOpen] = useState(false);
+    const [publicIP, setPublicIP] = useState<string | null>(null);
 
     const { internetStatus } = useInternetStatus();
 
@@ -61,6 +63,7 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
     const showDiskUsage = config?.showDiskUsage !== false;
     const showSystemInfo = config?.showSystemInfo !== false;
     const showInternetStatus = config?.showInternetStatus !== false;
+    const showPublicIP = config?.showPublicIP || false;
 
     const isMobile = useIsMobile();
 
@@ -438,6 +441,19 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
         };
     }, [internetTooltipOpen]);
 
+    // Fetch public IP when showPublicIP is enabled
+    useEffect(() => {
+        if (showPublicIP && internetStatus === 'online') {
+            const fetchPublicIP = async () => {
+                const ip = await DashApi.getPublicIP();
+                setPublicIP(ip);
+            };
+            fetchPublicIP();
+        } else {
+            setPublicIP(null);
+        }
+    }, [showPublicIP, internetStatus]);
+
     // Determine layout styles based on dual widget position
     const containerStyles = {
         width: '100%',
@@ -519,7 +535,18 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
                     onClick={(e) => e.stopPropagation()}
                 >
                     <Tooltip
-                        title={internetStatus === 'online' ? 'Internet Connected' : internetStatus === 'offline' ? 'No Internet Connection' : 'Checking Internet...'}
+                        title={
+                            <Box>
+                                <Typography variant='body2'>
+                                    {internetStatus === 'online' ? 'Internet Connected' : internetStatus === 'offline' ? 'No Internet Connection' : 'Checking Internet...'}
+                                </Typography>
+                                {showPublicIP && publicIP && internetStatus === 'online' && (
+                                    <Typography variant='caption' sx={{ display: 'block', mt: 0.5 }}>
+                                        IP: {publicIP}
+                                    </Typography>
+                                )}
+                            </Box>
+                        }
                         arrow
                         placement='left'
                         open={internetTooltipOpen}

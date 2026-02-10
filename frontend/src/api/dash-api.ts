@@ -589,8 +589,8 @@ export class DashApi {
                 params: { url, type: healthCheckType },
                 // Don't send credentials for health checks to avoid auth issues
                 withCredentials: false,
-                // Add timeout to prevent long-running requests
-                timeout: 5000
+                // Increased timeout to handle slower services
+                timeout: 12000
             });
             return res.data.status;
         } catch (error) {
@@ -612,6 +612,19 @@ export class DashApi {
         } catch (error) {
             console.error('Failed to check internet connectivity:', error);
             return 'offline';
+        }
+    }
+
+    public static async getPublicIP(): Promise<string | null> {
+        try {
+            const res = await axios.get(`${BACKEND_URL}/api/health/public-ip`, {
+                withCredentials: false,
+                timeout: 5000
+            });
+            return res.data.ip;
+        } catch (error) {
+            console.error('Failed to fetch public IP:', error);
+            return null;
         }
     }
 
@@ -2142,7 +2155,7 @@ export class DashApi {
 
     public static async nzbgetResumeDownload(itemId: string, nzbId?: string): Promise<boolean> {
         try {
-            const res = await axios.post(`${BACKEND_URL}/api/nzbget/resume`, 
+            const res = await axios.post(`${BACKEND_URL}/api/nzbget/resume`,
                 { nzbId }, // Send nzbId in request body
                 {
                     params: { itemId },
@@ -2158,7 +2171,7 @@ export class DashApi {
 
     public static async nzbgetPauseDownload(itemId: string, nzbId?: string): Promise<boolean> {
         try {
-            const res = await axios.post(`${BACKEND_URL}/api/nzbget/pause`, 
+            const res = await axios.post(`${BACKEND_URL}/api/nzbget/pause`,
                 { nzbId }, // Send nzbId in request body
                 {
                     params: { itemId },

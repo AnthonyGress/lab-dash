@@ -39,7 +39,7 @@ interface JellyfinSession {
 
 interface MediaServerWidgetProps {
     config?: {
-        clientType?: 'jellyfin' | 'plex';
+        clientType?: 'jellyfin' | 'plex' | 'emby';
         displayName?: string;
         host?: string;
         port?: string;
@@ -145,9 +145,11 @@ const SessionItem: React.FC<SessionItemProps> = ({ session, clientType, config }
     const getImageUrl = (item: JellyfinSession['NowPlayingItem'], serverConfig: any): string | undefined => {
         if (!item?.ImageTags?.Primary || !serverConfig?.host) return undefined;
 
+        // Strip any existing protocol prefix
+        const cleanHost = serverConfig.host.replace(/^https?:\/\//, '');
         const protocol = serverConfig.ssl ? 'https' : 'http';
         const port = serverConfig.port ? `:${serverConfig.port}` : '';
-        const baseUrl = `${protocol}://${serverConfig.host}${port}`;
+        const baseUrl = `${protocol}://${cleanHost}${port}`;
 
         return `${baseUrl}/Items/${item.Id}/Images/Primary?tag=${item.ImageTags.Primary}&maxHeight=80&maxWidth=80&quality=90`;
     };
@@ -328,8 +330,8 @@ export const MediaServerWidget: React.FC<MediaServerWidgetProps> = ({
 
         try {
             setIsLoading(true);
-            // For now, only support Jellyfin
-            if (config.clientType === 'jellyfin' || !config.clientType) {
+            // Jellyfin and Emby use the same API
+            if (config.clientType === 'jellyfin' || config.clientType === 'emby' || !config.clientType) {
                 const data = await DashApi.getJellyfinSessions(id);
 
                 setSessions(data.sessions || []);
@@ -359,8 +361,8 @@ export const MediaServerWidget: React.FC<MediaServerWidgetProps> = ({
 
         try {
             setLibraryStats(prev => ({ ...prev, isLoading: true }));
-            // For now, only support Jellyfin
-            if (config.clientType === 'jellyfin' || !config.clientType) {
+            // Jellyfin and Emby use the same API
+            if (config.clientType === 'jellyfin' || config.clientType === 'emby' || !config.clientType) {
                 const data = await DashApi.getJellyfinLibraryStats(id);
                 setLibraryStats({
                     tvShows: data.tvShows || 0,
@@ -409,16 +411,18 @@ export const MediaServerWidget: React.FC<MediaServerWidgetProps> = ({
         };
     }, [config, id, fetchSessions, fetchLibraryStats]);
 
-    const clientName = config?.displayName || (config?.clientType === 'plex' ? 'Plex' : 'Jellyfin');
+    const clientName = config?.displayName || (config?.clientType === 'plex' ? 'Plex' : config?.clientType === 'emby' ? 'Emby' : 'Jellyfin');
 
     // Create base URL for media server web UI
     const getBaseUrl = () => {
         if (!config?.host) return '';
 
+        // Strip any existing protocol prefix
+        const cleanHost = config.host.replace(/^https?:\/\//, '');
         const protocol = config.ssl ? 'https' : 'http';
         const port = config.port ? `:${config.port}` : '';
 
-        return `${protocol}://${config.host}${port}`;
+        return `${protocol}://${cleanHost}${port}`;
     };
 
     // Handle opening the media server web UI
@@ -469,7 +473,7 @@ export const MediaServerWidget: React.FC<MediaServerWidgetProps> = ({
                         {config?.showLabel !== false && (
                             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 1 }}>
                                 <img
-                                    src={`${BACKEND_URL}/icons/${config?.clientType === 'plex' ? 'plex.svg' : 'jellyfin.svg'}`}
+                                    src={`${BACKEND_URL}/icons/${config?.clientType === 'plex' ? 'plex.svg' : config?.clientType === 'emby' ? 'emby.svg' : 'jellyfin.svg'}`}
                                     alt={clientName}
                                     style={{
                                         width: '24px',
@@ -534,7 +538,7 @@ export const MediaServerWidget: React.FC<MediaServerWidgetProps> = ({
                                 onClick={handleOpenWebUI}
                             >
                                 <img
-                                    src={`${BACKEND_URL}/icons/${config?.clientType === 'plex' ? 'plex.svg' : 'jellyfin.svg'}`}
+                                    src={`${BACKEND_URL}/icons/${config?.clientType === 'plex' ? 'plex.svg' : config?.clientType === 'emby' ? 'emby.svg' : 'jellyfin.svg'}`}
                                     alt={clientName}
                                     style={{
                                         width: '24px',

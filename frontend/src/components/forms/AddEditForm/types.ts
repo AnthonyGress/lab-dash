@@ -20,6 +20,7 @@ export type FormValues = {
     showDiskUsage?: boolean;
     showSystemInfo?: boolean;
     showInternetStatus?: boolean;
+    showPublicIP?: boolean;
     // Disk monitor widget
     selectedDisks?: Array<{ mount: string; customName: string; showMountPath?: boolean }>;
     showIcons?: boolean;
@@ -105,6 +106,7 @@ export type FormValues = {
     top_showDiskUsage?: boolean;
     top_showSystemInfo?: boolean;
     top_showInternetStatus?: boolean;
+    top_showPublicIP?: boolean;
     top_selectedDisks?: Array<{ mount: string; customName: string; showMountPath?: boolean }>;
     top_showIcons?: boolean;
     top_showMountPath?: boolean;
@@ -135,6 +137,7 @@ export type FormValues = {
     bottom_showDiskUsage?: boolean;
     bottom_showSystemInfo?: boolean;
     bottom_showInternetStatus?: boolean;
+    bottom_showPublicIP?: boolean;
     bottom_selectedDisks?: Array<{ mount: string; customName: string; showMountPath?: boolean }>;
     bottom_showIcons?: boolean;
     bottom_showMountPath?: boolean;

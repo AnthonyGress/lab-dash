@@ -29,7 +29,7 @@ type SetupModalProps = {
 
 export const SetupModal: React.FC<SetupModalProps> = ({ open, onComplete }) => {
     const [activeStep, setActiveStep] = useState(0);
-    const { setIsLoggedIn, setUsername, setIsAdmin, refreshDashboard } = useAppContext();
+    const { setIsLoggedIn, setUsername, setIsAdmin } = useAppContext();
 
     const formContext = useForm<FormValues>({
         defaultValues: {
@@ -64,8 +64,8 @@ export const SetupModal: React.FC<SetupModalProps> = ({ open, onComplete }) => {
             setUsername(data.username);
             setIsAdmin(loginResponse.isAdmin);
 
-            // Refresh dashboard to load admin-only items
-            await refreshDashboard();
+            // Don't refresh dashboard here - it will be refreshed after setup is complete
+            // The SetupForm's handleSetupComplete will update the config, which will trigger a refresh
 
             PopupManager.success('Account created successfully!');
             onComplete();

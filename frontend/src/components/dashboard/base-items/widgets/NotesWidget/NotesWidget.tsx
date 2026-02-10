@@ -1,7 +1,6 @@
 import { Add, Close, List, MoreVert, Save } from '@mui/icons-material';
 import { Box, CardContent, IconButton, Menu, MenuItem, Tab, Tabs, TextField, Tooltip, Typography, useMediaQuery } from '@mui/material';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { FaEdit } from 'react-icons/fa';
 import { FaStickyNote } from 'react-icons/fa';
 import { FaRegWindowRestore, FaTrashCan } from 'react-icons/fa6';
 
@@ -406,6 +405,7 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                     flexShrink: 0
                 }}>
                     <Typography
+                        onClick={isLoggedIn && isAdmin && !editMode ? handleEditClick : undefined}
                         sx={{
                             color: 'white',
                             fontSize: isMobile ? '1.75rem' : '2rem',
@@ -413,17 +413,20 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                             wordBreak: 'break-word',
                             textAlign: 'left',
                             userSelect: 'text',
-                            cursor: 'text',
+                            cursor: isLoggedIn && isAdmin && !editMode ? 'pointer' : 'text',
                             flex: 1,
                             lineHeight: 1.2,
-                            marginLeft: 1
+                            marginLeft: 1,
+                            '&:hover': isLoggedIn && isAdmin && !editMode ? {
+                                backgroundColor: 'rgba(255,255,255,0.02)'
+                            } : {}
                         }}
                     >
                         {selectedNote.title}
                     </Typography>
 
                     {/* Menu positioned on the right */}
-                    {isLoggedIn && isAdmin && !editMode && (
+                    {!editMode && (
                         <Box sx={{
                             display: 'flex',
                             gap: 0.5,
@@ -441,26 +444,38 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                     </IconButton>
                                 </ConditionalTooltip>
                             )}
-                            <IconButton
-                                size='small'
-                                onClick={handleMenuOpen}
-                                sx={{
-                                    color: 'white',
-                                    opacity: 0.8,
-                                    '&:hover': { opacity: 1 }
-                                }}
-                            >
-                                <MoreVert fontSize='medium' />
-                            </IconButton>
+                            {isLoggedIn && isAdmin && (
+                                <IconButton
+                                    size='small'
+                                    onClick={handleMenuOpen}
+                                    sx={{
+                                        color: 'white',
+                                        opacity: 0.8,
+                                        '&:hover': { opacity: 1 }
+                                    }}
+                                >
+                                    <MoreVert fontSize='medium' />
+                                </IconButton>
+                            )}
                         </Box>
                     )}
                 </Box>
 
                 {/* Content */}
-                <Box sx={{
-                    flex: 1,
-                    overflow: 'auto',
-                }}>
+                <Box
+                    onClick={isLoggedIn && isAdmin && !editMode ? handleEditClick : undefined}
+                    sx={{
+                        flex: 1,
+                        overflow: 'auto',
+                        cursor: isLoggedIn && isAdmin && !editMode ? 'pointer' : 'default',
+                        '& *': isLoggedIn && isAdmin && !editMode ? {
+                            cursor: 'pointer !important'
+                        } : {},
+                        '&:hover': isLoggedIn && isAdmin && !editMode ? {
+                            backgroundColor: 'rgba(255,255,255,0.02)'
+                        } : {}
+                    }}
+                >
                     <MarkdownPreview content={selectedNote.content} fontSize={fontSize} />
                 </Box>
             </Box>
@@ -759,8 +774,8 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                 userSelect: 'auto' // Ensure text selection is allowed
             }}>
                 {/* Header */}
-                {showLabel && (
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5, width: '100%' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5, width: '100%', minHeight: '40px' }}>
+                    {showLabel && (
                         <Box
                             sx={{
                                 display: 'flex',
@@ -786,71 +801,68 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                                 {displayName}
                             </Typography>
                         </Box>
+                    )}
 
-                        {!editMode && (
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                {viewMode === 'list' && isLoggedIn && isAdmin ? (
-                                    <ConditionalTooltip title='New note'>
-                                        <IconButton
-                                            size='small'
-                                            onClick={handleNewNote}
-                                            sx={{ color: 'white', opacity: 0.8, '&:hover': { opacity: 1 } }}
-                                        >
-                                            <Add fontSize='medium' />
-                                        </IconButton>
-                                    </ConditionalTooltip>
-                                )
-                                    : // placsholder for spacing
+                    {!editMode && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, marginLeft: 'auto' }}>
+                            {viewMode === 'list' && isLoggedIn && isAdmin ? (
+                                <ConditionalTooltip title='New note'>
                                     <IconButton
                                         size='small'
-                                        sx={{ opacity: 0, cursor: 'default' }}
+                                        onClick={handleNewNote}
+                                        sx={{ color: 'white', opacity: 0.8, '&:hover': { opacity: 1 } }}
                                     >
                                         <Add fontSize='medium' />
                                     </IconButton>
-                                }
-                                {viewMode === 'view' && (
-                                    <ConditionalTooltip title='List' placement='left'>
-                                        <IconButton
-                                            size='small'
-                                            onClick={handleListClick}
-                                            sx={{ color: 'white', opacity: 0.8, '&:hover': { opacity: 1 } }}
-                                        >
-                                            <List fontSize='medium' />
-                                        </IconButton>
-                                    </ConditionalTooltip>
-                                )}
-                                {viewMode === 'edit' && (
-                                    <ConditionalTooltip title='Cancel'>
-                                        <IconButton
-                                            size='small'
-                                            onClick={handleCancel}
-                                            sx={{ color: 'white', opacity: 0.8, '&:hover': { opacity: 1 } }}
-                                        >
-                                            <Close fontSize='medium' />
-                                        </IconButton>
-                                    </ConditionalTooltip>
-                                )}
-                            </Box>
-                        )}
-                    </Box>
-                )}
+                                </ConditionalTooltip>
+                            ) : (
+                                <IconButton
+                                    size='small'
+                                    sx={{ opacity: 0, cursor: 'default', pointerEvents: 'none' }}
+                                >
+                                    <Add fontSize='medium' />
+                                </IconButton>
+                            )}
+                            {viewMode === 'view' && (
+                                <ConditionalTooltip title='List' placement='left'>
+                                    <IconButton
+                                        size='small'
+                                        onClick={handleListClick}
+                                        sx={{ color: 'white', opacity: 0.8, '&:hover': { opacity: 1 } }}
+                                    >
+                                        <List fontSize='medium' />
+                                    </IconButton>
+                                </ConditionalTooltip>
+                            )}
+                            {viewMode === 'edit' && (
+                                <ConditionalTooltip title='Cancel'>
+                                    <IconButton
+                                        size='small'
+                                        onClick={handleCancel}
+                                        sx={{ color: 'white', opacity: 0.8, '&:hover': { opacity: 1 } }}
+                                    >
+                                        <Close fontSize='medium' />
+                                    </IconButton>
+                                </ConditionalTooltip>
+                            )}
+                        </Box>
+                    )}
+                </Box>
 
                 {/* Subtitle */}
-                {showLabel && (
-                    <Typography variant='caption' sx={{
-                        px: 1,
-                        mb: 0.5,
-                        color: viewMode === 'list' ? 'white' : 'transparent',
-                        opacity: viewMode === 'list' ? 1 : 0,
-                        position: 'relative',
-                        zIndex: 'auto',
-                        pointerEvents: 'none',
-                        userSelect: 'none',
-                        display: 'block'
-                    }}>
-                        {viewMode === 'list' ? `Notes (${notes.length})` : 'Notes (0)'}
-                    </Typography>
-                )}
+                <Typography variant='caption' sx={{
+                    px: 1,
+                    mb: 0.5,
+                    color: viewMode === 'list' ? 'white' : 'transparent',
+                    opacity: viewMode === 'list' ? 1 : 0,
+                    position: 'relative',
+                    zIndex: 'auto',
+                    pointerEvents: 'none',
+                    userSelect: 'none',
+                    display: showLabel ? 'block' : 'none'
+                }}>
+                    {viewMode === 'list' ? `Notes (${notes.length})` : 'Notes (0)'}
+                </Typography>
 
                 {/* Content */}
                 <Box sx={{ flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', width: '100%' }}>
@@ -860,8 +872,8 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                         pt: 1,
                         pb: 1,
                         overflowY: 'auto',
-                        height: '320px',
-                        maxHeight: '320px',
+                        height: showLabel ? '320px' : '340px',
+                        maxHeight: showLabel ? '320px' : '340px',
                         width: '100%',
                         minWidth: '100%',
                         flex: '1 1 auto',
@@ -1154,18 +1166,6 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
                     }
                 }}
             >
-                <MenuItem
-                    onClick={handleEditClick}
-                    sx={{
-                        py: 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1
-                    }}
-                >
-                    <FaEdit size={14} />
-                    Edit
-                </MenuItem>
                 <MenuItem
                     onClick={() => selectedNote && handleDeleteNote(selectedNote.id)}
                     sx={{

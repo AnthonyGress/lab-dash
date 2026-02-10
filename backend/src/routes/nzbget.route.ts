@@ -483,10 +483,11 @@ nzbgetRoute.delete('/delete/:nzbId', async (req: Request, res: Response) => {
 
         // Delete the download
         // historydelete removes from history and optionally from disk
+        const nzbIdNum = typeof nzbId === 'string' ? parseInt(nzbId) : parseInt(nzbId[0]);
         await makeNZBGetRequest(
             baseUrl,
             'editqueue',
-            ['GroupDelete', 0, '', [parseInt(nzbId)]],
+            ['GroupDelete', 0, '', [nzbIdNum]],
             auth.username,
             auth.password
         );

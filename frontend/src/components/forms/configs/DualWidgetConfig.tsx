@@ -162,7 +162,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                         networkInterface: topConfig.networkInterface || '',
                         showDiskUsage: topConfig.showDiskUsage !== false,
                         showSystemInfo: topConfig.showSystemInfo !== false,
-                        showInternetStatus: topConfig.showInternetStatus !== false
+                        showInternetStatus: topConfig.showInternetStatus !== false,
+                        showPublicIP: topConfig.showPublicIP || false
                     };
                     formContext.setValue('top_temperatureUnit', topConfig.temperatureUnit || 'fahrenheit');
                     formContext.setValue('top_gauge1', gauges[0] || 'cpu');
@@ -172,6 +173,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                     formContext.setValue('top_showDiskUsage', topConfig.showDiskUsage !== false);
                     formContext.setValue('top_showSystemInfo', topConfig.showSystemInfo !== false);
                     formContext.setValue('top_showInternetStatus', topConfig.showInternetStatus !== false);
+                    formContext.setValue('top_showPublicIP', topConfig.showPublicIP || false);
                 }
                 else if (existingTopWidgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
                     topWidgetFields = {
@@ -288,7 +290,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                         networkInterface: bottomConfig.networkInterface || '',
                         showDiskUsage: bottomConfig.showDiskUsage !== false,
                         showSystemInfo: bottomConfig.showSystemInfo !== false,
-                        showInternetStatus: bottomConfig.showInternetStatus !== false
+                        showInternetStatus: bottomConfig.showInternetStatus !== false,
+                        showPublicIP: bottomConfig.showPublicIP || false
                     };
                     formContext.setValue('bottom_temperatureUnit', bottomConfig.temperatureUnit || 'fahrenheit');
                     formContext.setValue('bottom_gauge1', gauges[0] || 'cpu');
@@ -298,6 +301,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                     formContext.setValue('bottom_showDiskUsage', bottomConfig.showDiskUsage !== false);
                     formContext.setValue('bottom_showSystemInfo', bottomConfig.showSystemInfo !== false);
                     formContext.setValue('bottom_showInternetStatus', bottomConfig.showInternetStatus !== false);
+                    formContext.setValue('bottom_showPublicIP', bottomConfig.showPublicIP || false);
                 }
                 else if (existingBottomWidgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
                     bottomWidgetFields = {
@@ -547,7 +551,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 networkInterface: '',
                 showDiskUsage: true,
                 showSystemInfo: true,
-                showInternetStatus: true
+                showInternetStatus: true,
+                showPublicIP: false
             };
             formContext.setValue(getFieldName(position, 'temperatureUnit'), 'fahrenheit');
             formContext.setValue(getFieldName(position, 'gauge1'), 'cpu');
@@ -557,6 +562,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
             formContext.setValue(getFieldName(position, 'showDiskUsage'), true);
             formContext.setValue(getFieldName(position, 'showSystemInfo'), true);
             formContext.setValue(getFieldName(position, 'showInternetStatus'), true);
+            formContext.setValue(getFieldName(position, 'showPublicIP'), false);
         }
         else if (widgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
             defaultFields = {
@@ -697,6 +703,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
             fields.showDiskUsage = formContext.getValues(getFieldName(position, 'showDiskUsage'));
             fields.showSystemInfo = formContext.getValues(getFieldName(position, 'showSystemInfo'));
             fields.showInternetStatus = formContext.getValues(getFieldName(position, 'showInternetStatus'));
+            fields.showPublicIP = formContext.getValues(getFieldName(position, 'showPublicIP'));
         }
         else if (widgetType === ITEM_TYPE.DISK_MONITOR_WIDGET) {
             fields.selectedDisks = formContext.getValues(getFieldName(position, 'selectedDisks'));
@@ -977,6 +984,7 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
             const showDiskUsage = formContext.getValues(getFieldName(position, 'showDiskUsage'));
             const showSystemInfo = formContext.getValues(getFieldName(position, 'showSystemInfo'));
             const showInternetStatus = formContext.getValues(getFieldName(position, 'showInternetStatus'));
+            const showPublicIP = formContext.getValues(getFieldName(position, 'showPublicIP'));
 
             config = {
                 temperatureUnit: temperatureUnit || 'fahrenheit',
@@ -988,7 +996,8 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                 networkInterface: networkInterface || fields.networkInterface || '',
                 showDiskUsage: showDiskUsage !== false,
                 showSystemInfo: showSystemInfo !== false,
-                showInternetStatus: showInternetStatus !== false
+                showInternetStatus: showInternetStatus !== false,
+                showPublicIP: showPublicIP || false
             };
         }
         else if (widgetType === ITEM_TYPE.PIHOLE_WIDGET) {
@@ -1562,6 +1571,18 @@ export const DualWidgetConfig = ({ formContext, existingItem }: DualWidgetConfig
                     <CheckboxElement
                         label='Show Internet Status'
                         name={getFieldName(position, 'showInternetStatus')}
+                        sx={{
+                            ml: 1,
+                            color: 'white',
+                            '& .MuiSvgIcon-root': { fontSize: 30 }
+                        }}
+                    />
+                </Box>
+
+                <Box sx={{ width: '100%', mb: 2 }}>
+                    <CheckboxElement
+                        label='Show Public IP in Tooltip'
+                        name={getFieldName(position, 'showPublicIP')}
                         sx={{
                             ml: 1,
                             color: 'white',

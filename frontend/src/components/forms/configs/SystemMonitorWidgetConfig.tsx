@@ -288,6 +288,18 @@ export const SystemMonitorWidgetConfig = ({ formContext }: SystemMonitorWidgetCo
                     }}
                 />
             </Grid>
+
+            <Grid>
+                <CheckboxElement
+                    label='Show Public IP in Tooltip'
+                    name='showPublicIP'
+                    sx={{
+                        ml: 1,
+                        color: 'white',
+                        '& .MuiSvgIcon-root': { fontSize: 30 }
+                    }}
+                />
+            </Grid>
         </>
     );
 };

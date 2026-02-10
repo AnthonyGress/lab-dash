@@ -39,6 +39,8 @@ export type Config = {
     lastSeenVersion?: string;
     notes?: Note[];
     themeColor?: string;
+    showInternetIndicator?: boolean;
+    showPublicIP?: boolean;
 }
 
 export type Note = {
