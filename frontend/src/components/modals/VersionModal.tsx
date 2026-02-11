@@ -132,7 +132,7 @@ export const VersionModal = ({ open, handleClose }: VersionModalProps) => {
             );
 
             // Convert all releases to ReleaseInfo objects
-            const releases: ReleaseInfo[] = sortedReleases
+            const releases = sortedReleases
                 .map(release => {
                     const notes = cleanReleaseNotes(release.body || '');
                     if (!notes) return null;
@@ -142,7 +142,7 @@ export const VersionModal = ({ open, handleClose }: VersionModalProps) => {
                         notes,
                         date: formatDate(release.published_at),
                         isExactMatch: normalizeVersion(release.tag_name) === normalizeVersion(currentVersion)
-                    };
+                    } as ReleaseInfo;
                 })
                 .filter((release): release is ReleaseInfo => release !== null);
 
