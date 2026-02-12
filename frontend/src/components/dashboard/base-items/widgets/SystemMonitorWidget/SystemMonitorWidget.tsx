@@ -52,7 +52,7 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [internetTooltipOpen, setInternetTooltipOpen] = useState(false);
-    const [publicIP, setPublicIP] = useState<string | null>(null);
+    const [ipAddress, setIPAddress] = useState<{ wan?: string | null; lan?: string | null } | string | null>(null);
 
     const { internetStatus } = useInternetStatus();
 
@@ -452,19 +452,16 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
                 const ipType = config?.ipDisplayType || 'wan';
 
                 if (ipType === 'both') {
-                    const parts = [];
-                    if (ips.wan) parts.push(`WAN: ${ips.wan}`);
-                    if (ips.lan) parts.push(`LAN: ${ips.lan}`);
-                    setPublicIP(parts.join(' • '));
+                    setIPAddress({ wan: ips.wan, lan: ips.lan });
                 } else if (ipType === 'lan') {
-                    setPublicIP(ips.lan);
+                    setIPAddress(ips.lan);
                 } else {
-                    setPublicIP(ips.wan);
+                    setIPAddress(ips.wan);
                 }
             };
             fetchIPs();
         } else {
-            setPublicIP(null);
+            setIPAddress(null);
         }
     }, [showIP, internetStatus, config?.ipDisplayType]);
 
@@ -551,13 +548,32 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
                     <Tooltip
                         title={
                             <Box>
-                                <Typography variant='body2'>
+                                <Typography variant='body2' sx={{ textAlign: 'center' }}>
                                     {internetStatus === 'online' ? 'Internet Connected' : internetStatus === 'offline' ? 'No Internet Connection' : 'Checking Internet...'}
                                 </Typography>
-                                {showIP && publicIP && internetStatus === 'online' && (
-                                    <Typography variant='caption' sx={{ display: 'block', mt: 0.5 }}>
-                                        {(config?.ipDisplayType || 'wan') === 'wan' ? 'WAN: ' : (config?.ipDisplayType || 'wan') === 'lan' ? 'LAN: ' : ''}{publicIP}
-                                    </Typography>
+                                {showIP && ipAddress && internetStatus === 'online' && (
+                                    <Box sx={{ mt: 0.5 }}>
+                                        {typeof ipAddress === 'object' ? (
+                                            <>
+                                                {ipAddress.wan && (
+                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
+                                                        <Typography variant='caption'>WAN:</Typography>
+                                                        <Typography variant='caption'>{ipAddress.wan}</Typography>
+                                                    </Box>
+                                                )}
+                                                {ipAddress.lan && (
+                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
+                                                        <Typography variant='caption'>LAN:</Typography>
+                                                        <Typography variant='caption'>{ipAddress.lan}</Typography>
+                                                    </Box>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <Typography variant='caption' sx={{ display: 'block', textAlign: 'right' }}>
+                                                {(config?.ipDisplayType || 'wan') === 'wan' ? 'WAN: ' : 'LAN: '}{ipAddress}
+                                            </Typography>
+                                        )}
+                                    </Box>
                                 )}
                             </Box>
                         }
@@ -572,7 +588,7 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
                         disableFocusListener
                         disableTouchListener
                         PopperProps={{
-                            disablePortal: true,
+                            disablePortal: false,
                         }}
                         slotProps={{
                             tooltip: {
