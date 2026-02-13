@@ -615,16 +615,16 @@ export class DashApi {
         }
     }
 
-    public static async getPublicIP(): Promise<string | null> {
+    public static async getIPAddresses(): Promise<{ wan: string | null; lan: string | null }> {
         try {
-            const res = await axios.get(`${BACKEND_URL}/api/health/public-ip`, {
+            const res = await axios.get(`${BACKEND_URL}/api/health/ip`, {
                 withCredentials: false,
                 timeout: 5000
             });
-            return res.data.ip;
+            return { wan: res.data.wan, lan: res.data.lan };
         } catch (error) {
-            console.error('Failed to fetch public IP:', error);
-            return null;
+            console.error('Failed to fetch IP addresses:', error);
+            return { wan: null, lan: null };
         }
     }
 

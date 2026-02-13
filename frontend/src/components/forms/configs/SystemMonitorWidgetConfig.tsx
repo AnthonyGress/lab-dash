@@ -291,8 +291,8 @@ export const SystemMonitorWidgetConfig = ({ formContext }: SystemMonitorWidgetCo
 
             <Grid>
                 <CheckboxElement
-                    label='Show Public IP in Tooltip'
-                    name='showPublicIP'
+                    label='Show IP in Tooltip'
+                    name='showIP'
                     sx={{
                         ml: 1,
                         color: 'white',
@@ -300,6 +300,26 @@ export const SystemMonitorWidgetConfig = ({ formContext }: SystemMonitorWidgetCo
                     }}
                 />
             </Grid>
+
+            {formContext.watch('showIP') && (
+                <Grid>
+                    <SelectElement
+                        label='IP Display Type'
+                        name='ipDisplayType'
+                        options={[
+                            { id: 'wan', label: 'WAN (Public IP)' },
+                            { id: 'lan', label: 'LAN (Local IP)' },
+                            { id: 'both', label: 'Both WAN & LAN' }
+                        ]}
+                        required
+                        fullWidth
+                        sx={selectStyling}
+                        slotProps={{
+                            inputLabel: { style: { color: theme.palette.text.primary } }
+                        }}
+                    />
+                </Grid>
+            )}
         </>
     );
 };

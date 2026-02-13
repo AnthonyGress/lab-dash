@@ -1,5 +1,5 @@
-import { Box, CircularProgress, Typography } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { Box, Button, CircularProgress, Typography } from '@mui/material';
+import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 
 import { CenteredModal } from './CenteredModal';
@@ -31,16 +31,33 @@ interface VersionModalProps {
   handleClose: () => void;
 }
 
+const INITIAL_RELEASES_COUNT = 5;
+const LOAD_MORE_COUNT = 5;
+
 export const VersionModal = ({ open, handleClose }: VersionModalProps) => {
-    const [releaseInfo, setReleaseInfo] = useState<ReleaseInfo | null>(null);
+    const [allReleases, setAllReleases] = useState<ReleaseInfo[]>([]);
+    const [displayedCount, setDisplayedCount] = useState(INITIAL_RELEASES_COUNT);
     const [isLoading, setIsLoading] = useState(false);
+    const [previousCount, setPreviousCount] = useState<number | null>(null);
     const { config, recentlyUpdated } = useAppContext();
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (open) {
             fetchVersionInfo();
+            setDisplayedCount(INITIAL_RELEASES_COUNT);
         }
     }, [open, config]);
+
+    useEffect(() => {
+        if (previousCount !== null && scrollContainerRef.current) {
+            const firstNewElement = document.getElementById(`release-${previousCount}`);
+            if (firstNewElement) {
+                firstNewElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            setPreviousCount(null);
+        }
+    }, [displayedCount, previousCount]);
 
     const cleanReleaseNotes = (body: string): string | null => {
         if (!body) return null;
@@ -94,10 +111,6 @@ export const VersionModal = ({ open, handleClose }: VersionModalProps) => {
             // Get current app version
             const currentVersion = getAppVersion();
 
-            // Check if this is a "recently updated" situation where we need to show changes
-            const lastSeenVersion = config?.lastSeenVersion;
-            const showChanges = recentlyUpdated && lastSeenVersion && lastSeenVersion !== currentVersion;
-
             // Fetch all releases using fetch API
             const response = await fetch(
                 'https://api.github.com/repos/anthonygress/lab-dash/releases',
@@ -118,171 +131,38 @@ export const VersionModal = ({ open, handleClose }: VersionModalProps) => {
                 new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
             );
 
-            if (showChanges) {
-                // Handle showing changes between lastSeenVersion and currentVersion
-                const normalizedCurrentVersion = normalizeVersion(currentVersion);
-                const normalizedLastSeenVersion = normalizeVersion(lastSeenVersion);
+            // Convert all releases to ReleaseInfo objects
+            const releases = sortedReleases
+                .map(release => {
+                    const notes = cleanReleaseNotes(release.body || '');
+                    if (!notes) return null;
 
-                // Find direct match for current version
-                const currentVersionRelease = sortedReleases.find(release =>
-                    normalizeVersion(release.tag_name) === normalizedCurrentVersion
-                );
+                    return {
+                        version: release.tag_name,
+                        notes,
+                        date: formatDate(release.published_at),
+                        isExactMatch: normalizeVersion(release.tag_name) === normalizeVersion(currentVersion)
+                    } as ReleaseInfo;
+                })
+                .filter((release): release is ReleaseInfo => release !== null);
 
-                // Find the closest intermediate release if no exact match for current version
-                if (!currentVersionRelease) {
-                    // Find the most recent release that's newer than lastSeenVersion
-                    // This handles the case when the exact current version isn't in GitHub releases
-                    const closestRelease = sortedReleases.find(release =>
-                        compareVersions(normalizeVersion(release.tag_name), normalizedLastSeenVersion) > 0
-                    );
-
-                    if (closestRelease) {
-                        const notes = cleanReleaseNotes(closestRelease.body || '');
-                        setReleaseInfo({
-                            version: closestRelease.tag_name,
-                            notes: notes || `Changes between ${lastSeenVersion} and ${currentVersion} could not be found. Showing the latest available changelog.`,
-                            date: formatDate(closestRelease.published_at),
-                            isExactMatch: false
-                        });
-                    } else {
-                        // No releases found after lastSeenVersion, show latest available changelog
-                        const latestRelease = sortedReleases[0]; // Already sorted newest first
-                        if (latestRelease) {
-                            const notes = cleanReleaseNotes(latestRelease.body || '');
-                            setReleaseInfo({
-                                version: latestRelease.tag_name,
-                                notes: notes || 'No detailed release notes available.',
-                                date: formatDate(latestRelease.published_at),
-                                isExactMatch: false
-                            });
-                        } else {
-                            // No releases found at all
-                            setReleaseInfo({
-                                version: currentVersion,
-                                notes: 'No changelog information available.',
-                                date: new Date().toLocaleDateString(),
-                                isExactMatch: false
-                            });
-                        }
-                    }
-                } else {
-                    // We found an exact match for the current version
-                    const notes = cleanReleaseNotes(currentVersionRelease.body || '');
-                    if (notes) {
-                        setReleaseInfo({
-                            version: currentVersionRelease.tag_name,
-                            notes,
-                            date: formatDate(currentVersionRelease.published_at),
-                            isExactMatch: true
-                        });
-                    } else {
-                        // Found current version but no detailed notes, show latest available changelog
-                        const latestRelease = sortedReleases[0]; // Already sorted newest first
-                        if (latestRelease && latestRelease.tag_name !== currentVersionRelease.tag_name) {
-                            const latestNotes = cleanReleaseNotes(latestRelease.body || '');
-                            setReleaseInfo({
-                                version: latestRelease.tag_name,
-                                notes: latestNotes || 'No detailed release notes available.',
-                                date: formatDate(latestRelease.published_at),
-                                isExactMatch: false
-                            });
-                        } else {
-                            // No other releases to show
-                            setReleaseInfo({
-                                version: currentVersionRelease.tag_name,
-                                notes: 'No changelog information available for this version.',
-                                date: formatDate(currentVersionRelease.published_at),
-                                isExactMatch: false
-                            });
-                        }
-                    }
-                }
-            } else {
-                // Default behavior - just show current version notes
-                // Find the release that matches the current version (handle v prefix inconsistency)
-                const normalizedCurrentVersion = currentVersion.startsWith('v') ? currentVersion : `v${currentVersion}`;
-                const currentRelease = sortedReleases.find(release =>
-                    release.tag_name === currentVersion ||
-                    release.tag_name === normalizedCurrentVersion ||
-                    release.tag_name.replace(/^v/, '') === currentVersion.replace(/^v/, '')
-                );
-
-                if (currentRelease) {
-                    const notes = cleanReleaseNotes(currentRelease.body || '');
-                    if (notes) {
-                        setReleaseInfo({
-                            version: currentRelease.tag_name,
-                            notes,
-                            date: formatDate(currentRelease.published_at),
-                            isExactMatch: true
-                        });
-                    } else {
-                        setReleaseInfo({
-                            version: currentRelease.tag_name,
-                            notes: 'No detailed release notes available for this version.',
-                            date: formatDate(currentRelease.published_at),
-                            isExactMatch: false
-                        });
-                    }
-                } else {
-                    // If exact match not found, try to find the closest release
-                    const versionWithoutPrefix = currentVersion.replace(/^v/, '');
-
-                    // Look for a release that contains the version number
-                    const closestRelease = sortedReleases.find(release =>
-                        release.tag_name.includes(versionWithoutPrefix) ||
-                        release.tag_name.replace(/^v/, '').includes(versionWithoutPrefix)
-                    );
-
-                    if (closestRelease) {
-                        const notes = cleanReleaseNotes(closestRelease.body || '');
-                        if (notes) {
-                            setReleaseInfo({
-                                version: closestRelease.tag_name,
-                                notes,
-                                date: formatDate(closestRelease.published_at),
-                                isExactMatch: false
-                            });
-                        } else {
-                            setReleaseInfo({
-                                version: closestRelease.tag_name,
-                                notes: 'No detailed release notes available for this version.',
-                                date: formatDate(closestRelease.published_at),
-                                isExactMatch: false
-                            });
-                        }
-                    } else if (sortedReleases.length > 0) {
-                        // Fallback to the most recent release if no match is found
-                        const latestRelease = sortedReleases[0];
-                        const notes = cleanReleaseNotes(latestRelease.body || '');
-
-                        setReleaseInfo({
-                            version: latestRelease.tag_name,
-                            notes: notes || 'No detailed release notes available.',
-                            date: formatDate(latestRelease.published_at),
-                            isExactMatch: false
-                        });
-                    } else {
-                        setReleaseInfo({
-                            version: currentVersion,
-                            notes: 'Release notes not found for this version.',
-                            date: 'N/A',
-                            isExactMatch: false
-                        });
-                    }
-                }
-            }
+            setAllReleases(releases);
         } catch (error) {
             console.error('Failed to fetch release info:', error);
-            setReleaseInfo({
+            setAllReleases([{
                 version: getAppVersion(),
                 notes: 'Unable to fetch release notes. Check your connection or try again later.',
                 date: 'N/A',
                 isExactMatch: false
-            });
+            }]);
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleLoadMore = () => {
+        setPreviousCount(displayedCount);
+        setDisplayedCount(prev => prev + LOAD_MORE_COUNT);
     };
 
     // Dynamic title based on whether we're showing update changelog
@@ -290,93 +170,139 @@ export const VersionModal = ({ open, handleClose }: VersionModalProps) => {
         if (recentlyUpdated && config?.lastSeenVersion) {
             return 'Update Information';
         }
-        return 'Current Version';
+        return 'Release Notes';
     };
+
+    const displayedReleases = allReleases.slice(0, displayedCount);
+    const hasMore = displayedCount < allReleases.length;
 
     return (
         <CenteredModal open={open} handleClose={handleClose} title={getTitle()}>
-            <Box sx={{ p: 2 }}>
+            <Box sx={{ p: 2, width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box', overflow: 'hidden' }}>
                 <Typography variant='h6' gutterBottom>
-                    Version {getAppVersion()}
+                    Current Version: {getAppVersion()}
                 </Typography>
 
                 {isLoading ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
                         <CircularProgress size={24} />
                     </Box>
-                ) : releaseInfo ? (
-                    <Box sx={{ my: 2, maxHeight: '350px', overflowY: 'auto' }}>
+                ) : allReleases.length > 0 ? (
+                    <Box sx={{ my: 2, width: '100%', maxWidth: '100%', minWidth: 0, overflow: 'hidden', boxSizing: 'border-box' }}>
                         <Typography variant='subtitle1' fontWeight='bold' gutterBottom>
-                            Release Notes:
+                            Recent Updates:
                         </Typography>
-                        <Box sx={{ mb: 2 }}>
-                            {(!releaseInfo.isExactMatch ||
-                              releaseInfo.version !== getAppVersion() &&
-                              releaseInfo.version !== `v${getAppVersion()}` &&
-                              `v${releaseInfo.version}` !== getAppVersion()) && (
-                                <Typography variant='body2' color='warning.main' sx={{ mb: 1 }}>
-                                    {recentlyUpdated && config?.lastSeenVersion
-                                        ? `Showing notes from version ${releaseInfo.version} (updated from v${config.lastSeenVersion})`
-                                        : `Showing notes from version ${releaseInfo.version}`
-                                    }
-                                </Typography>
-                            )}
-                            <Typography variant='subtitle2' fontWeight='bold'>
-                                {releaseInfo.version} - {releaseInfo.date}
-                            </Typography>
-                            <Box
-                                sx={{
-                                    backgroundColor: 'rgba(255,255,255,0.03)',
-                                    p: 2,
-                                    borderRadius: 1,
-                                    fontSize: '0.9rem',
-                                    border: '1px solid rgba(255,255,255,0.1)',
-                                    mt: 1,
-                                    '& h1, h2, h3, h4, h5, h6': {
-                                        margin: '0.5rem 0 0.2rem 0',
-                                        fontSize: 'inherit',
-                                        fontWeight: 'bold',
-                                    },
-                                    '& h1, h2': {
-                                        fontSize: '1.1rem',
-                                        marginTop: '0.3rem',
-                                        marginBottom: '0.2rem',
-                                    },
-                                    '& ul, ol': {
-                                        paddingLeft: '1.5rem',
-                                        marginTop: '0.2rem',
-                                        marginBottom: '0.2rem',
-                                    },
-                                    '& li': {
-                                        marginBottom: '0.2rem',
-                                    },
-                                    '& p': {
-                                        marginTop: '0.2rem',
-                                        marginBottom: '0.2rem',
-                                    },
-                                    '& a': {
-                                        color: 'primary.main',
-                                        textDecoration: 'none',
-                                        '&:hover': {
-                                            textDecoration: 'underline',
-                                        }
-                                    }
-                                }}
-                            >
-                                <ReactMarkdown
-                                    components={{
-                                        // Override to use smaller margins for headers
-                                        h2: ({ node, ...props }) => <h2 style={{ marginTop: '0.2rem', marginBottom: '0.8rem' }} {...props} />,
-                                        // Override to use proper styling for links
-                                        a: ({ node, ...props }) => <a target='_blank' rel='noopener noreferrer' {...props} />
+                        <Box ref={scrollContainerRef} sx={{ maxHeight: '400px', overflowY: 'auto', pr: 1, width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
+                            {displayedReleases.map((release, index) => (
+                                <Box
+                                    key={release.version}
+                                    id={`release-${index}`}
+                                    sx={{
+                                        mb: 3,
+                                        pb: index < displayedReleases.length - 1 ? 2 : 0,
+                                        borderBottom: index < displayedReleases.length - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                                        width: '100%',
+                                        maxWidth: '100%',
+                                        minWidth: 0,
+                                        boxSizing: 'border-box'
                                     }}
                                 >
-                                    {releaseInfo.notes}
-                                </ReactMarkdown>
-                            </Box>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                        <Typography variant='subtitle2' fontWeight='bold'>
+                                            {release.version}
+                                        </Typography>
+                                        {release.isExactMatch && (
+                                            <Typography
+                                                variant='caption'
+                                                sx={{
+                                                    backgroundColor: 'primary.main',
+                                                    color: 'white',
+                                                    px: 1,
+                                                    py: 0.25,
+                                                    borderRadius: 1,
+                                                    fontSize: '0.7rem'
+                                                }}
+                                            >
+                                                Current
+                                            </Typography>
+                                        )}
+                                        <Typography variant='caption' sx={{ color: 'white' }}>
+                                            {release.date}
+                                        </Typography>
+                                    </Box>
+                                    <Box
+                                        sx={{
+                                            backgroundColor: 'rgba(255,255,255,0.03)',
+                                            p: 2,
+                                            borderRadius: 1,
+                                            fontSize: '0.9rem',
+                                            border: '1px solid rgba(255,255,255,0.1)',
+                                            width: '100%',
+                                            maxWidth: '100%',
+                                            minWidth: 0,
+                                            boxSizing: 'border-box',
+                                            overflowWrap: 'break-word',
+                                            wordBreak: 'break-word',
+                                            '& h1, h2, h3, h4, h5, h6': {
+                                                margin: '0.5rem 0 0.2rem 0',
+                                                fontSize: 'inherit',
+                                                fontWeight: 'bold',
+                                            },
+                                            '& h1, h2': {
+                                                fontSize: '1.1rem',
+                                                marginTop: '0.3rem',
+                                                marginBottom: '0.2rem',
+                                            },
+                                            '& ul, ol': {
+                                                paddingLeft: '1.5rem',
+                                                marginTop: '0.2rem',
+                                                marginBottom: '0.2rem',
+                                            },
+                                            '& li': {
+                                                marginBottom: '0.2rem',
+                                            },
+                                            '& p': {
+                                                marginTop: '0.2rem',
+                                                marginBottom: '0.2rem',
+                                            },
+                                            '& a': {
+                                                color: 'primary.main',
+                                                textDecoration: 'none',
+                                                '&:hover': {
+                                                    textDecoration: 'underline',
+                                                }
+                                            }
+                                        }}
+                                    >
+                                        <ReactMarkdown
+                                            components={{
+                                                h2: ({ node, ...props }) => <h2 style={{ marginTop: '0.2rem', marginBottom: '0.8rem' }} {...props} />,
+                                                a: ({ node, ...props }) => <a target='_blank' rel='noopener noreferrer' {...props} />
+                                            }}
+                                        >
+                                            {release.notes}
+                                        </ReactMarkdown>
+                                    </Box>
+                                </Box>
+                            ))}
                         </Box>
+                        {hasMore && (
+                            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                                <Button
+                                    variant='contained'
+                                    onClick={handleLoadMore}
+                                    size='small'
+                                >
+                                    Load More
+                                </Button>
+                            </Box>
+                        )}
                     </Box>
-                ) : null}
+                ) : (
+                    <Typography variant='body2' color='text.secondary' sx={{ my: 2 }}>
+                        No release notes available.
+                    </Typography>
+                )}
             </Box>
         </CenteredModal>
     );

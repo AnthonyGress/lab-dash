@@ -193,7 +193,8 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                     showDiskUsage: data.showDiskUsage !== false, // Default to true
                     showSystemInfo: data.showSystemInfo !== false, // Default to true
                     showInternetStatus: data.showInternetStatus !== false, // Default to true
-                    showPublicIP: data.showPublicIP || false
+                    showIP: data.showIP || false,
+                    ipDisplayType: data.ipDisplayType || 'wan'
                 };
 
                 // Add network interface to config if a network gauge is included
@@ -470,7 +471,8 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                         showDiskUsage: data.top_showDiskUsage,
                         showSystemInfo: data.top_showSystemInfo,
                         showInternetStatus: data.top_showInternetStatus,
-                        showPublicIP: data.top_showPublicIP,
+                        showIP: data.top_showIP,
+                        ipDisplayType: data.top_ipDisplayType,
                         selectedDisks: data.top_selectedDisks,
                         showIcons: data.top_showIcons,
                         showMountPath: data.top_showMountPath,
@@ -503,7 +505,8 @@ export const AddEditForm = ({ handleClose, existingItem, onSubmit }: Props) => {
                         showDiskUsage: data.bottom_showDiskUsage,
                         showSystemInfo: data.bottom_showSystemInfo,
                         showInternetStatus: data.bottom_showInternetStatus,
-                        showPublicIP: data.bottom_showPublicIP,
+                        showIP: data.bottom_showIP,
+                        ipDisplayType: data.bottom_ipDisplayType,
                         selectedDisks: data.bottom_selectedDisks,
                         showIcons: data.bottom_showIcons,
                         showMountPath: data.bottom_showMountPath,

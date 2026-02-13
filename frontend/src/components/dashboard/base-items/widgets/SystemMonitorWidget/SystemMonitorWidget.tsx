@@ -7,6 +7,7 @@ import { PiGlobeSimple, PiGlobeSimpleX } from 'react-icons/pi';
 import { DiskUsageBar } from './DiskUsageWidget';
 import { GaugeWidget } from './GaugeWidget';
 import { DashApi } from '../../../../../api/dash-api';
+import { useAppContext } from '../../../../../context/useAppContext';
 import { useInternetStatus } from '../../../../../hooks/useInternetStatus';
 import { useIsMobile } from '../../../../../hooks/useIsMobile';
 import { COLORS } from '../../../../../theme/styles';
@@ -26,12 +27,14 @@ interface SystemMonitorWidgetProps {
         showDiskUsage?: boolean;
         showSystemInfo?: boolean;
         showInternetStatus?: boolean;
-        showPublicIP?: boolean;
+        showIP?: boolean;
+        ipDisplayType?: 'wan' | 'lan' | 'both';
     };
     editMode?: boolean;
 }
 
 export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetProps) => {
+    const { config: globalConfig } = useAppContext();
     const [systemInformation, setSystemInformation] = useState<any>();
     const [memoryInformation, setMemoryInformation] = useState<any>(0);
     const [diskInformation, setDiskInformation] = useState<any>();
@@ -49,7 +52,7 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [internetTooltipOpen, setInternetTooltipOpen] = useState(false);
-    const [publicIP, setPublicIP] = useState<string | null>(null);
+    const [ipAddress, setIPAddress] = useState<{ wan?: string | null; lan?: string | null } | string | null>(null);
 
     const { internetStatus } = useInternetStatus();
 
@@ -63,7 +66,7 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
     const showDiskUsage = config?.showDiskUsage !== false;
     const showSystemInfo = config?.showSystemInfo !== false;
     const showInternetStatus = config?.showInternetStatus !== false;
-    const showPublicIP = config?.showPublicIP || false;
+    const showIP = config?.showIP ?? (config as any)?.showPublicIP ?? false;
 
     const isMobile = useIsMobile();
 
@@ -441,18 +444,26 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
         };
     }, [internetTooltipOpen]);
 
-    // Fetch public IP when showPublicIP is enabled
+    // Fetch IP addresses when showIP is enabled
     useEffect(() => {
-        if (showPublicIP && internetStatus === 'online') {
-            const fetchPublicIP = async () => {
-                const ip = await DashApi.getPublicIP();
-                setPublicIP(ip);
+        if (showIP && internetStatus === 'online') {
+            const fetchIPs = async () => {
+                const ips = await DashApi.getIPAddresses();
+                const ipType = config?.ipDisplayType || 'wan';
+
+                if (ipType === 'both') {
+                    setIPAddress({ wan: ips.wan, lan: ips.lan });
+                } else if (ipType === 'lan') {
+                    setIPAddress(ips.lan);
+                } else {
+                    setIPAddress(ips.wan);
+                }
             };
-            fetchPublicIP();
+            fetchIPs();
         } else {
-            setPublicIP(null);
+            setIPAddress(null);
         }
-    }, [showPublicIP, internetStatus]);
+    }, [showIP, internetStatus, config?.ipDisplayType]);
 
     // Determine layout styles based on dual widget position
     const containerStyles = {
@@ -537,13 +548,32 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
                     <Tooltip
                         title={
                             <Box>
-                                <Typography variant='body2'>
+                                <Typography variant='body2' sx={{ textAlign: 'center' }}>
                                     {internetStatus === 'online' ? 'Internet Connected' : internetStatus === 'offline' ? 'No Internet Connection' : 'Checking Internet...'}
                                 </Typography>
-                                {showPublicIP && publicIP && internetStatus === 'online' && (
-                                    <Typography variant='caption' sx={{ display: 'block', mt: 0.5 }}>
-                                        IP: {publicIP}
-                                    </Typography>
+                                {showIP && ipAddress && internetStatus === 'online' && (
+                                    <Box sx={{ mt: 0.5 }}>
+                                        {typeof ipAddress === 'object' ? (
+                                            <>
+                                                {ipAddress.wan && (
+                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
+                                                        <Typography variant='caption'>WAN:</Typography>
+                                                        <Typography variant='caption'>{ipAddress.wan}</Typography>
+                                                    </Box>
+                                                )}
+                                                {ipAddress.lan && (
+                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
+                                                        <Typography variant='caption'>LAN:</Typography>
+                                                        <Typography variant='caption'>{ipAddress.lan}</Typography>
+                                                    </Box>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <Typography variant='caption' sx={{ display: 'block', textAlign: 'right' }}>
+                                                {(config?.ipDisplayType || 'wan') === 'wan' ? 'WAN: ' : 'LAN: '}{ipAddress}
+                                            </Typography>
+                                        )}
+                                    </Box>
                                 )}
                             </Box>
                         }
@@ -558,7 +588,7 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
                         disableFocusListener
                         disableTouchListener
                         PopperProps={{
-                            disablePortal: true,
+                            disablePortal: false,
                         }}
                         slotProps={{
                             tooltip: {

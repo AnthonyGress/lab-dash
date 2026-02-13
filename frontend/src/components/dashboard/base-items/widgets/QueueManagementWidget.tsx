@@ -276,24 +276,17 @@ const QueueItemComponent: React.FC<QueueItemComponentProps> = ({ item, serviceNa
                     anchorEl={menuAnchorEl}
                     open={menuOpen}
                     onClose={handleMenuClose}
-                    PaperProps={{
-                        sx: {
-                            backgroundColor: 'rgba(30, 30, 30, 0.95)',
-                            backdropFilter: 'blur(10px)',
-                            border: '1px solid rgba(255, 255, 255, 0.1)'
-                        }
-                    }}
                 >
                     <MenuItem
                         onClick={() => handleRemove(true, false)}
-                        sx={{ fontSize: '0.9rem', py: 1, color: 'white' }}
+                        sx={{ fontSize: '0.9rem', py: 1 }}
                     >
                         <Delete fontSize='small' sx={{ mr: 1 }} />
                         Remove from Queue
                     </MenuItem>
                     <MenuItem
                         onClick={() => handleRemove(false, false)}
-                        sx={{ fontSize: '0.9rem', py: 1, color: 'white' }}
+                        sx={{ fontSize: '0.9rem', py: 1 }}
                     >
                         <Delete fontSize='small' sx={{ mr: 1 }} />
                         Remove (Keep in Client)
