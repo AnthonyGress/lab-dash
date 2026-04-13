@@ -3,7 +3,6 @@ services:
   lab-dash:
     container_name: lab-dash
     image: ghcr.io/anthonygress/lab-dash:latest
-    privileged: true
     #network_mode: host # for monitoring network usage stats. run `sudo ufw allow 2022/tcp` on ubuntu to allow access through firewall
     ports:
       - 2022:2022
@@ -14,5 +13,4 @@ services:
       - /sys:/sys:ro
       - /docker/lab-dash/config:/config
       - /docker/lab-dash/uploads:/app/public/uploads
-      - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
