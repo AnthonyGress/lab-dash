@@ -682,7 +682,7 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                                             <ListItemButton
                                                 onClick={() => {
                                                     handleCloseDrawer();
-                                                    window.open('https://ko-fi.com/anthonygress', '_blank', 'noopener,noreferrer');
+                                                    window.open('https://ko-fi.com/xzenlabs', '_blank', 'noopener,noreferrer');
                                                 }}
                                             >
                                                 <ListItemIcon>
