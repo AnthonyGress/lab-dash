@@ -79,6 +79,10 @@ This docker container will restart automatically after reboots unless it was man
 1. Navigate to the directory that this docker compose file is in
 2. Run: `docker compose down`
 
+# One-Click Deploy
+
+[![Deploy on RepoCloud](https://d16t0pc4846x52.cloudfront.net/deploylobe.svg)](https://repocloud.io/details/Lab%20Dash/)
+
 # Local Development
 ```
 npm install
