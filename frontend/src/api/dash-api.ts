@@ -124,8 +124,6 @@ export class DashApi {
 
                 // List of external service routes that proxy to other applications. These should NOT trigger a logout if they return 401/403
                 const isExternalServiceRoute = originalRequest.url?.includes('/api/pihole') ||
-                    originalRequest.url?.includes('/api/qbittorrent') ||
-                    originalRequest.url?.includes('/api/deluge') ||
                     originalRequest.url?.includes('/api/sabnzbd') ||
                     originalRequest.url?.includes('/api/nzbget') ||
                     originalRequest.url?.includes('/api/radarr') ||
@@ -133,7 +131,6 @@ export class DashApi {
                     originalRequest.url?.includes('/api/adguard') ||
                     originalRequest.url?.includes('/api/jellyfin') ||
                     originalRequest.url?.includes('/api/jellyseerr') ||
-                    originalRequest.url?.includes('/api/transmission') ||
                     originalRequest.url?.includes('/api/notes');
 
                 const isAuthRoute = originalRequest.url?.includes('api/auth/login') ||
@@ -829,374 +826,28 @@ export class DashApi {
         }
     }
 
-    // qBittorrent methods
-    public static async qbittorrentLogin(itemId: string): Promise<boolean> {
-        try {
-            const response = await axios.post(
-                `${BACKEND_URL}/api/qbittorrent/login`,
-                {},
-                {
-                    params: { itemId },
-                    withCredentials: false
-                }
-            );
-            return response.data.success;
-        } catch (error) {
-            console.error('Failed to login to qBittorrent:', error);
-            return false;
-        }
+    /**
+     * Encrypts a secret (password, token, API key) on the server before it is stored
+     * in the config. Already encrypted values come back unchanged.
+     */
+    private static async encryptValue(value: string): Promise<string> {
+        const response = await axios.post(
+            `${BACKEND_URL}/api/config/encrypt`,
+            { value },
+            { withCredentials: true }
+        );
+
+        return response.data.encrypted;
     }
 
-    /**
-     * Encrypts a password using the backend encryption
-     * @param password The password to encrypt
-     * @returns The encrypted password or the original if encryption fails
-     */
     public static async encryptPassword(password: string): Promise<string> {
         if (!password) return '';
 
         try {
-            const response = await axios.post(
-                `${BACKEND_URL}/api/qbittorrent/encrypt-password`,
-                { password },
-                { withCredentials: true }
-            );
-
-            return response.data.encryptedPassword;
+            return await this.encryptValue(password);
         } catch (error) {
             console.error('Failed to encrypt password:', error);
             return password; // Return the original password if encryption fails
-        }
-    }
-
-    public static async qbittorrentGetStats(itemId: string): Promise<any> {
-        try {
-            const res = await axios.get(`${BACKEND_URL}/api/qbittorrent/stats`, {
-                params: { itemId },
-                withCredentials: false
-            });
-            return res.data;
-        } catch (error) {
-            console.error('qBittorrent stats error:', error);
-            throw error;
-        }
-    }
-
-    public static async qbittorrentGetTorrents(itemId: string): Promise<any[]> {
-        try {
-            const res = await axios.get(`${BACKEND_URL}/api/qbittorrent/torrents`, {
-                params: { itemId },
-                withCredentials: false
-            });
-            return res.data;
-        } catch (error) {
-            console.error('qBittorrent torrents error:', error);
-            return [];
-        }
-    }
-
-    public static async qbittorrentLogout(itemId: string): Promise<boolean> {
-        try {
-            await axios.post(`${BACKEND_URL}/api/qbittorrent/logout`, {}, {
-                params: { itemId },
-                withCredentials: true
-            });
-            return true;
-        } catch (error) {
-            console.error('qBittorrent logout error:', error);
-            return false;
-        }
-    }
-
-    public static async qbittorrentStartTorrent(hash: string, itemId: string): Promise<boolean> {
-        try {
-            // Create a URLSearchParams object for form data
-            const formData = new URLSearchParams();
-            formData.append('hashes', hash);
-
-            const response = await axios.post(
-                `${BACKEND_URL}/api/qbittorrent/torrents/start`,
-                formData.toString(),
-                {
-                    params: { itemId },
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-                    withCredentials: true
-                }
-            );
-
-            return true;
-        } catch (error) {
-            console.error('qBittorrent start error:', error);
-            return false;
-        }
-    }
-
-    public static async qbittorrentStopTorrent(hash: string, itemId: string): Promise<boolean> {
-        try {
-            // Create a URLSearchParams object for form data
-            const formData = new URLSearchParams();
-            formData.append('hashes', hash);
-
-            const response = await axios.post(
-                `${BACKEND_URL}/api/qbittorrent/torrents/stop`,
-                formData.toString(),
-                {
-                    params: { itemId },
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-                    withCredentials: true
-                }
-            );
-
-            return true;
-        } catch (error) {
-            console.error('qBittorrent stop error:', error);
-            return false;
-        }
-    }
-
-    public static async qbittorrentDeleteTorrent(hash: string, deleteFiles: boolean = false, itemId: string): Promise<boolean> {
-        try {
-            // Create a URLSearchParams object for form data
-            const formData = new URLSearchParams();
-            formData.append('hashes', hash);
-            formData.append('deleteFiles', deleteFiles ? 'true' : 'false');
-
-            const response = await axios.post(
-                `${BACKEND_URL}/api/qbittorrent/torrents/delete`,
-                formData.toString(),
-                {
-                    params: { itemId },
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-                    withCredentials: true
-                }
-            );
-
-            return true;
-        } catch (error) {
-            console.error('qBittorrent delete error:', error);
-            return false;
-        }
-    }
-
-    // Deluge methods
-    public static async delugeLogin(itemId: string): Promise<boolean> {
-        try {
-            const response = await axios.post(
-                `${BACKEND_URL}/api/deluge/login`,
-                {},
-                {
-                    params: { itemId },
-                    withCredentials: false
-                }
-            );
-            return response.data.success;
-        } catch (error) {
-            console.error('Failed to login to Deluge:', error);
-            return false;
-        }
-    }
-
-    public static async delugeGetStats(itemId: string): Promise<any> {
-        try {
-            const res = await axios.get(`${BACKEND_URL}/api/deluge/stats`, {
-                params: { itemId },
-                withCredentials: false
-            });
-            return res.data;
-        } catch (error) {
-            console.error('Deluge stats error:', error);
-            throw error;
-        }
-    }
-
-    public static async delugeGetTorrents(itemId: string): Promise<any[]> {
-        try {
-            const res = await axios.get(`${BACKEND_URL}/api/deluge/torrents`, {
-                params: { itemId },
-                withCredentials: false
-            });
-            return res.data;
-        } catch (error) {
-            console.error('Deluge torrents error:', error);
-            return [];
-        }
-    }
-
-    public static async delugeLogout(itemId: string): Promise<boolean> {
-        try {
-            await axios.post(`${BACKEND_URL}/api/deluge/logout`, {}, {
-                params: { itemId },
-                withCredentials: true
-            });
-            return true;
-        } catch (error) {
-            console.error('Deluge logout error:', error);
-            return false;
-        }
-    }
-
-    public static async delugeResumeTorrent(hash: string, itemId: string): Promise<boolean> {
-        try {
-            await axios.post(`${BACKEND_URL}/api/deluge/torrents/resume`,
-                { hash },
-                {
-                    params: { itemId },
-                    withCredentials: true
-                }
-            );
-            return true;
-        } catch (error) {
-            console.error('Deluge resume error:', error);
-            return false;
-        }
-    }
-
-    public static async delugePauseTorrent(hash: string, itemId: string): Promise<boolean> {
-        try {
-            await axios.post(`${BACKEND_URL}/api/deluge/torrents/pause`,
-                { hash },
-                {
-                    params: { itemId },
-                    withCredentials: true
-                }
-            );
-            return true;
-        } catch (error) {
-            console.error('Deluge pause error:', error);
-            return false;
-        }
-    }
-
-    public static async delugeDeleteTorrent(hash: string, deleteFiles: boolean = false, itemId: string): Promise<boolean> {
-        try {
-            await axios.post(`${BACKEND_URL}/api/deluge/torrents/delete`,
-                {
-                    hash,
-                    deleteFiles
-                },
-                {
-                    params: { itemId },
-                    withCredentials: true
-                }
-            );
-            return true;
-        } catch (error) {
-            console.error('Deluge delete error:', error);
-            return false;
-        }
-    }
-
-    // Transmission methods
-    public static async transmissionLogin(itemId: string): Promise<boolean> {
-        try {
-            const response = await axios.post(
-                `${BACKEND_URL}/api/transmission/login`,
-                {},
-                {
-                    params: { itemId },
-                    withCredentials: false
-                }
-            );
-            return response.data.success;
-        } catch (error) {
-            console.error('Failed to login to Transmission:', error);
-            return false;
-        }
-    }
-
-    public static async transmissionGetStats(itemId: string): Promise<any> {
-        try {
-            const res = await axios.get(`${BACKEND_URL}/api/transmission/stats`, {
-                params: { itemId },
-                withCredentials: false
-            });
-            return res.data;
-        } catch (error) {
-            console.error('Transmission stats error:', error);
-            throw error;
-        }
-    }
-
-    public static async transmissionGetTorrents(itemId: string): Promise<any[]> {
-        try {
-            const res = await axios.get(`${BACKEND_URL}/api/transmission/torrents`, {
-                params: { itemId },
-                withCredentials: false
-            });
-            return res.data;
-        } catch (error) {
-            console.error('Transmission torrents error:', error);
-            return [];
-        }
-    }
-
-    public static async transmissionLogout(itemId: string): Promise<boolean> {
-        try {
-            await axios.post(`${BACKEND_URL}/api/transmission/logout`, {}, {
-                params: { itemId },
-                withCredentials: true
-            });
-            return true;
-        } catch (error) {
-            console.error('Transmission logout error:', error);
-            return false;
-        }
-    }
-
-    public static async transmissionStartTorrent(id: string, itemId: string): Promise<boolean> {
-        try {
-            const response = await axios.post(
-                `${BACKEND_URL}/api/transmission/torrents/start`,
-                { ids: [id] },
-                {
-                    params: { itemId },
-                    withCredentials: true
-                }
-            );
-            return true;
-        } catch (error) {
-            console.error('Transmission start error:', error);
-            return false;
-        }
-    }
-
-    public static async transmissionStopTorrent(id: string, itemId: string): Promise<boolean> {
-        try {
-            const response = await axios.post(
-                `${BACKEND_URL}/api/transmission/torrents/stop`,
-                { ids: [id] },
-                {
-                    params: { itemId },
-                    withCredentials: true
-                }
-            );
-            return true;
-        } catch (error) {
-            console.error('Transmission stop error:', error);
-            return false;
-        }
-    }
-
-    public static async transmissionDeleteTorrent(id: string, deleteFiles: boolean = false, itemId: string): Promise<boolean> {
-        try {
-            const response = await axios.post(
-                `${BACKEND_URL}/api/transmission/torrents/delete`,
-                { ids: [id], deleteFiles },
-                {
-                    params: { itemId },
-                    withCredentials: true
-                }
-            );
-            return true;
-        } catch (error) {
-            console.error('Transmission delete error:', error);
-            return false;
         }
     }
 
@@ -1531,12 +1182,7 @@ export class DashApi {
 
     public static async encryptPiholeToken(apiToken: string): Promise<string> {
         try {
-            // API tokens are only used for v5, so always use the v5 route
-            const res = await axios.post(`${BACKEND_URL}/api/pihole/encrypt-token`,
-                { apiToken },
-                { withCredentials: true }
-            );
-            return res.data.encryptedToken;
+            return await this.encryptValue(apiToken);
         } catch (error) {
             console.error('Failed to encrypt Pi-hole token:', error);
             throw error;
@@ -1545,24 +1191,7 @@ export class DashApi {
 
     public static async encryptPiholePassword(password: string, itemId?: string): Promise<string> {
         try {
-            let route = 'pihole'; // Default to v5
-
-            // If itemId is provided, determine the correct route
-            if (itemId) {
-                try {
-                    const routeInfo = await this.getPiholeRouteInfo(itemId);
-                    route = routeInfo.route;
-                } catch (error) {
-                    // If we can't determine the route, default to v5 for backward compatibility
-                    console.warn('Could not determine Pi-hole route, defaulting to v5:', error);
-                }
-            }
-
-            const res = await axios.post(`${BACKEND_URL}/api/${route}/encrypt-password`,
-                { password },
-                { withCredentials: true }
-            );
-            return res.data.encryptedPassword;
+            return await this.encryptValue(password);
         } catch (error) {
             console.error('Failed to encrypt Pi-hole password:', error);
             throw error;
@@ -1851,26 +1480,18 @@ export class DashApi {
 
     public static async encryptAdGuardUsername(username: string): Promise<string> {
         try {
-            const res = await axios.post(`${BACKEND_URL}/api/adguard/encrypt-username`,
-                { username },
-                { withCredentials: true }
-            );
-            return res.data.encryptedUsername;
+            return await this.encryptValue(username);
         } catch (error) {
-            console.error('Failed to encrypt AdGuard username:', error);
+            console.error('Failed to encrypt AdGuard Home username:', error);
             throw error;
         }
     }
 
     public static async encryptAdGuardPassword(password: string): Promise<string> {
         try {
-            const res = await axios.post(`${BACKEND_URL}/api/adguard/encrypt-password`,
-                { password },
-                { withCredentials: true }
-            );
-            return res.data.encryptedPassword;
+            return await this.encryptValue(password);
         } catch (error) {
-            console.error('Failed to encrypt AdGuard password:', error);
+            console.error('Failed to encrypt AdGuard Home password:', error);
             throw error;
         }
     }
@@ -2066,12 +1687,7 @@ export class DashApi {
 
     public static async encryptSabnzbdPassword(password: string): Promise<string> {
         try {
-            const res = await axios.post(
-                `${BACKEND_URL}/api/sabnzbd/encrypt-password`,
-                { password },
-                { withCredentials: true }
-            );
-            return res.data.encryptedPassword;
+            return await this.encryptValue(password);
         } catch (error: any) {
             throw new Error(error.response?.data?.message || 'Failed to encrypt password');
         }
@@ -2180,12 +1796,7 @@ export class DashApi {
 
     public static async encryptNzbgetPassword(password: string): Promise<string> {
         try {
-            const res = await axios.post(
-                `${BACKEND_URL}/api/nzbget/encrypt-password`,
-                { password },
-                { withCredentials: true }
-            );
-            return res.data.encryptedPassword;
+            return await this.encryptValue(password);
         } catch (error: any) {
             throw new Error(error.response?.data?.message || 'Failed to encrypt password');
         }

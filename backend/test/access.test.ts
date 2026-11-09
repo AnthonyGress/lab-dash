@@ -12,6 +12,7 @@ import { after, before, describe, it } from 'node:test';
 
 import { createApp } from '../src/app';
 import { isItemPublic, isPublicWakeTarget } from '../src/utils/config-lookup';
+import { decrypt } from '../src/utils/crypto';
 import { isWeakSecret, SECRET } from '../src/utils/secret';
 
 const BACKEND_ROOT = path.resolve(__dirname, '..');
@@ -102,7 +103,7 @@ describe('integration proxy routes (#193)', () => {
     });
 
     it('lets guests open a session for a public download client', async () => {
-        assert.equal(refused(await call('POST', '/api/qbittorrent/login?itemId=public-qbit')), false);
+        assert.equal(refused(await call('POST', '/api/sabnzbd/login?itemId=public-qbit')), false);
     });
 
     it('hides admin-only items, groups, and pages from guests', async () => {
@@ -126,13 +127,23 @@ describe('integration proxy routes (#193)', () => {
             ['POST', '/api/adguard/disable?itemId=public-pihole'],
             ['POST', '/api/sabnzbd/pause/1?itemId=public-qbit'],
             ['DELETE', '/api/nzbget/delete/1?itemId=public-qbit'],
-            ['POST', '/api/qbittorrent/torrents/delete?itemId=public-qbit'],
             ['POST', '/api/pihole/v6/encrypt-password']
         ];
 
         for (const [method, url] of writes) {
             assert.equal((await call(method, url, undefined, {})).status, 401, `${method} ${url}`);
         }
+    });
+
+    it('no longer serves the proxy routes that moved to the realtime connection', async () => {
+        for (const url of [
+            '/api/qbittorrent/torrents?itemId=public-qbit',
+            '/api/deluge/stats?itemId=public-qbit',
+            '/api/transmission/stats?itemId=public-qbit'
+        ]) {
+            assert.equal((await call('GET', url, ADMIN)).status, 404, url);
+        }
+        assert.equal((await call('POST', '/api/qbittorrent/torrents/delete?itemId=public-qbit', ADMIN, {})).status, 404);
     });
 
     it('refuses writes and admin-only reads for non-admin accounts', async () => {
@@ -199,6 +210,21 @@ describe('other previously open routes', () => {
 
         assert.deepEqual(Object.keys(reply.body.icons), [realIcon]);
         assert.equal(reply.body.errors.length, escapes.length);
+    });
+});
+
+describe('credential encryption', () => {
+    it('encrypts secrets for admins only, and leaves encrypted values alone', async () => {
+        assert.equal((await call('POST', '/api/config/encrypt', undefined, { value: 'hunter2' })).status, 401);
+        assert.equal((await call('POST', '/api/config/encrypt', USER, { value: 'hunter2' })).status, 403);
+        assert.equal((await call('POST', '/api/config/encrypt', ADMIN, {})).status, 400);
+
+        const { body } = await call('POST', '/api/config/encrypt', ADMIN, { value: 'hunter2' });
+        assert.match(body.encrypted, /^ENC:/);
+        assert.equal(decrypt(body.encrypted), 'hunter2');
+
+        const again = await call('POST', '/api/config/encrypt', ADMIN, { value: body.encrypted });
+        assert.equal(again.body.encrypted, body.encrypted);
     });
 });
 

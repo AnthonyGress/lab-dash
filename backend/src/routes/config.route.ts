@@ -5,6 +5,7 @@ import { authenticateToken, getOptionalUser, requireAdmin } from '../middleware/
 import { getConfig, updateConfig } from '../services/config-store';
 import { Config } from '../types';
 import { BackupService } from '../utils/backup.service';
+import { encrypt, isEncrypted } from '../utils/crypto';
 
 export const configRoute = Router();
 
@@ -617,6 +618,19 @@ configRoute.post('/import', [authenticateToken, requireAdmin], async (req: Reque
             error: (error as Error).message
         });
     }
+});
+
+// POST - Encrypt a secret (password, token, API key) before it is stored in the config (admin only)
+configRoute.post('/encrypt', [authenticateToken, requireAdmin], (req: Request, res: Response): void => {
+    const { value } = req.body ?? {};
+
+    if (typeof value !== 'string' || !value) {
+        res.status(StatusCodes.BAD_REQUEST).json({ message: 'A value to encrypt is required' });
+        return;
+    }
+
+    // Don't re-encrypt if already encrypted
+    res.status(StatusCodes.OK).json({ encrypted: isEncrypted(value) ? value : encrypt(value) });
 });
 
 // GET - Get backup status (admin only)

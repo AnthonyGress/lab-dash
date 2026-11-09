@@ -2,6 +2,7 @@ import { Server } from 'http';
 
 import { GatewayOptions, RealtimeGateway } from './gateway';
 import { Registry } from './registry';
+import { registerDownloadClientTopics } from './topics/download-clients';
 import { registerHealthTopics } from './topics/health';
 import { registerSystemTopics } from './topics/system';
 
@@ -10,6 +11,7 @@ export const createRegistry = (): Registry => {
     const registry = new Registry();
     registerSystemTopics(registry);
     registerHealthTopics(registry);
+    registerDownloadClientTopics(registry);
     return registry;
 };
 
