@@ -3,12 +3,12 @@ import fs from 'fs';
 import path from 'path';
 
 import { UPLOAD_DIRECTORY } from '../constants/constants';
-import { authenticateToken } from '../middleware/auth.middleware';
+import { authenticateToken, requireAdmin } from '../middleware/auth.middleware';
 
 export const uploadsRoute = Router();
 
 // Get list of all uploaded images
-uploadsRoute.get('/images', authenticateToken, (req: Request, res: Response) => {
+uploadsRoute.get('/images', authenticateToken, requireAdmin, (req: Request, res: Response) => {
     try {
         const images: Array<{
             name: string;
@@ -90,7 +90,7 @@ uploadsRoute.get('/images', authenticateToken, (req: Request, res: Response) => 
 });
 
 // Delete an uploaded image
-uploadsRoute.delete('/images', authenticateToken, (req: Request, res: Response) => {
+uploadsRoute.delete('/images', authenticateToken, requireAdmin, (req: Request, res: Response) => {
     try {
         const { imagePath } = req.body;
 

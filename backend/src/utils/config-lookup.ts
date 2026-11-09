@@ -16,66 +16,116 @@ export const loadConfig = (): Config => {
     return { layout: { desktop: [], mobile: [] } };
 };
 
+type ItemMatch = {
+    item: DashboardItem;
+    isPublic: boolean;
+};
+
+/**
+ * Visits every saved item, group children included, in lookup order: home desktop,
+ * home mobile, then each page. `isPublic` is false when the item, its group, or its
+ * page is admin-only, the same rule GET /api/config uses to hide items from guests.
+ */
+const walkItems = (visit: (item: any, isPublic: boolean) => void): void => {
+    const config = loadConfig();
+
+    const walk = (items: any[] = [], parentIsPublic: boolean): void => {
+        for (const item of items) {
+            const isPublic = parentIsPublic && item.adminOnly !== true;
+            visit(item, isPublic);
+
+            if (item.type === 'group-widget') {
+                walk(item.config?.items, isPublic);
+            }
+        }
+    };
+
+    walk(config.layout?.desktop, true);
+    walk(config.layout?.mobile, true);
+    for (const page of config.pages ?? []) {
+        walk(page.layout?.desktop, !page.adminOnly);
+        walk(page.layout?.mobile, !page.adminOnly);
+    }
+};
+
+const findItemMatches = (itemId: string): ItemMatch[] => {
+    const matches: ItemMatch[] = [];
+
+    walkItems((item, isPublic) => {
+        // Direct match
+        if (item.id === itemId) {
+            matches.push({ item, isPublic });
+            return;
+        }
+
+        // Check if this is a dual widget and the itemId is for a position-specific widget
+        if (item.type === 'dual-widget' && itemId.startsWith(item.id + '-')) {
+            const position = itemId.endsWith('-top') ? 'top' : 'bottom';
+            const positionWidget = position === 'top' ? item.config?.topWidget : item.config?.bottomWidget;
+
+            if (positionWidget) {
+                // Use a synthetic item with the position-specific config
+                matches.push({
+                    item: {
+                        id: itemId,
+                        type: positionWidget.type,
+                        config: positionWidget.config
+                    } as DashboardItem,
+                    isPublic
+                });
+            }
+        }
+    });
+
+    return matches;
+};
+
 /**
  * Find a dashboard item by its ID across all layouts and pages
  */
 export const findItemById = (itemId: string): DashboardItem | null => {
-    const config = loadConfig();
+    return findItemMatches(itemId)[0]?.item ?? null;
+};
 
-    // Helper function to search for item in a layout array
-    const searchInLayout = (items: any[]): DashboardItem | null => {
-        for (const item of items) {
-            // Direct match
-            if (item.id === itemId) {
-                return item;
-            }
+/**
+ * True when a guest can see this item in at least one layout.
+ */
+export const isItemPublic = (itemId: string): boolean => {
+    return findItemMatches(itemId).some(match => match.isPublic);
+};
 
-            // Check if this is a dual widget and the itemId is for a position-specific widget
-            if (item.type === 'dual-widget' && itemId.startsWith(item.id + '-')) {
-                const position = itemId.endsWith('-top') ? 'top' : 'bottom';
-                const positionWidget = position === 'top' ? item.config?.topWidget : item.config?.bottomWidget;
+/**
+ * True when the target is the URL or health-check target of a saved item.
+ */
+export const isKnownHealthTarget = (target: string): boolean => {
+    let known = false;
 
-                if (positionWidget) {
-                    // Return a synthetic item with the position-specific config
-                    return {
-                        id: itemId,
-                        type: positionWidget.type,
-                        config: positionWidget.config
-                    } as DashboardItem;
-                }
-            }
-
-            // Check group widgets
-            if (item.type === 'group-widget' && item.config?.items) {
-                const groupItem = searchInLayout(item.config.items);
-                if (groupItem) return groupItem;
-            }
+    walkItems((item) => {
+        if (item.url === target || item.healthUrl === target || item.config?.healthUrl === target) {
+            known = true;
         }
-        return null;
-    };
+    });
 
-    // Search in main desktop layout
-    let foundItem = searchInLayout(config.layout.desktop);
-    if (foundItem) return foundItem;
+    return known;
+};
 
-    // Search in main mobile layout
-    foundItem = searchInLayout(config.layout.mobile);
-    if (foundItem) return foundItem;
+const normalizeMac = (mac: unknown): string => String(mac ?? '').toLowerCase().replace(/-/g, ':');
 
-    // Search in pages if they exist
-    if (config.pages) {
-        for (const page of config.pages) {
-            // Search in page desktop layout
-            foundItem = searchInLayout(page.layout.desktop);
-            if (foundItem) return foundItem;
+/**
+ * True when a publicly visible shortcut is configured to wake this MAC address.
+ */
+export const isPublicWakeTarget = (mac: string): boolean => {
+    let allowed = false;
 
-            // Search in page mobile layout
-            foundItem = searchInLayout(page.layout.mobile);
-            if (foundItem) return foundItem;
+    walkItems((item, isPublic) => {
+        // Group children keep the address on the item itself
+        const savedMac = item.config?.macAddress ?? item.macAddress;
+        if (isPublic && savedMac && normalizeMac(savedMac) === normalizeMac(mac)) {
+            allowed = true;
         }
-    }
+    });
 
-    return null;
+    return allowed;
 };
 
 /**

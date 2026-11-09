@@ -2,6 +2,7 @@ import axios from 'axios';
 import { StatusCodes } from 'http-status-codes';
 import shortid from 'shortid';
 
+import { ToastManager } from '../components/toast/ToastManager';
 import { BACKEND_URL } from '../constants/constants';
 import { Config, DashboardItem, Icon, UploadImageResponse } from '../types';
 import { type BulkIconResponse, type BulkWidgetResponse, type CacheClearResponse, type CacheStatsResponse } from '../types/bulk-loading';
@@ -344,6 +345,12 @@ export class DashApi {
             return response.data.updatedConfig || null;
         } catch (error) {
             console.error('Failed to save layout:', error);
+            // Saves used to fail silently, leaving the dashboard looking saved until the next reload
+            ToastManager.error(
+                axios.isAxiosError(error) && error.response?.status === StatusCodes.REQUEST_TOO_LONG
+                    ? 'Dashboard is too large to save'
+                    : 'Failed to save changes. Please try again.'
+            );
             throw error; // Rethrow to allow handling in the UI
         }
     }
@@ -587,8 +594,6 @@ export class DashApi {
         try {
             const res = await axios.get(`${BACKEND_URL}/api/health`, {
                 params: { url, type: healthCheckType },
-                // Don't send credentials for health checks to avoid auth issues
-                withCredentials: false,
                 // Increased timeout to handle slower services
                 timeout: 12000
             });

@@ -29,3 +29,4 @@ backend/src/config/backups
 backend/src/public/uploads
 backend/public/uploads/*
 package-lock.json
+.env

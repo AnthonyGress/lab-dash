@@ -5,7 +5,13 @@ import https from 'https';
 import { isIP } from 'net';
 import os from 'os';
 
+import { getOptionalUser } from '../middleware/auth.middleware';
+import { isKnownHealthTarget } from '../utils/config-lookup';
+
 export const healthRoute = Router();
+
+// Host the frontend pings to detect internet connectivity
+const INTERNET_CHECK_HOST = '8.8.8.8';
 
 const httpsAgent = new https.Agent({
     rejectUnauthorized: false,
@@ -49,6 +55,14 @@ healthRoute.get('/', async (req: Request, res: Response): Promise<void> => {
 
     const checkType = type as string || 'http';
 
+    // Only probe targets the dashboard is configured for, so this endpoint cannot be
+    // used to scan the server's network. Admins may probe items they have not saved yet.
+    const isInternetCheck = checkType === 'ping' && url === INTERNET_CHECK_HOST;
+    if (!isInternetCheck && !isKnownHealthTarget(url) && getOptionalUser(req)?.role !== 'admin') {
+        res.status(403).json({ status: 'error', message: 'Unknown health check target' });
+        return;
+    }
+
     try {
         // For ping type health checks
         if (checkType === 'ping') {
@@ -76,6 +90,8 @@ healthRoute.get('/', async (req: Request, res: Response): Promise<void> => {
             res.json({ status: 'online' });
             return;
         }
+
+        res.json({ status: 'offline' });
     } catch (error) {
         console.log('service is offline', req.query.url);
         res.json({ status: 'offline' });

@@ -23,6 +23,7 @@ import { transmissionRoute } from './transmission.route';
 import { uploadsRoute } from './uploads.route';
 import { weatherRoute } from './weather.route';
 import { widgetsRoute } from './widgets.route';
+import { itemAccess } from '../middleware/auth.middleware';
 import {
     apiLimiter,
     authLimiter,
@@ -63,37 +64,40 @@ router.use('/widgets', apiLimiter, widgetsRoute);
 // Notes routes
 router.use('/notes', apiLimiter, notesRoute);
 
+// Integration proxy routes act with the owner's stored credentials, so every one
+// sits behind itemAccess: guests may only read items that are publicly visible.
+
 // Torrent client routes
-router.use('/qbittorrent', torrentApiLimiter, qbittorrentRoute);
-router.use('/transmission', torrentApiLimiter, transmissionRoute);
+router.use('/qbittorrent', torrentApiLimiter, itemAccess, qbittorrentRoute);
+router.use('/transmission', torrentApiLimiter, itemAccess, transmissionRoute);
 
 // NZB client routes
-router.use('/sabnzbd', torrentApiLimiter, sabnzbdRoute);
-router.use('/nzbget', torrentApiLimiter, nzbgetRoute);
+router.use('/sabnzbd', torrentApiLimiter, itemAccess, sabnzbdRoute);
+router.use('/nzbget', torrentApiLimiter, itemAccess, nzbgetRoute);
 
-// Pi-hole routes
-router.use('/pihole', apiLimiter, piholeRoute);
+// Pi-hole routes (also guards /pihole/v6, mounted below under the same prefix)
+router.use('/pihole', apiLimiter, itemAccess, piholeRoute);
 
 // Pi-hole v6 routes (separate to maintain backward compatibility)
 router.use('/pihole/v6', apiLimiter, piholeV6Route);
 
 // AdGuard Home routes
-router.use('/adguard', apiLimiter, adguardRoute);
+router.use('/adguard', apiLimiter, itemAccess, adguardRoute);
 
 // Deluge routes
-router.use('/deluge', torrentApiLimiter, delugeRoute);
+router.use('/deluge', torrentApiLimiter, itemAccess, delugeRoute);
 
 // Jellyfin routes
-router.use('/jellyfin', apiLimiter, jellyfinRoute);
+router.use('/jellyfin', apiLimiter, itemAccess, jellyfinRoute);
 
 // Jellyseerr routes
-router.use('/jellyseerr', apiLimiter, jellyseerRoute);
+router.use('/jellyseerr', apiLimiter, itemAccess, jellyseerRoute);
 
 // Sonarr routes
-router.use('/sonarr', apiLimiter, sonarrRoute);
+router.use('/sonarr', apiLimiter, itemAccess, sonarrRoute);
 
 // Radarr routes
-router.use('/radarr', apiLimiter, radarrRoute);
+router.use('/radarr', apiLimiter, itemAccess, radarrRoute);
 
 router.use('/auth', authLimiter, authRoute);
 

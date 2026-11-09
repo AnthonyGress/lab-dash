@@ -3,9 +3,17 @@ import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
 
+import { authenticateToken, requireAdmin } from '../middleware/auth.middleware';
+
 export const iconsRoute = Router();
 
 const readFile = promisify(fs.readFile);
+
+// The only directories this route may read from
+const ICON_ROOTS = [
+    path.resolve('public', 'uploads'),
+    path.resolve('node_modules', '@loganmarchione', 'homelab-svg-assets', 'assets')
+];
 
 // Icon cache interface
 interface CachedIcon {
@@ -137,6 +145,13 @@ iconsRoute.post('/bulk', async (req: Request, res: Response) => {
                     fullPath = path.join('node_modules', '@loganmarchione', 'homelab-svg-assets', 'assets', sanitizedPath);
                 }
 
+                // Reject paths that escape the icon directories (e.g. ../../config/users.json)
+                const resolvedPath = path.resolve(fullPath);
+                if (!ICON_ROOTS.some(root => resolvedPath.startsWith(root + path.sep))) {
+                    errors.push(`Icon not found: ${iconPath}`);
+                    return;
+                }
+
                 console.log(`Looking for icon at: ${fullPath}`);
 
                 // Check if file exists
@@ -227,7 +242,7 @@ iconsRoute.get('/cache/stats', (req: Request, res: Response) => {
     }
 });
 
-iconsRoute.delete('/cache', (req: Request, res: Response) => {
+iconsRoute.delete('/cache', authenticateToken, requireAdmin, (req: Request, res: Response) => {
     try {
         iconCache.clear();
         res.json({

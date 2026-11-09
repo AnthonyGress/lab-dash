@@ -2,39 +2,18 @@ import { Request, Response, Router } from 'express';
 import fsSync from 'fs';
 import fs from 'fs/promises';
 import StatusCodes from 'http-status-codes';
-import jwt from 'jsonwebtoken';
 import path from 'path';
 
-import {  authenticateToken, requireAdmin } from '../middleware/auth.middleware';
+import { authenticateToken, getOptionalUser, requireAdmin } from '../middleware/auth.middleware';
 import { Config } from '../types';
 import { BackupService } from '../utils/backup.service';
 
 export const configRoute = Router();
 
 const CONFIG_FILE = path.join(__dirname, '../config/config.json');
-const JWT_SECRET = process.env.SECRET || '@jZCgtn^qg8So*^^6A2M';
 
 // Helper function to check if user is authenticated and is admin
-const isUserAdmin = (req: Request): boolean => {
-    try {
-        // Check for token in cookies first
-        const tokenFromCookie = req.cookies?.access_token;
-        // Then check Authorization header
-        const authHeader = req.headers.authorization;
-        const tokenFromHeader = authHeader && authHeader.split(' ')[1];
-
-        const token = tokenFromCookie || tokenFromHeader;
-
-        if (!token) {
-            return false;
-        }
-
-        const decoded = jwt.verify(token, JWT_SECRET) as any;
-        return decoded && decoded.role === 'admin';
-    } catch (error) {
-        return false;
-    }
-};
+const isUserAdmin = (req: Request): boolean => getOptionalUser(req)?.role === 'admin';
 
 // Helper function to filter admin-only items from config
 const filterAdminOnlyItems = (config: any): any => {

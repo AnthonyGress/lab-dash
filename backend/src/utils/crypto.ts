@@ -1,6 +1,8 @@
 import crypto from 'crypto';
 
-const ENCRYPTION_KEY = process.env.SECRET || '@jZCgtn^qg8So*^^6A2M';
+import { SECRET } from './secret';
+
+const ENCRYPTION_KEY = SECRET;
 const IV_LENGTH = 16; // For AES, this is always 16 bytes
 
 /**

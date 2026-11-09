@@ -7,9 +7,10 @@ import { promisify } from 'util';
 import wol from 'wol';
 
 import { UPLOAD_DIRECTORY } from '../constants/constants';
-import { authenticateToken, requireAdmin } from '../middleware/auth.middleware';
+import { authenticateToken, getOptionalUser, requireAdmin } from '../middleware/auth.middleware';
 import { getSystemInfo } from '../system-monitor';
 import { CustomError } from '../types/custom-error';
+import { isPublicWakeTarget } from '../utils/config-lookup';
 import { removeExistingFiles } from '../utils/utils';
 
 export const systemRoute: Router = Router();
@@ -60,7 +61,7 @@ systemRoute.get('/', async (req: Request, res: Response) => {
     }
 });
 
-systemRoute.post('/upload', upload.single('file'), (req: Request, res: Response, next: NextFunction) => {
+systemRoute.post('/upload', [authenticateToken, requireAdmin], upload.single('file'), (req: Request, res: Response, next: NextFunction) => {
     if (!req.file) {
         res.status(StatusCodes.BAD_REQUEST).json({ message: 'No file uploaded' });
     }
@@ -88,7 +89,7 @@ systemRoute.post('/upload', upload.single('file'), (req: Request, res: Response,
 });
 
 // Clean up background images (removes all files at root level in uploads directory)
-systemRoute.post('/clean-background', (req: Request, res: Response) => {
+systemRoute.post('/clean-background', [authenticateToken, requireAdmin], (req: Request, res: Response) => {
     try {
         // Remove all files in the root of uploads directory
         removeExistingFiles();
@@ -145,6 +146,14 @@ systemRoute.post('/wol', (req: Request, res: Response) => {
             if (!macRegex.test(mac)) {
                 res.status(StatusCodes.BAD_REQUEST).json({
                     message: 'Invalid MAC address format. Expected format: xx:xx:xx:xx:xx:xx or xx-xx-xx-xx-xx-xx'
+                });
+                return;
+            }
+
+            // Guests may only wake a device that a publicly visible shortcut is configured for
+            if (getOptionalUser(req)?.role !== 'admin' && !isPublicWakeTarget(mac)) {
+                res.status(StatusCodes.UNAUTHORIZED).json({
+                    message: 'Authentication required'
                 });
                 return;
             }
