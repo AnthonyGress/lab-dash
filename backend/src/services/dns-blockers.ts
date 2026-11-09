@@ -28,7 +28,7 @@ export type DnsBlocker = {
 const TIMEOUT_MS = 5000;
 
 // Allow self-signed certificates: these services usually sit on the local network
-const httpsAgent = new https.Agent({ rejectUnauthorized: false });
+const httpsAgent = new https.Agent({ rejectUnauthorized: false, keepAlive: true });
 
 // ---------------------------------------------------------------- Pi-hole v5
 

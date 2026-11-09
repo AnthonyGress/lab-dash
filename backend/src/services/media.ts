@@ -11,7 +11,7 @@ const TITLE_TTL_MS = 6 * 60 * 60 * 1000;
 const SHOWN_REQUESTS = 8;
 
 // Allow self-signed certificates: these services usually sit on the local network
-const httpsAgent = new https.Agent({ rejectUnauthorized: false });
+const httpsAgent = new https.Agent({ rejectUnauthorized: false, keepAlive: true });
 
 type Cached<T> = { expires: number; value: T };
 

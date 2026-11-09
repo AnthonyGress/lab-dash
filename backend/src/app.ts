@@ -1,3 +1,4 @@
+import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express, { Application } from 'express';
@@ -29,6 +30,8 @@ export const createApp = (rootDir: string): Application => {
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization', 'X-Client-Id']
     }));
+    // The frontend bundle and the config JSON shrink to about a third on the wire
+    app.use(compression());
     app.use(cookieParser());
     // Config saves and imports carry the whole dashboard, far past the 100kb default
     app.use('/api/config', express.json({ limit: '10mb' }));
@@ -40,10 +43,18 @@ export const createApp = (rootDir: string): Application => {
 
     // Routes
     app.use('/icon-list', express.static(iconListPath));
-    app.use('/icons', express.static(iconsPath));
+    // The icon set only changes when the app is upgraded
+    app.use('/icons', express.static(iconsPath, { maxAge: '1d' }));
     app.use('/uploads', express.static(UPLOAD_DIRECTORY));
     app.use('/api', trackRequestOrigin, routes);
-    app.use(express.static(path.join(rootDir, 'public')));
+    app.use(express.static(path.join(rootDir, 'public'), {
+        setHeaders: (res, filePath) => {
+            // The build names these files after their content, so a given URL never changes
+            if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+                res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+            }
+        }
+    }));
     app.get('*', (req, res) => {
         res.sendFile(path.join(rootDir, 'public', 'index.html'));
     });

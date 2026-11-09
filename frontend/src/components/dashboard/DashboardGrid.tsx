@@ -21,7 +21,7 @@ import { SortableNzbget } from './sortable-items/widgets/SortableNzbget';
 import { SortableSabnzbd } from './sortable-items/widgets/SortableSabnzbd';
 import { useAppContext } from '../../context/useAppContext';
 import { DashboardItem, DOWNLOAD_CLIENT_TYPE, ITEM_TYPE, TORRENT_CLIENT_TYPE } from '../../types';
-import { AddEditForm } from '../forms/AddEditForm/AddEditForm';
+import { lazyComponent } from '../lazy';
 import { CenteredModal } from '../modals/CenteredModal';
 import { ConfirmationOptions, PopupManager } from '../modals/PopupManager';
 import { ToastManager } from '../toast/ToastManager';
@@ -47,6 +47,9 @@ import { SortableWeatherWidget } from './sortable-items/widgets/SortableWeather'
 import { theme } from '../../theme/theme';
 
 // Custom event helper function
+// Downloaded when an item is first edited, not with the dashboard
+const AddEditForm = lazyComponent(() => import('../forms/AddEditForm/AddEditForm').then(module => module.AddEditForm));
+
 const dispatchDndKitEvent = (name: string, detail: Record<string, any>): void => {
     document.dispatchEvent(new CustomEvent(`dndkit:${name}`, { detail }));
 };

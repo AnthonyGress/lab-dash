@@ -38,7 +38,7 @@ const STATISTICS_TTL_MS = 10 * 60 * 1000;
 const ACTIVE_STATES = new Set(['downloading', 'active']);
 
 // Allow self-signed certificates: these services usually sit on the local network
-const httpsAgent = new https.Agent({ rejectUnauthorized: false });
+const httpsAgent = new https.Agent({ rejectUnauthorized: false, keepAlive: true });
 
 const statisticsCache = new Map<string, { expires: number; value: ArrSnapshot['statistics'] }>();
 // Instances whose last queue read showed a download in progress

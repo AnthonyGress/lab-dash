@@ -476,7 +476,8 @@ export const AppContextProvider = ({ children }: Props) => {
                 return page;
             }) || [];
 
-            await DashApi.saveConfig({ pages: updatedPages });
+            // Only this page's layout travels, not every page of the dashboard
+            await DashApi.saveLayout(currentPageId, isMobile ? 'mobile' : 'desktop', items);
 
             // Update the config state with the new pages data
             setConfig(prevConfig => ({
@@ -501,7 +502,11 @@ export const AppContextProvider = ({ children }: Props) => {
             updatedLayout = { layout: { desktop: items, mobile: items } };
         }
 
-        await DashApi.saveConfig(updatedLayout);
+        if (config.layout.mobile.length > 3) {
+            await DashApi.saveLayout(null, isMobile ? 'mobile' : 'desktop', items);
+        } else {
+            await DashApi.saveConfig(updatedLayout);
+        }
 
         // Update the config state with the new layout data
         setConfig(prevConfig => ({

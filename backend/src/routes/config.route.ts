@@ -496,6 +496,34 @@ const restoreSensitiveData = (newConfig: any, existingConfig: any): any => {
     return restoredConfig;
 };
 
+/**
+ * Merges a partial config into the stored one and saves it. Secrets the browser
+ * never received (it only gets `_has...` flags) are kept from the stored config.
+ */
+const saveConfigUpdates = (buildUpdates: (existingConfig: Config) => any): Config => (
+    updateConfig((existingConfig: Config) => {
+        // Restore sensitive data from existing config before saving
+        const configToSave = restoreSensitiveData(buildUpdates(existingConfig), existingConfig);
+
+        // Apply updates to existing config
+        Object.keys(configToSave).forEach((key) => {
+            if (configToSave[key] !== undefined) {
+                (existingConfig as any)[key] = configToSave[key];
+            }
+        });
+
+        // Ensure the config has all required properties
+        if (!existingConfig.layout) {
+            existingConfig.layout = { desktop: [], mobile: [] };
+        }
+        if (!existingConfig.pages) {
+            existingConfig.pages = [];
+        }
+    })
+);
+
+class PageNotFoundError extends Error {}
+
 // GET - Return the config file with sensitive data filtered and admin-only items filtered based on user role
 configRoute.get('/', async (req: Request, res: Response): Promise<void> => {
     try {
@@ -542,28 +570,7 @@ configRoute.get('/export', [authenticateToken, requireAdmin], async (_req: Reque
 // POST - Save the incoming JSON layout to disk (admin only)
 configRoute.post('/', [authenticateToken, requireAdmin], async (req: Request, res: Response): Promise<void> => {
     try {
-        const updates = req.body;
-
-        // Save the updated config to file (with sensitive data preserved)
-        const savedConfig = updateConfig((existingConfig: Config) => {
-            // Restore sensitive data from existing config before saving
-            const configToSave = restoreSensitiveData(updates, existingConfig);
-
-            // Apply updates to existing config
-            Object.keys(configToSave).forEach((key) => {
-                if (configToSave[key] !== undefined) {
-                    (existingConfig as any)[key] = configToSave[key];
-                }
-            });
-
-            // Ensure the config has all required properties
-            if (!existingConfig.layout) {
-                existingConfig.layout = { desktop: [], mobile: [] };
-            }
-            if (!existingConfig.pages) {
-                existingConfig.pages = [];
-            }
-        });
+        const savedConfig = saveConfigUpdates(() => req.body);
 
         // Return filtered config to frontend (without sensitive data)
         const filteredConfig = filterSensitiveData(savedConfig);
@@ -574,6 +581,48 @@ configRoute.post('/', [authenticateToken, requireAdmin], async (req: Request, re
         });
     } catch (error) {
         console.error('Error saving config:', error);
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            message: 'Error saving config file',
+            error: (error as Error).message
+        });
+    }
+});
+
+// PUT - Save one layout of one page (admin only). Used when items are added, moved or
+// edited, so a save carries that layout instead of every page of the dashboard.
+configRoute.put('/layout', [authenticateToken, requireAdmin], (req: Request, res: Response): void => {
+    const { pageId, viewport, items } = req.body ?? {};
+
+    const validPage = pageId === null || pageId === undefined || typeof pageId === 'string';
+    if (!validPage || (viewport !== 'desktop' && viewport !== 'mobile') || !Array.isArray(items)) {
+        res.status(StatusCodes.BAD_REQUEST).json({ message: 'pageId, viewport and items are required' });
+        return;
+    }
+
+    try {
+        saveConfigUpdates(existingConfig => {
+            if (!pageId) {
+                return { layout: { ...existingConfig.layout, [viewport]: items } };
+            }
+
+            const pages = existingConfig.pages ?? [];
+            if (!pages.some(page => page.id === pageId)) throw new PageNotFoundError();
+
+            return {
+                pages: pages.map(page => (
+                    page.id === pageId ? { ...page, layout: { ...page.layout, [viewport]: items } } : page
+                ))
+            };
+        });
+
+        res.status(StatusCodes.OK).json({ message: 'Layout saved successfully' });
+    } catch (error) {
+        if (error instanceof PageNotFoundError) {
+            res.status(StatusCodes.NOT_FOUND).json({ message: 'Page not found' });
+            return;
+        }
+
+        console.error('Error saving layout:', error);
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
             message: 'Error saving config file',
             error: (error as Error).message

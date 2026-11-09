@@ -17,7 +17,42 @@ export const registerSystemTopics = (registry: Registry): void => {
             read: async () => {
                 const info = await getSystemInfo(networkInterface);
                 if (!info) throw new RealtimeError('UNAVAILABLE', 'Error fetching system info');
-                return info;
+
+                // Sent every 5 seconds: only what the widget shows (the full report
+                // carries the CPU flag list, cache sizes and more)
+                const { cpu, system, memory, disk, network } = info;
+                return {
+                    cpu: cpu && {
+                        currentLoad: cpu.currentLoad,
+                        main: cpu.main,
+                        brand: cpu.brand,
+                        manufacturer: cpu.manufacturer,
+                        physicalCores: cpu.physicalCores
+                    },
+                    system: system && {
+                        arch: system.arch,
+                        codename: system.codename,
+                        distro: system.distro,
+                        kernel: system.kernel,
+                        release: system.release,
+                        uptime: system.uptime
+                    },
+                    memory: memory && {
+                        active: memory.active,
+                        total: memory.total,
+                        totalInstalled: (memory as typeof memory & { totalInstalled?: number }).totalInstalled
+                    },
+                    disk: disk?.map(entry => ({
+                        fs: entry.fs,
+                        type: entry.type,
+                        size: entry.size,
+                        used: entry.used,
+                        available: entry.available,
+                        use: entry.use,
+                        mount: entry.mount
+                    })),
+                    network
+                };
             }
         };
     });

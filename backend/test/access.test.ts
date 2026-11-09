@@ -4,12 +4,14 @@ import './helpers/fixture-config';
 
 import jwt from 'jsonwebtoken';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import http from 'node:http';
 import { AddressInfo } from 'node:net';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
 
 import { createApp } from '../src/app';
+import { getConfig, updateConfig } from '../src/services/config-store';
 import { isItemPublic, isPublicWakeTarget } from '../src/utils/config-lookup';
 import { decrypt } from '../src/utils/crypto';
 import { isWeakSecret, SECRET } from '../src/utils/secret';
@@ -169,6 +171,72 @@ describe('other previously open routes', () => {
         assert.equal((await call('POST', '/api/icons/bulk', ADMIN, escape)).status, 404);
         assert.equal((await call('POST', '/api/widgets/bulk-data', ADMIN, { widgets: [] })).status, 404);
         assert.equal((await call('DELETE', '/api/icons/cache', ADMIN)).status, 404);
+    });
+});
+
+describe('saving one layout', () => {
+    const shortcut = (id: string) => ({ id, label: id, type: 'app-shortcut', url: 'http://example.test/', config: {} });
+
+    it('is for admins only', async () => {
+        const body = { pageId: null, viewport: 'mobile', items: [] };
+
+        assert.equal((await call('PUT', '/api/config/layout', undefined, body)).status, 401);
+        assert.equal((await call('PUT', '/api/config/layout', USER, body)).status, 403);
+    });
+
+    it('replaces just that layout and keeps stored secrets', async () => {
+        const configBefore = getConfig();
+        const secretItem = { id: 'keeps-secret', label: '', type: 'radarr-widget', config: { host: 'h', _hasApiKey: true } };
+        updateConfig(config => {
+            config.pages![0].layout.desktop.push({ ...secretItem, config: { host: 'h', apiKey: 'ENC:stored' } });
+        });
+
+        const reply = await call('PUT', '/api/config/layout', ADMIN, {
+            pageId: 'admin-page', viewport: 'desktop', items: [shortcut('moved-first'), secretItem]
+        });
+        assert.equal(reply.status, 200);
+
+        const configAfter = getConfig();
+        const saved = configAfter.pages![0].layout.desktop;
+        assert.deepEqual(saved.map(item => item.id), ['moved-first', 'keeps-secret']);
+        assert.deepEqual(saved[1].config, { host: 'h', apiKey: 'ENC:stored' });
+        // Everything else is untouched
+        assert.deepEqual(configAfter.layout, configBefore.layout);
+        assert.deepEqual(configAfter.pages![0].layout.mobile, configBefore.pages![0].layout.mobile);
+    });
+
+    it('saves the home layout when no page is named', async () => {
+        const reply = await call('PUT', '/api/config/layout', ADMIN, { pageId: null, viewport: 'mobile', items: [shortcut('home-mobile')] });
+
+        assert.equal(reply.status, 200);
+        assert.deepEqual(getConfig().layout.mobile.map(item => item.id), ['home-mobile']);
+    });
+
+    it('rejects unknown pages and malformed requests', async () => {
+        assert.equal((await call('PUT', '/api/config/layout', ADMIN, { pageId: 'nope', viewport: 'desktop', items: [] })).status, 404);
+        assert.equal((await call('PUT', '/api/config/layout', ADMIN, { pageId: null, viewport: 'tablet', items: [] })).status, 400);
+        assert.equal((await call('PUT', '/api/config/layout', ADMIN, { pageId: null, viewport: 'desktop' })).status, 400);
+    });
+});
+
+describe('response delivery', () => {
+    it('compresses large JSON responses', async () => {
+        updateConfig(config => {
+            config.title = 'x'.repeat(5000);
+        });
+        const response = await fetch(`${baseUrl}/api/config`, { headers: { 'accept-encoding': 'gzip' } });
+
+        assert.equal(response.headers.get('content-encoding'), 'gzip');
+        assert.equal((await response.json()).title.length, 5000);
+    });
+
+    it('lets browsers keep icons for a day', async () => {
+        const icon = fs.readdirSync(path.join(BACKEND_ROOT, 'node_modules/@loganmarchione/homelab-svg-assets/assets'))
+            .find(file => file.endsWith('.svg'));
+        const response = await fetch(`${baseUrl}/icons/${icon}`);
+
+        assert.equal(response.status, 200);
+        assert.match(response.headers.get('cache-control') ?? '', /max-age=86400/);
     });
 });
 

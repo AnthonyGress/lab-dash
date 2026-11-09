@@ -9,7 +9,7 @@ import { DUAL_WIDGET_CONTAINER_HEIGHT, STANDARD_WIDGET_HEIGHT } from '../../../.
 import { useAppContext } from '../../../../context/useAppContext';
 import { DashboardItem, ITEM_TYPE } from '../../../../types';
 import { GroupItem } from '../../../../types/group';
-import { AddEditForm } from '../../../forms/AddEditForm/AddEditForm';
+import { lazyComponent } from '../../../lazy';
 import { CenteredModal } from '../../../modals/CenteredModal';
 import { ConfirmationOptions, PopupManager } from '../../../modals/PopupManager';
 import GroupWidget from '../../base-items/widgets/GroupWidget';
@@ -45,6 +45,9 @@ interface Props {
   onDuplicate?: () => void;
   isOverlay?: boolean;
 }
+
+// Downloaded when an item is first edited, not with the dashboard
+const AddEditForm = lazyComponent(() => import('../../../forms/AddEditForm/AddEditForm').then(module => module.AddEditForm));
 
 export const SortableGroupWidget: React.FC<Props> = ({
     id,

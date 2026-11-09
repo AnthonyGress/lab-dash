@@ -11,6 +11,7 @@ export const INTERNET_CHECK_HOST = '8.8.8.8';
 
 const httpsAgent = new https.Agent({
     rejectUnauthorized: false,
+    keepAlive: true
 });
 
 const isValidHostname = (hostname: string): boolean => {

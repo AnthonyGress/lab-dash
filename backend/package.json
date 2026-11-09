@@ -26,6 +26,7 @@
     "@loganmarchione/homelab-svg-assets": "^0.4.14",
     "axios": "^1.8.3",
     "bcrypt": "^5.1.1",
+    "compression": "^1.8.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
@@ -41,6 +42,7 @@
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
+    "@types/compression": "^1.8.1",
     "@types/cookie-parser": "^1.4.8",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",

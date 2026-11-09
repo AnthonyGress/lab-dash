@@ -22,13 +22,16 @@ import { COLORS, styles } from '../../theme/styles';
 import { theme } from '../../theme/theme';
 import { DashboardItem, ITEM_TYPE } from '../../types';
 import { getAppVersion } from '../../utils/version';
-import { AddEditForm } from '../forms/AddEditForm/AddEditForm';
+import { lazyComponent, useHasBeenOpen } from '../lazy';
 import { Logo } from '../Logo';
 import { CenteredModal } from '../modals/CenteredModal';
-import { UpdateModal } from '../modals/UpdateModal';
-import { VersionModal } from '../modals/VersionModal';
 import { GlobalSearch } from '../search/GlobalSearch';
 import { ToastManager } from '../toast/ToastManager';
+
+// Downloaded when first opened, not with the dashboard
+const AddEditForm = lazyComponent(() => import('../forms/AddEditForm/AddEditForm').then(module => module.AddEditForm));
+const UpdateModal = lazyComponent(() => import('../modals/UpdateModal').then(module => module.UpdateModal));
+const VersionModal = lazyComponent(() => import('../modals/VersionModal').then(module => module.VersionModal));
 
 const DrawerHeader = styled('div')(({ theme: muiTheme }) => ({
     display: 'flex',
@@ -53,6 +56,8 @@ export const ResponsiveAppBar = ({ children }: Props) => {
     const [selectedPageForEdit, setSelectedPageForEdit] = useState<any>(null);
     const [openUpdateModal, setOpenUpdateModal] = useState(false);
     const [openVersionModal, setOpenVersionModal] = useState(false);
+    const updateModalUsed = useHasBeenOpen(openUpdateModal);
+    const versionModalUsed = useHasBeenOpen(openVersionModal);
     const [internetTooltipOpen, setInternetTooltipOpen] = useState(false);
     const [ipAddress, setIPAddress] = useState<{ wan?: string | null; lan?: string | null } | string | null>(null);
     const [originalLayoutSnapshot, setOriginalLayoutSnapshot] = useState<DashboardItem[] | null>(null);
@@ -831,17 +836,21 @@ export const ResponsiveAppBar = ({ children }: Props) => {
                     />
                 </CenteredModal>
                 {/* Update Modal - Replaced with component */}
-                <UpdateModal
-                    open={openUpdateModal}
-                    handleClose={handleCloseUpdateModal}
-                    latestVersion={latestVersion}
-                    isAdmin={isAdmin}
-                />
+                {updateModalUsed && (
+                    <UpdateModal
+                        open={openUpdateModal}
+                        handleClose={handleCloseUpdateModal}
+                        latestVersion={latestVersion}
+                        isAdmin={isAdmin}
+                    />
+                )}
                 {/* Version Modal */}
-                <VersionModal
-                    open={openVersionModal}
-                    handleClose={handleCloseVersionModal}
-                />
+                {versionModalUsed && (
+                    <VersionModal
+                        open={openVersionModal}
+                        handleClose={handleCloseVersionModal}
+                    />
+                )}
             </AppBar>
             <Box sx={{
                 display: 'flex',

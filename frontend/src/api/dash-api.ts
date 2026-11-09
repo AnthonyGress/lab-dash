@@ -250,15 +250,34 @@ export class DashApi {
             // Return the updated config from the backend response
             return response.data.updatedConfig || null;
         } catch (error) {
-            console.error('Failed to save layout:', error);
-            // Saves used to fail silently, leaving the dashboard looking saved until the next reload
-            ToastManager.error(
-                axios.isAxiosError(error) && error.response?.status === StatusCodes.REQUEST_TOO_LONG
-                    ? 'Dashboard is too large to save'
-                    : 'Failed to save changes. Please try again.'
-            );
+            this.reportSaveFailure(error);
             throw error; // Rethrow to allow handling in the UI
         }
+    }
+
+    /**
+     * Saves one layout of the home dashboard (`pageId` null) or of a page. Sends
+     * only that layout, however large the rest of the dashboard is.
+     */
+    public static async saveLayout(pageId: string | null, viewport: 'desktop' | 'mobile', items: DashboardItem[]): Promise<void> {
+        try {
+            await axios.put(`${BACKEND_URL}/api/config/layout`, { pageId, viewport, items }, {
+                withCredentials: true
+            });
+        } catch (error) {
+            this.reportSaveFailure(error);
+            throw error;
+        }
+    }
+
+    // Saves used to fail silently, leaving the dashboard looking saved until the next reload
+    private static reportSaveFailure(error: unknown): void {
+        console.error('Failed to save layout:', error);
+        ToastManager.error(
+            axios.isAxiosError(error) && error.response?.status === StatusCodes.REQUEST_TOO_LONG
+                ? 'Dashboard is too large to save'
+                : 'Failed to save changes. Please try again.'
+        );
     }
 
     public static async importConfig(configData: Config): Promise<boolean> {

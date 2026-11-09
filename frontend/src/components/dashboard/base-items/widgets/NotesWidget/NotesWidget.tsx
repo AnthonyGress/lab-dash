@@ -6,15 +6,18 @@ import { FaRegWindowRestore, FaTrashCan } from 'react-icons/fa6';
 
 import { applyMarkdownFormat } from './applyMarkdownFormat';
 import { FontSizeSelector } from './FontSizeSelector';
-import { MarkdownPreview } from './MarkdownPreview';
 import { MarkdownToolbar } from './MarkdownToolbar';
 import { DashApi } from '../../../../../api/dash-api';
 import { DUAL_WIDGET_CONTAINER_HEIGHT } from '../../../../../constants/widget-dimensions';
 import { useAppContext } from '../../../../../context/useAppContext';
 import { realtime } from '../../../../../realtime/socket';
 import { theme } from '../../../../../theme/theme';
+import { lazyComponent } from '../../../../lazy';
 import { CenteredModal } from '../../../../modals/CenteredModal';
 import { PopupManager } from '../../../../modals/PopupManager';
+
+// The markdown renderer is only downloaded once a note is shown
+const MarkdownPreview = lazyComponent(() => import('./MarkdownPreview').then(module => module.MarkdownPreview));
 
 interface Note {
     id: string;
