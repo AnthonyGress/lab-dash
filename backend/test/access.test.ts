@@ -4,7 +4,6 @@ import './helpers/fixture-config';
 
 import jwt from 'jsonwebtoken';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
 import http from 'node:http';
 import { AddressInfo } from 'node:net';
 import path from 'node:path';
@@ -141,8 +140,7 @@ describe('other previously open routes', () => {
             ['POST', '/api/app-shortcut/upload'],
             ['POST', '/api/app-shortcut/upload-batch'],
             ['GET', '/api/uploads/images'],
-            ['DELETE', '/api/uploads/images'],
-            ['DELETE', '/api/icons/cache']
+            ['DELETE', '/api/uploads/images']
         ];
 
         for (const [method, url] of routes) {
@@ -164,19 +162,13 @@ describe('other previously open routes', () => {
         assert.equal((await call('GET', url, ADMIN)).status, 404);
     });
 
-    it('does not read files outside the icon directories', async () => {
-        const assets = path.join(BACKEND_ROOT, 'node_modules/@loganmarchione/homelab-svg-assets/assets');
-        const realIcon = `./assets/${fs.readdirSync(assets).find(file => file.endsWith('.svg'))}`;
-        const escapes = [
-            './assets/../../../../package.json',
-            '/uploads/app-icons/../../../package.json',
-            path.join(BACKEND_ROOT, 'package.json')
-        ];
+    it('no longer offers the bulk endpoints, one of which could read any file on the server', async () => {
+        const escape = { iconPaths: ['./assets/../../../../package.json'] };
 
-        const reply = await call('POST', '/api/icons/bulk', undefined, { iconPaths: [realIcon, ...escapes] });
-
-        assert.deepEqual(Object.keys(reply.body.icons), [realIcon]);
-        assert.equal(reply.body.errors.length, escapes.length);
+        assert.equal((await call('POST', '/api/icons/bulk', undefined, escape)).status, 404);
+        assert.equal((await call('POST', '/api/icons/bulk', ADMIN, escape)).status, 404);
+        assert.equal((await call('POST', '/api/widgets/bulk-data', ADMIN, { widgets: [] })).status, 404);
+        assert.equal((await call('DELETE', '/api/icons/cache', ADMIN)).status, 404);
     });
 });
 

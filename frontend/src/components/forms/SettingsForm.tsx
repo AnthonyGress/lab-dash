@@ -1195,21 +1195,6 @@ export const SettingsForm = () => {
                                 gap: 2,
                                 flexDirection: { xs: 'column', sm: 'row' }
                             }}>
-                                <Button
-                                    variant='contained'
-                                    color='error'
-                                    onClick={async () => {
-                                        try {
-                                            const response = await DashApi.clearIconCache();
-                                            ToastManager.success(response.message || 'Icon cache cleared successfully');
-                                        } catch (error) {
-                                            console.error('Error clearing icon cache:', error);
-                                            ToastManager.error('Failed to clear icon cache');
-                                        }
-                                    }}
-                                >
-                                    Clear Icon Cache
-                                </Button>
                                 <Button variant='contained' onClick={resetBackground} color='error'>
                                         Reset Background
                                 </Button>

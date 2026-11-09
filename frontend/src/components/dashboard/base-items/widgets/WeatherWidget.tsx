@@ -1,6 +1,6 @@
 import { ErrorOutline } from '@mui/icons-material';
 import { Box, Button, Card, CardContent, CircularProgress, Grid2 as Grid, Skeleton, Tooltip, Typography, useMediaQuery } from '@mui/material';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BsCloudLightningRainFill } from 'react-icons/bs';
 import { BsCloudSunFill } from 'react-icons/bs';
 import { BsCloudSnowFill } from 'react-icons/bs';
@@ -11,8 +11,8 @@ import { BsCloudHaze2Fill } from 'react-icons/bs';
 import { BsSunFill } from 'react-icons/bs';
 import { BsGeoAltFill } from 'react-icons/bs';
 
-import { DashApi } from '../../../../api/dash-api';
-import { FIFTEEN_MIN_IN_MS } from '../../../../constants/constants';
+import { useLiveData } from '../../../../hooks/useLiveData';
+import { realtime } from '../../../../realtime/socket';
 import { COLORS, styles } from '../../../../theme/styles';
 import { theme } from '../../../../theme/theme';
 
@@ -29,6 +29,7 @@ interface WeatherData {
 }
 
 interface WeatherWidgetProps {
+    id?: string;
     config?: {
         temperatureUnit?: string;
         location?: {
@@ -68,63 +69,24 @@ const weatherDescriptions: Record<number, { description: string; icon: JSX.Eleme
     95: { description: 'Thunderstorm', icon: <BsCloudLightningRainFill style={{ fontSize: '2.4rem' }}/> },
 };
 
-export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
-    const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-    const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config, id }) => {
     const [forecastDays, setForecastDays] = useState(5);
     const [isFahrenheit, setIsFahrenheit] = useState(config?.temperatureUnit !== 'celsius');
     const [openTooltipIndex, setOpenTooltipIndex] = useState<number | null>(null);
-    const [locationName, setLocationName] = useState<string | null>(null);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const timerRef = useRef<number | null>(null);
-    const locationSet = useRef(false);
-    const abortControllerRef = useRef<AbortController | null>(null);
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-    // Handle config changes and location setup
+    // Only use location from config, no browser geolocation fallback
+    const hasLocation = Boolean(config?.location?.latitude && config?.location?.longitude);
+    const locationName = config?.location?.name || null;
+
+    // The forecast is pushed by the server, which refreshes it every 15 minutes
+    const { data, error, loading: isLoading } = useLiveData<WeatherData>('weather.forecast', id, hasLocation);
+    const weatherData = data ?? null;
+    const errorMessage = data ? null : error ?? null;
+
     useEffect(() => {
         setIsFahrenheit(config?.temperatureUnit !== 'celsius');
-
-        // Clear any existing weather fetch timer
-        if (timerRef.current !== null) {
-            clearInterval(timerRef.current);
-            timerRef.current = null;
-        }
-
-        // Only use location from config, no browser geolocation fallback
-        if (config?.location?.latitude && config?.location?.longitude) {
-            setLocation({
-                latitude: config.location.latitude,
-                longitude: config.location.longitude
-            });
-
-            if (config.location.name) {
-                setLocationName(config.location.name);
-            }
-
-            locationSet.current = true;
-        } else {
-            // If no config location provided, don't use browser geolocation
-            setLocation(null);
-            locationSet.current = true;
-            setIsLoading(false);
-        }
-
-        // Moved clickOutside handler to a separate useEffect to avoid recreating on config changes
-
-        return () => {
-            if (timerRef.current !== null) {
-                clearInterval(timerRef.current);
-                timerRef.current = null;
-            }
-            // Cancel any ongoing requests when config changes
-            if (abortControllerRef.current) {
-                abortControllerRef.current.abort();
-                abortControllerRef.current = null;
-            }
-        };
-    }, [config]);
+    }, [config?.temperatureUnit]);
 
     // Handle tooltip clicks separately
     useEffect(() => {
@@ -142,111 +104,6 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
             document.removeEventListener('click', handleClickOutside);
         };
     }, []);
-
-    const fetchWeather = async (abortSignal?: AbortSignal) => {
-        try {
-            setIsLoading(true);
-
-            if (!location?.latitude || !location?.longitude) {
-                console.error('No coordinates available for weather fetch');
-                setWeatherData(null);
-                setIsLoading(false);
-                return;
-            }
-
-            // Check if request was cancelled before making the API call
-            if (abortSignal?.aborted) {
-                return;
-            }
-
-            // Add a small delay to prevent rapid successive requests
-            await new Promise(resolve => setTimeout(resolve, 100));
-
-            // Check again after delay
-            if (abortSignal?.aborted) {
-                return;
-            }
-
-            const data = await DashApi.getWeather(location.latitude, location.longitude, abortSignal);
-
-            // Check if request was cancelled after API call
-            if (abortSignal?.aborted) {
-                return;
-            }
-
-            setWeatherData(data);
-            setErrorMessage(null); // Clear any previous errors
-            setIsLoading(false);
-
-        } catch (err: any) {
-            // Don't set error state if the request was cancelled
-            if (abortSignal?.aborted || err.name === 'AbortError' || err.code === 'ERR_CANCELED') {
-                return;
-            }
-
-            console.error('Error fetching weather:', err);
-            setWeatherData(null);
-            setIsLoading(false);
-
-            // Handle specific error types
-            if (err?.response?.status === 429 && err?.response?.data?.error_source === 'labdash_api') {
-                setErrorMessage(`API Rate limit: ${err.response?.data?.message}`);
-            } else if (err?.response?.status === 500) {
-                // Handle 500 errors specifically - likely from Open-Meteo API
-                setErrorMessage('Weather service temporarily unavailable. Please try again.');
-            } else if (err?.response?.status >= 400) {
-                // Handle other API errors
-                const message = err?.response?.data?.message || err?.response?.data?.error || 'Error fetching weather data';
-                setErrorMessage(`API error: ${message}`);
-            } else if (err?.message) {
-                setErrorMessage(`Error: ${err.message}`);
-            } else {
-                setErrorMessage('An unknown error occurred');
-            }
-        }
-    };
-
-    // Handle weather data fetching
-    useEffect(() => {
-        // Only fetch if location has been determined
-        if (!locationSet.current || !location) {
-            return;
-        }
-
-        let isComponentMounted = true;
-        const abortController = new AbortController();
-
-        // Initial fetch with abort signal
-        fetchWeather(abortController.signal);
-
-        // Set up interval for periodic refresh
-        timerRef.current = window.setInterval(() => {
-            if (isComponentMounted) {
-                // Cancel any existing request before making a new one
-                if (abortControllerRef.current) {
-                    abortControllerRef.current.abort();
-                }
-
-                // Create a new abort controller for the interval request
-                abortControllerRef.current = new AbortController();
-                fetchWeather(abortControllerRef.current.signal);
-            }
-        }, FIFTEEN_MIN_IN_MS);
-
-        return () => {
-            isComponentMounted = false;
-            // Cancel any ongoing requests
-            abortController.abort();
-            if (abortControllerRef.current) {
-                abortControllerRef.current.abort();
-            }
-
-            if (timerRef.current !== null) {
-                clearInterval(timerRef.current);
-                timerRef.current = null;
-            }
-        };
-    }, [location, locationSet.current, errorMessage]);
 
     const convertTemperature = (temp: number) => (isFahrenheit ? Math.round((temp * 9) / 5 + 32) : Math.round(temp));
 
@@ -428,7 +285,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ config }) => {
                 <Button
                     variant='contained'
                     color='primary'
-                    onClick={() => fetchWeather()}
+                    onClick={realtime.reconnect}
                     disabled={isLoading}
                     sx={{ mt: 2 }}
                 >

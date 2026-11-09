@@ -8,6 +8,7 @@ import { registerDownloadClientTopics } from './topics/download-clients';
 import { registerHealthTopics } from './topics/health';
 import { registerMediaTopics } from './topics/media';
 import { registerSystemTopics } from './topics/system';
+import { registerWeatherTopics } from './topics/weather';
 
 /** Every live topic and action the dashboard offers. New integrations are added here. */
 export const createRegistry = (): Registry => {
@@ -18,6 +19,7 @@ export const createRegistry = (): Registry => {
     registerDnsBlockerTopics(registry);
     registerArrTopics(registry);
     registerMediaTopics(registry);
+    registerWeatherTopics(registry);
     return registry;
 };
 

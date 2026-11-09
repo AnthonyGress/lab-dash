@@ -437,6 +437,26 @@ describe('realtime gateway', () => {
 });
 
 describe('built-in topics', () => {
+    it('shares one forecast between weather widgets for the same place', () => {
+        updateConfig(config => {
+            config.layout.desktop.push(
+                { id: 'weather-a', label: '', type: 'weather-widget', config: { location: { name: 'Home', latitude: 52.52, longitude: 13.405 } } },
+                { id: 'weather-b', label: '', type: 'weather-widget', config: { location: { name: 'Same', latitude: '52.5200', longitude: 13.4050 } } },
+                { id: 'weather-nowhere', label: '', type: 'weather-widget', config: {} },
+                { id: 'weather-invalid', label: '', type: 'weather-widget', config: { location: { latitude: 400, longitude: 13 } } }
+            );
+        });
+
+        const registry = createRegistry();
+        const source = (itemId: string) => registry.resolveTopic('weather.forecast', undefined, itemId);
+
+        assert.equal(source('weather-a').key, source('weather-b').key);
+        assert.equal(source('weather-a').intervalMs, 15 * 60 * 1000);
+        assert.throws(() => source('weather-nowhere'), /set a location/);
+        assert.throws(() => source('weather-invalid'), /set a location/);
+        assert.throws(() => source('public-radarr'), /Item not found/);
+    });
+
     it('checks the health target saved on the item, not one chosen by the client', async () => {
         const stub = http.createServer((request, response) => {
             response.statusCode = request.url === '/down' ? 500 : 200;

@@ -75,22 +75,6 @@ export const healthLimiter = rateLimit({
     }
 });
 
-// Weather API specific limiter - weather APIs often have strict rate limits
-export const weatherApiLimiter = rateLimit({
-    windowMs: 5 * 60 * 1000, // 5 minutes
-    max: 100,
-    standardHeaders: true,
-    legacyHeaders: false,
-    handler: (req: Request, res: Response) => {
-        logRateLimitHit(req, 'WEATHER');
-        res.status(429).json({
-            success: false,
-            message: 'Weather API rate limit exceeded, please try again later',
-            error_source: 'labdash_api'
-        });
-    }
-});
-
 // Timezone API specific limiter
 export const timezoneApiLimiter = rateLimit({
     windowMs: 5 * 60 * 1000, // 5 minutes

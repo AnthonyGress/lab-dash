@@ -65,7 +65,7 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
         try {
             switch (widgetConfig.type) {
             case ITEM_TYPE.WEATHER_WIDGET:
-                return <WeatherWidget config={widgetConfig.config} />;
+                return <WeatherWidget config={widgetConfig.config} id={id ? `${id}-${position}` : undefined} />;
             case ITEM_TYPE.DATE_TIME_WIDGET:
                 return <DateTimeWidget config={widgetConfig.config} />;
             case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:

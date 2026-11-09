@@ -4,20 +4,16 @@ import { appShortcutRoute } from './app-shortcut.route';
 import { authRoute } from './auth.route';
 import { configRoute } from './config.route';
 import { healthRoute } from './health.route';
-import { iconsRoute } from './icons.route';
 import { notesRoute } from './notes.route';
 import { systemRoute } from './system.route';
 import { timezoneRoute } from './timezone.route';
 import { uploadsRoute } from './uploads.route';
-import { weatherRoute } from './weather.route';
-import { widgetsRoute } from './widgets.route';
 import {
     apiLimiter,
     authLimiter,
     healthLimiter,
     systemMonitorLimiter,
-    timezoneApiLimiter,
-    weatherApiLimiter
+    timezoneApiLimiter
 } from '../middleware/rate-limiter';
 
 const router = Router();
@@ -31,9 +27,6 @@ router.use('/system', systemMonitorLimiter, systemRoute);
 // Health check route
 router.use('/health', healthLimiter, healthRoute);
 
-// Weather routes
-router.use('/weather', weatherApiLimiter, weatherRoute);
-
 // Timezone routes
 router.use('/timezone', timezoneApiLimiter, timezoneRoute);
 
@@ -42,10 +35,6 @@ router.use('/app-shortcut', apiLimiter, appShortcutRoute);
 
 // Uploads management routes
 router.use('/uploads', apiLimiter, uploadsRoute);
-
-// Bulk loading routes for performance optimization
-router.use('/icons', apiLimiter, iconsRoute);
-router.use('/widgets', apiLimiter, widgetsRoute);
 
 // Notes routes
 router.use('/notes', apiLimiter, notesRoute);

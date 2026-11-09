@@ -6,7 +6,6 @@ import { ToastManager } from '../components/toast/ToastManager';
 import { BACKEND_URL } from '../constants/constants';
 import { realtime } from '../realtime/socket';
 import { Config, DashboardItem, Icon, UploadImageResponse } from '../types';
-import { type BulkIconResponse, type BulkWidgetResponse, type CacheClearResponse, type CacheStatsResponse } from '../types/bulk-loading';
 import { GroupItem } from '../types/group';
 
 interface SignupResponse {
@@ -191,93 +190,6 @@ export class DashApi {
         }
     }
 
-    public static async getIcon(iconPath: string): Promise<string> {
-        const res = await axios.get(`${BACKEND_URL}/icons/${iconPath.replace('./assets/', '')}`);
-        return res.data;
-    }
-
-    // Bulk load all icons used in the dashboard
-    public static async getAllActiveIcons(items: DashboardItem[]): Promise<{ [key: string]: string }> {
-        try {
-            // Extract all icon paths from dashboard items
-            const iconPaths = new Set<string>();
-
-            const extractIconPaths = (dashboardItems: DashboardItem[]) => {
-                dashboardItems.forEach(item => {
-                    // Extract icon from the main item
-                    if (item.icon?.path) {
-                        iconPaths.add(item.icon.path);
-                    }
-
-                    // Handle group widget items (items inside groups)
-                    if ((item.type === 'GROUP_WIDGET' || item.type === 'group-widget') && item.config?.items) {
-                        item.config.items.forEach((groupItem: GroupItem) => {
-                            if (groupItem.icon) {
-                                iconPaths.add(groupItem.icon);
-                            }
-                        });
-                    }
-
-                    // Handle app shortcuts that might have icons in their config
-                    if (item.type === 'APP_SHORTCUT' && item.config?.icon) {
-                        iconPaths.add(item.config.icon);
-                    }
-
-                    // Handle any other widget types that might have icons in their config
-                    if (item.config?.icon) {
-                        iconPaths.add(item.config.icon);
-                    }
-                });
-            };
-
-            extractIconPaths(items);
-
-            // Make bulk request for all icons using the new cached method
-            const iconPathsArray = Array.from(iconPaths);
-            if (iconPathsArray.length === 0) {
-                return {};
-            }
-
-            const response = await this.bulkLoadIcons(iconPathsArray);
-
-            return response.icons || {};
-        } catch (error) {
-            console.error('Error fetching icons in bulk:', error);
-            return {};
-        }
-    }
-
-    // Bulk load initial widget data for faster startup
-    public static async getBulkWidgetData(items: DashboardItem[]): Promise<{ [key: string]: any }> {
-        try {
-            // Extract widget configurations that need initial data
-            const widgetConfigs = items
-                .filter(item =>
-                    item.type &&
-                    !['APP_SHORTCUT', 'BLANK_APP', 'BLANK_ROW'].includes(item.type)
-                )
-                .map(item => ({
-                    id: item.id,
-                    type: item.type,
-                    config: item.config
-                }));
-
-            if (widgetConfigs.length === 0) {
-                return {};
-            }
-
-            const res = await axios.post(`${BACKEND_URL}/api/widgets/bulk-data`, {
-                widgets: widgetConfigs
-            });
-
-            return res.data?.widgetData || {};
-        } catch (error) {
-            console.error('Error fetching bulk widget data:', error);
-            return {};
-        }
-    }
-
-    // These endpoints require authentication
     public static async getConfig(): Promise<Config> {
         // Explicitly set withCredentials for this request
         const res = await axios.get(`${BACKEND_URL}/api/config`, {
@@ -371,44 +283,6 @@ export class DashApi {
             return res.data;
         }
         return null;
-    }
-
-    public static async getWeather(latitude: number, longitude: number, abortSignal?: AbortSignal): Promise<any> {
-        try {
-            const res = await axios.get(`${BACKEND_URL}/api/weather`, {
-                params: {
-                    latitude,
-                    longitude
-                },
-                timeout: 8000, // 8 second timeout
-                signal: abortSignal // Add abort signal support
-            });
-            return res.data;
-        } catch (error: any) {
-            // Don't log errors for cancelled requests
-            if (abortSignal?.aborted || error.name === 'AbortError' || error.code === 'ERR_CANCELED') {
-                throw error;
-            }
-
-            // Log detailed error information
-            if (error.response) {
-                // The request was made and the server responded with a status code
-                // that falls out of the range of 2xx
-                console.error('Weather API error response:', {
-                    status: error.response.status,
-                    data: error.response.data,
-                    headers: error.response.headers
-                });
-            } else if (error.request) {
-                // The request was made but no response was received
-                console.error('Weather API no response:', error.request);
-            } else {
-                // Something happened in setting up the request that triggered an Error
-                console.error('Weather API request error:', error.message);
-            }
-
-            throw error;
-        }
     }
 
     public static async getTimezone(latitude: number, longitude: number): Promise<any> {
@@ -806,52 +680,6 @@ export class DashApi {
             return res.data;
         } catch (error) {
             console.error('Error updating font size for all notes:', error);
-            throw error;
-        }
-    }
-
-    // Bulk loading methods for performance optimization
-    public static async bulkLoadIcons(iconPaths: string[]): Promise<BulkIconResponse> {
-        try {
-            const res = await axios.post(`${BACKEND_URL}/api/icons/bulk`, {
-                iconPaths
-            });
-            return res.data;
-        } catch (error) {
-            console.error('Error bulk loading icons:', error);
-            throw error;
-        }
-    }
-
-    public static async bulkLoadWidgetData(widgetRequests: Array<{ id: string; type: string; config?: Record<string, unknown> }>): Promise<BulkWidgetResponse> {
-        try {
-            const res = await axios.post(`${BACKEND_URL}/api/widgets/bulk-data`, {
-                widgets: widgetRequests
-            });
-            return res.data;
-        } catch (error) {
-            console.error('Error bulk loading widget data:', error);
-            throw error;
-        }
-    }
-
-    // Cache management methods
-    public static async getIconCacheStats(): Promise<CacheStatsResponse> {
-        try {
-            const res = await axios.get(`${BACKEND_URL}/api/icons/cache/stats`);
-            return res.data;
-        } catch (error) {
-            console.error('Error getting icon cache stats:', error);
-            throw error;
-        }
-    }
-
-    public static async clearIconCache(): Promise<CacheClearResponse> {
-        try {
-            const res = await axios.delete(`${BACKEND_URL}/api/icons/cache`);
-            return res.data;
-        } catch (error) {
-            console.error('Error clearing icon cache:', error);
             throw error;
         }
     }
