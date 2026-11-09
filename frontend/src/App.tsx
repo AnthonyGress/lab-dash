@@ -7,6 +7,7 @@ import { Route, Routes, useNavigate } from 'react-router-dom';
 import { SetupForm } from './components/forms/SetupForm';
 import { GlobalCustomScrollbar } from './components/GlobalCustomScrollbar';
 import { WithNav } from './components/navbar/WithNav';
+import { RealtimeStatusBanner } from './components/RealtimeStatusBanner';
 import { ScrollToTop } from './components/ScrollToTop';
 import { BACKEND_URL } from './constants/constants';
 import { useAppContext } from './context/useAppContext';
@@ -171,6 +172,7 @@ export const App = () => {
             <div id='background-container' />
             <ScrollToTop />
             {!isMobilePointer && <GlobalCustomScrollbar />}
+            <RealtimeStatusBanner />
             <Routes>
                 <Route element={<WithNav />}>
                     <Route path='/' element={isFirstTimeSetup && !setupComplete ? <SetupPage /> : <DashboardPage />}/>

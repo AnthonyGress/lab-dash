@@ -11,6 +11,7 @@ import { MarkdownToolbar } from './MarkdownToolbar';
 import { DashApi } from '../../../../../api/dash-api';
 import { DUAL_WIDGET_CONTAINER_HEIGHT } from '../../../../../constants/widget-dimensions';
 import { useAppContext } from '../../../../../context/useAppContext';
+import { realtime } from '../../../../../realtime/socket';
 import { theme } from '../../../../../theme/theme';
 import { CenteredModal } from '../../../../modals/CenteredModal';
 import { PopupManager } from '../../../../modals/PopupManager';
@@ -137,6 +138,9 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
             fetchNotes();
         }
     }, [editMode, fetchNotes]);
+
+    // Notes saved in another tab or on another device show up without a reload
+    useEffect(() => realtime.on('notes.changed', () => void fetchNotes()), [fetchNotes]);
 
     const handleNoteClick = (note: Note) => {
         setSelectedNote(note);

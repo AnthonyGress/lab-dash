@@ -1,16 +1,12 @@
 import { Request, Response, Router } from 'express';
-import fsSync from 'fs';
-import fs from 'fs/promises';
 import StatusCodes from 'http-status-codes';
-import path from 'path';
 
 import { authenticateToken, getOptionalUser, requireAdmin } from '../middleware/auth.middleware';
+import { getConfig, updateConfig } from '../services/config-store';
 import { Config } from '../types';
 import { BackupService } from '../utils/backup.service';
 
 export const configRoute = Router();
-
-const CONFIG_FILE = path.join(__dirname, '../config/config.json');
 
 // Helper function to check if user is authenticated and is admin
 const isUserAdmin = (req: Request): boolean => getOptionalUser(req)?.role === 'admin';
@@ -60,36 +56,6 @@ const filterAdminOnlyItems = (config: any): any => {
 
     return filteredConfig;
 };
-const loadConfig = () => {
-    if (fsSync.existsSync(CONFIG_FILE)) {
-        try {
-            const fileContent = fsSync.readFileSync(CONFIG_FILE, 'utf-8');
-            if (!fileContent.trim()) {
-                console.error('Config file is empty, returning default config');
-                return { layout: { desktop: [], mobile: [] } };
-            }
-            const config = JSON.parse(fileContent);
-            return config;
-        } catch (error) {
-            console.error('Error parsing config file:', error);
-            console.error('Config file content length:', fsSync.readFileSync(CONFIG_FILE, 'utf-8').length);
-
-            // Try to read the first and last 100 characters to help debug
-            try {
-                const content = fsSync.readFileSync(CONFIG_FILE, 'utf-8');
-                console.error('First 100 chars:', content.substring(0, 100));
-                console.error('Last 100 chars:', content.substring(Math.max(0, content.length - 100)));
-            } catch (readError) {
-                console.error('Could not read config file for debugging:', readError);
-            }
-
-            // Return default config if parsing fails
-            return { layout: { desktop: [], mobile: [] } };
-        }
-    }
-    return { layout: { desktop: [], mobile: [] } };
-};
-
 // Helper function to filter sensitive data from config before sending to frontend
 const filterSensitiveData = (config: any): any => {
     const filteredConfig = JSON.parse(JSON.stringify(config)); // Deep clone
@@ -532,7 +498,7 @@ const restoreSensitiveData = (newConfig: any, existingConfig: any): any => {
 // GET - Return the config file with sensitive data filtered and admin-only items filtered based on user role
 configRoute.get('/', async (req: Request, res: Response): Promise<void> => {
     try {
-        const config = loadConfig();
+        const config = getConfig();
 
         // Filter sensitive data (passwords/tokens) and add security flags
         let filteredConfig = filterSensitiveData(config);
@@ -555,7 +521,7 @@ configRoute.get('/', async (req: Request, res: Response): Promise<void> => {
 // GET - Export the config file as a download (admin only)
 configRoute.get('/export', [authenticateToken, requireAdmin], async (_req: Request, res: Response): Promise<void> => {
     try {
-        const config = loadConfig();
+        const config = getConfig();
         const fileName = `lab-dash-backup-${new Date().toISOString().slice(0, 10)}.json`;
 
         // Set headers to force download
@@ -576,31 +542,30 @@ configRoute.get('/export', [authenticateToken, requireAdmin], async (_req: Reque
 configRoute.post('/', [authenticateToken, requireAdmin], async (req: Request, res: Response): Promise<void> => {
     try {
         const updates = req.body;
-        const existingConfig: Config = loadConfig();
 
-        // Restore sensitive data from existing config before saving
-        const configToSave = restoreSensitiveData(updates, existingConfig);
+        // Save the updated config to file (with sensitive data preserved)
+        const savedConfig = updateConfig((existingConfig: Config) => {
+            // Restore sensitive data from existing config before saving
+            const configToSave = restoreSensitiveData(updates, existingConfig);
 
-        // Apply updates to existing config
-        Object.keys(configToSave).forEach((key) => {
-            if (configToSave[key] !== undefined) {
-                (existingConfig as any)[key] = configToSave[key];
+            // Apply updates to existing config
+            Object.keys(configToSave).forEach((key) => {
+                if (configToSave[key] !== undefined) {
+                    (existingConfig as any)[key] = configToSave[key];
+                }
+            });
+
+            // Ensure the config has all required properties
+            if (!existingConfig.layout) {
+                existingConfig.layout = { desktop: [], mobile: [] };
+            }
+            if (!existingConfig.pages) {
+                existingConfig.pages = [];
             }
         });
 
-        // Ensure the config has all required properties
-        if (!existingConfig.layout) {
-            existingConfig.layout = { desktop: [], mobile: [] };
-        }
-        if (!existingConfig.pages) {
-            existingConfig.pages = [];
-        }
-
-        // Save the updated config to file (with sensitive data preserved)
-        await fs.writeFile(CONFIG_FILE, JSON.stringify(existingConfig, null, 2), 'utf-8');
-
         // Return filtered config to frontend (without sensitive data)
-        const filteredConfig = filterSensitiveData(existingConfig);
+        const filteredConfig = filterSensitiveData(savedConfig);
 
         res.status(StatusCodes.OK).json({
             message: 'Config saved successfully',
@@ -636,8 +601,8 @@ configRoute.post('/import', [authenticateToken, requireAdmin], async (req: Reque
             importedConfig.layout = { desktop: [], mobile: [] };
         }
 
-        // Write the imported config directly to the config file
-        await fs.writeFile(CONFIG_FILE, JSON.stringify(importedConfig, null, 2), 'utf-8');
+        // Replace the whole config with the imported one
+        updateConfig(() => importedConfig);
 
         // Return filtered config to frontend
         const filteredConfig = filterSensitiveData(importedConfig);

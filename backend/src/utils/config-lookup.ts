@@ -1,20 +1,6 @@
-import fsSync from 'fs';
-import path from 'path';
-
-import { Config, DashboardItem } from '../types';
+import { getConfig } from '../services/config-store';
+import { DashboardItem } from '../types';
 import { decrypt, isEncrypted } from './crypto';
-
-const CONFIG_FILE = path.join(__dirname, '../config/config.json');
-
-/**
- * Load the configuration from disk
- */
-export const loadConfig = (): Config => {
-    if (fsSync.existsSync(CONFIG_FILE)) {
-        return JSON.parse(fsSync.readFileSync(CONFIG_FILE, 'utf-8'));
-    }
-    return { layout: { desktop: [], mobile: [] } };
-};
 
 type ItemMatch = {
     item: DashboardItem;
@@ -27,7 +13,7 @@ type ItemMatch = {
  * page is admin-only, the same rule GET /api/config uses to hide items from guests.
  */
 const walkItems = (visit: (item: any, isPublic: boolean) => void): void => {
-    const config = loadConfig();
+    const config = getConfig();
 
     const walk = (items: any[] = [], parentIsPublic: boolean): void => {
         for (const item of items) {
@@ -92,21 +78,6 @@ export const findItemById = (itemId: string): DashboardItem | null => {
  */
 export const isItemPublic = (itemId: string): boolean => {
     return findItemMatches(itemId).some(match => match.isPublic);
-};
-
-/**
- * True when the target is the URL or health-check target of a saved item.
- */
-export const isKnownHealthTarget = (target: string): boolean => {
-    let known = false;
-
-    walkItems((item) => {
-        if (item.url === target || item.healthUrl === target || item.config?.healthUrl === target) {
-            known = true;
-        }
-    });
-
-    return known;
 };
 
 const normalizeMac = (mac: unknown): string => String(mac ?? '').toLowerCase().replace(/-/g, ':');

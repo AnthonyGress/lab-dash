@@ -7,6 +7,7 @@ import { UPLOAD_DIRECTORY } from './constants/constants';
 import { errorHandler } from './middleware/error-handler';
 import { generalLimiter } from './middleware/rate-limiter';
 import routes from './routes';
+import { trackRequestOrigin } from './utils/request-origin';
 
 /**
  * Builds the Express app without starting it.
@@ -26,7 +27,7 @@ export const createApp = (rootDir: string): Application => {
         origin: true,
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization']
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Client-Id']
     }));
     app.use(cookieParser());
     // Config saves and imports carry the whole dashboard, far past the 100kb default
@@ -41,7 +42,7 @@ export const createApp = (rootDir: string): Application => {
     app.use('/icon-list', express.static(iconListPath));
     app.use('/icons', express.static(iconsPath));
     app.use('/uploads', express.static(UPLOAD_DIRECTORY));
-    app.use('/api', routes);
+    app.use('/api', trackRequestOrigin, routes);
     app.use(express.static(path.join(rootDir, 'public')));
     app.get('*', (req, res) => {
         res.sendFile(path.join(rootDir, 'public', 'index.html'));

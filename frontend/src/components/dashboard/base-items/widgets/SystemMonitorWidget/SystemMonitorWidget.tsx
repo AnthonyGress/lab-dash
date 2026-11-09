@@ -10,6 +10,8 @@ import { DashApi } from '../../../../../api/dash-api';
 import { useAppContext } from '../../../../../context/useAppContext';
 import { useInternetStatus } from '../../../../../hooks/useInternetStatus';
 import { useIsMobile } from '../../../../../hooks/useIsMobile';
+import { useLiveData } from '../../../../../hooks/useLiveData';
+import { realtime } from '../../../../../realtime/socket';
 import { COLORS } from '../../../../../theme/styles';
 import { theme } from '../../../../../theme/theme';
 import { convertSecondsToUptime, formatBytes } from '../../../../../utils/utils';
@@ -31,9 +33,10 @@ interface SystemMonitorWidgetProps {
         ipDisplayType?: 'wan' | 'lan' | 'both';
     };
     editMode?: boolean;
+    id?: string;
 }
 
-export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetProps) => {
+export const SystemMonitorWidget = ({ config, editMode, id }: SystemMonitorWidgetProps) => {
     const { config: globalConfig } = useAppContext();
     const [systemInformation, setSystemInformation] = useState<any>();
     const [memoryInformation, setMemoryInformation] = useState<any>(0);
@@ -49,8 +52,9 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
     });
     const [openSystemModal, setOpenSystemModal] = useState(false);
     const [isFahrenheit, setIsFahrenheit] = useState(config?.temperatureUnit !== 'celsius');
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
+    const { data: liveSystemInfo, error: liveError, loading: isLoading } = useLiveData<any>('system.metrics', id);
+    // Only replace the widget with an error while there is no reading to show
+    const errorMessage = liveSystemInfo ? null : liveError ?? null;
     const [internetTooltipOpen, setInternetTooltipOpen] = useState(false);
     const [ipAddress, setIPAddress] = useState<{ wan?: string | null; lan?: string | null } | string | null>(null);
 
@@ -373,59 +377,20 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
         }
     };
 
-    // Function to fetch system information
-    const fetchSystemInfo = async () => {
-        try {
-            setIsLoading(true);
-            const res = await DashApi.getSystemInformation(config?.networkInterface);
-            setSystemInformation(res);
-            getRamPercentage(res);
-            getNetworkInformation(res);
-            getMainDiskInfo(res);
-            // Clear any previous errors on successful data fetch
-            setErrorMessage(null);
-            setIsLoading(false);
-        } catch (err: any) {
-            setIsLoading(false);
-            // Handle API rate limit errors
-            if (err?.response?.status === 429 && err?.response?.data?.error_source === 'labdash_api') {
-                console.error(`Lab-Dash API rate limit: ${err.response?.data?.message}`);
-                setErrorMessage(`API Rate limit: ${err.response?.data?.message}`);
-            } else if (err?.response?.status >= 400) {
-                // Handle other API errors
-                const message = err?.response?.data?.message || 'Error fetching system data';
-                console.error(`API error: ${message}`);
-                setErrorMessage(`API error: ${message}`);
-            } else if (err?.message) {
-                // Handle network or other errors
-                console.error(`Error: ${err.message}`);
-                setErrorMessage(`Error: ${err.message}`);
-            } else {
-                setErrorMessage('An unknown error occurred');
-            }
-        }
-    };
+    // The server pushes fresh readings; nothing is polled from here
+    useEffect(() => {
+        if (!liveSystemInfo) return;
+
+        setSystemInformation(liveSystemInfo);
+        getRamPercentage(liveSystemInfo);
+        getNetworkInformation(liveSystemInfo);
+        getMainDiskInfo(liveSystemInfo);
+    }, [liveSystemInfo]);
 
     useEffect(() => {
         // Update temperature unit preference from config
         setIsFahrenheit(config?.temperatureUnit !== 'celsius');
-
-        // Immediately fetch data with the current settings
-        fetchSystemInfo();
-
-        // Fetch system info every 5 seconds
-        const systemInfoInterval = setInterval(() => {
-            // Only fetch if there's no error
-            if (!errorMessage) {
-                fetchSystemInfo();
-            }
-        }, 5000); // 5000 ms = 5 seconds
-
-        // Clean up the intervals when component unmounts or dependencies change
-        return () => {
-            clearInterval(systemInfoInterval);
-        };
-    }, [config?.temperatureUnit, config?.networkInterface, editMode]);
+    }, [config?.temperatureUnit]);
 
     // Close internet tooltip when clicking outside
     useEffect(() => {
@@ -495,7 +460,7 @@ export const SystemMonitorWidget = ({ config, editMode }: SystemMonitorWidgetPro
                 <Button
                     variant='contained'
                     color='primary'
-                    onClick={fetchSystemInfo}
+                    onClick={realtime.reconnect}
                     disabled={isLoading}
                     sx={{ mt: 2 }}
                 >

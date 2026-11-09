@@ -4,6 +4,7 @@ import shortid from 'shortid';
 
 import { ToastManager } from '../components/toast/ToastManager';
 import { BACKEND_URL } from '../constants/constants';
+import { realtime } from '../realtime/socket';
 import { Config, DashboardItem, Icon, UploadImageResponse } from '../types';
 import { type BulkIconResponse, type BulkWidgetResponse, type CacheClearResponse, type CacheStatsResponse } from '../types/bulk-loading';
 import { GroupItem } from '../types/group';
@@ -102,6 +103,10 @@ export class DashApi {
             async (config) => {
                 // Ensure credentials are sent for all API requests
                 config.withCredentials = true;
+                // Lets the server tell this tab's own saves apart from changes made elsewhere
+                if (config.url?.startsWith(`${BACKEND_URL}/api/`)) {
+                    config.headers.set('X-Client-Id', realtime.clientId);
+                }
                 return config;
             },
             (error) => Promise.reject(error)
@@ -587,36 +592,6 @@ export class DashApi {
             }
 
             throw error;
-        }
-    }
-
-    public static async checkServiceHealth(url: string, healthCheckType: 'http' | 'ping' = 'http'): Promise<'online' | 'offline'> {
-        try {
-            const res = await axios.get(`${BACKEND_URL}/api/health`, {
-                params: { url, type: healthCheckType },
-                // Increased timeout to handle slower services
-                timeout: 12000
-            });
-            return res.data.status;
-        } catch (error) {
-            console.error('Failed to check service health:', error);
-            return 'offline';
-        }
-    }
-
-    public static async checkInternetConnectivity(): Promise<'online' | 'offline'> {
-        try {
-            const res = await axios.get(`${BACKEND_URL}/api/health`, {
-                params: { url: '8.8.8.8', type: 'ping' },
-                // Don't send credentials for health checks to avoid auth issues
-                withCredentials: false,
-                // Add timeout to prevent long-running requests
-                timeout: 10000
-            });
-            return res.data.status;
-        } catch (error) {
-            console.error('Failed to check internet connectivity:', error);
-            return 'offline';
         }
     }
 

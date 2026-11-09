@@ -1,5 +1,5 @@
 import { useMediaQuery } from '@mui/material';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import shortid from 'shortid';
 
@@ -8,6 +8,7 @@ import { DashApi } from '../api/dash-api';
 import { PopupManager } from '../components/modals/PopupManager';
 import { ToastManager } from '../components/toast/ToastManager';
 import { initialItems } from '../constants/constants';
+import { realtime } from '../realtime/socket';
 import { theme } from '../theme/theme';
 import { Config, DashboardItem, DashboardLayout, NewItem, Page } from '../types';
 import { checkForUpdates } from '../utils/updateChecker';
@@ -196,6 +197,47 @@ export const AppContextProvider = ({ children }: Props) => {
 
         handleURLChange();
     }, [location.pathname, config, pages, currentPageId, isFirstTimeSetup, isMobile, navigate, isMoveInProgress]);
+
+    // Live connection: follow changes made on other tabs or devices, and keep the session fresh
+    const liveHandlers = useRef({
+        editMode,
+        getLayout: async (): Promise<unknown> => undefined,
+        refreshSession: async (): Promise<unknown> => undefined
+    });
+    const configChangedWhileEditing = useRef(false);
+
+    useEffect(() => {
+        const refreshSession = () => {
+            // The socket was opened with the old token; reopen it with the refreshed one
+            void liveHandlers.current.refreshSession().finally(realtime.reconnect);
+        };
+
+        const stopListening = [
+            realtime.on('config.changed', () => {
+                // Reloading mid-edit would discard what is being arranged
+                if (liveHandlers.current.editMode) configChangedWhileEditing.current = true;
+                else void liveHandlers.current.getLayout();
+            }),
+            realtime.on('session.expiring', refreshSession),
+            realtime.on('session.ended', refreshSession)
+        ];
+
+        return () => stopListening.forEach(stop => stop());
+    }, []);
+
+    useEffect(() => {
+        if (editMode || !configChangedWhileEditing.current) return;
+        configChangedWhileEditing.current = false;
+        void liveHandlers.current.getLayout();
+    }, [editMode]);
+
+    // Logging in or out changes what the server may send over the socket
+    const wasLoggedIn = useRef(isLoggedIn);
+    useEffect(() => {
+        if (wasLoggedIn.current === isLoggedIn) return;
+        wasLoggedIn.current = isLoggedIn;
+        realtime.reconnect();
+    }, [isLoggedIn]);
 
     // Handle dashboard state based on login status
     useEffect(() => {
@@ -449,6 +491,8 @@ export const AppContextProvider = ({ children }: Props) => {
         }
         return [];
     };
+
+    liveHandlers.current = { editMode, getLayout, refreshSession: refreshTokenAndValidate };
 
     const saveLayout = async (items: DashboardItem[]) => {
         // Use existing config state instead of fetching again

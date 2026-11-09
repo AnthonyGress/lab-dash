@@ -1,9 +1,9 @@
 import { Box, CardContent, Grid2 as Grid, Tooltip, Typography, useMediaQuery } from '@mui/material';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { FaHdd } from 'react-icons/fa';
 
-import { DashApi } from '../../../../api/dash-api';
 import { DUAL_WIDGET_CONTAINER_HEIGHT } from '../../../../constants/widget-dimensions';
+import { useLiveData } from '../../../../hooks/useLiveData';
 import { theme } from '../../../../theme/theme';
 
 interface DiskInfo {
@@ -32,12 +32,22 @@ interface DiskMonitorWidgetProps {
         dualWidgetPosition?: 'top' | 'bottom';
     };
     editMode?: boolean;
+    id?: string;
 }
 
-export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) => {
-    const [diskData, setDiskData] = useState<DiskInfo[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+export const DiskMonitorWidget = ({ config, id }: DiskMonitorWidgetProps) => {
+    // Pushed by the server, and only when disk usage actually changes
+    const { data: disks, error: liveError, loading: isLoading } = useLiveData<DiskInfo[]>('system.disks', id);
+    const diskData = useMemo(() => (Array.isArray(disks) ? disks : []).filter((disk: DiskInfo) =>
+        // Filter out network shares or unwanted mounts
+        !disk.fs.startsWith('//') &&
+        disk.size > 0 &&
+        disk.mount !== '/dev' &&
+        disk.mount !== '/proc' &&
+        disk.mount !== '/sys' &&
+        !disk.mount.startsWith('/snap/')
+    ), [disks]);
+    const error = disks ? null : liveError ? 'Failed to fetch disk information' : null;
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const isLargeOrSmaller = useMediaQuery(theme.breakpoints.down('xl'));
 
@@ -68,49 +78,6 @@ export const DiskMonitorWidget = ({ config, editMode }: DiskMonitorWidgetProps) 
         }
         return `${gb.toFixed(1)} GB`;
     };
-
-    const fetchDiskData = async () => {
-        try {
-            setError(null);
-            // Only show loading if we don't have existing data
-            if (diskData.length === 0) {
-                setIsLoading(true);
-            }
-
-            const systemInfo = await DashApi.getSystemInformation();
-
-            if (systemInfo?.disk && Array.isArray(systemInfo.disk)) {
-                // Filter out network shares or unwanted mounts
-                const validDisks = systemInfo.disk.filter((disk: DiskInfo) =>
-                    !disk.fs.startsWith('//') &&
-                    disk.size > 0 &&
-                    disk.mount !== '/dev' &&
-                    disk.mount !== '/proc' &&
-                    disk.mount !== '/sys' &&
-                    !disk.mount.startsWith('/snap/')
-                );
-
-                setDiskData(validDisks);
-            } else {
-                setError('No disk information available');
-            }
-        } catch (err) {
-            console.error('Error fetching disk data:', err);
-            setError('Failed to fetch disk information');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        if (!editMode) {
-            fetchDiskData();
-
-            // Refresh disk data every 30 seconds
-            const interval = setInterval(fetchDiskData, 30000);
-            return () => clearInterval(interval);
-        }
-    }, [editMode]);
 
     // Create display disks with custom names
     const displayDisks = selectedDisks

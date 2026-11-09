@@ -1,37 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useLiveData } from './useLiveData';
 
-import { DashApi } from '../api/dash-api';
-import { TWO_MIN_IN_MS } from '../constants/constants';
+/**
+ * Online state of a dashboard item's service: true, false, or null while unknown.
+ * The server checks the target saved on the item, so only the item ID is sent.
+ */
+export function useServiceStatus(itemId: string | null | undefined) {
+    const { data } = useLiveData<{ status: 'online' | 'offline' }>('service.health', itemId ?? undefined, Boolean(itemId));
 
-export function useServiceStatus(
-    pingUrl: string | null | undefined,
-    healthCheckType: 'http' | 'ping' = 'http',
-    intervalMs = TWO_MIN_IN_MS
-) {
-    const [isOnline, setIsOnline] = useState<boolean | null>(null);
-
-    useEffect(() => {
-        if (!pingUrl) return;
-
-        let timer: NodeJS.Timeout | null = null;
-
-        async function checkStatus() {
-            try {
-                if (!pingUrl) return;
-                const status = await DashApi.checkServiceHealth(pingUrl, healthCheckType);
-                setIsOnline(status === 'online');
-            } catch {
-                setIsOnline(false);
-            }
-        }
-
-        checkStatus();
-        timer = setInterval(checkStatus, intervalMs);
-
-        return () => {
-            if (timer) clearInterval(timer);
-        };
-    }, [pingUrl, healthCheckType, intervalMs]);
-
-    return isOnline;
+    // An unreachable service arrives as "offline" data; an error only means the item cannot be checked (yet)
+    return data ? data.status === 'online' : null;
 }

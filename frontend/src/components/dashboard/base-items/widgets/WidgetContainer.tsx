@@ -79,7 +79,7 @@ export const WidgetContainer: React.FC<Props> = ({
         >
             {!isPreview && <EditMenu editMode={editMode} itemId={id} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} />}
             {children}
-            {!isPreview && <StatusIndicator url={url} healthCheckType={healthCheckType} />}
+            {!isPreview && <StatusIndicator itemId={id} url={url} healthCheckType={healthCheckType} />}
         </Card>
     );
 };

@@ -7,16 +7,17 @@ import { useServiceStatus } from '../../../../hooks/useServiceStatus';
 import { isValidHttpUrl } from '../../../../utils/utils';
 
 type StatusIndicatorProps = {
+    itemId?: string;
     url?: string;
     healthCheckType?: 'http' | 'ping';
 };
 
-export const StatusIndicator: React.FC<StatusIndicatorProps> = ({ url, healthCheckType = 'http' }) => {
+export const StatusIndicator: React.FC<StatusIndicatorProps> = ({ itemId, url, healthCheckType = 'http' }) => {
     // For ping type, we don't need to validate the URL format
     const isPingType = healthCheckType === 'ping';
     const isValidUrl = isPingType || (url && isValidHttpUrl(url));
 
-    const isOnline = useServiceStatus(isValidUrl ? url : null, healthCheckType);
+    const isOnline = useServiceStatus(isValidUrl ? itemId : null);
 
     let dotColor = 'gray';
     let tooltipText = 'Unknown';

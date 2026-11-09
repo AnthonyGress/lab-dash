@@ -2,12 +2,13 @@ import fs from 'fs';
 import fsPromises from 'fs/promises';
 import path from 'path';
 
+import { getConfigFile, updateConfig } from '../services/config-store';
 import { Config } from '../types';
 
-const CONFIG_FILE = path.join(__dirname, '../config/config.json');
-const BACKUP_DIR = path.join(__dirname, '../config/backups');
-const BACKUP_FILE = path.join(BACKUP_DIR, 'config-weekly-backup.json');
-const BACKUP_METADATA_FILE = path.join(BACKUP_DIR, 'backup-metadata.json');
+// Backups live next to the config file they protect
+const backupDir = (): string => path.join(path.dirname(getConfigFile()), 'backups');
+const backupFile = (): string => path.join(backupDir(), 'config-weekly-backup.json');
+const backupMetadataFile = (): string => path.join(backupDir(), 'backup-metadata.json');
 
 interface BackupMetadata {
     lastBackupTime: number;
@@ -68,10 +69,10 @@ export class BackupService {
      */
     private async ensureBackupDirectory(): Promise<void> {
         try {
-            await fsPromises.access(BACKUP_DIR);
+            await fsPromises.access(backupDir());
         } catch {
-            await fsPromises.mkdir(BACKUP_DIR, { recursive: true });
-            console.log('Created backup directory:', BACKUP_DIR);
+            await fsPromises.mkdir(backupDir(), { recursive: true });
+            console.log('Created backup directory:', backupDir());
         }
     }
 
@@ -96,7 +97,7 @@ export class BackupService {
      */
     private async loadBackupMetadata(): Promise<BackupMetadata> {
         try {
-            const metadataContent = await fsPromises.readFile(BACKUP_METADATA_FILE, 'utf-8');
+            const metadataContent = await fsPromises.readFile(backupMetadataFile(), 'utf-8');
             return JSON.parse(metadataContent);
         } catch {
             // Return default metadata if file doesn't exist
@@ -113,7 +114,7 @@ export class BackupService {
      * Save backup metadata
      */
     private async saveBackupMetadata(metadata: BackupMetadata): Promise<void> {
-        await fsPromises.writeFile(BACKUP_METADATA_FILE, JSON.stringify(metadata, null, 2), 'utf-8');
+        await fsPromises.writeFile(backupMetadataFile(), JSON.stringify(metadata, null, 2), 'utf-8');
     }
 
     /**
@@ -122,13 +123,13 @@ export class BackupService {
     public async performBackup(): Promise<void> {
         try {
             // Check if config file exists
-            if (!fs.existsSync(CONFIG_FILE)) {
+            if (!fs.existsSync(getConfigFile())) {
                 console.warn('Config file does not exist, skipping backup');
                 return;
             }
 
             // Read the current config
-            const configContent = await fsPromises.readFile(CONFIG_FILE, 'utf-8');
+            const configContent = await fsPromises.readFile(getConfigFile(), 'utf-8');
             const config: Config = JSON.parse(configContent);
 
             // Create backup with timestamp comment
@@ -137,12 +138,12 @@ export class BackupService {
                 _backupMetadata: {
                     createdAt: new Date().toISOString(),
                     backupVersion: '1.0',
-                    originalConfigPath: CONFIG_FILE
+                    originalConfigPath: getConfigFile()
                 }
             };
 
             // Write backup file (this will overwrite the previous backup)
-            await fsPromises.writeFile(BACKUP_FILE, JSON.stringify(backupData, null, 2), 'utf-8');
+            await fsPromises.writeFile(backupFile(), JSON.stringify(backupData, null, 2), 'utf-8');
 
             // Update metadata
             const currentTime = Date.now();
@@ -194,7 +195,7 @@ export class BackupService {
     }> {
         try {
             const metadata = await this.loadBackupMetadata();
-            const backupExists = fs.existsSync(BACKUP_FILE);
+            const backupExists = fs.existsSync(backupFile());
 
             return {
                 lastBackupTime: metadata.lastBackupTime ? new Date(metadata.lastBackupTime).toISOString() : null,
@@ -223,20 +224,20 @@ export class BackupService {
      */
     public async restoreFromBackup(): Promise<void> {
         try {
-            if (!fs.existsSync(BACKUP_FILE)) {
+            if (!fs.existsSync(backupFile())) {
                 throw new Error('No backup file found');
             }
 
             // Read backup file
-            const backupContent = await fsPromises.readFile(BACKUP_FILE, 'utf-8');
+            const backupContent = await fsPromises.readFile(backupFile(), 'utf-8');
             const backupData = JSON.parse(backupContent);
 
             // Remove backup metadata before restoring
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const { _backupMetadata, ...configData } = backupData;
 
-            // Write to config file
-            await fsPromises.writeFile(CONFIG_FILE, JSON.stringify(configData, null, 2), 'utf-8');
+            // Replace the whole config with the backup
+            updateConfig(() => configData);
 
             console.log('Config restored from backup successfully');
         } catch (error) {

@@ -36,7 +36,8 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "systeminformation": "^5.27.8",
-    "wol": "^1.0.7"
+    "wol": "^1.0.7",
+    "ws": "^8.22.2"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
@@ -47,6 +48,7 @@
     "@types/multer": "^1.4.12",
     "@types/node": "^22.13.1",
     "@types/wol": "^1.0.4",
+    "@types/ws": "^8.18.2",
     "esbuild": "^0.25.0",
     "esbuild-node-externals": "^1.18.0",
     "esbuild-plugin-copy": "^2.1.1",

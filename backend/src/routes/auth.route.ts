@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import path from 'path';
 
 import { authenticateToken } from '../middleware/auth.middleware';
+import { endSession } from '../realtime/gateway';
 import { SECRET } from '../utils/secret';
 
 export const authRoute = Router();
@@ -392,6 +393,9 @@ authRoute.post('/logout', (req: Request, res: Response) => {
             res.json({ message: 'No session to logout' });
             return;
         }
+
+        // Other tabs of this browser keep their socket; without this they would stay logged in
+        endSession(req.cookies?.access_token);
 
         // Clear cookies with identical settings to how they were set
         res.clearCookie('access_token', {

@@ -30,9 +30,8 @@ const getRequestToken = (req: Request): string | undefined => {
     return tokenFromCookie || tokenFromHeader;
 };
 
-/** Returns the caller's verified token payload, or undefined for guests and bad tokens. */
-export const getOptionalUser = (req: Request): Request['user'] => {
-    const token = getRequestToken(req);
+/** Returns the verified payload of an access token, or undefined when it is missing or invalid. */
+export const verifyAccessToken = (token: string | undefined): Request['user'] => {
     if (!token) return undefined;
 
     try {
@@ -42,6 +41,9 @@ export const getOptionalUser = (req: Request): Request['user'] => {
         return undefined;
     }
 };
+
+/** Returns the caller's verified token payload, or undefined for guests and bad tokens. */
+export const getOptionalUser = (req: Request): Request['user'] => verifyAccessToken(getRequestToken(req));
 
 export const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
     if (!getRequestToken(req)) {

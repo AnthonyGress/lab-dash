@@ -75,6 +75,7 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
                         dualWidgetPosition: position
                     }}
                     editMode={editMode}
+                    id={id ? `${id}-${position}` : undefined}
                 />;
             case ITEM_TYPE.PIHOLE_WIDGET:
                 return <PiholeWidget
@@ -93,6 +94,7 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
                         dualWidgetPosition: position
                     }}
                     editMode={editMode}
+                    id={id ? `${id}-${position}` : undefined}
                 />;
             default:
                 return (

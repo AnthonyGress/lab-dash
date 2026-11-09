@@ -101,4 +101,9 @@ router.use('/radarr', apiLimiter, itemAccess, radarrRoute);
 
 router.use('/auth', authLimiter, authRoute);
 
+// Unknown API paths answer as an API, not with the single-page app's HTML
+router.use((_req, res) => {
+    res.status(404).json({ message: 'Not found' });
+});
+
 export default router;

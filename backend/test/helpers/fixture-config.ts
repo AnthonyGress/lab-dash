@@ -1,14 +1,14 @@
-// Import this file first. It pins SECRET and serves an in-memory config.json so
-// tests never read or write the real one.
+// Import this file first. It pins SECRET and points the app at a throwaway
+// config file so tests never read or write the real one.
+import fs from 'fs';
+import os from 'os';
 import path from 'path';
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const fs = require('fs');
 
 process.env.SECRET = 'test-only-secret-value-at-least-32-characters';
 
-const CONFIG_FILE = path.resolve(__dirname, '../../src/config/config.json');
-const isConfigFile = (file: unknown): boolean => typeof file === 'string' && path.resolve(file) === CONFIG_FILE;
+const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'lab-dash-test-'));
+process.env.CONFIG_FILE = path.join(directory, 'config.json');
+process.on('exit', () => fs.rmSync(directory, { recursive: true, force: true }));
 
 // Unreachable on purpose: allowed requests fail fast upstream instead of hanging
 const upstream = { host: '127.0.0.1', port: '1', apiKey: 'key', username: 'user', password: 'pass' };
@@ -40,7 +40,6 @@ export const fixture: any = {
                 config: { items: [{ id: 'admin-group-child', type: 'radarr-widget', config: upstream }] }
             },
             { id: 'dual', type: 'dual-widget', config: { topWidget: { type: 'radarr-widget', config: upstream } } },
-            { id: 'health', type: 'app-shortcut', url: 'http://placeholder.test/', config: {} },
             { id: 'public-wol', type: 'app-shortcut', config: { isWol: true, macAddress: 'AA-BB-CC-DD-EE-02' } },
             {
                 id: 'admin-wol',
@@ -65,10 +64,9 @@ export const fixture: any = {
 };
 fixture.layout.desktop.push({ id: 'admin-on-desktop-only', type: 'radarr-widget', adminOnly: true, config: upstream });
 
-const realReadFileSync = fs.readFileSync;
-const realExistsSync = fs.existsSync;
+/** Writes the fixture to disk; call again after changing it. */
+export const saveFixture = (): void => {
+    fs.writeFileSync(process.env.CONFIG_FILE!, JSON.stringify(fixture), 'utf-8');
+};
 
-fs.readFileSync = (file: unknown, ...rest: unknown[]) => (
-    isConfigFile(file) ? JSON.stringify(fixture) : realReadFileSync(file, ...rest)
-);
-fs.existsSync = (file: unknown) => isConfigFile(file) || realExistsSync(file);
+saveFixture();

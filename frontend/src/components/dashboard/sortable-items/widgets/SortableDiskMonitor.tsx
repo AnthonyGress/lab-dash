@@ -45,7 +45,7 @@ export const SortableDiskMonitor: React.FC<Props> = ({ id, editMode, isOverlay =
             }}
         >
             <WidgetContainer editMode={editMode} id={id} onDelete={onDelete} onEdit={onEdit} onDuplicate={onDuplicate}>
-                <DiskMonitorWidget config={config} editMode={editMode} />
+                <DiskMonitorWidget config={config} editMode={editMode} id={id} />
             </WidgetContainer>
         </Grid2>
     );

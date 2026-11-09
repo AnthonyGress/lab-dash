@@ -1,6 +1,6 @@
 // Must stay first: it swaps in the test config before any app module loads
 // eslint-disable-next-line import/order
-import { fixture } from './helpers/fixture-config';
+import './helpers/fixture-config';
 
 import jwt from 'jsonwebtoken';
 import assert from 'node:assert/strict';
@@ -11,7 +11,7 @@ import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
 
 import { createApp } from '../src/app';
-import { isItemPublic, isKnownHealthTarget, isPublicWakeTarget } from '../src/utils/config-lookup';
+import { isItemPublic, isPublicWakeTarget } from '../src/utils/config-lookup';
 import { isWeakSecret, SECRET } from '../src/utils/secret';
 
 const BACKEND_ROOT = path.resolve(__dirname, '..');
@@ -23,9 +23,7 @@ const ADMIN = cookieFor('admin');
 const USER = cookieFor('user');
 
 let server: http.Server;
-let stub: http.Server;
 let baseUrl: string;
-let stubUrl: string;
 
 const listen = (target: http.Server): Promise<string> => new Promise(resolve => {
     target.listen(0, '127.0.0.1', () => {
@@ -60,20 +58,12 @@ const refused = (reply: Reply): boolean => (
 );
 
 before(async () => {
-    stub = http.createServer((req, res) => {
-        res.statusCode = req.url === '/down' ? 500 : 200;
-        res.end('ok');
-    });
-    stubUrl = await listen(stub);
-    fixture.layout.desktop.find((item: any) => item.id === 'health').url = `${stubUrl}/down`;
-
     server = http.createServer(createApp(BACKEND_ROOT));
     baseUrl = await listen(server);
 });
 
 after(() => {
     server.close();
-    stub.close();
 });
 
 describe('item visibility', () => {
@@ -98,10 +88,6 @@ describe('item visibility', () => {
         assert.equal(isPublicWakeTarget('11:22:33:44:55:66'), false);
     });
 
-    it('recognises saved health targets, including group children', () => {
-        assert.equal(isKnownHealthTarget('http://saved-in-group.test/'), true);
-        assert.equal(isKnownHealthTarget('http://169.254.169.254/'), false);
-    });
 });
 
 describe('integration proxy routes (#193)', () => {
@@ -193,20 +179,11 @@ describe('other previously open routes', () => {
         assert.equal((await call('POST', '/api/system/wol', undefined, { mac: 'AA:BB:CC:DD:EE:03' })).status, 401);
     });
 
-    it('only probes health targets saved on the dashboard', async () => {
-        const probe = (target: string, type = 'http', cookie?: string) => (
-            call('GET', `/api/health?type=${type}&url=${encodeURIComponent(target)}`, cookie)
-        );
+    it('no longer offers an endpoint that fetches a URL chosen by the caller', async () => {
+        const url = `/api/health?url=${encodeURIComponent('http://169.254.169.254/latest/meta-data')}`;
 
-        assert.equal((await probe('http://169.254.169.254/latest/meta-data')).status, 403);
-        assert.equal((await probe('10.0.0.1', 'ping')).status, 403);
-        // Admins may probe a shortcut before it is saved
-        assert.deepEqual((await probe(`${stubUrl}/up`, 'http', ADMIN)).body, { status: 'online' });
-    });
-
-    it('answers "offline" instead of hanging when the target returns an error status', async () => {
-        const reply = await call('GET', `/api/health?url=${encodeURIComponent(`${stubUrl}/down`)}`);
-        assert.deepEqual(reply.body, { status: 'offline' });
+        assert.equal((await call('GET', url)).status, 404);
+        assert.equal((await call('GET', url, ADMIN)).status, 404);
     });
 
     it('does not read files outside the icon directories', async () => {

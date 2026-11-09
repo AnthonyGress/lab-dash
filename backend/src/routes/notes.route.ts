@@ -1,62 +1,23 @@
 import express, { Request, Response } from 'express';
-import fs from 'fs';
-import path from 'path';
 
 import { authenticateToken } from '../middleware/auth.middleware';
+import { getConfig, updateConfig } from '../services/config-store';
 import { Note } from '../types';
 
 export const notesRoute = express.Router();
 
-// Path to the config file
-const CONFIG_FILE = path.join(__dirname, '../config/config.json');
+// Notes live in the shared config file
+const loadConfig = (): any => getConfig();
 
-// Helper function to load config from file
-const loadConfig = (): any => {
-    try {
-        if (fs.existsSync(CONFIG_FILE)) {
-            const data = fs.readFileSync(CONFIG_FILE, 'utf8');
-            return JSON.parse(data);
-        }
-        return { layout: { desktop: [], mobile: [] }, notes: [] };
-    } catch (error) {
-        console.error('Error reading config file:', error);
-        return { layout: { desktop: [], mobile: [] }, notes: [] };
-    }
-};
-
-// Helper function to save config to file
-const saveConfig = (config: any): void => {
-    try {
-        // Ensure the config directory exists
-        const configDir = path.dirname(CONFIG_FILE);
-        if (!fs.existsSync(configDir)) {
-            fs.mkdirSync(configDir, { recursive: true });
-        }
-
-        fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
-    } catch (error) {
-        console.error('Error writing config file:', error);
-        throw new Error('Failed to save config');
-    }
-};
-
-// Helper function to read notes from config
-const readNotes = (): Note[] => {
-    try {
-        const config = loadConfig();
-        return config.notes || [];
-    } catch (error) {
-        console.error('Error reading notes from config:', error);
-        return [];
-    }
-};
+// Helper function to read notes from config (a copy, so handlers can edit it freely)
+const readNotes = (): Note[] => structuredClone(getConfig().notes ?? []);
 
 // Helper function to write notes to config
 const writeNotes = (notes: Note[]): void => {
     try {
-        const config = loadConfig();
-        config.notes = notes;
-        saveConfig(config);
+        updateConfig((config) => {
+            config.notes = notes;
+        }, 'notes');
     } catch (error) {
         console.error('Error writing notes to config:', error);
         throw new Error('Failed to save notes');
