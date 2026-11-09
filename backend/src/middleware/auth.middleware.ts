@@ -79,13 +79,10 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction): v
     next();
 };
 
-// Session setup for a saved item: uses only credentials stored on the server.
-const ITEM_SESSION_PATHS = new Set(['/login', '/logout']);
-
 /**
  * Guards the integration proxy routers, which all address a saved dashboard item
- * through `?itemId=`. Admins may do anything. Everyone else may only read (and
- * open a session for) items that are visible without logging in.
+ * through `?itemId=`. Admins may do anything. Everyone else may only read items
+ * that are visible without logging in.
  */
 export const itemAccess = (req: Request, res: Response, next: NextFunction): void => {
     const user = getOptionalUser(req);
@@ -95,8 +92,7 @@ export const itemAccess = (req: Request, res: Response, next: NextFunction): voi
     }
 
     const itemId = req.query.itemId;
-    const isRead = req.method === 'GET' || (req.method === 'POST' && ITEM_SESSION_PATHS.has(req.path));
-    if (isRead && typeof itemId === 'string' && isItemPublic(itemId)) {
+    if (req.method === 'GET' && typeof itemId === 'string' && isItemPublic(itemId)) {
         next();
         return;
     }

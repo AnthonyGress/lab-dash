@@ -1,7 +1,9 @@
 import { createHash } from 'crypto';
 
 import { deluge } from '../../services/download-clients/deluge';
+import { nzbget } from '../../services/download-clients/nzbget';
 import { qbittorrent } from '../../services/download-clients/qbittorrent';
+import { sabnzbd } from '../../services/download-clients/sabnzbd';
 import { transmission } from '../../services/download-clients/transmission';
 import {
     ClientConnection,
@@ -17,11 +19,11 @@ import { MethodContext, Registry } from '../registry';
 // 'torrent-client' is the legacy name of 'download-client'
 const DOWNLOAD_WIDGET_TYPES = ['download-client', 'torrent-client'];
 
-const CLIENTS: Record<string, DownloadClient> = { qbittorrent, deluge, transmission };
+const CLIENTS: Record<string, DownloadClient> = { qbittorrent, deluge, transmission, sabnzbd, nzbget };
 
 const ACTIVE_INTERVAL_MS = 2000;
 const IDLE_INTERVAL_MS = 20_000;
-const ACTIVE_STATES = new Set(['downloading', 'checking', 'metaDl']);
+const ACTIVE_STATES = new Set(['downloading', 'checking', 'metaDl', 'active', 'extracting']);
 
 type Target = {
     client: DownloadClient;
@@ -38,7 +40,7 @@ const resolveTarget = (principal: Principal, itemId: string | undefined, mode: '
 
     const connection = readConnection(item, client.defaultPort);
     const fingerprint = createHash('sha1')
-        .update(JSON.stringify([connection.origin, connection.username, connection.password]))
+        .update(JSON.stringify([connection.origin, connection.username, connection.password, connection.apiKey]))
         .digest('hex')
         .slice(0, 16);
 
@@ -81,15 +83,17 @@ export const registerDownloadClientTopics = (registry: Registry): void => {
         return {
             key,
             // Follow active downloads closely, check an idle client only now and then
-            intervalMs: data => (
+            intervalMs: client.intervalMs ?? (data => (
                 (data as DownloadSnapshot | undefined)?.torrents.some(torrent => ACTIVE_STATES.has(torrent.state))
                     ? ACTIVE_INTERVAL_MS
                     : IDLE_INTERVAL_MS
-            ),
+            )),
             read: async signal => {
                 try {
                     const snapshot = await client.snapshot(connection, signal);
-                    return { ...snapshot, torrents: [...snapshot.torrents].sort(byActivity) };
+                    return client.keepsQueueOrder
+                        ? snapshot
+                        : { ...snapshot, torrents: [...snapshot.torrents].sort(byActivity) };
                 } catch (error) {
                     throw describeClientError(client.name, error);
                 }

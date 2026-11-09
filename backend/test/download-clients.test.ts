@@ -356,6 +356,150 @@ describe('Transmission', () => {
     });
 });
 
+describe('SABnzbd', () => {
+    let fake: Fake;
+
+    before(async () => {
+        fake = await startFake((request, response) => {
+            const params = new URL(request.url, 'http://localhost').searchParams;
+            if (params.get('apikey') !== 'sab-key') {
+                json(response, { status: false, error: 'API Key Incorrect' });
+                return;
+            }
+
+            const mode = params.get('mode');
+            if (mode === 'queue' && !params.get('name')) {
+                json(response, {
+                    queue: {
+                        kbpersec: '2048.00',
+                        noofslots: 2,
+                        paused: false,
+                        slots: [
+                            { nzo_id: 'nzo-1', filename: 'First', status: 'Downloading', percentage: '25', mb: '1000', mbleft: '750', timeleft: '0:10:30' },
+                            { nzo_id: 'nzo-2', filename: 'Second', status: 'Queued', percentage: '0', mb: '500', mbleft: '500', timeleft: '1:00:00:00' }
+                        ]
+                    }
+                });
+            } else if (mode === 'history') {
+                json(response, { history: { noofslots: 7, slots: [] } });
+            } else if (mode === 'server_stats') {
+                json(response, { month: 123456 });
+            } else {
+                json(response, { status: true });
+            }
+        });
+        addItem('sab', { clientType: 'sabnzbd', host: '127.0.0.1', port: String(fake.port), password: encrypt('sab-key') });
+    });
+
+    after(() => fake.server.close());
+
+    it('reads the queue in its own order, with the speed on the active job', async () => {
+        const snapshot = await read('sab');
+
+        assert.deepEqual(snapshot.stats, {
+            dl_info_speed: 2048 * 1024,
+            dl_info_data: 123456,
+            up_info_speed: 0,
+            up_info_data: 0,
+            torrents: { total: 9, downloading: 2, seeding: 0, completed: 7, paused: 0 }
+        });
+        assert.deepEqual(snapshot.torrents, [
+            { hash: 'nzo-1', name: 'First', state: 'downloading', progress: 0.25, size: 1000 * 1024 * 1024, dlspeed: 2048 * 1024, upspeed: 0, eta: 630 },
+            { hash: 'nzo-2', name: 'Second', state: 'queued', progress: 0, size: 500 * 1024 * 1024, dlspeed: 0, upspeed: 0, eta: 86400 }
+        ]);
+    });
+
+    it('sends pause, resume and delete', async () => {
+        fake.seen.length = 0;
+        await call('download.pause', 'sab', { id: 'nzo-1' });
+        await call('download.resume', 'sab', { id: 'nzo-1' });
+        await call('download.remove', 'sab', { id: 'nzo-1', deleteFiles: true });
+
+        const sent = fake.seen.map(request => Object.fromEntries(new URL(request.url, 'http://localhost').searchParams));
+        assert.deepEqual(sent.map(({ mode, name, value, del_files }) => ({ mode, name, value, del_files })), [
+            { mode: 'pause', name: undefined, value: undefined, del_files: undefined },
+            { mode: 'resume', name: undefined, value: undefined, del_files: undefined },
+            { mode: 'queue', name: 'delete', value: 'nzo-1', del_files: '1' }
+        ]);
+    });
+
+    it('reports a rejected or missing API key', async () => {
+        addItem('sab-wrong', { clientType: 'sabnzbd', host: '127.0.0.1', port: String(fake.port), apiKey: 'nope' });
+        await assert.rejects(read('sab-wrong'), { message: 'SABnzbd rejected the saved API key' });
+
+        addItem('sab-empty', { clientType: 'sabnzbd', host: '127.0.0.1', port: String(fake.port) });
+        await assert.rejects(read('sab-empty'), { message: 'API key must be configured for this item' });
+    });
+});
+
+describe('NZBGet', () => {
+    let fake: Fake;
+
+    before(async () => {
+        fake = await startFake((request, response) => {
+            if (request.headers.authorization !== `Basic ${Buffer.from('nzb-user:nzb-pass').toString('base64')}`) {
+                response.writeHead(401).end();
+                return;
+            }
+
+            const { method } = JSON.parse(request.body);
+            if (method === 'status') {
+                json(response, { result: { DownloadRate: 5000, DownloadedSizeMB: 2, DownloadedFileCount: 4, PostJobCount: 1, DownloadPaused: false } });
+            } else if (method === 'history') {
+                json(response, { result: [{ Status: 'SUCCESS' }, { Status: 'FAILURE' }, { Status: 'SUCCESS' }] });
+            } else if (method === 'listgroups') {
+                json(response, {
+                    result: [
+                        { NZBID: 11, NZBName: 'Active job', Status: 'DOWNLOADING', FileSizeMB: 100, RemainingSizeMB: 50 },
+                        { NZBID: 12, NZBName: 'Waiting job', Status: 'QUEUED', FileSizeMB: 10, RemainingSizeMB: 10 }
+                    ]
+                });
+            } else {
+                json(response, { result: true });
+            }
+        });
+        addItem('nzbget', { clientType: 'nzbget', host: '127.0.0.1', port: String(fake.port), username: 'nzb-user', password: 'nzb-pass' });
+    });
+
+    after(() => fake.server.close());
+
+    it('maps the queue and totals to the common shape', async () => {
+        const snapshot = await read('nzbget');
+        const megabyte = 1024 * 1024;
+
+        assert.deepEqual(snapshot.stats, {
+            dl_info_speed: 5000,
+            dl_info_data: 2 * megabyte,
+            up_info_speed: 0,
+            up_info_data: 0,
+            torrents: { total: 4, downloading: 1, seeding: 0, completed: 2, paused: 0 }
+        });
+        assert.deepEqual(snapshot.torrents, [
+            { hash: '11', name: 'Active job', state: 'downloading', progress: 0.5, size: 100 * megabyte, dlspeed: 5000, upspeed: 0, eta: Math.round(50 * megabyte / 5000) },
+            { hash: '12', name: 'Waiting job', state: 'queued', progress: 0, size: 10 * megabyte, dlspeed: 0, upspeed: 0, eta: undefined }
+        ]);
+        assert.equal(registry.resolveTopic('download.client', GUEST, 'nzbget').intervalMs, 5000);
+    });
+
+    it('edits the queue for pause, resume and delete', async () => {
+        fake.seen.length = 0;
+        await call('download.pause', 'nzbget', { id: '11' });
+        await call('download.resume', 'nzbget', { id: '11' });
+        await call('download.remove', 'nzbget', { id: '11' });
+
+        assert.deepEqual(fake.seen.map(request => JSON.parse(request.body).params), [
+            ['GroupPause', 0, '', [11]],
+            ['GroupResume', 0, '', [11]],
+            ['GroupDelete', 0, '', [11]]
+        ]);
+    });
+
+    it('reports rejected credentials', async () => {
+        addItem('nzbget-wrong', { clientType: 'nzbget', host: '127.0.0.1', port: String(fake.port), username: 'nzb-user', password: 'bad' });
+        await assert.rejects(read('nzbget-wrong'), { message: 'NZBGet rejected the saved credentials' });
+    });
+});
+
 describe('shared polling', () => {
     it('uses one poller for two widgets that point at the same client', () => {
         addItem('twin-a', { clientType: 'deluge', host: '10.1.1.1', port: '8112', password: 'p' });

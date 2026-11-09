@@ -102,10 +102,6 @@ describe('integration proxy routes (#193)', () => {
         }
     });
 
-    it('lets guests open a session for a public download client', async () => {
-        assert.equal(refused(await call('POST', '/api/sabnzbd/login?itemId=public-qbit')), false);
-    });
-
     it('hides admin-only items, groups, and pages from guests', async () => {
         for (const itemId of ['admin-radarr', 'admin-group-child', 'admin-page-item', 'missing']) {
             const reply = await call('GET', `/api/radarr/queue?itemId=${itemId}`);
@@ -125,8 +121,6 @@ describe('integration proxy routes (#193)', () => {
             ['POST', '/api/pihole/disable?itemId=public-pihole'],
             ['POST', '/api/pihole/v6/disable?itemId=public-pihole'],
             ['POST', '/api/adguard/disable?itemId=public-pihole'],
-            ['POST', '/api/sabnzbd/pause/1?itemId=public-qbit'],
-            ['DELETE', '/api/nzbget/delete/1?itemId=public-qbit'],
             ['POST', '/api/pihole/v6/encrypt-password']
         ];
 
@@ -139,7 +133,9 @@ describe('integration proxy routes (#193)', () => {
         for (const url of [
             '/api/qbittorrent/torrents?itemId=public-qbit',
             '/api/deluge/stats?itemId=public-qbit',
-            '/api/transmission/stats?itemId=public-qbit'
+            '/api/transmission/stats?itemId=public-qbit',
+            '/api/sabnzbd/stats?itemId=public-qbit',
+            '/api/nzbget/downloads?itemId=public-qbit'
         ]) {
             assert.equal((await call('GET', url, ADMIN)).status, 404, url);
         }

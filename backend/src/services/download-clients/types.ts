@@ -43,12 +43,17 @@ export type ClientConnection = {
     origin: string;
     username?: string;
     password?: string;
+    apiKey?: string;
 };
 
 export type DownloadClient = {
     /** Name used in messages shown to the user */
     name: string;
     defaultPort: string;
+    /** Set when the client's own queue order is meaningful and must not be re-sorted */
+    keepsQueueOrder?: boolean;
+    /** Overrides the default pace (fast while downloading, slow when idle) */
+    intervalMs?: number;
     snapshot: (connection: ClientConnection, signal: AbortSignal) => Promise<DownloadSnapshot>;
     resume: (connection: ClientConnection, id: string) => Promise<void>;
     pause: (connection: ClientConnection, id: string) => Promise<void>;
@@ -68,7 +73,9 @@ export const readConnection = (item: DashboardItem, defaultPort: string): Client
     const info = getConnectionInfo(item);
 
     // getConnectionInfo yields an empty string when a stored secret cannot be decrypted
-    if (isEncrypted(item.config?.password ?? '') && !info.password) {
+    const undecryptable = (['password', 'apiKey'] as const)
+        .some(field => isEncrypted(item.config?.[field] ?? '') && !info[field]);
+    if (undecryptable) {
         throw new RealtimeError(
             'UNAVAILABLE',
             'Failed to decrypt password. Please update your credentials in the widget settings.'
@@ -82,7 +89,8 @@ export const readConnection = (item: DashboardItem, defaultPort: string): Client
     return {
         origin: `${protocol}://${host}:${info.port || defaultPort}`,
         username: info.username || undefined,
-        password: info.password || undefined
+        password: info.password || undefined,
+        apiKey: info.apiKey || undefined
     };
 };
 

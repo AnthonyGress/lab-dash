@@ -9,11 +9,9 @@ import { iconsRoute } from './icons.route';
 import { jellyfinRoute } from './jellyfin.route';
 import { jellyseerRoute } from './jellyseerr.route';
 import { notesRoute } from './notes.route';
-import { nzbgetRoute } from './nzbget.route';
 import { piholeV6Route } from './pihole-v6.route';
 import { piholeRoute } from './pihole.route';
 import { radarrRoute } from './radarr.route';
-import { sabnzbdRoute } from './sabnzbd.route';
 import { sonarrRoute } from './sonarr.route';
 import { systemRoute } from './system.route';
 import { timezoneRoute } from './timezone.route';
@@ -27,7 +25,6 @@ import {
     healthLimiter,
     systemMonitorLimiter,
     timezoneApiLimiter,
-    torrentApiLimiter,
     weatherApiLimiter
 } from '../middleware/rate-limiter';
 
@@ -63,10 +60,6 @@ router.use('/notes', apiLimiter, notesRoute);
 
 // Integration proxy routes act with the owner's stored credentials, so every one
 // sits behind itemAccess: guests may only read items that are publicly visible.
-
-// NZB client routes
-router.use('/sabnzbd', torrentApiLimiter, itemAccess, sabnzbdRoute);
-router.use('/nzbget', torrentApiLimiter, itemAccess, nzbgetRoute);
 
 // Pi-hole routes (also guards /pihole/v6, mounted below under the same prefix)
 router.use('/pihole', apiLimiter, itemAccess, piholeRoute);

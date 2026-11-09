@@ -107,22 +107,6 @@ export const timezoneApiLimiter = rateLimit({
     }
 });
 
-// Torrent client API limiter - prevent DDoS of torrent clients
-export const torrentApiLimiter = rateLimit({
-    windowMs: 60 * 1000, // 1 minute
-    max: 1000,
-    standardHeaders: true,
-    legacyHeaders: false,
-    handler: (req: Request, res: Response) => {
-        logRateLimitHit(req, 'TORRENT');
-        res.status(429).json({
-            success: false,
-            message: 'Torrent client API rate limit exceeded, please try again later',
-            error_source: 'labdash_api'
-        });
-    }
-});
-
 // System monitor API limiter
 export const systemMonitorLimiter = rateLimit({
     windowMs: 60 * 1000, // 1 minute
