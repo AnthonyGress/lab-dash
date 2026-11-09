@@ -1,6 +1,5 @@
 import { Router } from 'express';
 
-import { adguardRoute } from './adguard.route';
 import { appShortcutRoute } from './app-shortcut.route';
 import { authRoute } from './auth.route';
 import { configRoute } from './config.route';
@@ -9,8 +8,6 @@ import { iconsRoute } from './icons.route';
 import { jellyfinRoute } from './jellyfin.route';
 import { jellyseerRoute } from './jellyseerr.route';
 import { notesRoute } from './notes.route';
-import { piholeV6Route } from './pihole-v6.route';
-import { piholeRoute } from './pihole.route';
 import { radarrRoute } from './radarr.route';
 import { sonarrRoute } from './sonarr.route';
 import { systemRoute } from './system.route';
@@ -60,15 +57,6 @@ router.use('/notes', apiLimiter, notesRoute);
 
 // Integration proxy routes act with the owner's stored credentials, so every one
 // sits behind itemAccess: guests may only read items that are publicly visible.
-
-// Pi-hole routes (also guards /pihole/v6, mounted below under the same prefix)
-router.use('/pihole', apiLimiter, itemAccess, piholeRoute);
-
-// Pi-hole v6 routes (separate to maintain backward compatibility)
-router.use('/pihole/v6', apiLimiter, piholeV6Route);
-
-// AdGuard Home routes
-router.use('/adguard', apiLimiter, itemAccess, adguardRoute);
 
 // Jellyfin routes
 router.use('/jellyfin', apiLimiter, itemAccess, jellyfinRoute);

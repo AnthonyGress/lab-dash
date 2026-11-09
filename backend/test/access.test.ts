@@ -118,10 +118,6 @@ describe('integration proxy routes (#193)', () => {
             ['POST', '/api/jellyseerr/request?itemId=public-seerr'],
             ['POST', '/api/jellyseerr/request/1/approve?itemId=public-seerr'],
             ['POST', '/api/jellyseerr/request/1/decline?itemId=public-seerr'],
-            ['POST', '/api/pihole/disable?itemId=public-pihole'],
-            ['POST', '/api/pihole/v6/disable?itemId=public-pihole'],
-            ['POST', '/api/adguard/disable?itemId=public-pihole'],
-            ['POST', '/api/pihole/v6/encrypt-password']
         ];
 
         for (const [method, url] of writes) {
@@ -135,7 +131,10 @@ describe('integration proxy routes (#193)', () => {
             '/api/deluge/stats?itemId=public-qbit',
             '/api/transmission/stats?itemId=public-qbit',
             '/api/sabnzbd/stats?itemId=public-qbit',
-            '/api/nzbget/downloads?itemId=public-qbit'
+            '/api/nzbget/downloads?itemId=public-qbit',
+            '/api/pihole/stats?itemId=public-pihole',
+            '/api/pihole/v6/blocking-status?itemId=public-pihole',
+            '/api/adguard/stats?itemId=public-pihole'
         ]) {
             assert.equal((await call('GET', url, ADMIN)).status, 404, url);
         }
