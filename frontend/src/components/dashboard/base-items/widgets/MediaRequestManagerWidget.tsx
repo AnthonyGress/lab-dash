@@ -28,10 +28,11 @@ import { FaSearch } from 'react-icons/fa';
 import { FaRegThumbsDown, FaRegThumbsUp } from 'react-icons/fa6';
 import { RemoveScroll } from 'react-remove-scroll';
 
-import { DashApi } from '../../../../api/dash-api';
-import { BACKEND_URL, TWENTY_SEC_IN_MS } from '../../../../constants/constants';
+import { BACKEND_URL } from '../../../../constants/constants';
 import { DUAL_WIDGET_CONTAINER_HEIGHT } from '../../../../constants/widget-dimensions';
 import { useAppContext } from '../../../../context/useAppContext';
+import { useLiveData } from '../../../../hooks/useLiveData';
+import { realtime } from '../../../../realtime/socket';
 import { COLORS } from '../../../../theme/styles';
 import { theme } from '../../../../theme/theme';
 import { CenteredModal } from '../../../modals/CenteredModal';
@@ -108,8 +109,6 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
     const [searchLoading, setSearchLoading] = useState(false);
-    const [allRequests, setAllRequests] = useState<MediaRequest[]>([]);
-    const [loading, setLoading] = useState(true);
     const [confirmationItem, setConfirmationItem] = useState<SearchResult | null>(null);
     const [previousSearchQuery, setPreviousSearchQuery] = useState<string>('');
     const [tvShowDetails, setTvShowDetails] = useState<any>(null);
@@ -125,56 +124,20 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
     const cleanHost = host?.replace(/^https?:\/\//, '') || host;
     const serviceUrl = `${ssl ? 'https' : 'http'}://${cleanHost}:${port}`;
 
-    const fetchRequests = useCallback(async () => {
-        if (!id || !host || !_hasApiKey) {
-            console.warn('MediaRequestManagerWidget: Missing required configuration');
-            return;
-        }
+    // The latest requests are pushed by the server, also right after one is created, approved or declined
+    const { data: liveRequests, loading } = useLiveData<{ requests: MediaRequest[] }>(
+        'media.requests', id, Boolean(id && host && _hasApiKey)
+    );
+    const allRequests = liveRequests?.requests ?? [];
 
+    // Searches and actions go over the same connection; failures come back as a message, never a throw
+    const callService = useCallback(async (method: string, params: Record<string, unknown>) => {
         try {
-            // Try to fetch all requests without filtering to get all status types
-            let allResults: MediaRequest[] = [];
-
-            try {
-                const allResponse = await DashApi.jellyseerrGetRequests(id, 'all');
-                if (allResponse.success && allResponse.data && allResponse.data.results) {
-                    allResults = allResponse.data.results || [];
-                }
-            } catch (allError) {
-                console.warn('Failed to fetch all requests, trying individual status calls:', allError);
-                // Fallback to individual status calls
-                const [pendingResponse, approvedResponse, availableResponse] = await Promise.allSettled([
-                    DashApi.jellyseerrGetRequests(id, 'pending'),
-                    DashApi.jellyseerrGetRequests(id, 'approved'),
-                    DashApi.jellyseerrGetRequests(id, 'available')
-                ]);
-
-                if (pendingResponse.status === 'fulfilled' && pendingResponse.value.success && pendingResponse.value.data && pendingResponse.value.data.results) {
-                    allResults.push(...(pendingResponse.value.data.results || []));
-                }
-                if (approvedResponse.status === 'fulfilled' && approvedResponse.value.success && approvedResponse.value.data && approvedResponse.value.data.results) {
-                    allResults.push(...(approvedResponse.value.data.results || []));
-                }
-                if (availableResponse.status === 'fulfilled' && availableResponse.value.success && availableResponse.value.data && availableResponse.value.data.results) {
-                    allResults.push(...(availableResponse.value.data.results || []));
-                }
-            }
-
-            // Remove duplicates based on request ID
-            const uniqueResults = (allResults || []).filter((request, index, self) =>
-                index === self.findIndex(r => r.id === request.id)
-            );
-
-            // Sort by updatedAt and take the 8 most recent
-            uniqueResults.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-            setAllRequests(uniqueResults.slice(0, 8));
-
-        } catch (fetchError) {
-            console.error('Error fetching requests:', fetchError);
-        } finally {
-            setLoading(false);
+            return { success: true as const, data: await realtime.call<any>(method, id, params), error: undefined };
+        } catch (callError) {
+            return { success: false as const, data: undefined, error: (callError as Error).message };
         }
-    }, [id, host, _hasApiKey]);
+    }, [id]);
 
     const handleSearch = useCallback(async (query: string) => {
         if (!query.trim() || !id || !_hasApiKey) {
@@ -185,7 +148,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
 
         setSearchLoading(true);
         try {
-            const response = await DashApi.jellyseerrSearch(id, query.trim());
+            const response = await callService('media.search', { query: query.trim() });
             if (response.success) {
                 const results = response.data.results || [];
                 // Don't limit results, show all matches from Jellyseerr
@@ -198,7 +161,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
         } finally {
             setSearchLoading(false);
         }
-    }, [id, _hasApiKey]);
+    }, [id, _hasApiKey, callService]);
 
     // Debounced search effect
     useEffect(() => {
@@ -224,7 +187,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
         if (item.mediaType === 'tv' && id && _hasApiKey) {
             setLoadingTvDetails(true);
             try {
-                const response = await DashApi.jellyseerrGetTVDetails(id, item.id.toString());
+                const response = await callService('media.tvDetails', { tmdbId: item.id });
 
                 if (response.success) {
                     setTvShowDetails(response.data);
@@ -282,16 +245,13 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                 });
             }
 
-            const response = await DashApi.jellyseerrCreateRequest(
-                id,
-                item.mediaType,
-                item.id.toString(),
-                seasonsToRequest
-            );
+            const response = await callService('media.request', {
+                mediaType: item.mediaType,
+                mediaId: item.id,
+                seasons: seasonsToRequest
+            });
 
             if (response.success) {
-                // Refresh requests after creating one
-                fetchRequests();
                 // Clear search results and query
                 setSearchResults([]);
                 setSearchQuery('');
@@ -319,10 +279,8 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                 if (!id || !_hasApiKey) return;
 
                 try {
-                    const response = await DashApi.jellyseerrApproveRequest(id, requestId.toString());
-                    if (response.success) {
-                        fetchRequests();
-                    }
+                    const response = await callService('media.approve', { requestId });
+                    if (!response.success) ToastManager.error(response.error || 'Failed to approve request');
                 } catch (actionError) {
                     console.error('Request approval error:', actionError);
                 }
@@ -342,10 +300,8 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                 if (!id || !_hasApiKey) return;
 
                 try {
-                    const response = await DashApi.jellyseerrDeclineRequest(id, requestId.toString());
-                    if (response.success) {
-                        fetchRequests();
-                    }
+                    const response = await callService('media.decline', { requestId });
+                    if (!response.success) ToastManager.error(response.error || 'Failed to decline request');
                 } catch (actionError) {
                     console.error('Request decline error:', actionError);
                 }
@@ -450,21 +406,6 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
             return `Seasons: ${seasonNumbers.join(', ')}`;
         }
     };
-
-    useEffect(() => {
-        // Initial load with a slight delay to allow config to load
-        const timeoutId = setTimeout(() => {
-            fetchRequests();
-        }, 100);
-
-        // Set up polling interval
-        const intervalId = setInterval(fetchRequests, TWENTY_SEC_IN_MS);
-
-        return () => {
-            clearTimeout(timeoutId);
-            clearInterval(intervalId);
-        };
-    }, [fetchRequests]);
 
     return (
         <CardContent sx={{

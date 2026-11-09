@@ -6,6 +6,7 @@ import { registerArrTopics } from './topics/arr';
 import { registerDnsBlockerTopics } from './topics/dns-blockers';
 import { registerDownloadClientTopics } from './topics/download-clients';
 import { registerHealthTopics } from './topics/health';
+import { registerMediaTopics } from './topics/media';
 import { registerSystemTopics } from './topics/system';
 
 /** Every live topic and action the dashboard offers. New integrations are added here. */
@@ -16,6 +17,7 @@ export const createRegistry = (): Registry => {
     registerDownloadClientTopics(registry);
     registerDnsBlockerTopics(registry);
     registerArrTopics(registry);
+    registerMediaTopics(registry);
     return registry;
 };
 

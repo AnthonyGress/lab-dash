@@ -5,15 +5,12 @@ import { authRoute } from './auth.route';
 import { configRoute } from './config.route';
 import { healthRoute } from './health.route';
 import { iconsRoute } from './icons.route';
-import { jellyfinRoute } from './jellyfin.route';
-import { jellyseerRoute } from './jellyseerr.route';
 import { notesRoute } from './notes.route';
 import { systemRoute } from './system.route';
 import { timezoneRoute } from './timezone.route';
 import { uploadsRoute } from './uploads.route';
 import { weatherRoute } from './weather.route';
 import { widgetsRoute } from './widgets.route';
-import { itemAccess } from '../middleware/auth.middleware';
 import {
     apiLimiter,
     authLimiter,
@@ -52,15 +49,6 @@ router.use('/widgets', apiLimiter, widgetsRoute);
 
 // Notes routes
 router.use('/notes', apiLimiter, notesRoute);
-
-// Integration proxy routes act with the owner's stored credentials, so every one
-// sits behind itemAccess: guests may only read items that are publicly visible.
-
-// Jellyfin routes
-router.use('/jellyfin', apiLimiter, itemAccess, jellyfinRoute);
-
-// Jellyseerr routes
-router.use('/jellyseerr', apiLimiter, itemAccess, jellyseerRoute);
 
 router.use('/auth', authLimiter, authRoute);
 

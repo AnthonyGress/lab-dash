@@ -1,10 +1,10 @@
 import { ArrowDownward, Movie, MusicNote, Pause, Person, PlayArrow, Schedule, Tv } from '@mui/icons-material';
 import { Box, CardContent, CircularProgress, Typography, useMediaQuery } from '@mui/material';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React from 'react';
 
-import { DashApi } from '../../../../../api/dash-api';
-import { BACKEND_URL, FIFTEEN_MIN_IN_MS } from '../../../../../constants/constants';
+import { BACKEND_URL } from '../../../../../constants/constants';
 import { DUAL_WIDGET_CONTAINER_HEIGHT } from '../../../../../constants/widget-dimensions';
+import { useLiveData } from '../../../../../hooks/useLiveData';
 import { theme } from '../../../../../theme/theme';
 import { WidgetContainer } from '../WidgetContainer';
 
@@ -300,116 +300,21 @@ export const MediaServerWidget: React.FC<MediaServerWidgetProps> = ({
     onDelete,
     onDuplicate
 }) => {
-    const [sessions, setSessions] = useState<JellyfinSession[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [libraryStats, setLibraryStats] = useState<{
-        tvShows: number;
-        movies: number;
-        isLoading: boolean;
-    }>({
-        tvShows: 0,
-        movies: 0,
-        isLoading: true
-    });
-    const timerRef = useRef<NodeJS.Timeout | null>(null);
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const isConfigured = Boolean(id && config?.host && (config?.apiKey || config?._hasApiKey));
 
-    const fetchSessions = useCallback(async () => {
-        if (!id) {
-            setError('Widget ID missing');
-            setIsLoading(false);
-            return;
-        }
-
-        if (!config?.host || (!config?.apiKey && !config?._hasApiKey)) {
-            setError('Server configuration missing');
-            setIsLoading(false);
-            return;
-        }
-
-        try {
-            setIsLoading(true);
-            // Jellyfin and Emby use the same API
-            if (config.clientType === 'jellyfin' || config.clientType === 'emby' || !config.clientType) {
-                const data = await DashApi.getJellyfinSessions(id);
-
-                setSessions(data.sessions || []);
-                setError(null);
-            } else {
-                setError(`${config.clientType} is not yet supported`);
-            }
-        } catch (err) {
-            console.error('Error fetching media server sessions:', err);
-            setError(err instanceof Error ? err.message : 'Unknown error');
-            setSessions([]);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [id, config]);
-
-    const fetchLibraryStats = useCallback(async () => {
-        if (!id) {
-            setLibraryStats(prev => ({ ...prev, isLoading: false }));
-            return;
-        }
-
-        if (!config?.host || (!config?.apiKey && !config?._hasApiKey)) {
-            setLibraryStats(prev => ({ ...prev, isLoading: false }));
-            return;
-        }
-
-        try {
-            setLibraryStats(prev => ({ ...prev, isLoading: true }));
-            // Jellyfin and Emby use the same API
-            if (config.clientType === 'jellyfin' || config.clientType === 'emby' || !config.clientType) {
-                const data = await DashApi.getJellyfinLibraryStats(id);
-                setLibraryStats({
-                    tvShows: data.tvShows || 0,
-                    movies: data.movies || 0,
-                    isLoading: false
-                });
-            } else {
-                setLibraryStats({
-                    tvShows: 0,
-                    movies: 0,
-                    isLoading: false
-                });
-            }
-        } catch (err) {
-            console.error('Error fetching library stats:', err);
-            setLibraryStats({
-                tvShows: 0,
-                movies: 0,
-                isLoading: false
-            });
-        }
-    }, [id, config]);
-
-    useEffect(() => {
-        if (!config?.host || (!config?.apiKey && !config?._hasApiKey)) {
-            setIsLoading(false);
-            return;
-        }
-
-        if (!id) {
-            setIsLoading(false);
-            return;
-        }
-
-        // Initial fetch
-        fetchSessions();
-        fetchLibraryStats();
-
-        // Set up periodic refresh every 2 minutes
-        timerRef.current = setInterval(fetchSessions, 1200000);
-
-        return () => {
-            if (timerRef.current) {
-                clearInterval(timerRef.current);
-            }
-        };
-    }, [config, id, fetchSessions, fetchLibraryStats]);
+    // Who is watching and the library sizes are pushed by the server
+    const { data, error: liveError, loading: isLoading } = useLiveData<{
+        sessions: JellyfinSession[];
+        libraryStats: { tvShows: number; movies: number };
+    }>('media.sessions', id, isConfigured);
+    const sessions = data?.sessions ?? [];
+    const error = data ? null : liveError ?? null;
+    const libraryStats = {
+        tvShows: data?.libraryStats.tvShows ?? 0,
+        movies: data?.libraryStats.movies ?? 0,
+        isLoading: !data
+    };
 
     const clientName = config?.displayName || (config?.clientType === 'plex' ? 'Plex' : config?.clientType === 'emby' ? 'Emby' : 'Jellyfin');
 

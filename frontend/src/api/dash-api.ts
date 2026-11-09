@@ -123,10 +123,7 @@ export class DashApi {
                 const isOurBackendApi = originalRequest.url?.includes(BACKEND_URL);
 
                 // List of external service routes that proxy to other applications. These should NOT trigger a logout if they return 401/403
-                const isExternalServiceRoute =
-                    originalRequest.url?.includes('/api/jellyfin') ||
-                    originalRequest.url?.includes('/api/jellyseerr') ||
-                    originalRequest.url?.includes('/api/notes');
+                const isExternalServiceRoute = originalRequest.url?.includes('/api/notes');
 
                 const isAuthRoute = originalRequest.url?.includes('api/auth/login') ||
                     originalRequest.url?.includes('api/auth/refresh');
@@ -757,135 +754,6 @@ export class DashApi {
             throw new Error(error.response?.data?.message || 'Failed to encrypt password');
         }
     }
-
-    // Media server (Jellyfin) endpoints
-    static async getJellyfinSessions(itemId: string) {
-        try {
-            const res = await axios.get(
-                `${BACKEND_URL}/api/jellyfin/sessions`,
-                {
-                    params: { itemId },
-                    withCredentials: true
-                }
-            );
-            return res.data;
-        } catch (error: any) {
-            throw new Error(error.response?.data?.error || 'Failed to fetch Jellyfin sessions');
-        }
-    }
-
-    static async getJellyfinLibraryStats(itemId: string) {
-        try {
-            const res = await axios.get(
-                `${BACKEND_URL}/api/jellyfin/library-stats`,
-                {
-                    params: { itemId },
-                    withCredentials: true
-                }
-            );
-            return res.data;
-        } catch (error: any) {
-            throw new Error(error.response?.data?.error || 'Failed to fetch Jellyfin library stats');
-        }
-    }
-
-    // Jellyseerr methods
-    public static async jellyseerrSearch(itemId: string, query: string): Promise<any> {
-        try {
-            const res = await axios.get(`${BACKEND_URL}/api/jellyseerr/search`, {
-                params: { itemId, query },
-                withCredentials: false
-            });
-            return res.data;
-        } catch (error) {
-            console.error('Jellyseerr search error:', error);
-            throw error;
-        }
-    }
-
-    public static async jellyseerrGetRequests(itemId: string, status: string = 'pending'): Promise<any> {
-        try {
-            const res = await axios.get(`${BACKEND_URL}/api/jellyseerr/requests`, {
-                params: { itemId, status },
-                withCredentials: false
-            });
-            return res.data;
-        } catch (error) {
-            console.error('Jellyseerr requests error:', error);
-            throw error;
-        }
-    }
-
-    public static async jellyseerrCreateRequest(itemId: string, mediaType: string, mediaId: string, seasons?: number[]): Promise<any> {
-        try {
-            const res = await axios.post(`${BACKEND_URL}/api/jellyseerr/request`, {
-                mediaType,
-                mediaId,
-                seasons
-            }, {
-                params: { itemId },
-                withCredentials: false
-            });
-            return res.data;
-        } catch (error) {
-            console.error('Jellyseerr create request error:', error);
-            throw error;
-        }
-    }
-
-    public static async jellyseerrGetTVDetails(itemId: string, tmdbId: string): Promise<any> {
-        try {
-            const res = await axios.get(`${BACKEND_URL}/api/jellyseerr/tv/${tmdbId}`, {
-                params: { itemId },
-                withCredentials: false
-            });
-            return res.data;
-        } catch (error) {
-            console.error('Jellyseerr TV details error:', error);
-            throw error;
-        }
-    }
-
-    public static async jellyseerrApproveRequest(itemId: string, requestId: string): Promise<any> {
-        try {
-            const res = await axios.post(`${BACKEND_URL}/api/jellyseerr/request/${requestId}/approve`, {}, {
-                params: { itemId },
-                withCredentials: false
-            });
-            return res.data;
-        } catch (error) {
-            console.error('Jellyseerr approve request error:', error);
-            throw error;
-        }
-    }
-
-    public static async jellyseerrDeclineRequest(itemId: string, requestId: string): Promise<any> {
-        try {
-            const res = await axios.post(`${BACKEND_URL}/api/jellyseerr/request/${requestId}/decline`, {}, {
-                params: { itemId },
-                withCredentials: false
-            });
-            return res.data;
-        } catch (error) {
-            console.error('Jellyseerr decline request error:', error);
-            throw error;
-        }
-    }
-
-    public static async jellyseerrGetStatus(itemId: string): Promise<any> {
-        try {
-            const res = await axios.get(`${BACKEND_URL}/api/jellyseerr/status`, {
-                params: { itemId },
-                withCredentials: false
-            });
-            return res.data;
-        } catch (error) {
-            console.error('Jellyseerr status error:', error);
-            throw error;
-        }
-    }
-
-
 
     // Notes methods
     public static async getNotes(): Promise<any[]> {

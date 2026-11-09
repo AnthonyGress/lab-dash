@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 
-import { isItemPublic } from '../utils/config-lookup';
 import { SECRET } from '../utils/secret';
 
 const JWT_SECRET = SECRET;
@@ -77,29 +76,4 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction): v
     }
 
     next();
-};
-
-/**
- * Guards the integration proxy routers, which all address a saved dashboard item
- * through `?itemId=`. Admins may do anything. Everyone else may only read items
- * that are visible without logging in.
- */
-export const itemAccess = (req: Request, res: Response, next: NextFunction): void => {
-    const user = getOptionalUser(req);
-    if (user?.role === 'admin') {
-        next();
-        return;
-    }
-
-    const itemId = req.query.itemId;
-    if (req.method === 'GET' && typeof itemId === 'string' && isItemPublic(itemId)) {
-        next();
-        return;
-    }
-
-    if (user) {
-        res.status(403).json({ message: 'Admin access required' });
-    } else {
-        res.status(401).json({ message: 'Authentication required' });
-    }
 };

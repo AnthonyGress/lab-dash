@@ -52,12 +52,6 @@ const call = async (method: string, url: string, cookie?: string, body?: unknown
     }
 };
 
-// A request the access guard refused, as opposed to one the upstream service failed
-const refused = (reply: Reply): boolean => (
-    (reply.status === 401 && reply.body?.message === 'Authentication required') ||
-    (reply.status === 403 && reply.body?.message === 'Admin access required')
-);
-
 before(async () => {
     server = http.createServer(createApp(BACKEND_ROOT));
     baseUrl = await listen(server);
@@ -92,71 +86,50 @@ describe('item visibility', () => {
 });
 
 describe('integration proxy routes (#193)', () => {
-    it('lets guests read public items', async () => {
-        for (const url of [
-            '/api/jellyfin/sessions?itemId=public-radarr',
-            '/api/jellyfin/sessions?itemId=dual-top',
-            '/api/jellyfin/sessions?itemId=admin-on-desktop-only'
-        ]) {
-            assert.equal(refused(await call('GET', url)), false, url);
-        }
-    });
-
-    it('hides admin-only items, groups, and pages from guests', async () => {
-        for (const itemId of ['admin-radarr', 'admin-group-child', 'admin-page-item', 'missing']) {
-            const reply = await call('GET', `/api/jellyfin/sessions?itemId=${itemId}`);
-            assert.equal(reply.status, 401, itemId);
-        }
-        assert.equal((await call('GET', '/api/jellyfin/sessions')).status, 401);
-    });
-
-    it('refuses every guest write, even on public items', async () => {
-        const writes: Array<[string, string]> = [
+    // They acted with the owner's stored credentials and had no authentication.
+    // Their work moved behind the realtime gateway, where one rule guards every item.
+    it('are gone, for guests and admins alike', async () => {
+        const removed: Array<[string, string]> = [
+            ['GET', '/api/radarr/queue?itemId=public-radarr'],
+            ['DELETE', '/api/radarr/queue/1?itemId=public-radarr'],
+            ['POST', '/api/radarr/refresh-monitored-downloads?itemId=public-radarr'],
+            ['GET', '/api/sonarr/series?itemId=public-radarr'],
+            ['DELETE', '/api/sonarr/queue/1?itemId=public-radarr'],
+            ['GET', '/api/jellyfin/sessions?itemId=public-radarr'],
+            ['GET', '/api/jellyseerr/requests?itemId=public-seerr'],
             ['POST', '/api/jellyseerr/request?itemId=public-seerr'],
             ['POST', '/api/jellyseerr/request/1/approve?itemId=public-seerr'],
             ['POST', '/api/jellyseerr/request/1/decline?itemId=public-seerr'],
+            ['GET', '/api/qbittorrent/torrents?itemId=public-qbit'],
+            ['POST', '/api/qbittorrent/torrents/delete?itemId=public-qbit'],
+            ['GET', '/api/deluge/stats?itemId=public-qbit'],
+            ['GET', '/api/transmission/stats?itemId=public-qbit'],
+            ['GET', '/api/sabnzbd/stats?itemId=public-qbit'],
+            ['GET', '/api/nzbget/downloads?itemId=public-qbit'],
+            ['GET', '/api/pihole/stats?itemId=public-pihole'],
+            ['POST', '/api/pihole/disable?itemId=public-pihole'],
+            ['GET', '/api/pihole/v6/blocking-status?itemId=public-pihole'],
+            ['GET', '/api/adguard/stats?itemId=public-pihole']
         ];
 
-        for (const [method, url] of writes) {
-            assert.equal((await call(method, url, undefined, {})).status, 401, `${method} ${url}`);
+        for (const [method, url] of removed) {
+            for (const cookie of [undefined, ADMIN]) {
+                const reply = await call(method, url, cookie, method === 'GET' ? undefined : {});
+                assert.equal(reply.status, 404, `${method} ${url}`);
+            }
         }
     });
+});
 
-    it('no longer serves the proxy routes that moved to the realtime connection', async () => {
-        for (const url of [
-            '/api/qbittorrent/torrents?itemId=public-qbit',
-            '/api/deluge/stats?itemId=public-qbit',
-            '/api/transmission/stats?itemId=public-qbit',
-            '/api/sabnzbd/stats?itemId=public-qbit',
-            '/api/nzbget/downloads?itemId=public-qbit',
-            '/api/pihole/stats?itemId=public-pihole',
-            '/api/pihole/v6/blocking-status?itemId=public-pihole',
-            '/api/adguard/stats?itemId=public-pihole',
-            '/api/radarr/queue?itemId=public-radarr',
-            '/api/sonarr/series?itemId=public-radarr'
-        ]) {
-            assert.equal((await call('GET', url, ADMIN)).status, 404, url);
-        }
-        assert.equal((await call('POST', '/api/qbittorrent/torrents/delete?itemId=public-qbit', ADMIN, {})).status, 404);
-    });
-
-    it('refuses writes and admin-only reads for non-admin accounts', async () => {
-        assert.equal((await call('POST', '/api/jellyseerr/request/1/approve?itemId=public-seerr', USER, {})).status, 403);
-        assert.equal((await call('GET', '/api/jellyfin/sessions?itemId=admin-radarr', USER)).status, 403);
-    });
-
-    it('lets admins read and write everything', async () => {
-        assert.equal(refused(await call('GET', '/api/jellyfin/sessions?itemId=admin-page-item', ADMIN)), false);
-        assert.equal(refused(await call('POST', '/api/jellyseerr/request/1/approve?itemId=admin-radarr', ADMIN, {})), false);
-    });
-
+describe('session tokens', () => {
     it('rejects tokens that are forged, expired, or signed with another algorithm', async () => {
-        const url = '/api/jellyseerr/request/1/approve?itemId=public-seerr';
+        const url = '/api/uploads/images';
         const forged = `access_token=${jwt.sign({ username: 'admin', role: 'admin' }, 'wrong-secret')}`;
 
-        assert.equal((await call('POST', url, forged, {})).status, 401);
-        assert.equal((await call('POST', url, cookieFor('admin', { expiresIn: -10 }), {})).status, 401);
-        assert.equal((await call('POST', url, cookieFor('admin', { algorithm: 'HS512' }), {})).status, 401);
+        assert.equal((await call('GET', url, forged)).status, 401);
+        assert.equal((await call('GET', url, cookieFor('admin', { expiresIn: -10 }))).status, 401);
+        assert.equal((await call('GET', url, cookieFor('admin', { algorithm: 'HS512' }))).status, 401);
+        assert.equal((await call('GET', url, ADMIN)).status, 200);
     });
 });
 
