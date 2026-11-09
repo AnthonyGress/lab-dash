@@ -8,8 +8,6 @@ import { iconsRoute } from './icons.route';
 import { jellyfinRoute } from './jellyfin.route';
 import { jellyseerRoute } from './jellyseerr.route';
 import { notesRoute } from './notes.route';
-import { radarrRoute } from './radarr.route';
-import { sonarrRoute } from './sonarr.route';
 import { systemRoute } from './system.route';
 import { timezoneRoute } from './timezone.route';
 import { uploadsRoute } from './uploads.route';
@@ -63,12 +61,6 @@ router.use('/jellyfin', apiLimiter, itemAccess, jellyfinRoute);
 
 // Jellyseerr routes
 router.use('/jellyseerr', apiLimiter, itemAccess, jellyseerRoute);
-
-// Sonarr routes
-router.use('/sonarr', apiLimiter, itemAccess, sonarrRoute);
-
-// Radarr routes
-router.use('/radarr', apiLimiter, itemAccess, radarrRoute);
 
 router.use('/auth', authLimiter, authRoute);
 

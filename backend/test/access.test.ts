@@ -94,9 +94,9 @@ describe('item visibility', () => {
 describe('integration proxy routes (#193)', () => {
     it('lets guests read public items', async () => {
         for (const url of [
-            '/api/radarr/queue?itemId=public-radarr',
-            '/api/radarr/queue?itemId=dual-top',
-            '/api/radarr/queue?itemId=admin-on-desktop-only'
+            '/api/jellyfin/sessions?itemId=public-radarr',
+            '/api/jellyfin/sessions?itemId=dual-top',
+            '/api/jellyfin/sessions?itemId=admin-on-desktop-only'
         ]) {
             assert.equal(refused(await call('GET', url)), false, url);
         }
@@ -104,17 +104,14 @@ describe('integration proxy routes (#193)', () => {
 
     it('hides admin-only items, groups, and pages from guests', async () => {
         for (const itemId of ['admin-radarr', 'admin-group-child', 'admin-page-item', 'missing']) {
-            const reply = await call('GET', `/api/radarr/queue?itemId=${itemId}`);
+            const reply = await call('GET', `/api/jellyfin/sessions?itemId=${itemId}`);
             assert.equal(reply.status, 401, itemId);
         }
-        assert.equal((await call('GET', '/api/radarr/queue')).status, 401);
+        assert.equal((await call('GET', '/api/jellyfin/sessions')).status, 401);
     });
 
     it('refuses every guest write, even on public items', async () => {
         const writes: Array<[string, string]> = [
-            ['DELETE', '/api/radarr/queue/1?itemId=public-radarr'],
-            ['POST', '/api/radarr/refresh-monitored-downloads?itemId=public-radarr'],
-            ['DELETE', '/api/sonarr/queue/1?itemId=public-radarr'],
             ['POST', '/api/jellyseerr/request?itemId=public-seerr'],
             ['POST', '/api/jellyseerr/request/1/approve?itemId=public-seerr'],
             ['POST', '/api/jellyseerr/request/1/decline?itemId=public-seerr'],
@@ -134,7 +131,9 @@ describe('integration proxy routes (#193)', () => {
             '/api/nzbget/downloads?itemId=public-qbit',
             '/api/pihole/stats?itemId=public-pihole',
             '/api/pihole/v6/blocking-status?itemId=public-pihole',
-            '/api/adguard/stats?itemId=public-pihole'
+            '/api/adguard/stats?itemId=public-pihole',
+            '/api/radarr/queue?itemId=public-radarr',
+            '/api/sonarr/series?itemId=public-radarr'
         ]) {
             assert.equal((await call('GET', url, ADMIN)).status, 404, url);
         }
@@ -142,22 +141,22 @@ describe('integration proxy routes (#193)', () => {
     });
 
     it('refuses writes and admin-only reads for non-admin accounts', async () => {
-        assert.equal((await call('DELETE', '/api/radarr/queue/1?itemId=public-radarr', USER)).status, 403);
-        assert.equal((await call('GET', '/api/radarr/queue?itemId=admin-radarr', USER)).status, 403);
+        assert.equal((await call('POST', '/api/jellyseerr/request/1/approve?itemId=public-seerr', USER, {})).status, 403);
+        assert.equal((await call('GET', '/api/jellyfin/sessions?itemId=admin-radarr', USER)).status, 403);
     });
 
     it('lets admins read and write everything', async () => {
-        assert.equal(refused(await call('GET', '/api/radarr/queue?itemId=admin-page-item', ADMIN)), false);
-        assert.equal(refused(await call('DELETE', '/api/radarr/queue/1?itemId=admin-radarr', ADMIN)), false);
+        assert.equal(refused(await call('GET', '/api/jellyfin/sessions?itemId=admin-page-item', ADMIN)), false);
+        assert.equal(refused(await call('POST', '/api/jellyseerr/request/1/approve?itemId=admin-radarr', ADMIN, {})), false);
     });
 
     it('rejects tokens that are forged, expired, or signed with another algorithm', async () => {
-        const url = '/api/radarr/queue/1?itemId=public-radarr';
+        const url = '/api/jellyseerr/request/1/approve?itemId=public-seerr';
         const forged = `access_token=${jwt.sign({ username: 'admin', role: 'admin' }, 'wrong-secret')}`;
 
-        assert.equal((await call('DELETE', url, forged)).status, 401);
-        assert.equal((await call('DELETE', url, cookieFor('admin', { expiresIn: -10 }))).status, 401);
-        assert.equal((await call('DELETE', url, cookieFor('admin', { algorithm: 'HS512' }))).status, 401);
+        assert.equal((await call('POST', url, forged, {})).status, 401);
+        assert.equal((await call('POST', url, cookieFor('admin', { expiresIn: -10 }), {})).status, 401);
+        assert.equal((await call('POST', url, cookieFor('admin', { algorithm: 'HS512' }), {})).status, 401);
     });
 });
 
