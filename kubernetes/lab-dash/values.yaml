@@ -26,6 +26,8 @@ resources: {}
 ingress:
   enabled: true
   className: ""
+  # Live widget data uses a WebSocket on /api/ws. ingress-nginx and Traefik forward it
+  # without extra annotations; other controllers may need WebSocket support enabled.
   annotations: {}
   hosts:
     - host: my.domain.net

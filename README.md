@@ -11,6 +11,8 @@ Lab Dash features a customizable grid layout where you can add various widgets:
 - Service health checks
 - Custom widgets and more
 
+Widgets update live: the server pushes new data to every open tab over a single WebSocket connection, and shares one request to each of your services between all viewers.
+
 ### Customization
 You can easily customize your dashboard by:
 - Dragging and reordering
@@ -38,7 +40,7 @@ services:
       ports:
         - 2022:2022
       environment:
-        - SECRET=YOUR_SECRET_KEY # any random string for used for encryption.
+        - SECRET=YOUR_SECRET_KEY # replace with a random string of at least 32 characters.
         # You can run `openssl rand -base64 32` to generate a key
       volumes:
         - /sys:/sys:ro
@@ -47,6 +49,16 @@ services:
         - /var/run/docker.sock:/var/run/docker.sock
       restart: unless-stopped
 ```
+
+> [!IMPORTANT]
+> `SECRET` signs logins and encrypts the passwords and API keys of your widgets. Lab Dash starts without it, but logs a warning: with a missing, short or placeholder value, anyone who can reach the server can forge an admin login. Set it once and keep it. If you change it later, saved widget credentials have to be entered again.
+
+### Environment variables
+| Variable | Purpose |
+| --- | --- |
+| `SECRET` | Random string of at least 32 characters, see above |
+| `PORT` | Port the server listens on (default `2022`) |
+| `ALLOWED_ORIGINS` | Optional. Comma-separated origins (for example `https://dash.example.com`) allowed to open the live connection when your reverse proxy does not pass the original host name through |
 
 # Usage
 Lab Dash can aslo be accessed from any web browser via 
@@ -67,6 +79,23 @@ Lab Dash can also be installed as an app on your computer/phone as a PWA (Progre
 Simply copy/download the [docker-compose.yml](docker-compose.yml) or add it to an existing docker-compose file.
 
 
+## Using a reverse proxy
+Live widget data needs a WebSocket connection to `/api/ws`, on the same host and port as the rest of the app. If widgets stay empty and the dashboard shows "Live updates are unavailable", your proxy is not forwarding it.
+
+- **Nginx Proxy Manager**: turn on *Websockets Support* for the proxy host
+- **Caddy, Traefik**: works without extra settings
+- **nginx**: forward the upgrade headers and the original host
+
+```nginx
+location / {
+    proxy_pass http://127.0.0.1:2022;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+}
+```
+
 ## Running Docker compose file
 
 ```bash
@@ -85,6 +114,12 @@ npm install
 npm run dev
 ```
 
+Backend tests:
+```
+cd backend
+npm test
+```
+
 # Updating
 ### Portainer
 - Navigate to stacks
@@ -99,6 +134,11 @@ npm run dev
 - `docker compose down`
 - `docker compose pull`
 - `docker compose up -d`
+
+### Upgrading to 1.4
+- Widgets now receive their data over a WebSocket. Behind a reverse proxy, see [Using a reverse proxy](#using-a-reverse-proxy).
+- The backend routes that passed requests through to your services (`/api/radarr`, `/api/sonarr`, `/api/jellyfin`, `/api/jellyseerr`, `/api/qbittorrent`, `/api/deluge`, `/api/transmission`, `/api/sabnzbd`, `/api/nzbget`, `/api/pihole`, `/api/adguard`, `/api/weather`) and the `/api/health?url=` checker were removed. Several of them worked without logging in. Scripts that called them will get a 404.
+- Visitors who are not logged in can still see widgets that are not marked admin-only, but only an admin can act on them: pausing downloads, removing queue items, disabling DNS blocking, creating or approving media requests.
 
 # Contributing
 Contributions to Lab Dash are welcome! Please follow these guidelines:
