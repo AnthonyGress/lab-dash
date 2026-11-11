@@ -36,7 +36,7 @@ describe('FileInput', () => {
 
         expect(screen.getByText('wallpaper')).toBeTruthy();
         expect(screen.getByText('.png')).toBeTruthy();
-        expect((form().getValues('backgroundFile' as never) as File).name).toBe('wallpaper.png');
+        expect((form().getValues('backgroundFile' as never) as unknown as File).name).toBe('wallpaper.png');
     });
 
     it('refuses a file over the size limit and says so', () => {
@@ -59,7 +59,7 @@ describe('MultiFileInput', () => {
         fireEvent.change(fileInput(container), { target: { files: [png('a.png'), png('b.png')] } });
 
         expect(screen.getByText('2 files')).toBeTruthy();
-        expect((form().getValues('appIconFiles' as never) as File[]).map((file) => file.name)).toEqual(['a.png', 'b.png']);
+        expect((form().getValues('appIconFiles' as never) as unknown as File[]).map((file) => file.name)).toEqual(['a.png', 'b.png']);
     });
 
     it('refuses more files than allowed', () => {

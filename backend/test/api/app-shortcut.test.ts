@@ -132,7 +132,9 @@ describe('uploading several app icons at once', () => {
         fs.rmSync(ICONS, { recursive: true, force: true });
         const refused = await post('/api/app-shortcut/upload-batch', [...twenty, { field: 'files', name: 'one-too-many.png' }]);
         assert.equal(refused.status, 400);
-        assert.deepEqual(refused.body, { success: false, message: 'Unexpected field' });
+        assert.equal(refused.body.success, false);
+        // Multer's wording for a file past the limit differs between 2.x releases
+        assert.match(refused.body.message, /^Unexpected (file )?field$/);
         assert.deepEqual(stored(), []);
     });
 });
