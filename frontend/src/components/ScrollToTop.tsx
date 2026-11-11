@@ -1,8 +1,7 @@
-import { FC, useEffect } from 'react';
+import { FC, ReactNode, useEffect } from 'react';
 import { useLocation } from 'react-router';
 
-export const ScrollToTop: FC = (props: any) => {
-    const { children } = props;
+export const ScrollToTop: FC<{ children?: ReactNode }> = ({ children }) => {
     const location = useLocation();
     useEffect(() => {
         if (!location.hash) {
@@ -10,6 +9,5 @@ export const ScrollToTop: FC = (props: any) => {
         }
     }, [location]);
 
-     
     return <>{children}</>;
 };

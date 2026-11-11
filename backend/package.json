@@ -5,7 +5,7 @@
     "dev": "NODE_ENV=development PORT=5000 nodemon",
     "start": "node ./index.js",
     "build": "NODE_ENV=production node esbuild.config.js",
-    "test": "node --require ts-node/register --test --test-force-exit test/*.test.ts",
+    "test": "node --require ts-node/register --test --test-force-exit \"test/**/*.test.ts\"",
     "lint": "eslint .",
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
     "docker:build:dev": "docker build . -t ghcr.io/anthonygress/lab-dash-backend:latest",
@@ -16,7 +16,8 @@
     "docker:stop": "docker ps -q --filter 'ancestor=ghcr.io/anthonygress/lab-dash-backend:latest' | xargs -r docker stop",
     "docker:rm": "docker ps -a -q --filter 'ancestor=ghcr.io/anthonygress/lab-dash-backend:latest' | xargs -r docker rm",
     "docker:clean": "npm run docker:stop && npm run docker:rm",
-    "docker:restart": "npm run docker:stop && npm run docker:rm && npm run docker:run"
+    "docker:restart": "npm run docker:stop && npm run docker:rm && npm run docker:run",
+    "test:watch": "node --require ts-node/register --test --watch \"test/**/*.test.ts\""
   },
   "keywords": [],
   "author": "",

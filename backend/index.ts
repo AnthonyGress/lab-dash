@@ -1,12 +1,11 @@
-import dotenv from 'dotenv';
+// Must stay first: .env has to be loaded before any module below reads SECRET
+import 'dotenv/config';
 import { createServer } from 'http';
 
 import { createApp } from './src/app';
 import { attachRealtime } from './src/realtime';
 import { BackupService } from './src/utils/backup.service';
 import { warnIfWeakSecret } from './src/utils/secret';
-
-dotenv.config();
 
 const server = createServer(createApp(__dirname));
 const PORT = Number(process.env.PORT) || 2022;

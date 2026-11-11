@@ -1,11 +1,14 @@
 {
   "name": "lab-dash",
-  "version": "1.4.0",
+  "version": "2.0.0",
   "description": "This is an open-source user interface designed to manage your server and homelab",
   "main": "index.js",
   "scripts": {
     "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
     "build": "concurrently \"cd backend && npm run build\" \"cd frontend && npm run build\"",
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:backend": "cd backend && npm test",
+    "test:frontend": "cd frontend && npm test",
     "preinstall": "cd ./backend && npm install && cd .. && cd ./frontend && npm install",
     "docker:build:dev": "docker build . --no-cache -t ghcr.io/anthonygress/lab-dash:latest",
     "docker:build": "docker build --platform linux/amd64 . -t ghcr.io/anthonygress/lab-dash:latest",

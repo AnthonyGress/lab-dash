@@ -4,6 +4,9 @@ import os from 'os';
 
 export const healthRoute = Router();
 
+// Overridable so tests can answer the lookup themselves instead of reaching the internet
+const WAN_IP_LOOKUP_URL = process.env.WAN_IP_LOOKUP_URL || 'https://api.ipify.org?format=json';
+
 // Helper function to get LAN IP address
 const getLanIP = (): string | null => {
     const interfaces = os.networkInterfaces();
@@ -47,7 +50,7 @@ healthRoute.get('/ip', async (req: Request, res: Response): Promise<void> => {
         // Get WAN IP asynchronously
         let wanIP: string | null = null;
         try {
-            const response = await axios.get('https://api.ipify.org?format=json', {
+            const response = await axios.get(WAN_IP_LOOKUP_URL, {
                 timeout: 5000
             });
             wanIP = response.data.ip;

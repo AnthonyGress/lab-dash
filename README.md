@@ -40,8 +40,8 @@ services:
       ports:
         - 2022:2022
       environment:
-        - SECRET=YOUR_SECRET_KEY # replace with a random string of at least 32 characters.
-        # You can run `openssl rand -base64 32` to generate a key
+        - SECRET=YOUR_SECRET_KEY # required: replace with a random string of at least 32 characters.
+        # Lab Dash does not start with this placeholder. Run `openssl rand -base64 32` to generate a key
       volumes:
         - /sys:/sys:ro
         - /docker/lab-dash/config:/config
@@ -51,14 +51,15 @@ services:
 ```
 
 > [!IMPORTANT]
-> `SECRET` signs logins and encrypts the passwords and API keys of your widgets. Lab Dash starts without it, but logs a warning: with a missing, short or placeholder value, anyone who can reach the server can forge an admin login. Set it once and keep it. If you change it later, saved widget credentials have to be entered again.
+> `SECRET` is required. It signs logins and encrypts the passwords and API keys of your widgets, so Lab Dash does not start without it or with the `YOUR_SECRET_KEY` placeholder, and it warns when the value is shorter than 32 characters. Set it once and keep it. If you change it later, saved widget credentials have to be entered again.
 
 ### Environment variables
 | Variable | Purpose |
 | --- | --- |
-| `SECRET` | Random string of at least 32 characters, see above |
+| `SECRET` | Required. Random string of at least 32 characters, see above |
 | `PORT` | Port the server listens on (default `2022`) |
 | `ALLOWED_ORIGINS` | Optional. Comma-separated origins (for example `https://dash.example.com`) allowed to open the live connection when your reverse proxy does not pass the original host name through |
+| `UPLOAD_DIRECTORY` | Optional. Folder for uploaded icons and backgrounds (default `public/uploads` inside the app folder, which the compose file mounts) |
 
 # Usage
 Lab Dash can aslo be accessed from any web browser via 
@@ -109,16 +110,27 @@ This docker container will restart automatically after reboots unless it was man
 2. Run: `docker compose down`
 
 # Local Development
+The backend needs a `SECRET` of its own, read from `backend/.env`. Create it once:
+```
+echo "SECRET=$(openssl rand -base64 32)" > backend/.env
+```
+
 ```
 npm install
 npm run dev
 ```
 
-Backend tests:
+### Tests
+Both suites, from the repository root:
 ```
-cd backend
 npm test
 ```
+One side at a time with `npm run test:backend` or `npm run test:frontend`. Each package also has `npm run test:watch`.
+
+- `backend/test/` uses the Node test runner. `unit/` covers crypto, the config store, request tracking and file helpers, `api/` every HTTP route (auth, config, notes, uploads, app icons, system, health, timezone, rate limits) and the access rules, `realtime/` the WebSocket gateway and poller hub, and `integrations/` each service family (Sonarr/Radarr, Jellyfin/Jellyseerr, DNS blockers, download clients) against fake servers. `helpers/` holds the shared fixture config, HTTP and session helpers. Tests never touch the real config, users or uploads: the fixture points them at a temp folder.
+- `frontend/test/` uses Vitest with two projects. `unit/`, `realtime/` and `hooks/` run in Node (the dashboard grid, utilities, the shared socket client, the live-data hook). `components/` renders every React component in jsdom with the API and the socket replaced (`test/components/setup.ts`) and the app's providers around it (`test/components/render.tsx`). `npx vitest run --project components` runs just those.
+
+The deploy workflows run both suites before the Docker image is built, and pull requests run them in `quality-check`.
 
 # Updating
 ### Portainer
@@ -136,6 +148,8 @@ npm test
 - `docker compose up -d`
 
 ### Upgrading to 1.4
+- `SECRET` is now required. Lab Dash no longer falls back to a built-in value and does not start when `SECRET` is missing or still set to `YOUR_SECRET_KEY`. If your install ran that way, set a value of your own (`openssl rand -base64 32`) and enter the passwords and API keys of your widgets again: they were encrypted with a value anyone could look up.
+- Everyone has to log in again once after the upgrade.
 - Widgets now receive their data over a WebSocket. Behind a reverse proxy, see [Using a reverse proxy](#using-a-reverse-proxy).
 - The backend routes that passed requests through to your services (`/api/radarr`, `/api/sonarr`, `/api/jellyfin`, `/api/jellyseerr`, `/api/qbittorrent`, `/api/deluge`, `/api/transmission`, `/api/sabnzbd`, `/api/nzbget`, `/api/pihole`, `/api/adguard`, `/api/weather`) and the `/api/health?url=` checker were removed. Several of them worked without logging in. Scripts that called them will get a 404.
 - Visitors who are not logged in can still see widgets that are not marked admin-only, but only an admin can act on them: pausing downloads, removing queue items, disabling DNS blocking, creating or approving media requests.

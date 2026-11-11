@@ -10,7 +10,8 @@ export const errorHandler = (
 ) => {
     console.error(`🔥 Error: ${error.message}`);
 
-    const status = error.statusCode || 500;
+    // Multer reports too many, too large or unexpected files without a status code
+    const status = error.statusCode || (error.name === 'MulterError' ? 400 : 500);
     res.status(status).json({
         success: false,
         message: error.message || 'Internal Server Error',

@@ -12,15 +12,12 @@ type Props = {
     onEdit?: () => void
     onDelete?: () => void;
     onDuplicate?: () => void;
-    appShortcut?: boolean;
     placeholder?: boolean;
     url?: string;
     healthCheckType?: 'http' | 'ping';
-    rowPlaceholder?: boolean;
     groupItem?: boolean;
     isHighlighted?: boolean;
     isPreview?: boolean;
-    customHeight?: any; // Allow customizing widget height
 };
 
 export const WidgetContainer: React.FC<Props> = ({
@@ -30,15 +27,12 @@ export const WidgetContainer: React.FC<Props> = ({
     onEdit,
     onDelete,
     onDuplicate,
-    appShortcut=false,
     placeholder=false,
     url,
     healthCheckType='http',
-    rowPlaceholder,
     groupItem,
     isHighlighted = false,
-    isPreview = false,
-    customHeight
+    isPreview = false
 }) => {
     return (
         <Card
@@ -47,7 +41,9 @@ export const WidgetContainer: React.FC<Props> = ({
                 maxWidth: '100%',
                 minWidth: 0,
                 flexGrow: 1,
-                minHeight: customHeight || (appShortcut || rowPlaceholder ? '6rem' : { xs: '12rem' }),
+                height: '100%',
+                // Lets content size itself from the cell (cqw/cqh units, @container rules)
+                containerType: 'size',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',

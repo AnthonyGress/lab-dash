@@ -11,6 +11,7 @@ import { initialItems } from '../constants/constants';
 import { realtime } from '../realtime/socket';
 import { theme } from '../theme/theme';
 import { Config, DashboardItem, DashboardLayout, NewItem, Page } from '../types';
+import { DESKTOP_GRID_BREAKPOINTS, MOBILE_GRID_BREAKPOINTS, placeDashboardGridItem } from '../utils/dashboard-grid';
 import { checkForUpdates } from '../utils/updateChecker';
 import { getAppVersion } from '../utils/version';
 
@@ -1026,8 +1027,8 @@ export const AppContextProvider = ({ children }: Props) => {
                             return {
                                 ...page,
                                 layout: {
-                                    desktop: [...page.layout.desktop, itemCopy],
-                                    mobile: [...page.layout.mobile, itemCopy]
+                                    desktop: [...page.layout.desktop, placeDashboardGridItem(page.layout.desktop, itemCopy, DESKTOP_GRID_BREAKPOINTS)],
+                                    mobile: [...page.layout.mobile, placeDashboardGridItem(page.layout.mobile, itemCopy, MOBILE_GRID_BREAKPOINTS)]
                                 }
                             };
                         }
@@ -1061,8 +1062,8 @@ export const AppContextProvider = ({ children }: Props) => {
 
                     updatePayload = {
                         layout: {
-                            desktop: [...serverConfig.layout.desktop, itemCopy],
-                            mobile: [...serverConfig.layout.mobile, itemCopy]
+                            desktop: [...serverConfig.layout.desktop, placeDashboardGridItem(serverConfig.layout.desktop, itemCopy, DESKTOP_GRID_BREAKPOINTS)],
+                            mobile: [...serverConfig.layout.mobile, placeDashboardGridItem(serverConfig.layout.mobile, itemCopy, MOBILE_GRID_BREAKPOINTS)]
                         },
                         pages: updatedPages
                     };
@@ -1083,8 +1084,8 @@ export const AppContextProvider = ({ children }: Props) => {
                             return {
                                 ...page,
                                 layout: {
-                                    desktop: [...page.layout.desktop, itemCopy],
-                                    mobile: [...page.layout.mobile, itemCopy]
+                                    desktop: [...page.layout.desktop, placeDashboardGridItem(page.layout.desktop, itemCopy, DESKTOP_GRID_BREAKPOINTS)],
+                                    mobile: [...page.layout.mobile, placeDashboardGridItem(page.layout.mobile, itemCopy, MOBILE_GRID_BREAKPOINTS)]
                                 }
                             };
                         }

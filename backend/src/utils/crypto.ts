@@ -2,64 +2,57 @@ import crypto from 'crypto';
 
 import { SECRET } from './secret';
 
-const ENCRYPTION_KEY = SECRET;
-const IV_LENGTH = 16; // For AES, this is always 16 bytes
+const PREFIX = 'ENC:';
+const GCM_IV_LENGTH = 12;
+// Derived once: scrypt is slow on purpose, and the key never changes while the server runs
+const KEY = crypto.scryptSync(SECRET, 'salt', 32);
 
 /**
- * Encrypts sensitive data using AES-256-CBC
- * @param text The plaintext to encrypt
- * @returns Encrypted string in format 'iv:encryptedData' encoded in base64
+ * Encrypts a secret with AES-256-GCM.
+ * @returns `ENC:<iv>:<tag>:<data>`, each part base64. The tag lets `decrypt` tell a
+ * tampered value, or one encrypted under another SECRET, apart from a good one.
  */
 export function encrypt(text: string): string {
     if (!text) return '';
 
-    // Create a random initialization vector
-    const iv = crypto.randomBytes(IV_LENGTH);
+    const iv = crypto.randomBytes(GCM_IV_LENGTH);
+    const cipher = crypto.createCipheriv('aes-256-gcm', KEY, iv);
+    const data = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
 
-    // Create a cipher using the encryption key and IV
-    const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32); // Generate a 32-byte key
-    const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
-
-    // Encrypt the text
-    let encrypted = cipher.update(text, 'utf8', 'base64');
-    encrypted += cipher.final('base64');
-
-    // Return IV and encrypted data as a single base64 string
-    return `ENC:${iv.toString('base64')}:${encrypted}`;
+    return `${PREFIX}${iv.toString('base64')}:${cipher.getAuthTag().toString('base64')}:${data.toString('base64')}`;
 }
 
 /**
- * Decrypts data that was encrypted with the encrypt function
- * @param encryptedText The encrypted text (format: 'iv:encryptedData' in base64)
- * @returns The decrypted plaintext, or empty string if decryption fails
+ * Decrypts a value produced by `encrypt`. Values saved by versions before 1.4
+ * (`ENC:<iv>:<data>`, AES-256-CBC) still decrypt.
+ * @returns the plaintext; the input unchanged when it was never encrypted; '' when
+ * the value is malformed, tampered with, or was encrypted under another SECRET
  */
 export function decrypt(encryptedText: string): string {
-    if (!encryptedText || !encryptedText.startsWith('ENC:')) {
+    if (!encryptedText || !encryptedText.startsWith(PREFIX)) {
         return encryptedText;
     }
 
     try {
-        // Split the encrypted text into IV and data components
         const parts = encryptedText.split(':');
-        if (parts.length !== 3) {
-            console.warn('Invalid encrypted format - missing parts');
-            return ''; // Return empty string for invalid format
+
+        if (parts.length === 4) {
+            const [, iv, tag, data] = parts;
+            const decipher = crypto.createDecipheriv('aes-256-gcm', KEY, Buffer.from(iv, 'base64'));
+            decipher.setAuthTag(Buffer.from(tag, 'base64'));
+            return Buffer.concat([decipher.update(Buffer.from(data, 'base64')), decipher.final()]).toString('utf8');
         }
 
-        const iv = Buffer.from(parts[1], 'base64');
-        const encryptedData = parts[2];
+        if (parts.length === 3) {
+            const [, iv, data] = parts;
+            const decipher = crypto.createDecipheriv('aes-256-cbc', KEY, Buffer.from(iv, 'base64'));
+            return decipher.update(data, 'base64', 'utf8') + decipher.final('utf8');
+        }
 
-        // Create a decipher using the encryption key and IV
-        const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32); // Generate a 32-byte key
-        const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
-
-        // Decrypt the data
-        let decrypted = decipher.update(encryptedData, 'base64', 'utf8');
-        decrypted += decipher.final('utf8');
-
-        return decrypted;
+        console.warn('Invalid encrypted format - missing parts');
+        return '';
     } catch (error) {
-        console.error('Decryption error:', error);
+        console.error('Decryption error:', (error as Error).message);
         console.warn('Decryption failed - possibly encrypted with a different key');
         return '';
     }
@@ -71,5 +64,5 @@ export function decrypt(encryptedText: string): string {
  * @returns True if the text is encrypted
  */
 export function isEncrypted(text: string): boolean {
-    return text?.startsWith('ENC:') || false;
+    return text?.startsWith(PREFIX) || false;
 }

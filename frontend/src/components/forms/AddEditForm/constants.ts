@@ -125,10 +125,13 @@ export const ITEM_TYPE_OPTIONS = [
         description: 'Interactive widgets with live data and monitoring'
     },
     {
+        // Items can be placed anywhere, so spacers are no longer offered. The
+        // entry stays so placeholders already on a dashboard can still be edited.
         id: ITEM_TYPE.PLACEHOLDER,
         label: 'Placeholder',
         icon: PlaceholderIcon,
-        description: 'Spacing elements for organization'
+        description: 'Spacing elements for organization',
+        legacy: true
     },
     {
         id: ITEM_TYPE.PAGE,

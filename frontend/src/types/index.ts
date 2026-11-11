@@ -38,6 +38,25 @@ export enum TORRENT_CLIENT_TYPE {
     TRANSMISSION = 'transmission',
 }
 
+export type GridBreakpoint = 'xs' | 'sm' | 'md' | 'lg';
+
+export type GridPoint = {
+    x: number;
+    y: number;
+};
+
+export type GridSize = {
+    w: number;
+    h: number;
+};
+
+export type GridRect = GridPoint & GridSize;
+
+/** Where an item sits on the dashboard grid, in grid cells, for each screen size. */
+export type DashboardGridPlacement = {
+    rects: Partial<Record<GridBreakpoint, GridRect>>;
+};
+
 export type NewItem = {
     name?: string;
     icon?: { path: string; name: string; source?: string };
@@ -118,6 +137,7 @@ export type DashboardItem = {
     icon?: { path: string; name: string; source?: string; };
     showLabel?: boolean;
     adminOnly?: boolean;
+    grid?: DashboardGridPlacement;
     config?: {
         temperatureUnit?: string;
         healthUrl?: string;

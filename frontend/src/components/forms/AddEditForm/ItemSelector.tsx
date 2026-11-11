@@ -27,7 +27,7 @@ export const ItemTypeSelector = ({ formContext, setCurrentStep }: Props) => {
                     Choose an Item Type*
             </Typography>
             <Grid container spacing={2} sx={{ justifyContent: 'center' }}>
-                {ITEM_TYPE_OPTIONS.map((option) => {
+                {ITEM_TYPE_OPTIONS.filter(option => !('legacy' in option)).map((option) => {
                     const IconComponent = option.icon;
 
                     return (

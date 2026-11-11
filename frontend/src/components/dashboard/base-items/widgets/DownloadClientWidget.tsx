@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 
 import { PopupManager } from '../../../../components/modals/PopupManager';
 import { BACKEND_URL } from '../../../../constants/constants';
-import { DUAL_WIDGET_CONTAINER_HEIGHT } from '../../../../constants/widget-dimensions';
 import { useAppContext } from '../../../../context/useAppContext';
 import { theme } from '../../../../theme/theme';
 
@@ -516,9 +515,8 @@ export const DownloadClientWidget: React.FC<DownloadClientWidgetProps> = ({
             <CardContent sx={{
                 height: '100%',
                 padding: 2,
-                ...(isMobile ? {} : {
-                    minHeight: DUAL_WIDGET_CONTAINER_HEIGHT.sm
-                })
+                minHeight: 0,
+                boxSizing: 'border-box'
             }}>
                 <Box
                     sx={{
@@ -587,9 +585,8 @@ export const DownloadClientWidget: React.FC<DownloadClientWidgetProps> = ({
             padding: 2,
             maxWidth: '100%',
             width: '100%',
-            ...(isMobile ? {} : {
-                minHeight: DUAL_WIDGET_CONTAINER_HEIGHT.sm
-            })
+            minHeight: 0,
+            boxSizing: 'border-box'
         }}>
             <Box sx={{
                 display: 'flex',
@@ -643,12 +640,11 @@ export const DownloadClientWidget: React.FC<DownloadClientWidgetProps> = ({
                                 pt: 1.5,
                                 pb: 1,
                                 overflowY: 'auto',
-                                height: '225px',
-                                maxHeight: '225px',
+                                flex: '1 1 0',
+                                minHeight: 0,
                                 mb: 1,
                                 width: '100%',
                                 minWidth: '100%',
-                                flex: '1 1 auto',
                                 border: '1px solid rgba(255,255,255,0.1)',
                                 borderRadius: '4px',
                                 backgroundColor: 'rgba(0,0,0,0.1)',

@@ -1,9 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
 
-import { SECRET } from '../utils/secret';
-
-const JWT_SECRET = SECRET;
+import { verifyAccessToken } from '../services/users';
 
 // Define custom Request interface with user property
 
@@ -29,19 +26,7 @@ const getRequestToken = (req: Request): string | undefined => {
     return tokenFromCookie || tokenFromHeader;
 };
 
-/** Returns the verified payload of an access token, or undefined when it is missing or invalid. */
-export const verifyAccessToken = (token: string | undefined): Request['user'] => {
-    if (!token) return undefined;
-
-    try {
-        const payload = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
-        return typeof payload === 'object' ? payload as Request['user'] : undefined;
-    } catch {
-        return undefined;
-    }
-};
-
-/** Returns the caller's verified token payload, or undefined for guests and bad tokens. */
+/** Returns the caller's account, or undefined for guests and bad tokens. */
 export const getOptionalUser = (req: Request): Request['user'] => verifyAccessToken(getRequestToken(req));
 
 export const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {

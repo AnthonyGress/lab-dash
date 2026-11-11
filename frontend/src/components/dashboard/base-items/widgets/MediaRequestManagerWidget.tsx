@@ -29,7 +29,6 @@ import { FaRegThumbsDown, FaRegThumbsUp } from 'react-icons/fa6';
 import { RemoveScroll } from 'react-remove-scroll';
 
 import { BACKEND_URL } from '../../../../constants/constants';
-import { DUAL_WIDGET_CONTAINER_HEIGHT } from '../../../../constants/widget-dimensions';
 import { useAppContext } from '../../../../context/useAppContext';
 import { useLiveData } from '../../../../hooks/useLiveData';
 import { realtime } from '../../../../realtime/socket';
@@ -413,9 +412,8 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
             padding: 2,
             maxWidth: '100%',
             width: '100%',
-            ...(isMobile ? {} : {
-                minHeight: DUAL_WIDGET_CONTAINER_HEIGHT.sm
-            })
+            minHeight: 0,
+            boxSizing: 'border-box'
         }}>
             <Box sx={{
                 display: 'flex',
@@ -681,7 +679,7 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
 
                         <Box sx={{ flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', width: '100%' }}>
                             {/* All Requests */}
-                            <Box>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', flex: '1 1 0', minHeight: 0 }}>
                                 <Typography variant='caption' sx={{ px: 1, mb: 0.5, color: 'white' }}>
                                     Requests ({allRequests.length})
                                 </Typography>
@@ -690,7 +688,8 @@ export const MediaRequestManagerWidget: React.FC<MediaRequestManagerWidgetProps>
                                     pt: 1,
                                     pb: 1,
                                     overflowY: 'auto',
-                                    height: '18.5rem',
+                                    flex: '1 1 0',
+                                    minHeight: 0,
                                     width: '100%',
                                     border: '1px solid rgba(255,255,255,0.1)',
                                     borderRadius: '4px',

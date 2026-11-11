@@ -25,7 +25,7 @@ spec:
             - containerPort: 2022
           env:
             - name: SECRET
-              value: "{{ .Values.secret }}"
+              value: {{ required "secret is required: --set secret=$(openssl rand -base64 32)" .Values.secret | quote }}
           volumeMounts:
             - name: config
               mountPath: /config

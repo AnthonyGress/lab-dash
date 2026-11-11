@@ -46,20 +46,11 @@ export const App = () => {
         config,
         isFirstTimeSetup,
         setupComplete,
-        setSetupComplete,
         pages
     } = useAppContext();
 
     const navigate = useNavigate();
     const isMobilePointer = useMobilePointer();
-
-    // Check if setup is complete based on the config
-    useEffect(() => {
-        // If configuration has been loaded and isSetupComplete is true
-        if (config && config.isSetupComplete) {
-            setSetupComplete(true);
-        }
-    }, [config, setSetupComplete]);
 
     // Set the document title based on the custom title in config
     useEffect(() => {

@@ -7,8 +7,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import shortid from 'shortid';
 
 import { WidgetContainer } from './WidgetContainer';
-import { DUAL_WIDGET_CONTAINER_HEIGHT, STANDARD_WIDGET_HEIGHT } from '../../../../constants/widget-dimensions';
 import { GroupItem } from '../../../../types/group';
+import { getGroupItemLimit } from '../../../../utils/dashboard-grid';
 import { AppShortcut } from '../apps/AppShortcut';
 
 interface GroupWidgetProps {
@@ -37,8 +37,9 @@ interface SortableGroupItemProps {
     onEdit?: (id: string) => void;
     onDelete?: (id: string) => void;
     onDuplicate?: () => void;
-    itemSize?: 'small' | 'medium' | 'large';
 }
+
+const GROUP_ITEM_HEIGHT = '84px';
 
 // Component for each sortable item within the group
 const SortableGroupItem: React.FC<SortableGroupItemProps> = ({
@@ -48,8 +49,7 @@ const SortableGroupItem: React.FC<SortableGroupItemProps> = ({
     onDragStart,
     onEdit,
     onDelete,
-    onDuplicate,
-    itemSize = 'medium'
+    onDuplicate
 }) => {
     const {
         attributes,
@@ -100,26 +100,13 @@ const SortableGroupItem: React.FC<SortableGroupItemProps> = ({
         }
     };
 
-    // Determine item height based on size prop
-    const getItemHeight = () => {
-        switch (itemSize) {
-        case 'small':
-            return { xs: '75px', sm: '85px', md: '80px' };
-        case 'large':
-            return { xs: '95px', sm: '105px', md: '100px' };
-        case 'medium':
-        default:
-            return { xs: '90px', sm: '100px', md: '95px' };
-        }
-    };
-
     return (
         <Grid
             ref={setNodeRef}
             {...attributes}
             {...listeners}
             sx={{
-                height: getItemHeight(),
+                height: GROUP_ITEM_HEIGHT,
                 width: '100%',
                 cursor: isEditing ? 'grab' : 'pointer',
                 transform: transform ? CSS.Translate.toString(transform) : undefined,
@@ -142,7 +129,6 @@ const SortableGroupItem: React.FC<SortableGroupItemProps> = ({
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onDuplicate={handleDuplicate}
-                appShortcut={true}
                 url={item.healthUrl || item.url}
                 healthCheckType={item.healthCheckType === 'ping' ? 'ping' : 'http'}
                 groupItem
@@ -153,7 +139,6 @@ const SortableGroupItem: React.FC<SortableGroupItemProps> = ({
                     iconName={item.icon || ''}
                     showLabel={item.showLabel ?? true}
                     editMode={isEditing}
-                    size={itemSize}
                     config={{
                         isWol: item.isWol,
                         macAddress: item.macAddress,
@@ -209,87 +194,8 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
         }
     }));
 
-    // Extract the actual max items value and layout from the maxItems prop
-    const getLayoutConfig = () => {
-        // Convert to string to handle both string and numeric maxItems
-        const maxItemsStr = String(maxItems);
-
-        // Check for the special layout formats
-        if (maxItemsStr === '6_2x3') {
-            return {
-                maxItems: 6,
-                layout: '2x3'
-            };
-        } else if (maxItemsStr === '6_3x2' || maxItemsStr === '6') {
-            return {
-                maxItems: 6,
-                layout: '3x2'
-            };
-        } else if (maxItemsStr === '8_4x2') {
-            return {
-                maxItems: 8,
-                layout: '4x2'
-            };
-        } else {
-            // Default 3x1 layout (3 items in one row)
-            return {
-                maxItems: parseInt(maxItemsStr, 10) || 3,
-                layout: '3x1'
-            };
-        }
-    };
-
-    const { maxItems: MAX_ITEMS, layout } = getLayoutConfig();
-
-    const getGridSettings = () => {
-        if (layout === '2x3') {
-            // 2x3 grid layout (6 items in 3 rows of 2 items each)
-            return {
-                width: '45%',  // Wider items, 2 per row
-                maxWidth: '200px', // Max width for larger screens
-                rows: 3,
-                cols: 2,
-                height: DUAL_WIDGET_CONTAINER_HEIGHT,
-                itemSize: 'small' as const,
-                titleHeight: '2rem'
-            };
-        } else if (layout === '3x2') {
-            // 3x2 grid layout (6 items in 2 rows of 3 items each)
-            return {
-                width: '30%',  // Narrower items, 3 per row
-                maxWidth: '150px', // Max width for larger screens
-                rows: 2,
-                cols: 3,
-                height: DUAL_WIDGET_CONTAINER_HEIGHT,
-                itemSize: 'small' as const,
-                titleHeight: '2rem'
-            };
-        } else if (layout === '4x2') {
-            // 4x2 grid layout (8 items in 2 rows of 4 items each)
-            return {
-                width: '22%', // Even narrower items, 4 per row
-                maxWidth: '180px', // Max width for larger screens
-                rows: 2,
-                cols: 4,
-                height: DUAL_WIDGET_CONTAINER_HEIGHT,
-                itemSize: 'small' as const,
-                titleHeight: '2rem'
-            };
-        } else {
-            // Default 3x1 layout (3 items in one row)
-            return {
-                width: '30%',
-                maxWidth: '150px', // Max width for larger screens
-                rows: 1,
-                cols: 3,
-                height: STANDARD_WIDGET_HEIGHT,  // Using standard widget height for 3x1 layout
-                itemSize: 'medium' as const,
-                titleHeight: '2rem'
-            };
-        }
-    };
-
-    const gridSettings = getGridSettings();
+    // The layout part of maxItems (e.g. 6_2x3) only sets a new group's size; shortcuts flow to fit
+    const MAX_ITEMS = getGroupItemLimit({ maxItems });
 
     const { setNodeRef: setDroppableRef, isOver } = useDroppable({
         id: `group-droppable-${id}`,
@@ -576,19 +482,6 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
     // Limit items displayed to MAX_ITEMS
     const visibleItems = items.slice(0, MAX_ITEMS);
 
-    // Helper function to get appropriate height based on itemSize
-    const getItemHeight = () => {
-        // Access the string value safely
-        const itemSizeValue = String(gridSettings.itemSize);
-
-        if (itemSizeValue === 'small') {
-            return { xs: '75px', sm: '85px', md: '80px' };
-        }
-
-        // Default case (medium or any other value)
-        return { xs: '90px', sm: '100px', md: '95px' };
-    };
-
     return (
         <WidgetContainer
             editMode={isEditing}
@@ -597,7 +490,6 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
             onDelete={onRemove}
             onDuplicate={undefined}
             isHighlighted={isHighlighted}
-            customHeight={layout === '2x3' || layout === '3x2' || layout === '4x2' ? DUAL_WIDGET_CONTAINER_HEIGHT : STANDARD_WIDGET_HEIGHT}
         >
             <DndContext
                 onDragStart={handleDragStart}
@@ -621,8 +513,9 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                         backgroundColor: isCurrentDropTarget ? 'rgba(76, 175, 80, 0.1)' : 'transparent',
                         borderRadius: '8px',
                         overflow: 'hidden',
-                        height: layout === '2x3' || layout === '3x2' || layout === '4x2' ? DUAL_WIDGET_CONTAINER_HEIGHT.sm : STANDARD_WIDGET_HEIGHT.sm,
-                        maxHeight: layout === '2x3' || layout === '3x2' || layout === '4x2' ? DUAL_WIDGET_CONTAINER_HEIGHT.sm : STANDARD_WIDGET_HEIGHT.sm
+                        height: '100%',
+                        minHeight: 0,
+                        boxSizing: 'border-box'
                     }}
                     data-type='group-container'
                     data-id={id}
@@ -641,7 +534,8 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                                 fontWeight: 500,
                                 fontSize: '1rem',
                                 lineHeight: 1.2,
-                                height: gridSettings.titleHeight,
+                                height: '2rem',
+                                flexShrink: 0,
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap'
@@ -655,21 +549,13 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                     <Box
                         sx={{
                             flex: 1,
+                            minHeight: 0,
                             display: 'grid',
-                            gridTemplateColumns: layout === '2x3'
-                                ? { xs: 'repeat(2, minmax(110px, 180px))', sm: 'repeat(2, minmax(90px, 160px))' }
-                                : layout === '4x2'
-                                    ? { xs: 'repeat(4, minmax(70px, 110px))', sm: 'repeat(4, minmax(65px, 120px))', md: 'repeat(4, 1fr)', lg: 'repeat(4, 1fr)' }
-                                    : { xs: 'repeat(3, minmax(95px, 160px))', sm: 'repeat(3, minmax(85px, 150px))' },
-                            gridTemplateRows: layout === '2x3' ? 'repeat(3, auto)' : layout === '4x2' ? 'repeat(2, auto)' : 'repeat(1, auto)',
-                            rowGap: layout === '4x2' ? { xs: 3, sm: 4 } : { xs: 4, sm: 4 },
-                            columnGap: layout === '4x2' ? { xs: 1, sm: 2 } : { xs: 2, sm: 4 },
-                            gridAutoFlow: 'row', // Fill row by row (left to right, top to bottom)
-                            justifyItems: layout === '4x2' ? 'stretch' : 'center', // Stretch 4x2 items to fill grid cells, center others
-                            alignItems: 'center', // Center items vertically within their grid cells
-                            justifyContent: 'center', // Center the grid content horizontally
-                            alignContent: 'center', // Center the entire grid vertically
-                            overflowY: 'hidden',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))',
+                            gridAutoRows: 'min-content',
+                            gap: 1,
+                            alignContent: 'safe center',
+                            overflowY: 'auto',
                             overflowX: 'hidden',
                             p: 1,
                             m: 0
@@ -683,7 +569,6 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                                         display: 'flex',
                                         justifyContent: 'center',
                                         alignItems: 'center',
-                                        maxWidth: layout === '4x2' ? 'none' : gridSettings.maxWidth,
                                         width: '100%',
                                         height: '100%'
                                     }}
@@ -735,7 +620,6 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                                                 }
                                             }
                                         }}
-                                        itemSize={gridSettings.itemSize}
                                     />
                                 </Box>
                             ))}
@@ -748,14 +632,13 @@ const GroupWidget: React.FC<GroupWidgetProps> = ({
                                     display: 'flex',
                                     justifyContent: 'center',
                                     alignItems: 'center',
-                                    maxWidth: layout === '4x2' ? 'none' : gridSettings.maxWidth,
                                     width: '100%',
                                     height: '100%'
                                 }}
                             >
                                 <Box
                                     sx={{
-                                        height: getItemHeight(),
+                                        height: GROUP_ITEM_HEIGHT,
                                         width: '100%',
                                         display: 'flex',
                                         alignItems: 'center',

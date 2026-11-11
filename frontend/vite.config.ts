@@ -2,7 +2,7 @@ import react from '@vitejs/plugin-react-swc';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 
 // Get the directory name for ES modules
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -45,5 +45,39 @@ export default defineConfig({
                 }
             }
         }
+    },
+    test: {
+        // Tests live in test/<area>/*.test.ts(x), split into two projects:
+        //  - unit, realtime and hooks run in Node; a file that needs a browser opts
+        //    into jsdom with a "@vitest-environment jsdom" docblock
+        //  - components render every React component in jsdom, with the API and the
+        //    realtime socket replaced by test/components/setup.ts
+        projects: [
+            {
+                extends: true,
+                test: {
+                    name: 'unit',
+                    include: ['test/unit/**/*.test.{ts,tsx}', 'test/realtime/**/*.test.{ts,tsx}', 'test/hooks/**/*.test.{ts,tsx}'],
+                    environment: 'node',
+                    clearMocks: true
+                }
+            },
+            {
+                extends: true,
+                // react-router-dom only re-exports react-router; one name keeps the tests' <MemoryRouter>
+                // and the components' hooks on the same module instance
+                resolve: { alias: { 'react-router-dom': 'react-router' } },
+                test: {
+                    name: 'components',
+                    include: ['test/components/**/*.test.tsx'],
+                    environment: 'jsdom',
+                    setupFiles: ['test/components/setup.ts'],
+                    clearMocks: true,
+                    // Loaded through Vite like the app, so the router the components import
+                    // and the one the tests wrap them in are the same module
+                    server: { deps: { inline: [/react-router/] } }
+                }
+            }
+        ]
     }
 });

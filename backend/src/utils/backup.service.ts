@@ -128,6 +128,9 @@ export class BackupService {
                 return;
             }
 
+            // The folder may not exist yet when a backup is asked for before the first scheduled one
+            await this.ensureBackupDirectory();
+
             // Read the current config
             const configContent = await fsPromises.readFile(getConfigFile(), 'utf-8');
             const config: Config = JSON.parse(configContent);

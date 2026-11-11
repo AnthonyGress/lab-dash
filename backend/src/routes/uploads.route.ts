@@ -92,24 +92,30 @@ uploadsRoute.get('/images', authenticateToken, requireAdmin, (req: Request, res:
 // Delete an uploaded image
 uploadsRoute.delete('/images', authenticateToken, requireAdmin, (req: Request, res: Response) => {
     try {
-        const { imagePath } = req.body;
+        const { imagePath } = req.body ?? {};
 
-        if (!imagePath) {
+        if (typeof imagePath !== 'string' || !imagePath) {
             res.status(400).json({ message: 'Image path is required' });
             return;
         }
 
-        // Validate that the path is within the uploads directory
-        const fullPath = path.join(process.cwd(), 'public', imagePath);
-        const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+        // Paths arrive as the URL the image is served from: /uploads/<file> or /uploads/app-icons/<file>
+        const uploadsDir = path.resolve(UPLOAD_DIRECTORY);
+        const relativePath = path.relative(uploadsDir, path.resolve(uploadsDir, imagePath.replace(/^\/?uploads\//, '')));
+        const insideUploads = /^\/?uploads\//.test(imagePath)
+            && relativePath !== ''
+            && !relativePath.startsWith('..')
+            && !path.isAbsolute(relativePath);
 
-        if (!fullPath.startsWith(uploadsDir)) {
+        if (!insideUploads) {
             res.status(400).json({ message: 'Invalid image path' });
             return;
         }
 
+        const fullPath = path.join(uploadsDir, relativePath);
+
         // Check if file exists
-        if (!fs.existsSync(fullPath)) {
+        if (!fs.existsSync(fullPath) || !fs.statSync(fullPath).isFile()) {
             res.status(404).json({ message: 'Image not found' });
             return;
         }

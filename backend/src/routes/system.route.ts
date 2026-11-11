@@ -64,6 +64,7 @@ systemRoute.get('/', async (req: Request, res: Response) => {
 systemRoute.post('/upload', [authenticateToken, requireAdmin], upload.single('file'), (req: Request, res: Response, next: NextFunction) => {
     if (!req.file) {
         res.status(StatusCodes.BAD_REQUEST).json({ message: 'No file uploaded' });
+        return;
     }
 
     try {
@@ -174,10 +175,10 @@ systemRoute.post('/wol', (req: Request, res: Response) => {
                 options.address = ip;
             }
 
-            if (port) {
-                // Validate port is a number and in valid range
-                const portNum = parseInt(port, 10);
-                if (isNaN(portNum) || portNum < 1 || portNum > 65535) {
+            if (port !== undefined && port !== null && port !== '') {
+                // A port is a whole number from 1 to 65535; 0 and '9abc' are refused rather than guessed at
+                const portNum = Number(port);
+                if (!Number.isInteger(portNum) || portNum < 1 || portNum > 65535) {
                     res.status(StatusCodes.BAD_REQUEST).json({
                         message: 'Invalid port. Port must be a number between 1 and 65535'
                     });

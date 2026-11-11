@@ -2,8 +2,8 @@ import { IncomingMessage, Server } from 'http';
 import { Duplex } from 'stream';
 import WebSocket, { RawData, WebSocketServer } from 'ws';
 
-import { verifyAccessToken } from '../middleware/auth.middleware';
 import { ConfigChange, onConfigChanged } from '../services/config-store';
+import { verifyAccessToken } from '../services/users';
 import { Principal, RealtimeError } from './access';
 import { PollerHub } from './hub';
 import { Registry } from './registry';

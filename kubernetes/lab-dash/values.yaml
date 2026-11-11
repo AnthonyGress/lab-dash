@@ -11,7 +11,9 @@ service:
   type: ClusterIP
   port: 2022
 
-secret: "changeme"
+# Required. Signs logins and encrypts saved widget credentials.
+# Generate one with `openssl rand -base64 32` and keep it between upgrades.
+secret: ""
 
 volumes:
   config:

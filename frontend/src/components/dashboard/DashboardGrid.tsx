@@ -1,244 +1,157 @@
 import {
-    closestCenter,
-    closestCorners,
+    CollisionDetection,
     DndContext,
-    DragOverlay,
+    DragEndEvent,
+    DragMoveEvent,
+    DragStartEvent,
     MeasuringStrategy,
+    Modifier,
     PointerSensor,
     useSensor,
     useSensors,
 } from '@dnd-kit/core';
-import {
-    arrayMove,
-    rectSortingStrategy,
-    SortableContext,
-} from '@dnd-kit/sortable';
-import { Box, Grid2 as Grid, useMediaQuery } from '@mui/material';
+import { Box, useMediaQuery } from '@mui/material';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import shortid from 'shortid';
 
-import { SortableNzbget } from './sortable-items/widgets/SortableNzbget';
-import { SortableSabnzbd } from './sortable-items/widgets/SortableSabnzbd';
 import { useAppContext } from '../../context/useAppContext';
-import { DashboardItem, DOWNLOAD_CLIENT_TYPE, ITEM_TYPE, TORRENT_CLIENT_TYPE } from '../../types';
+import { COLORS } from '../../theme/styles';
+import { theme } from '../../theme/theme';
+import { DashboardItem, GridBreakpoint, GridPoint, GridRect, GridSize, ITEM_TYPE } from '../../types';
+import {
+    DASHBOARD_GRID_COLUMNS,
+    DASHBOARD_GRID_GAP,
+    DASHBOARD_GRID_ROW_HEIGHT,
+    DESKTOP_GRID_BREAKPOINTS,
+    getGridRect,
+    getGridRectStyle,
+    getGridRowCount,
+    getGroupItemLimit,
+    layoutDashboardGrid,
+    MOBILE_GRID_BREAKPOINTS,
+    moveDashboardGridItem,
+    placeDashboardGridItem,
+    resizeDashboardGridItem,
+    snapGridPoint,
+    snapGridSize,
+} from '../../utils/dashboard-grid';
 import { lazyComponent } from '../lazy';
 import { CenteredModal } from '../modals/CenteredModal';
 import { ConfirmationOptions, PopupManager } from '../modals/PopupManager';
 import { ToastManager } from '../toast/ToastManager';
-import { BlankAppShortcut } from './base-items/apps/BlankAppShortcut';
-import { BlankWidget } from './base-items/widgets/BlankWidget';
-import { SortableAppShortcut } from './sortable-items/apps/SortableAppShortcut';
-import { SortableAdGuard } from './sortable-items/widgets/SortableAdGuard';
-import { SortableDateTimeWidget } from './sortable-items/widgets/SortableDateTime';
-import { SortableDeluge } from './sortable-items/widgets/SortableDeluge';
-import { SortableDiskMonitor } from './sortable-items/widgets/SortableDiskMonitor';
-import { SortableDualWidget } from './sortable-items/widgets/SortableDualWidget';
-import { SortableGroupWidget } from './sortable-items/widgets/SortableGroupWidget';
-import { SortableMediaRequestManager } from './sortable-items/widgets/SortableMediaRequestManager';
-import { SortableMediaServer } from './sortable-items/widgets/SortableMediaServer';
-import { SortableNotes } from './sortable-items/widgets/SortableNotes';
-import { SortablePihole } from './sortable-items/widgets/SortablePihole';
-import { SortableQBittorrent } from './sortable-items/widgets/SortableQBittorrent';
-import { SortableRadarr } from './sortable-items/widgets/SortableRadarr';
-import { SortableSonarr } from './sortable-items/widgets/SortableSonarr';
-import { SortableSystemMonitorWidget } from './sortable-items/widgets/SortableSystemMonitor';
-import { SortableTransmission } from './sortable-items/widgets/SortableTransmission';
-import { SortableWeatherWidget } from './sortable-items/widgets/SortableWeather';
-import { theme } from '../../theme/theme';
+import { AppShortcut } from './base-items/apps/AppShortcut';
+import { WidgetContainer } from './base-items/widgets/WidgetContainer';
+import { DashboardGridItem } from './DashboardGridItem';
+import { DashboardItemContent } from './DashboardItemContent';
 
-// Custom event helper function
 // Downloaded when an item is first edited, not with the dashboard
 const AddEditForm = lazyComponent(() => import('../forms/AddEditForm/AddEditForm').then(module => module.AddEditForm));
 
-const dispatchDndKitEvent = (name: string, detail: Record<string, any>): void => {
+// Spare room below the last item in edit mode, so items can be dropped there
+const EDIT_MODE_SPARE_ROWS = 40;
+
+// Group widgets follow drags through these document events
+const dispatchDndKitEvent = (name: string, detail: Record<string, unknown>): void => {
     document.dispatchEvent(new CustomEvent(`dndkit:${name}`, { detail }));
 };
 
-// Enhanced collision detection that prioritizes drop zones
-const customCollisionDetection = (args: any) => {
-    const isAppShortcutType =
-        args.active.data.current?.type === ITEM_TYPE.APP_SHORTCUT ||
-        args.active.data.current?.type === ITEM_TYPE.BLANK_APP;
+const isShortcutType = (type: unknown): boolean =>
+    type === ITEM_TYPE.APP_SHORTCUT || type === ITEM_TYPE.BLANK_APP;
 
-    const isGroupWidgetType = args.active.data.current?.type === 'group-widget';
-
-    // If the active item is an app shortcut, use expanded collision detection for ALL containers
-    if (isAppShortcutType) {
-
-        // Check ALL containers, not just groups, and apply generous detection to group-like containers
-        const allIntersections = args.droppableContainers.map((container: any) => {
-            const activeRect = args.active.rect.current.translated || args.active.rect.current.initial;
-            const containerRect = container.rect.current;
-
-            if (!activeRect || !containerRect) {
-                return { id: container.id, value: 0 };
-            }
-
-
-
-            // Try to get valid coordinates from different possible properties
-            const activeX = activeRect.x ?? activeRect.left ?? 0;
-            const activeY = activeRect.y ?? activeRect.top ?? 0;
-            const activeWidth = activeRect.width ?? 0;
-            const activeHeight = activeRect.height ?? 0;
-
-            const containerX = containerRect.x ?? containerRect.left ?? 0;
-            const containerY = containerRect.y ?? containerRect.top ?? 0;
-            const containerWidth = containerRect.width ?? 0;
-            const containerHeight = containerRect.height ?? 0;
-
-            // Skip if we still don't have valid coordinates
-            if (activeX === 0 && activeY === 0 && activeWidth === 0 && activeHeight === 0) {
-                return { id: container.id, value: 0 };
-            }
-
-            // Check if this is a group-related container
-            const isGroupContainer =
-                container.data.current?.type === 'group-widget' ||
-                container.data.current?.type === 'group-container' ||
-                container.data.current?.type === 'group-widget-container' ||
-                container.id.toString().includes('group-droppable') ||
-                container.data.current?.groupId;
-
-            if (isGroupContainer) {
-                // Calculate the center point of the dragged item using normalized coordinates
-                const activeCenterX = activeX + activeWidth / 2;
-                const activeCenterY = activeY + activeHeight / 2;
-
-                // Expand the container rect by 10px on all sides for precise targeting
-                const expandedRect = {
-                    x: containerX - 10,
-                    y: containerY - 10,
-                    width: containerWidth + 20,
-                    height: containerHeight + 20
-                };
-
-                // Check if the center point is within the expanded bounds
-                const centerInBounds =
-                    activeCenterX >= expandedRect.x &&
-                    activeCenterX <= expandedRect.x + expandedRect.width &&
-                    activeCenterY >= expandedRect.y &&
-                    activeCenterY <= expandedRect.y + expandedRect.height;
-
-                // Create normalized rect objects for intersection calculation
-                const normalizedActiveRect = {
-                    x: activeX,
-                    y: activeY,
-                    width: activeWidth,
-                    height: activeHeight
-                };
-
-                // Also calculate intersection area as a fallback
-                const intersectionArea = getIntersectionArea(normalizedActiveRect, expandedRect);
-                const coverage = intersectionArea / (activeWidth * activeHeight);
-
-                // Use center point detection OR higher threshold overlap
-                const hasValidDrop = centerInBounds || coverage > 0.3;
-
-                return {
-                    id: container.id,
-                    value: hasValidDrop ? (centerInBounds ? 1.0 : coverage) : 0
-                };
-            } else {
-                // For non-group containers, use standard collision detection
-                const normalizedActiveRect = {
-                    x: activeX,
-                    y: activeY,
-                    width: activeWidth,
-                    height: activeHeight
-                };
-                const normalizedContainerRect = {
-                    x: containerX,
-                    y: containerY,
-                    width: containerWidth,
-                    height: containerHeight
-                };
-                const intersectionArea = getIntersectionArea(normalizedActiveRect, normalizedContainerRect);
-                const coverage = intersectionArea / (activeWidth * activeHeight);
-                return {
-                    id: container.id,
-                    value: coverage > 0.5 ? coverage : 0 // Standard threshold for non-groups
-                };
-            }
-        }).filter((intersection: any) => intersection.value > 0);
-
-        if (allIntersections.length > 0) {
-            // Sort by highest intersection value (most precise overlap)
-            allIntersections.sort((a: any, b: any) => b.value - a.value);
-            return [{ id: allIntersections[0].id }];
-        }
+/**
+ * Items are placed by grid position, not by what they are dropped on. The one
+ * exception is a shortcut dropped on a group widget: it is over the group once
+ * its centre is inside it (with a small margin).
+ */
+const groupDropCollision: CollisionDetection = ({ active, collisionRect, droppableContainers, droppableRects }) => {
+    if (!isShortcutType(active.data.current?.type)) {
+        return [];
     }
 
-    // For group widgets being dragged, use closestCenter for better reordering
-    // but exclude group-internal droppable containers to prevent interference
-    if (isGroupWidgetType) {
-        // Filter out group-internal containers that shouldn't be targets for group reordering
-        const filteredContainers = args.droppableContainers.filter((container: any) => {
-            const containerId = container.id.toString();
-            // Exclude group-internal droppable containers
-            return !containerId.includes('group-droppable') &&
-                   !containerId.includes('group-widget-droppable') &&
-                   container.data.current?.type !== 'group-container' &&
-                   container.data.current?.type !== 'group-widget-container';
-        });
+    const margin = 10;
+    const centerX = collisionRect.left + collisionRect.width / 2;
+    const centerY = collisionRect.top + collisionRect.height / 2;
+    const group = droppableContainers.find(container => {
+        const rect = droppableRects.get(container.id);
 
-        // Use closestCenter with filtered containers for group widget reordering
-        return closestCenter({
-            ...args,
-            droppableContainers: filteredContainers
-        });
-    }
-
-    // For all other widget types (non-app-shortcuts, non-group-widgets)
-    // Filter out group-internal containers to ensure proper collision with group widgets
-    const filteredContainers = args.droppableContainers.filter((container: any) => {
-        const containerId = container.id.toString();
-        // Exclude group-internal droppable containers that shouldn't interfere with widget reordering
-        return !containerId.includes('group-droppable') &&
-               !containerId.includes('group-widget-droppable') &&
-               container.data.current?.type !== 'group-container' &&
-               container.data.current?.type !== 'group-widget-container';
+        return rect !== undefined &&
+            container.data.current?.type === 'group-widget-container' &&
+            centerX >= rect.left - margin && centerX <= rect.right + margin &&
+            centerY >= rect.top - margin && centerY <= rect.bottom + margin;
     });
 
-    // Use closestCorners with filtered containers for better collision detection
-    return closestCorners({
-        ...args,
-        droppableContainers: filteredContainers
-    });
+    return group ? [{ id: group.id }] : [];
 };
 
-// Helper function to calculate intersection area between two rectangles
-function getIntersectionArea(rect1: any, rect2: any) {
-    const xOverlap = Math.max(0, Math.min(rect1.x + rect1.width, rect2.x + rect2.width) - Math.max(rect1.x, rect2.x));
-    const yOverlap = Math.max(0, Math.min(rect1.y + rect1.height, rect2.y + rect2.height) - Math.max(rect1.y, rect2.y));
-    return xOverlap * yOverlap;
-}
+/**
+ * Keeps a dragged item between the left and right edges of the grid. Past the
+ * right edge it would widen the page, which then scrolls sideways after it.
+ */
+const keepInsideGridHorizontally: Modifier = ({ transform, draggingNodeRect, containerNodeRect }) => {
+    if (!draggingNodeRect || !containerNodeRect) {
+        return transform;
+    }
+
+    const leftmost = containerNodeRect.left - draggingNodeRect.left;
+    const rightmost = containerNodeRect.right - draggingNodeRect.right;
+
+    return { ...transform, x: Math.min(Math.max(transform.x, leftmost), rightmost) };
+};
+
+// The dashboard only ever scrolls vertically
+const AUTO_SCROLL = { threshold: { x: 0, y: 0.2 } };
+
+/** A move or resize in progress. Held in a ref: pointer handlers outlive the render that started them. */
+type Gesture = {
+    kind: 'drag' | 'resize';
+    id: string;
+    /** The layout when the gesture began. Previews are always computed from it, so pushed items return when the pointer moves away. */
+    snapshot: DashboardItem[];
+    columnWidth: number;
+    startRect: GridRect;
+    /** What the pointer last asked for, to skip recomputing while it stays within a cell. */
+    request: string;
+    point?: GridPoint;
+    size?: GridSize;
+};
+
+type GroupItemPreview = {
+    name?: string;
+    icon?: string;
+    url?: string;
+};
 
 export const DashboardGrid: React.FC = () => {
-    const [activeId, setActiveId] = useState<string | null>(null);
-    const [activeData, setActiveData] = useState<any>(null);
     const [selectedItem, setSelectedItem] = useState<DashboardItem | null>(null);
     const [openEditModal, setOpenEditModal] = useState(false);
     const { dashboardLayout, setDashboardLayout, refreshDashboard, editMode, isAdmin, isLoggedIn, saveLayout } = useAppContext();
-    const isMed = useMediaQuery(theme.breakpoints.down('md'));
-    const containerRef = useRef<HTMLDivElement | null>(null);
-    const [dragPlaceholder, setDragPlaceholder] = useState<{
-        groupId: string,
-        itemId: string,
-        item?: any,
-        visible: boolean,
-        position?: string
-    } | null>(null);
+    const isXs = useMediaQuery(theme.breakpoints.down('sm'));
+    const isSm = useMediaQuery(theme.breakpoints.down('md'));
+    const isMd = useMediaQuery(theme.breakpoints.down('lg'));
+    const breakpoint: GridBreakpoint = isXs ? 'xs' : isSm ? 'sm' : isMd ? 'md' : 'lg';
+
+    const gridRef = useRef<HTMLDivElement | null>(null);
+    const gestureRef = useRef<Gesture | null>(null);
+    const [activeGesture, setActiveGesture] = useState<{ kind: Gesture['kind']; id: string } | null>(null);
+    // The layout as it would be if the gesture ended now
+    const [preview, setPreview] = useState<DashboardItem[] | null>(null);
+    const [isOverGroup, setIsOverGroup] = useState(false);
+    // The item that was just dropped: it must not animate from where it started
+    const [settledId, setSettledId] = useState<string | null>(null);
+    const [groupItemPreview, setGroupItemPreview] = useState<GroupItemPreview | null>(null);
+
+    // Layouts saved before the grid existed have no positions. They are laid out
+    // here in memory and get stored the first time the layout is edited.
+    const layout = useMemo(
+        () => layoutDashboardGrid(dashboardLayout, [breakpoint]),
+        [dashboardLayout, breakpoint]
+    );
 
     // Filter out admin-only items if user is not an admin
-    const items = useMemo(() => {
-        if (isAdmin) {
-            return dashboardLayout; // Show all items for admins
-        } else {
-            const filteredItems = dashboardLayout.filter(item => item.adminOnly !== true);
-            return filteredItems;
-        }
-    }, [dashboardLayout, isAdmin, isLoggedIn]);
+    const items = useMemo(
+        () => (isAdmin ? layout : layout.filter(item => item.adminOnly !== true)),
+        [layout, isAdmin]
+    );
 
     const prevAuthStatus = useRef({ isLoggedIn, isAdmin });
 
@@ -269,177 +182,212 @@ export const DashboardGrid: React.FC = () => {
         }
     }));
 
-    const [isDragging, setIsDragging] = useState(false);
-
-    // Listen for group item preview events
+    // A group widget announces the shortcut being dragged out of it, so the
+    // grid can show where it will land
     useEffect(() => {
-        // Handler for group item preview
-        const handleGroupItemPreview = (event: CustomEvent) => {
-            const { dragging, groupId, itemId, position, item } = event.detail || {};
+        const handleGroupItemPreview = (event: Event) => {
+            const { dragging, item } = (event as CustomEvent).detail || {};
+            setGroupItemPreview(dragging ? { name: item?.name, icon: item?.icon, url: item?.url } : null);
+        };
 
-            if (dragging && groupId && itemId) {
-                // Find the group index in the dashboard layout
-                const groupIndex = items.findIndex(i => i.id === groupId);
+        document.addEventListener('dndkit:group-item-preview', handleGroupItemPreview);
 
-                if (groupIndex !== -1) {
-                    // Set placeholder data for rendering
-                    setDragPlaceholder({
-                        groupId,
-                        itemId,
-                        item,
-                        visible: true,
-                        position: position || 'next' // Default to next position
-                    });
-                }
-            } else {
-                // Hide the placeholder if needed
-                if (dragPlaceholder?.visible) {
-                    setDragPlaceholder(null);
-                }
+        return () => {
+            document.removeEventListener('dndkit:group-item-preview', handleGroupItemPreview);
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!settledId) return;
+
+        const timer = setTimeout(() => setSettledId(null), 200);
+        return () => clearTimeout(timer);
+    }, [settledId]);
+
+    // Keep the page from scrolling under a touch drag or resize
+    const isGestureActive = activeGesture !== null;
+    useEffect(() => {
+        if (!isGestureActive) return;
+
+        const disableScroll = (event: TouchEvent) => {
+            if (event.cancelable) {
+                event.preventDefault();
             }
         };
 
-        // Listen for the preview event from group widgets
-        document.addEventListener('dndkit:group-item-preview', handleGroupItemPreview as EventListener);
+        document.addEventListener('touchmove', disableScroll, { passive: false });
 
-        // Clean up function
         return () => {
-            document.removeEventListener('dndkit:group-item-preview', handleGroupItemPreview as EventListener);
+            document.removeEventListener('touchmove', disableScroll);
         };
-    }, [dragPlaceholder, items]);
+    }, [isGestureActive]);
 
-    const handleDragStart = (event: any) => {
-        const { active } = event;
-        setActiveId(active.id);
-        setActiveData(active.data.current);
-        setIsDragging(true);
-
-        // Dispatch event that drag has started
-        dispatchDndKitEvent('active', { active: { id: active.id, data: active.data.current } });
+    const commitLayout = (nextLayout: DashboardItem[]) => {
+        setDashboardLayout(nextLayout);
+        saveLayout(nextLayout);
     };
 
-    const handleDragOver = (event: any) => {
-        const { over, active } = event;
+    // Pointer listeners are attached when a gesture starts and keep running
+    // across renders, so they read what they need from here
+    const latest = useRef({ layout, dashboardLayout, breakpoint, commitLayout });
+    latest.current = { layout, dashboardLayout, breakpoint, commitLayout };
 
-        // Dispatch drag over event with both over and active data
-        dispatchDndKitEvent('dragover', { over, active });
+    const beginGesture = (kind: Gesture['kind'], id: string): Gesture | null => {
+        const item = latest.current.layout.find(candidate => candidate.id === id);
+        const startRect = item && getGridRect(item, latest.current.breakpoint);
+        const gridWidth = gridRef.current?.getBoundingClientRect().width;
+
+        if (!startRect || !gridWidth) {
+            return null;
+        }
+
+        gestureRef.current = {
+            kind,
+            id,
+            snapshot: latest.current.layout,
+            columnWidth: gridWidth / DASHBOARD_GRID_COLUMNS,
+            startRect,
+            request: '',
+        };
+        setActiveGesture({ kind, id });
+
+        return gestureRef.current;
     };
 
-    const handleDragEnd = (event: any) => {
-        const { active, over } = event;
+    const endGesture = (): Gesture | null => {
+        const gesture = gestureRef.current;
 
-        setIsDragging(false);
-        setDragPlaceholder(null);
-
-        // Reset all drag states
-        setActiveId(null);
-        setActiveData(null);
-
-        // FAILSAFE: Always restore scrolling on mobile when ANY drag ends
+        gestureRef.current = null;
+        setActiveGesture(null);
+        setPreview(null);
+        setIsOverGroup(false);
         if (isMobile) {
             document.body.style.overflow = '';
         }
 
-        // Only proceed with events if we have both active and over
-        if (!active || !over) {
-            // Just dispatch the general drag end and inactive events
-            dispatchDndKitEvent('dragend', { active, over });
-            dispatchDndKitEvent('inactive', {});
+        return gesture;
+    };
+
+    /** The group a shortcut would be added to if dropped now, if any. A full group is just an obstacle. */
+    const getDropGroupId = (event: DragMoveEvent | DragEndEvent): string | null => {
+        const groupId = event.over?.data.current?.groupId;
+
+        if (typeof groupId !== 'string' || !isShortcutType(event.active.data.current?.type)) {
+            return null;
+        }
+
+        const group = latest.current.layout.find(item => item.id === groupId);
+        const hasRoom = group !== undefined && (group.config?.items?.length ?? 0) < getGroupItemLimit(group.config);
+
+        return hasRoom ? groupId : null;
+    };
+
+    const handleDragStart = ({ active }: DragStartEvent) => {
+        beginGesture('drag', String(active.id));
+        dispatchDndKitEvent('active', { active: { id: active.id, data: active.data.current } });
+    };
+
+    // Runs when the pointer moves and when what it is over changes
+    const updateDragPreview = (event: DragMoveEvent) => {
+        const gesture = gestureRef.current;
+
+        if (gesture?.kind !== 'drag') {
             return;
         }
 
-        // Now we have both active and over, so we can proceed with specific handling
-        const isAppShortcut = active.data.current?.type === ITEM_TYPE.APP_SHORTCUT;
-        const isGroupItem = active.data.current?.type === 'group-item';
-        const isGroupContainer =
-            over.data.current?.type === 'group-widget' ||
-            over.data.current?.type === 'group-container' ||
-            over.data.current?.type === 'group-widget-container' ||
-            (typeof over.id === 'string' && over.id.includes('group-droppable')) ||
-            (over.data.current?.groupId && typeof over.data.current.groupId === 'string');
-
-        if (active && over) {
-            // Handle group item dragging to dashboard
-            if (isGroupItem &&
-                active.data.current?.parentId &&
-                over.id !== active.data.current.parentId) {
-                // Item was dragged from a group to the dashboard
-
-                // Dispatch the standard drag end event
-                dispatchDndKitEvent('dragend', {
-                    active,
-                    over,
-                    activeId: active?.id,
-                    activeType: active?.data?.current?.type,
-                    overId: over?.id,
-                    overType: over?.data?.current?.type,
-                    action: 'group-item-to-dashboard'
-                });
+        if (getDropGroupId(event)) {
+            // The shortcut is about to join the group: leave the layout alone
+            if (gesture.request !== 'group') {
+                gesture.request = 'group';
+                setPreview(null);
+                setIsOverGroup(true);
             }
-            // Handle app shortcut dragging to group ONLY if directly over the group
-            else if (isAppShortcut && isGroupContainer) {
-                // Item was dragged to a group
-
-                // Dispatch a special event for group widgets
-                dispatchDndKitEvent('app-to-group', {
-                    active,
-                    over,
-                    confirmed: true
-                });
-
-                // Also dispatch the standard drag end event
-                dispatchDndKitEvent('dragend', {
-                    active,
-                    over,
-                    activeId: active?.id,
-                    activeType: active?.data?.current?.type,
-                    overId: over?.id,
-                    overType: over?.data?.current?.type,
-                    action: 'app-to-group'
-                });
-            }
-            // Handle regular reordering
-            else if (active.id !== over.id) {
-                setDashboardLayout((prev) => {
-                    const oldIndex = prev.findIndex((item) => item.id === active.id);
-                    const newIndex = prev.findIndex((item) => item.id === over.id);
-
-                    if (oldIndex !== -1 && newIndex !== -1) {
-                        const newItems = arrayMove(prev, oldIndex, newIndex);
-                        saveLayout(newItems);
-                        return newItems;
-                    }
-                    return prev;
-                });
-
-                // Dispatch the standard drag end event
-                dispatchDndKitEvent('dragend', {
-                    active,
-                    over,
-                    activeId: active?.id,
-                    activeType: active?.data?.current?.type,
-                    overId: over?.id,
-                    overType: over?.data?.current?.type,
-                    action: 'reorder'
-                });
-            }
-            else {
-                // Just a click without any change
-                dispatchDndKitEvent('dragend', {
-                    active,
-                    over,
-                    activeId: active?.id,
-                    activeType: active?.data?.current?.type,
-                    overId: over?.id,
-                    overType: over?.data?.current?.type,
-                    action: 'no-change'
-                });
-            }
+            return;
         }
 
-        // Dispatch inactive event
+        // Where the pointer is, pulled onto the edges of nearby items
+        const point = snapGridPoint(gesture.snapshot, gesture.id, {
+            x: gesture.startRect.x + Math.round(event.delta.x / gesture.columnWidth),
+            y: gesture.startRect.y + Math.round(event.delta.y / DASHBOARD_GRID_ROW_HEIGHT),
+        }, latest.current.breakpoint);
+        const request = `${point.x},${point.y}`;
+
+        if (request !== gesture.request) {
+            gesture.request = request;
+            gesture.point = point;
+            setPreview(moveDashboardGridItem(gesture.snapshot, gesture.id, point, latest.current.breakpoint));
+            setIsOverGroup(false);
+        }
+    };
+
+    const handleDragOver = (event: DragMoveEvent) => {
+        updateDragPreview(event);
+        dispatchDndKitEvent('dragover', { over: event.over, active: event.active });
+    };
+
+    const handleDragCancel = () => {
+        endGesture();
         dispatchDndKitEvent('inactive', {});
     };
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        const dropGroupId = getDropGroupId(event);
+        const gesture = endGesture();
+        const detail = {
+            active,
+            over,
+            activeId: active.id,
+            activeType: active.data.current?.type,
+            overId: over?.id,
+            overType: over?.data.current?.type,
+        };
+
+        if (dropGroupId) {
+            // The group widget moves the shortcut into itself
+            dispatchDndKitEvent('app-to-group', { active, over, confirmed: true });
+            dispatchDndKitEvent('dragend', { ...detail, action: 'app-to-group' });
+        } else {
+            if (gesture?.kind === 'drag' && gesture.point) {
+                const { dashboardLayout: currentLayout, breakpoint: currentBreakpoint } = latest.current;
+
+                setSettledId(gesture.id);
+                commitLayout(moveDashboardGridItem(currentLayout, gesture.id, gesture.point, currentBreakpoint));
+            }
+            dispatchDndKitEvent('dragend', { ...detail, action: 'reorder' });
+        }
+
+        dispatchDndKitEvent('inactive', {});
+    };
+
+    const handleResize = useCallback((id: string, requestedSize: GridSize) => {
+        const gesture = gestureRef.current?.id === id ? gestureRef.current : beginGesture('resize', id);
+
+        if (!gesture) {
+            return;
+        }
+
+        // What the pointer asks for, pulled to the edges and sizes of nearby items
+        const size = snapGridSize(gesture.snapshot, id, requestedSize, latest.current.breakpoint);
+        const request = `${size.w}x${size.h}`;
+
+        if (request !== gesture.request) {
+            gesture.request = request;
+            gesture.size = size;
+            setPreview(resizeDashboardGridItem(gesture.snapshot, id, size, latest.current.breakpoint));
+        }
+    // Reads current values through refs; see `latest`
+    }, []);
+
+    const handleResizeEnd = useCallback((id: string, commit: boolean) => {
+        const gesture = endGesture();
+
+        if (commit && gesture?.kind === 'resize' && gesture.size) {
+            const { dashboardLayout: currentLayout, breakpoint: currentBreakpoint } = latest.current;
+            latest.current.commitLayout(resizeDashboardGridItem(currentLayout, id, gesture.size, currentBreakpoint));
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleDelete = (id: string) => {
         const itemToDelete = dashboardLayout.find(item => item.id === id);
@@ -531,12 +479,19 @@ export const DashboardGrid: React.FC = () => {
             }
         }
 
+        // The copy keeps the original's size but takes free space of its own
+        const placedDuplicate = placeDashboardGridItem(
+            dashboardLayout,
+            duplicatedItem,
+            breakpoint === 'xs' ? MOBILE_GRID_BREAKPOINTS : DESKTOP_GRID_BREAKPOINTS
+        );
+
         // Find the item's position in the layout
         const index = dashboardLayout.findIndex((i) => i.id === item.id);
 
         // Insert the duplicated item after the original
         const updatedLayout = [...dashboardLayout];
-        updatedLayout.splice(index + 1, 0, duplicatedItem);
+        updatedLayout.splice(index + 1, 0, placedDuplicate);
 
         // Update the dashboard
         setDashboardLayout(updatedLayout);
@@ -551,296 +506,42 @@ export const DashboardGrid: React.FC = () => {
         await new Promise(resolve => setTimeout(resolve, 500));
     };
 
-    useEffect(() => {
-        const disableScroll = (event: TouchEvent) => {
-            if (event.cancelable) {
-                event.preventDefault();
-            }
-        };
+    // Item content is memoized, so it gets callbacks that never change identity
+    const itemHandlers = useRef({ handleDelete, handleEdit, handleDuplicate });
+    itemHandlers.current = { handleDelete, handleEdit, handleDuplicate };
+    const itemActions = useMemo(() => ({
+        onDelete: (item: DashboardItem) => itemHandlers.current.handleDelete(item.id),
+        onEdit: (item: DashboardItem) => itemHandlers.current.handleEdit(item),
+        onDuplicate: (item: DashboardItem) => { void itemHandlers.current.handleDuplicate(item); },
+    }), []);
 
-        if (isDragging) {
-            document.addEventListener('touchmove', disableScroll, { passive: false });
-        } else {
-            document.removeEventListener('touchmove', disableScroll);
-        }
+    const previewRects = useMemo(
+        () => preview && new Map(preview.map(item => [item.id, getGridRect(item, breakpoint)])),
+        [preview, breakpoint]
+    );
+    const draggedId = activeGesture?.kind === 'drag' ? activeGesture.id : null;
 
-        return () => {
-            document.removeEventListener('touchmove', disableScroll);
-        };
-    }, [isDragging]);
+    // Where a shortcut dragged out of a group will land: the first free spot
+    const groupItemPreviewRect = useMemo(() => {
+        if (!groupItemPreview) return undefined;
 
-    // Find the group widget's index
-    const getGroupPosition = useCallback((groupId: string) => {
-        return items.findIndex(item => item.id === groupId);
-    }, [items]);
+        const placeholder: DashboardItem = { id: 'preview-placeholder', label: '', type: ITEM_TYPE.APP_SHORTCUT };
+        return getGridRect(placeDashboardGridItem(layout, placeholder, [breakpoint]), breakpoint);
+    }, [groupItemPreview, layout, breakpoint]);
 
-    // Render our items with the placeholder inserted at the right position
-    const renderItems = () => {
-        // Clone the items array
-        const itemsToRender = [...items];
+    const rowCount = Math.max(
+        getGridRowCount(preview ?? items, breakpoint),
+        groupItemPreviewRect ? groupItemPreviewRect.y + groupItemPreviewRect.h : 0
+    ) + (editMode ? EDIT_MODE_SPARE_ROWS : 0);
 
-        // If we have a visible placeholder and the group exists
-        if (dragPlaceholder?.visible) {
-            const groupIndex = getGroupPosition(dragPlaceholder.groupId);
+    // Where the dragged item will land
+    const dropRect = draggedId && !isOverGroup ? previewRects?.get(draggedId) : undefined;
 
-            if (groupIndex !== -1) {
-                // Determine target index based on position
-                const targetIndex = dragPlaceholder.position === 'next'
-                    ? groupIndex + 1 // Insert after group
-                    : groupIndex;    // Insert before group
-
-                // Insert the placeholder at the target index
-                const result: React.ReactNode[] = [];
-
-                itemsToRender.forEach((item, index) => {
-                    // If this is where we insert the placeholder
-                    if (index === targetIndex) {
-                        result.push(renderPlaceholder(dragPlaceholder));
-                    }
-
-                    // Always add the current item
-                    result.push(renderItem(item));
-                });
-
-                // If the placeholder goes at the end
-                if (targetIndex >= itemsToRender.length) {
-                    result.push(renderPlaceholder(dragPlaceholder));
-                }
-
-                return result;
-            }
-        }
-
-        // If no placeholder or group not found, just render the items normally
-        return itemsToRender.map(item => renderItem(item));
-    };
-
-    // Helper function to create a proper DateTimeConfig
-    const createDateTimeConfig = (config: any) => {
-        return {
-            location: config?.location || null,
-            timezone: config?.timezone || undefined,
-            use24Hour: config?.use24Hour || false
-        };
-    };
-
-    // Helper function to render download client components
-    const renderDownloadClient = (item: any, isOverlay = false) => {
-        const clientType = item.config?.clientType;
-        const key = item.id;
-        const commonProps = {
-            id: item.id,
-            editMode,
-            config: item.config,
-            onDelete: () => handleDelete(item.id),
-            onEdit: () => handleEdit(item),
-            onDuplicate: () => handleDuplicate(item),
-            ...(isOverlay && { isOverlay })
-        };
-
-        // Handle all download client types for DOWNLOAD_CLIENT
-        if (item.type === ITEM_TYPE.DOWNLOAD_CLIENT) {
-            if (clientType === DOWNLOAD_CLIENT_TYPE.DELUGE) {
-                return <SortableDeluge key={key} {...commonProps} />;
-            }
-            if (clientType === DOWNLOAD_CLIENT_TYPE.TRANSMISSION) {
-                return <SortableTransmission key={key} {...commonProps} />;
-            }
-            if (clientType === DOWNLOAD_CLIENT_TYPE.SABNZBD) {
-                return <SortableSabnzbd key={key} {...commonProps} />;
-            }
-            if (clientType === DOWNLOAD_CLIENT_TYPE.NZBGET) {
-                return <SortableNzbget key={key} {...commonProps} />;
-            }
-            // Default to qBittorrent for DOWNLOAD_CLIENT
-            return <SortableQBittorrent key={key} {...commonProps} />;
-        }
-
-        // Handle legacy TORRENT_CLIENT - only torrent clients (no SABnzbd)
-        if (item.type === ITEM_TYPE.TORRENT_CLIENT) {
-            if (clientType === TORRENT_CLIENT_TYPE.DELUGE) {
-                return <SortableDeluge key={key} {...commonProps} />;
-            }
-            if (clientType === TORRENT_CLIENT_TYPE.TRANSMISSION) {
-                return <SortableTransmission key={key} {...commonProps} />;
-            }
-            if (clientType === TORRENT_CLIENT_TYPE.QBITTORRENT) {
-                return <SortableQBittorrent key={key} {...commonProps} />;
-            }
-            // Default to qBittorrent for legacy torrent client
-            return <SortableQBittorrent key={key} {...commonProps} />;
-        }
-
-        // Fallback
-        return <SortableQBittorrent key={key} {...commonProps} />;
-    };
-
-    // Render a single item
-    const renderItem = (item: any) => {
-        switch (item.type) {
-        case ITEM_TYPE.WEATHER_WIDGET:
-            return <SortableWeatherWidget key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
-        case ITEM_TYPE.DATE_TIME_WIDGET:
-            return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} config={createDateTimeConfig(item.config)} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
-        case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
-            return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
-        case ITEM_TYPE.DISK_MONITOR_WIDGET:
-            return <SortableDiskMonitor key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)} />;
-        case ITEM_TYPE.PIHOLE_WIDGET:
-            return <SortablePihole key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
-        case ITEM_TYPE.ADGUARD_WIDGET:
-            return <SortableAdGuard key={item.id} id={item.id} editMode={editMode} config={item.config} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)}/>;
-        case ITEM_TYPE.DOWNLOAD_CLIENT:
-            return renderDownloadClient(item);
-        case ITEM_TYPE.TORRENT_CLIENT:
-            return renderDownloadClient(item);
-        case ITEM_TYPE.DUAL_WIDGET: {
-            // Transform the existing config to the correct structure
-            const dualWidgetConfig = {
-                topWidget: item.config?.topWidget || undefined,
-                bottomWidget: item.config?.bottomWidget || undefined
-            };
-            return <SortableDualWidget
-                key={item.id}
-                id={item.id}
-                editMode={editMode}
-                config={dualWidgetConfig}
-                onDelete={() => handleDelete(item.id)}
-                onEdit={() => handleEdit(item)}
-                onDuplicate={() => handleDuplicate(item)}
-            />;
-        }
-        case ITEM_TYPE.GROUP_WIDGET:
-            return <SortableGroupWidget
-                key={item.id}
-                id={item.id}
-                editMode={editMode}
-                label={item.label}
-                config={item.config}
-                onDelete={() => handleDelete(item.id)}
-                onEdit={() => handleEdit(item)}
-                onDuplicate={() => handleDuplicate(item)}
-            />;
-        case ITEM_TYPE.MEDIA_SERVER_WIDGET:
-            return <SortableMediaServer
-                key={item.id}
-                id={item.id}
-                editMode={editMode}
-                config={item.config}
-                onDelete={() => handleDelete(item.id)}
-                onEdit={() => handleEdit(item)}
-                onDuplicate={() => handleDuplicate(item)}
-            />;
-        case ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET:
-            return <SortableMediaRequestManager
-                key={item.id}
-                id={item.id}
-                editMode={editMode}
-                config={item.config}
-                onDelete={() => handleDelete(item.id)}
-                onEdit={() => handleEdit(item)}
-                onDuplicate={() => handleDuplicate(item)}
-            />;
-        case ITEM_TYPE.NOTES_WIDGET:
-            return <SortableNotes
-                key={item.id}
-                id={item.id}
-                editMode={editMode}
-                config={item.config}
-                onDelete={() => handleDelete(item.id)}
-                onEdit={() => handleEdit(item)}
-                onDuplicate={() => handleDuplicate(item)}
-            />;
-        case ITEM_TYPE.SONARR_WIDGET:
-            return <SortableSonarr
-                key={item.id}
-                id={item.id}
-                editMode={editMode}
-                config={item.config}
-                onDelete={() => handleDelete(item.id)}
-                onEdit={() => handleEdit(item)}
-                onDuplicate={() => handleDuplicate(item)}
-            />;
-        case ITEM_TYPE.RADARR_WIDGET:
-            return <SortableRadarr
-                key={item.id}
-                id={item.id}
-                editMode={editMode}
-                config={item.config}
-                onDelete={() => handleDelete(item.id)}
-                onEdit={() => handleEdit(item)}
-                onDuplicate={() => handleDuplicate(item)}
-            />;
-        case ITEM_TYPE.APP_SHORTCUT:
-            return (
-                <SortableAppShortcut
-                    key={item.id}
-                    id={item.id}
-                    url={item.url}
-                    name={item.label}
-                    iconName={item.icon?.path || ''}
-                    editMode={editMode}
-                    onDelete={() => handleDelete(item.id)}
-                    onEdit={() => handleEdit(item)}
-                    onDuplicate={() => handleDuplicate(item)}
-                    showLabel={item.showLabel}
-                    config={item.config}
-                />
-            );
-        case ITEM_TYPE.BLANK_APP:
-            return <BlankAppShortcut key={item.id} id={item.id} editMode={editMode} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)} />;
-        case ITEM_TYPE.BLANK_ROW:
-            return <BlankWidget key={item.id} id={item.id} label={item.label} editMode={editMode} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)} row/>;
-        default:
-            return <BlankWidget key={item.id} id={item.id} label={item.label} editMode={editMode} onDelete={() => handleDelete(item.id)} onEdit={() => handleEdit(item)} onDuplicate={() => handleDuplicate(item)} />;
-        }
-    };
-
-    // Render a placeholder app shortcut
-    const renderPlaceholder = (placeholder: any) => {
-        const name = placeholder.item?.name || 'Item';
-        const icon = placeholder.item?.icon || '';
-        const url = placeholder.item?.url;
-        const healthUrl = placeholder.item?.healthUrl;
-        const healthCheckType = placeholder.item?.healthCheckType;
-        const isWol = placeholder.item?.isWol;
-
-        // Create a more complete config object based on available item properties
-        const config: any = {};
-
-        if (healthUrl) {
-            config.healthUrl = healthUrl;
-            config.healthCheckType = healthCheckType;
-        }
-
-        if (isWol) {
-            config.isWol = isWol;
-            config.macAddress = placeholder.item?.macAddress;
-            config.broadcastAddress = placeholder.item?.broadcastAddress;
-            config.port = placeholder.item?.port;
-        }
-
-        return (
-            <SortableAppShortcut
-                key='preview-placeholder'
-                id='preview-placeholder'
-                url={url}
-                name={name}
-                iconName={icon}
-                editMode={false}
-                showLabel={true}
-                config={config}
-                isOverlay={true}
-            />
-        );
-    };
-
-    // Get ids including the placeholder if visible
-    const getSortableIds = () => {
-        if (dragPlaceholder?.visible) {
-            return [...items.map(item => item.id), 'placeholder'];
-        }
-        return items.map(item => item.id);
+    const cellSx = {
+        boxSizing: 'border-box',
+        paddingRight: `${DASHBOARD_GRID_GAP}px`,
+        paddingBottom: `${DASHBOARD_GRID_GAP}px`,
+        pointerEvents: 'none',
     };
 
     return (
@@ -848,163 +549,71 @@ export const DashboardGrid: React.FC = () => {
             <DndContext
                 sensors={sensors}
                 onDragStart={handleDragStart}
+                onDragMove={updateDragPreview}
                 onDragOver={handleDragOver}
+                onDragCancel={handleDragCancel}
                 onDragEnd={handleDragEnd}
-                collisionDetection={customCollisionDetection}
+                collisionDetection={groupDropCollision}
+                modifiers={[keepInsideGridHorizontally]}
+                autoScroll={AUTO_SCROLL}
                 measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
             >
-                <SortableContext items={getSortableIds()} strategy={rectSortingStrategy} disabled={!editMode}>
+                <Box sx={{ width: '100%', maxWidth: '100vw', boxSizing: 'border-box', paddingLeft: 2, paddingBottom: 2 }}>
                     <Box
-                        ref={containerRef}
-                        sx={{ width: '100%', maxWidth: '100vw', boxSizing: 'border-box' }}
+                        ref={gridRef}
+                        sx={{ position: 'relative', width: '100%' }}
+                        style={{ height: rowCount * DASHBOARD_GRID_ROW_HEIGHT }}
                     >
-                        <Grid container sx={{
-                            width: '100%',
-                            maxWidth: '100%',
-                            boxSizing: 'border-box',
-                            px: 2,
-                            paddingBottom: 4
-                        }} spacing={2}>
-                            {renderItems()}
-                        </Grid>
-                    </Box>
-                </SortableContext>
+                        {dropRect && (
+                            <Box sx={cellSx} style={getGridRectStyle(dropRect)}>
+                                <Box sx={{
+                                    width: '100%',
+                                    height: '100%',
+                                    boxSizing: 'border-box',
+                                    border: `2px dashed ${COLORS.LIGHT_GRAY_HOVER}`,
+                                    borderRadius: 2,
+                                    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                                }} />
+                            </Box>
+                        )}
 
-                <DragOverlay
-                    modifiers={[]}
-                    zIndex={10000}
-                >
-                    {activeId ? (
-                        // For group items being dragged out, always render as app shortcut
-                        activeData?.type === 'group-item' ? (
-                            // Render a app shortcut overlay for dragged group items
-                            <SortableAppShortcut
-                                key={activeId}
-                                id={activeId}
-                                url={activeData.originalItem?.url}
-                                name={activeData.originalItem?.name || 'App'}
-                                iconName={activeData.originalItem?.icon || ''}
-                                editMode={editMode}
-                                isOverlay
-                                showLabel={true}
-                                config={{}}
-                            />
-                        ) : (
-                            // For normal dashboard items, render appropriate overlay
-                            items.map((item) => {
-                                if (item.id === activeId) {
-                                    switch (item.type) {
-                                    case ITEM_TYPE.WEATHER_WIDGET:
-                                        return <SortableWeatherWidget key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
-                                    case ITEM_TYPE.DATE_TIME_WIDGET: {
-                                        // Create a properly typed config for DateTimeWidget
-                                        const dateTimeConfig = {
-                                            location: item.config?.location || null,
-                                            timezone: item.config?.timezone || undefined
-                                        };
-                                        return <SortableDateTimeWidget key={item.id} id={item.id} editMode={editMode} config={dateTimeConfig} isOverlay/>;
-                                    }
-                                    case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
-                                        return <SortableSystemMonitorWidget key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
-                                    case ITEM_TYPE.DISK_MONITOR_WIDGET:
-                                        return <SortableDiskMonitor key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay />;
-                                    case ITEM_TYPE.PIHOLE_WIDGET:
-                                        return <SortablePihole key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
-                                    case ITEM_TYPE.ADGUARD_WIDGET:
-                                        return <SortableAdGuard key={item.id} id={item.id} editMode={editMode} config={item.config} isOverlay/>;
-                                    case ITEM_TYPE.DOWNLOAD_CLIENT:
-                                    case ITEM_TYPE.TORRENT_CLIENT:
-                                        return renderDownloadClient(item, true);
-                                    case ITEM_TYPE.DUAL_WIDGET: {
-                                        // Transform the existing config to the correct structure
-                                        const dualWidgetConfig = {
-                                            topWidget: item.config?.topWidget || undefined,
-                                            bottomWidget: item.config?.bottomWidget || undefined
-                                        };
-                                        return <SortableDualWidget
-                                            key={item.id}
-                                            id={item.id}
-                                            editMode={editMode}
-                                            config={dualWidgetConfig}
-                                            isOverlay
-                                        />;
-                                    }
-                                    case ITEM_TYPE.GROUP_WIDGET:
-                                        return <SortableGroupWidget
-                                            key={item.id}
-                                            id={item.id}
-                                            label={item.label}
-                                            editMode={editMode}
-                                            config={item.config}
-                                            isOverlay
-                                        />;
-                                    case ITEM_TYPE.MEDIA_SERVER_WIDGET:
-                                        return <SortableMediaServer
-                                            key={item.id}
-                                            id={item.id}
-                                            editMode={editMode}
-                                            config={item.config}
-                                            isOverlay
-                                        />;
-                                    case ITEM_TYPE.SONARR_WIDGET:
-                                        return <SortableSonarr
-                                            key={item.id}
-                                            id={item.id}
-                                            editMode={editMode}
-                                            config={item.config}
-                                            isOverlay
-                                        />;
-                                    case ITEM_TYPE.RADARR_WIDGET:
-                                        return <SortableRadarr
-                                            key={item.id}
-                                            id={item.id}
-                                            editMode={editMode}
-                                            config={item.config}
-                                            isOverlay
-                                        />;
-                                    case ITEM_TYPE.MEDIA_REQUEST_MANAGER_WIDGET:
-                                        return <SortableMediaRequestManager
-                                            key={item.id}
-                                            id={item.id}
-                                            editMode={editMode}
-                                            config={item.config}
-                                            isOverlay
-                                        />;
-                                    case ITEM_TYPE.NOTES_WIDGET:
-                                        return <SortableNotes
-                                            key={item.id}
-                                            id={item.id}
-                                            editMode={editMode}
-                                            config={item.config}
-                                            isOverlay
-                                        />;
-                                    case ITEM_TYPE.APP_SHORTCUT:
-                                        return (
-                                            <SortableAppShortcut
-                                                key={item.id}
-                                                id={item.id}
-                                                url={item.url}
-                                                name={item.label}
-                                                iconName={item.icon?.path || ''}
-                                                editMode={editMode}
-                                                isOverlay
-                                                showLabel={item.showLabel}
-                                                config={item.config}
-                                            />
-                                        );
-                                    case ITEM_TYPE.BLANK_APP:
-                                        return <BlankAppShortcut key={item.id} id={item.id} editMode={editMode} isOverlay/>;
-                                    case ITEM_TYPE.BLANK_ROW:
-                                        return <BlankWidget key={item.id} id={item.id} label={item.label} editMode={editMode} isOverlay row/>;
-                                    default:
-                                        return <BlankWidget key={item.id} id={item.id} label={item.label} editMode={editMode} isOverlay/>;
-                                    }
-                                }
-                                return null;
-                            })
-                        )
-                    ) : null}
-                </DragOverlay>
+                        {items.map(item => {
+                            // The dragged item stays in its cell and follows the pointer by transform
+                            const rect = (item.id === draggedId ? undefined : previewRects?.get(item.id))
+                                ?? getGridRect(item, breakpoint);
+
+                            return rect && (
+                                <DashboardGridItem
+                                    key={item.id}
+                                    id={item.id}
+                                    type={item.type}
+                                    rect={rect}
+                                    editMode={editMode}
+                                    animate={item.id !== settledId}
+                                    onResize={handleResize}
+                                    onResizeEnd={handleResizeEnd}
+                                >
+                                    <DashboardItemContent item={item} editMode={editMode} {...itemActions} />
+                                </DashboardGridItem>
+                            );
+                        })}
+
+                        {groupItemPreview && groupItemPreviewRect && (
+                            <Box sx={cellSx} style={getGridRectStyle(groupItemPreviewRect)}>
+                                <WidgetContainer editMode={false} isPreview>
+                                    <AppShortcut
+                                        url={groupItemPreview.url}
+                                        name={`${groupItemPreview.name || 'Item'} (Drop Here)`}
+                                        iconName={groupItemPreview.icon || ''}
+                                        showLabel
+                                        editMode={false}
+                                        isPreview
+                                    />
+                                </WidgetContainer>
+                            </Box>
+                        )}
+                    </Box>
+                </Box>
             </DndContext>
 
             <CenteredModal open={openEditModal} handleClose={() => setOpenEditModal(false)} title='Edit Item'>

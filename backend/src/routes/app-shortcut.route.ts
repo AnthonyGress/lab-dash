@@ -110,8 +110,10 @@ appShortcutRoute.get('/custom-icons', (req: Request, res: Response) => {
             return;
         }
 
-        // Read the directory
-        const files = fs.readdirSync(uploadPath);
+        // Read the directory; anything that is not an image file (a stray .DS_Store, a folder) is not an icon
+        const files = fs.readdirSync(uploadPath).filter(file => (
+            /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(file) && fs.statSync(path.join(uploadPath, file)).isFile()
+        ));
 
         // Map files to icon objects
         const icons = files.map(file => {

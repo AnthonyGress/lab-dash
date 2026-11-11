@@ -185,7 +185,12 @@ class RealtimeSocket {
     }
 
     private connect(): void {
-        if (this.socket || this.reconnectTimer || this.suspended || !this.hasWork()) return;
+        if (this.socket || this.reconnectTimer || this.suspended) return;
+        if (!this.hasWork()) {
+            // Nothing to do and no socket: say so, e.g. after the server closed the last idle connection
+            this.setStatus('idle');
+            return;
+        }
 
         const url = `${(BACKEND_URL || window.location.origin).replace(/^http/, 'ws')}/api/ws`;
         let socket: WebSocket;
@@ -258,7 +263,11 @@ class RealtimeSocket {
     }
 
     private scheduleReconnect(): void {
-        if (this.reconnectTimer || !this.hasWork()) return;
+        if (this.reconnectTimer) return;
+        if (!this.hasWork()) {
+            this.setStatus('idle');
+            return;
+        }
 
         this.failedAttempts += 1;
         if (this.failedAttempts >= UNAVAILABLE_AFTER_ATTEMPTS) this.setStatus('unavailable');
@@ -294,6 +303,7 @@ class RealtimeSocket {
         } catch {
             return;
         }
+        if (!frame || typeof frame !== 'object') return;
 
         if (frame.t === 'data' || frame.t === 'err') {
             const stream = this.streams.get(streamKey(frame.topic, frame.itemId));
@@ -302,7 +312,7 @@ class RealtimeSocket {
             // The last good value stays visible next to an error
             stream.state = frame.t === 'data'
                 ? { data: frame.data }
-                : { data: stream.state.data, error: String(frame.message) };
+                : { data: stream.state.data, error: typeof frame.message === 'string' && frame.message ? frame.message : 'Live data is unavailable' };
             stream.listeners.forEach(listener => listener());
         } else if (frame.t === 'res') {
             const call = this.calls.get(frame.id);

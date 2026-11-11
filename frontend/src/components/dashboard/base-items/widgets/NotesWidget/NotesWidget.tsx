@@ -8,7 +8,6 @@ import { applyMarkdownFormat } from './applyMarkdownFormat';
 import { FontSizeSelector } from './FontSizeSelector';
 import { MarkdownToolbar } from './MarkdownToolbar';
 import { DashApi } from '../../../../../api/dash-api';
-import { DUAL_WIDGET_CONTAINER_HEIGHT } from '../../../../../constants/widget-dimensions';
 import { useAppContext } from '../../../../../context/useAppContext';
 import { realtime } from '../../../../../realtime/socket';
 import { theme } from '../../../../../theme/theme';
@@ -768,9 +767,8 @@ export const NotesWidget = ({ config }: NotesWidgetProps) => {
             maxWidth: '100%',
             width: '100%',
             userSelect: 'auto',
-            ...(isMobile ? {} : {
-                maxHeight: DUAL_WIDGET_CONTAINER_HEIGHT.sm
-            })
+            minHeight: 0,
+            boxSizing: 'border-box'
         }}>
             <Box sx={{
                 display: 'flex',

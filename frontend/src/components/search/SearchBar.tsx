@@ -41,14 +41,11 @@ export const SearchBar = ({
     };
 
     const handleChange = (_event: React.SyntheticEvent, newValue: SearchOption | string | null) => {
-        if (!newValue) return;
+        // Enter arrives here too, as the typed text; handleKeyDown already acted on it
+        if (!newValue || typeof newValue === 'string') return;
 
-        if (typeof newValue === 'string') {
-            window.open(getSearchUrl(newValue), '_blank', 'noopener,noreferrer');
-        } else {
-            if (newValue.url) {
-                window.open(newValue.url, '_blank', 'noopener,noreferrer');
-            }
+        if (newValue.url) {
+            window.open(newValue.url, '_blank', 'noopener,noreferrer');
         }
 
         setSearchValue('');

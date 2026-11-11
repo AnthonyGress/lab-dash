@@ -66,6 +66,10 @@ export type DashboardItem = {
     icon?: { path: string; name: string; source?: string; };
     showLabel?: boolean;
     adminOnly?: boolean;
+    // Position and size on the dashboard grid, per screen size. Owned by the frontend.
+    grid?: {
+        rects: Partial<Record<'xs' | 'sm' | 'md' | 'lg', { x: number; y: number; w: number; h: number }>>;
+    };
     config?: {
         [key: string]: any;
     };

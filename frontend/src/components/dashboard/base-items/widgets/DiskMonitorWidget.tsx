@@ -2,7 +2,6 @@ import { Box, CardContent, Grid2 as Grid, Tooltip, Typography, useMediaQuery } f
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FaHdd } from 'react-icons/fa';
 
-import { DUAL_WIDGET_CONTAINER_HEIGHT } from '../../../../constants/widget-dimensions';
 import { useLiveData } from '../../../../hooks/useLiveData';
 import { theme } from '../../../../theme/theme';
 
@@ -294,9 +293,8 @@ export const DiskMonitorWidget = ({ config, id }: DiskMonitorWidgetProps) => {
             width: '100%',
             display: 'flex',
             flexDirection: 'column',
-            ...(layout === '2x4' || layout === '1x5' ? {
-                minHeight: DUAL_WIDGET_CONTAINER_HEIGHT.sm
-            } : {})
+            minHeight: 0,
+            boxSizing: 'border-box'
         }}>
             <Box sx={{
                 flex: 1,

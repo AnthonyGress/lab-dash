@@ -7,8 +7,8 @@ services:
     ports:
       - 2022:2022
     environment:
-      - SECRET=YOUR_SECRET_KEY # replace with a random string of at least 32 characters.
-      # You can run `openssl rand -base64 32` to generate a key
+      - SECRET=YOUR_SECRET_KEY # required: replace with a random string of at least 32 characters.
+      # Lab Dash does not start with this placeholder. Run `openssl rand -base64 32` to generate a key
     volumes:
       - /sys:/sys:ro
       - /docker/lab-dash/config:/config

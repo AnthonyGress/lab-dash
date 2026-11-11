@@ -1,4 +1,4 @@
-import { Box, Divider, Typography, useMediaQuery } from '@mui/material';
+import { Box, Divider, Typography } from '@mui/material';
 import React from 'react';
 
 import { AdGuardWidget } from './AdGuardWidget/AdGuardWidget';
@@ -8,9 +8,7 @@ import { DualWidgetContainer } from './DualWidgetContainer';
 import { PiholeWidget } from './PiholeWidget/PiholeWidget';
 import { SystemMonitorWidget } from './SystemMonitorWidget/SystemMonitorWidget';
 import { WeatherWidget } from './WeatherWidget';
-import { DUAL_WIDGET_SECTION_HEIGHT } from '../../../../constants/widget-dimensions';
 import { COLORS } from '../../../../theme/styles';
-import { theme } from '../../../../theme/theme';
 import { ITEM_TYPE } from '../../../../types';
 
 export interface DualWidgetProps {
@@ -41,8 +39,6 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
     onDuplicate,
     url
 }) => {
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
     const renderWidget = (widgetConfig: { type: string; config?: any } | undefined, position: 'top' | 'bottom') => {
         if (!widgetConfig || !widgetConfig.type) {
             return (
@@ -159,9 +155,7 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
                         mb: 0.5,
                         justifyContent: 'center',
                         position: 'relative',
-                        minHeight: isMobile ? 'unset' : DUAL_WIDGET_SECTION_HEIGHT.sm,
-                        maxHeight: isMobile ? 'none' : DUAL_WIDGET_SECTION_HEIGHT.sm,
-                        height: isMobile ? 'auto' : DUAL_WIDGET_SECTION_HEIGHT.sm
+                        minHeight: 0
                     }}
                 >
                     {renderWidget(config?.topWidget, 'top')}
@@ -185,9 +179,7 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
                         mt: 0.5,
                         justifyContent: 'center',
                         position: 'relative',
-                        minHeight: isMobile ? 'unset' : DUAL_WIDGET_SECTION_HEIGHT.sm,
-                        maxHeight: isMobile ? 'none' : DUAL_WIDGET_SECTION_HEIGHT.sm,
-                        height: isMobile ? 'auto' : DUAL_WIDGET_SECTION_HEIGHT.sm
+                        minHeight: 0
                     }}
                 >
                     {renderWidget(config?.bottomWidget, 'bottom')}
