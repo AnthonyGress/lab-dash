@@ -1,40 +1,16 @@
 import { Request, Response, Router } from 'express';
-import fsSync from 'fs';
-import fs from 'fs/promises';
 import StatusCodes from 'http-status-codes';
-import jwt from 'jsonwebtoken';
-import path from 'path';
 
-import {  authenticateToken, requireAdmin } from '../middleware/auth.middleware';
+import { authenticateToken, getOptionalUser, requireAdmin } from '../middleware/auth.middleware';
+import { getConfig, updateConfig } from '../services/config-store';
 import { Config } from '../types';
 import { BackupService } from '../utils/backup.service';
+import { encrypt, isEncrypted } from '../utils/crypto';
 
 export const configRoute = Router();
 
-const CONFIG_FILE = path.join(__dirname, '../config/config.json');
-const JWT_SECRET = process.env.SECRET || '@jZCgtn^qg8So*^^6A2M';
-
 // Helper function to check if user is authenticated and is admin
-const isUserAdmin = (req: Request): boolean => {
-    try {
-        // Check for token in cookies first
-        const tokenFromCookie = req.cookies?.access_token;
-        // Then check Authorization header
-        const authHeader = req.headers.authorization;
-        const tokenFromHeader = authHeader && authHeader.split(' ')[1];
-
-        const token = tokenFromCookie || tokenFromHeader;
-
-        if (!token) {
-            return false;
-        }
-
-        const decoded = jwt.verify(token, JWT_SECRET) as any;
-        return decoded && decoded.role === 'admin';
-    } catch (error) {
-        return false;
-    }
-};
+const isUserAdmin = (req: Request): boolean => getOptionalUser(req)?.role === 'admin';
 
 // Helper function to filter admin-only items from config
 const filterAdminOnlyItems = (config: any): any => {
@@ -81,479 +57,187 @@ const filterAdminOnlyItems = (config: any): any => {
 
     return filteredConfig;
 };
-const loadConfig = () => {
-    if (fsSync.existsSync(CONFIG_FILE)) {
-        try {
-            const fileContent = fsSync.readFileSync(CONFIG_FILE, 'utf-8');
-            if (!fileContent.trim()) {
-                console.error('Config file is empty, returning default config');
-                return { layout: { desktop: [], mobile: [] } };
-            }
-            const config = JSON.parse(fileContent);
-            return config;
-        } catch (error) {
-            console.error('Error parsing config file:', error);
-            console.error('Config file content length:', fsSync.readFileSync(CONFIG_FILE, 'utf-8').length);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Item = any;
 
-            // Try to read the first and last 100 characters to help debug
-            try {
-                const content = fsSync.readFileSync(CONFIG_FILE, 'utf-8');
-                console.error('First 100 chars:', content.substring(0, 100));
-                console.error('Last 100 chars:', content.substring(Math.max(0, content.length - 100)));
-            } catch (readError) {
-                console.error('Could not read config file for debugging:', readError);
-            }
+/** Credentials the browser never gets back; it receives `_has<Field>` flags in their place. */
+const SECRET_FIELDS = ['apiKey', 'apiToken', 'password'];
 
-            // Return default config if parsing fails
-            return { layout: { desktop: [], mobile: [] } };
+/**
+ * AdGuard Home logs in with a username that is stored encrypted, so it is a secret too.
+ * Half of a dual widget saved without a type is treated the same way, to be safe.
+ */
+const secretFieldsOf = (type: string | undefined, isHalfOfDualWidget = false): string[] => (
+    type === 'adguard-widget' || (isHalfOfDualWidget && !type) ? [...SECRET_FIELDS, 'username'] : SECRET_FIELDS
+);
+
+const flagOf = (field: string): string => `_has${field[0].toUpperCase()}${field.slice(1)}`;
+
+const isFlag = (key: string): boolean => key.startsWith('_has');
+
+type ItemConfig = { config: Item; type?: string; isHalfOfDualWidget: boolean };
+
+/** The config objects an item carries credentials in: its own and, for a dual widget, those of its two halves. */
+const configsOf = (item: Item): ItemConfig[] => {
+    const found: ItemConfig[] = [];
+    if (item?.config && typeof item.config === 'object') {
+        found.push({ config: item.config, type: item.type, isHalfOfDualWidget: false });
+        for (const half of ['topWidget', 'bottomWidget']) {
+            const widget = item.config[half];
+            if (widget?.config && typeof widget.config === 'object') {
+                found.push({ config: widget.config, type: widget.type, isHalfOfDualWidget: true });
+            }
         }
     }
-    return { layout: { desktop: [], mobile: [] } };
+    return found;
 };
 
-// Helper function to filter sensitive data from config before sending to frontend
-const filterSensitiveData = (config: any): any => {
-    const filteredConfig = JSON.parse(JSON.stringify(config)); // Deep clone
-
-    const processItems = (items: any[]) => {
-        return items.map(item => {
-            if (!item.config) return item;
-
-            const newConfig = { ...item.config };
-
-            // Handle Pi-hole widget sensitive data
-            if (newConfig.apiToken) {
-                newConfig._hasApiToken = true;
-                delete newConfig.apiToken;
-            }
-            if (newConfig.password) {
-                newConfig._hasPassword = true;
-                delete newConfig.password;
-            }
-
-            // Handle AdGuard Home widget sensitive data
-            if (item.type === 'adguard-widget') {
-                if (newConfig.username) {
-                    newConfig._hasUsername = true;
-                    delete newConfig.username;
-                }
-                if (newConfig.password) {
-                    newConfig._hasPassword = true;
-                    delete newConfig.password;
-                }
-            }
-
-            // Handle download client (torrent/NZB) sensitive data
-            if ((item.type === 'download-client' || item.type === 'torrent-client') && newConfig.password) {
-                newConfig._hasPassword = true;
-                delete newConfig.password;
-            }
-
-            // Handle media server widget sensitive data
-            if (item.type === 'media-server-widget' && newConfig.apiKey) {
-                newConfig._hasApiKey = true;
-                delete newConfig.apiKey;
-            }
-
-            // Handle Sonarr widget sensitive data
-            if (item.type === 'sonarr-widget' && newConfig.apiKey) {
-                newConfig._hasApiKey = true;
-                delete newConfig.apiKey;
-            }
-
-            // Handle Radarr widget sensitive data
-            if (item.type === 'radarr-widget' && newConfig.apiKey) {
-                newConfig._hasApiKey = true;
-                delete newConfig.apiKey;
-            }
-
-            // Handle Media Request Manager widget sensitive data
-            if (item.type === 'media-request-manager-widget' && newConfig.apiKey) {
-                newConfig._hasApiKey = true;
-                delete newConfig.apiKey;
-            }
-
-            // Handle dual widget sensitive data
-            if (item.type === 'dual-widget') {
-                if (newConfig.topWidget?.config) {
-                    if (newConfig.topWidget.config.apiToken) {
-                        newConfig.topWidget.config._hasApiToken = true;
-                        delete newConfig.topWidget.config.apiToken;
-                    }
-                    if (newConfig.topWidget.config.password) {
-                        newConfig.topWidget.config._hasPassword = true;
-                        delete newConfig.topWidget.config.password;
-                    }
-                    // Handle AdGuard Home username in dual widget
-                    if (newConfig.topWidget.config.username) {
-                        newConfig.topWidget.config._hasUsername = true;
-                        delete newConfig.topWidget.config.username;
-                    }
-                }
-                if (newConfig.bottomWidget?.config) {
-                    if (newConfig.bottomWidget.config.apiToken) {
-                        newConfig.bottomWidget.config._hasApiToken = true;
-                        delete newConfig.bottomWidget.config.apiToken;
-                    }
-                    if (newConfig.bottomWidget.config.password) {
-                        newConfig.bottomWidget.config._hasPassword = true;
-                        delete newConfig.bottomWidget.config.password;
-                    }
-                    // Handle AdGuard Home username in dual widget
-                    if (newConfig.bottomWidget.config.username) {
-                        newConfig.bottomWidget.config._hasUsername = true;
-                        delete newConfig.bottomWidget.config.username;
-                    }
-                }
-            }
-
-            // Handle group widget items (recursively)
-            if (item.type === 'group-widget' && newConfig.items) {
-                newConfig.items = processItems(newConfig.items);
-            }
-
-            return { ...item, config: newConfig };
-        });
+/** Visits every item of the home layouts and every page, including the children of group widgets. */
+const eachItem = (config: Item, visit: (item: Item) => void): void => {
+    const visitAll = (items: unknown): void => {
+        if (!Array.isArray(items)) return;
+        for (const item of items) {
+            if (!item || typeof item !== 'object') continue;
+            visit(item);
+            if (item.type === 'group-widget') visitAll(item.config?.items);
+        }
     };
 
-    // Process desktop and mobile layouts
-    if (filteredConfig.layout) {
-        if (filteredConfig.layout.desktop) {
-            filteredConfig.layout.desktop = processItems(filteredConfig.layout.desktop);
-        }
-        if (filteredConfig.layout.mobile) {
-            filteredConfig.layout.mobile = processItems(filteredConfig.layout.mobile);
-        }
+    visitAll(config?.layout?.desktop);
+    visitAll(config?.layout?.mobile);
+    for (const page of Array.isArray(config?.pages) ? config.pages : []) {
+        visitAll(page?.layout?.desktop);
+        visitAll(page?.layout?.mobile);
     }
+};
 
-    // Process pages
-    if (filteredConfig.pages) {
-        filteredConfig.pages = filteredConfig.pages.map((page: any) => ({
-            ...page,
-            layout: {
-                desktop: page.layout.desktop ? processItems(page.layout.desktop) : [],
-                mobile: page.layout.mobile ? processItems(page.layout.mobile) : []
+const clone = (value: Item): Item => JSON.parse(JSON.stringify(value));
+
+/**
+ * The config as the browser may see it: every credential replaced by a flag that
+ * says one is stored, so forms can show "set" without ever receiving the value.
+ */
+const filterSensitiveData = (config: Item): Item => {
+    const filtered = clone(config);
+
+    eachItem(filtered, item => {
+        for (const { config: itemConfig, type, isHalfOfDualWidget } of configsOf(item)) {
+            for (const field of secretFieldsOf(type, isHalfOfDualWidget)) {
+                if (itemConfig[field]) {
+                    itemConfig[flagOf(field)] = true;
+                    delete itemConfig[field];
+                }
             }
+        }
+    });
+
+    if (Array.isArray(filtered.pages)) {
+        filtered.pages = filtered.pages.map((page: Item) => ({
+            ...page,
+            layout: { desktop: page?.layout?.desktop ?? [], mobile: page?.layout?.mobile ?? [] }
         }));
     }
 
-    return filteredConfig;
+    return filtered;
 };
 
-// Helper function to restore sensitive data when saving config
-const restoreSensitiveData = (newConfig: any, existingConfig: any): any => {
-    const restoredConfig = JSON.parse(JSON.stringify(newConfig)); // Deep clone
+/**
+ * Puts stored credentials back into a config the browser sends. A flag in place
+ * of a value keeps the stored one; a value replaces it; neither drops it. An item
+ * marked `_duplicatedFrom` copies the credentials of its source. Items are found
+ * by id wherever they were, so one that moved between pages or groups keeps its secrets.
+ */
+const restoreSensitiveData = (newConfig: Item, existingConfig: Item): Item => {
+    const restored = clone(newConfig);
 
-    // Create a global map of all existing items by ID for cross-location lookups
-    const createGlobalItemMap = (config: any): Map<string, any> => {
-        const globalMap = new Map();
+    const existingItems = new Map<string, Item>();
+    eachItem(existingConfig, item => {
+        // The first copy wins: an item shown on desktop and mobile is the same item
+        if (item.id && !existingItems.has(item.id)) existingItems.set(item.id, item);
+    });
 
-        // Helper to add items from a layout to the global map
-        const addItemsToMap = (items: any[]) => {
-            items.forEach(item => {
-                globalMap.set(item.id, item);
+    const matchingConfigs = (item: Item | undefined, index: number): Item | undefined => (
+        item ? configsOf(item)[index]?.config : undefined
+    );
 
-                // Also add group widget items
-                if (item.type === 'group-widget' && item.config?.items) {
-                    item.config.items.forEach((groupItem: any) => {
-                        globalMap.set(groupItem.id, groupItem);
-                    });
-                }
-            });
-        };
+    eachItem(restored, item => {
+        const existing = existingItems.get(item.id);
+        const source = item.config?._duplicatedFrom ? existingItems.get(item.config._duplicatedFrom) : undefined;
 
-        // Add items from main dashboard
-        if (config.layout?.desktop) addItemsToMap(config.layout.desktop);
-        if (config.layout?.mobile) addItemsToMap(config.layout.mobile);
+        configsOf(item).forEach(({ config: itemConfig, type, isHalfOfDualWidget }, index) => {
+            const existingValues = matchingConfigs(existing, index);
+            const sourceValues = matchingConfigs(source, index);
 
-        // Add items from all pages
-        if (config.pages) {
-            config.pages.forEach((page: any) => {
-                if (page.layout?.desktop) addItemsToMap(page.layout.desktop);
-                if (page.layout?.mobile) addItemsToMap(page.layout.mobile);
-            });
-        }
-
-        return globalMap;
-    };
-
-    const globalExistingItemsMap = createGlobalItemMap(existingConfig);
-
-    const restoreItemSensitiveData = (newItem: any, existingItem: any): any => {
-        if (!newItem.config) return newItem;
-
-        const restoredItemConfig = { ...newItem.config };
-
-        // Handle duplication: if this is a duplicated item, copy credentials from source item
-        if (newItem.config._duplicatedFrom) {
-            const sourceItem = globalExistingItemsMap.get(newItem.config._duplicatedFrom);
-            if (sourceItem?.config) {
-                console.log(`Copying credentials from source item ${newItem.config._duplicatedFrom} to duplicated item ${newItem.id}`);
-
-                // Copy encrypted credentials directly from source item
-                if (sourceItem.config.apiToken) {
-                    restoredItemConfig.apiToken = sourceItem.config.apiToken;
-                }
-                if (sourceItem.config.password) {
-                    restoredItemConfig.password = sourceItem.config.password;
-                }
-                if (sourceItem.config.username) {
-                    restoredItemConfig.username = sourceItem.config.username;
-                }
-                if (sourceItem.config.apiKey) {
-                    restoredItemConfig.apiKey = sourceItem.config.apiKey;
-                }
-
-                // Handle dual widget credential copying
-                if (newItem.type === 'dual-widget' && sourceItem.config.topWidget?.config) {
-                    if (restoredItemConfig.topWidget?.config) {
-                        if (sourceItem.config.topWidget.config.apiToken) {
-                            restoredItemConfig.topWidget.config.apiToken = sourceItem.config.topWidget.config.apiToken;
-                        }
-                        if (sourceItem.config.topWidget.config.password) {
-                            restoredItemConfig.topWidget.config.password = sourceItem.config.topWidget.config.password;
-                        }
-                        if (sourceItem.config.topWidget.config.username) {
-                            restoredItemConfig.topWidget.config.username = sourceItem.config.topWidget.config.username;
-                        }
-                        if (sourceItem.config.topWidget.config.apiKey) {
-                            restoredItemConfig.topWidget.config.apiKey = sourceItem.config.topWidget.config.apiKey;
-                        }
-                    }
-                }
-                if (newItem.type === 'dual-widget' && sourceItem.config.bottomWidget?.config) {
-                    if (restoredItemConfig.bottomWidget?.config) {
-                        if (sourceItem.config.bottomWidget.config.apiToken) {
-                            restoredItemConfig.bottomWidget.config.apiToken = sourceItem.config.bottomWidget.config.apiToken;
-                        }
-                        if (sourceItem.config.bottomWidget.config.password) {
-                            restoredItemConfig.bottomWidget.config.password = sourceItem.config.bottomWidget.config.password;
-                        }
-                        if (sourceItem.config.bottomWidget.config.username) {
-                            restoredItemConfig.bottomWidget.config.username = sourceItem.config.bottomWidget.config.username;
-                        }
-                        if (sourceItem.config.bottomWidget.config.apiKey) {
-                            restoredItemConfig.bottomWidget.config.apiKey = sourceItem.config.bottomWidget.config.apiKey;
-                        }
-                    }
-                }
-
-                // Clean up and return early since we've copied everything we need
-                delete restoredItemConfig._hasApiToken;
-                delete restoredItemConfig._hasApiKey;
-                delete restoredItemConfig._hasPassword;
-                delete restoredItemConfig._hasUsername;
-                delete restoredItemConfig._duplicatedFrom;
-                if (restoredItemConfig.topWidget?.config) {
-                    delete restoredItemConfig.topWidget.config._hasApiToken;
-                    delete restoredItemConfig.topWidget.config._hasApiKey;
-                    delete restoredItemConfig.topWidget.config._hasPassword;
-                    delete restoredItemConfig.topWidget.config._hasUsername;
-                }
-                if (restoredItemConfig.bottomWidget?.config) {
-                    delete restoredItemConfig.bottomWidget.config._hasApiToken;
-                    delete restoredItemConfig.bottomWidget.config._hasApiKey;
-                    delete restoredItemConfig.bottomWidget.config._hasPassword;
-                    delete restoredItemConfig.bottomWidget.config._hasUsername;
-                }
-
-                return { ...newItem, config: restoredItemConfig };
-            }
-        }
-
-        if (!existingItem?.config) {
-            // Even if no existing item, we still need to clean up security flags
-            // Clean up security flags and duplication metadata (they're only for communication, not storage)
-            delete restoredItemConfig._hasApiToken;
-            delete restoredItemConfig._hasApiKey;
-            delete restoredItemConfig._hasPassword;
-            delete restoredItemConfig._hasUsername;
-            delete restoredItemConfig._duplicatedFrom;
-            if (restoredItemConfig.topWidget?.config) {
-                delete restoredItemConfig.topWidget.config._hasApiToken;
-                delete restoredItemConfig.topWidget.config._hasApiKey;
-                delete restoredItemConfig.topWidget.config._hasPassword;
-                delete restoredItemConfig.topWidget.config._hasUsername;
-            }
-            if (restoredItemConfig.bottomWidget?.config) {
-                delete restoredItemConfig.bottomWidget.config._hasApiToken;
-                delete restoredItemConfig.bottomWidget.config._hasApiKey;
-                delete restoredItemConfig.bottomWidget.config._hasPassword;
-                delete restoredItemConfig.bottomWidget.config._hasUsername;
-            }
-
-            return { ...newItem, config: restoredItemConfig };
-        }
-
-        // Handle group widget items (recursively)
-        if (newItem.type === 'group-widget' && restoredItemConfig.items && existingItem.config.items) {
-            restoredItemConfig.items = restoreItemsArray(restoredItemConfig.items, existingItem.config.items);
-        }
-
-        // Restore Pi-hole sensitive data if flags indicate existing data should be preserved
-        if (newItem.config._hasApiToken && !newItem.config.apiToken && existingItem.config.apiToken) {
-            restoredItemConfig.apiToken = existingItem.config.apiToken;
-        }
-        if (newItem.config._hasPassword && !newItem.config.password && existingItem.config.password) {
-            restoredItemConfig.password = existingItem.config.password;
-        }
-
-        // Handle AdGuard Home sensitive data
-        if (newItem.type === 'adguard-widget') {
-            if (newItem.config._hasUsername && !newItem.config.username && existingItem.config.username) {
-                restoredItemConfig.username = existingItem.config.username;
-            }
-            if (newItem.config._hasPassword && !newItem.config.password && existingItem.config.password) {
-                restoredItemConfig.password = existingItem.config.password;
-            }
-        }
-
-        // Handle download client (torrent/NZB) sensitive data
-        if (newItem.type === 'download-client' || newItem.type === 'torrent-client') {
-            if (newItem.config._hasPassword && !newItem.config.password && existingItem.config.password) {
-                restoredItemConfig.password = existingItem.config.password;
-            }
-        }
-
-        // Handle media server widget sensitive data
-        if (newItem.type === 'media-server-widget') {
-            if (newItem.config._hasApiKey && !newItem.config.apiKey && existingItem.config.apiKey) {
-                restoredItemConfig.apiKey = existingItem.config.apiKey;
-            }
-        }
-
-        // Handle Sonarr widget sensitive data
-        if (newItem.type === 'sonarr-widget') {
-            if (newItem.config._hasApiKey && !newItem.config.apiKey && existingItem.config.apiKey) {
-                restoredItemConfig.apiKey = existingItem.config.apiKey;
-            }
-        }
-
-        // Handle Radarr widget sensitive data
-        if (newItem.type === 'radarr-widget') {
-            if (newItem.config._hasApiKey && !newItem.config.apiKey && existingItem.config.apiKey) {
-                restoredItemConfig.apiKey = existingItem.config.apiKey;
-            }
-        }
-
-        // Handle Media Request Manager widget sensitive data
-        if (newItem.type === 'media-request-manager-widget') {
-            if (newItem.config._hasApiKey && !newItem.config.apiKey && existingItem.config.apiKey) {
-                restoredItemConfig.apiKey = existingItem.config.apiKey;
-            }
-        }
-
-        // Handle dual widget sensitive data
-        if (newItem.type === 'dual-widget') {
-            if (restoredItemConfig.topWidget?.config && existingItem.config.topWidget?.config) {
-                if (restoredItemConfig.topWidget.config._hasApiToken && !restoredItemConfig.topWidget.config.apiToken && existingItem.config.topWidget.config.apiToken) {
-                    restoredItemConfig.topWidget.config.apiToken = existingItem.config.topWidget.config.apiToken;
-                }
-                if (restoredItemConfig.topWidget.config._hasPassword && !restoredItemConfig.topWidget.config.password && existingItem.config.topWidget.config.password) {
-                    restoredItemConfig.topWidget.config.password = existingItem.config.topWidget.config.password;
-                }
-                // Handle AdGuard Home username restoration in dual widget
-                if (restoredItemConfig.topWidget.config._hasUsername && !restoredItemConfig.topWidget.config.username && existingItem.config.topWidget.config.username) {
-                    restoredItemConfig.topWidget.config.username = existingItem.config.topWidget.config.username;
+            for (const field of secretFieldsOf(type, isHalfOfDualWidget)) {
+                if (sourceValues?.[field]) {
+                    itemConfig[field] = sourceValues[field];
+                } else if (itemConfig[flagOf(field)] && !itemConfig[field] && existingValues?.[field]) {
+                    itemConfig[field] = existingValues[field];
                 }
             }
-            if (restoredItemConfig.bottomWidget?.config && existingItem.config.bottomWidget?.config) {
-                if (restoredItemConfig.bottomWidget.config._hasApiToken && !restoredItemConfig.bottomWidget.config.apiToken && existingItem.config.bottomWidget.config.apiToken) {
-                    restoredItemConfig.bottomWidget.config.apiToken = existingItem.config.bottomWidget.config.apiToken;
-                }
-                if (restoredItemConfig.bottomWidget.config._hasPassword && !restoredItemConfig.bottomWidget.config.password && existingItem.config.bottomWidget.config.password) {
-                    restoredItemConfig.bottomWidget.config.password = existingItem.config.bottomWidget.config.password;
-                }
-                // Handle AdGuard Home username restoration in dual widget
-                if (restoredItemConfig.bottomWidget.config._hasUsername && !restoredItemConfig.bottomWidget.config.username && existingItem.config.bottomWidget.config.username) {
-                    restoredItemConfig.bottomWidget.config.username = existingItem.config.bottomWidget.config.username;
-                }
+
+            // Flags and the duplication marker are for the wire only
+            for (const key of Object.keys(itemConfig)) {
+                if (isFlag(key)) delete itemConfig[key];
             }
-        }
-
-        // Clean up security flags and duplication metadata (they're only for communication, not storage)
-        delete restoredItemConfig._hasApiToken;
-        delete restoredItemConfig._hasApiKey;
-        delete restoredItemConfig._hasPassword;
-        delete restoredItemConfig._hasUsername;
-        delete restoredItemConfig._duplicatedFrom;
-        if (restoredItemConfig.topWidget?.config) {
-            delete restoredItemConfig.topWidget.config._hasApiToken;
-            delete restoredItemConfig.topWidget.config._hasApiKey;
-            delete restoredItemConfig.topWidget.config._hasPassword;
-            delete restoredItemConfig.topWidget.config._hasUsername;
-        }
-        if (restoredItemConfig.bottomWidget?.config) {
-            delete restoredItemConfig.bottomWidget.config._hasApiToken;
-            delete restoredItemConfig.bottomWidget.config._hasApiKey;
-            delete restoredItemConfig.bottomWidget.config._hasPassword;
-            delete restoredItemConfig.bottomWidget.config._hasUsername;
-        }
-
-        return { ...newItem, config: restoredItemConfig };
-    };
-
-    const restoreItemsArray = (newItems: any[], existingItems: any[]): any[] => {
-        const existingItemsMap = new Map(existingItems.map(item => [item.id, item]));
-
-        return newItems.map(newItem => {
-            // First try to find the item in the local existing items (for normal updates)
-            let existingItem = existingItemsMap.get(newItem.id);
-
-            // If not found locally, try the global map (for item moves)
-            if (!existingItem) {
-                existingItem = globalExistingItemsMap.get(newItem.id);
-            }
-
-            // Always call restoreItemSensitiveData, even if no existing item found
-            // This ensures duplication logic and cleanup always runs
-            return restoreItemSensitiveData(newItem, existingItem);
+            delete itemConfig._duplicatedFrom;
         });
-    };
+    });
 
-    // Restore desktop and mobile layouts
-    if (restoredConfig.layout && existingConfig.layout) {
-        if (restoredConfig.layout.desktop && existingConfig.layout.desktop) {
-            restoredConfig.layout.desktop = restoreItemsArray(restoredConfig.layout.desktop, existingConfig.layout.desktop);
-        }
-        if (restoredConfig.layout.mobile && existingConfig.layout.mobile) {
-            restoredConfig.layout.mobile = restoreItemsArray(restoredConfig.layout.mobile, existingConfig.layout.mobile);
-        }
-    }
-
-    // Restore pages
-    if (restoredConfig.pages && existingConfig.pages) {
-        const existingPagesMap = new Map(existingConfig.pages.map((page: any) => [page.id, page]));
-
-        restoredConfig.pages = restoredConfig.pages.map((newPage: any) => {
-            const existingPage = existingPagesMap.get(newPage.id) as any;
-            if (!existingPage || !existingPage.layout) return newPage;
-            if (!newPage.layout) return newPage;
-
-            const newPageWithLayout = newPage as any;
-            const existingPageWithLayout = existingPage as any;
-
-            return {
-                ...newPage,
-                layout: {
-                    desktop: (newPageWithLayout.layout.desktop && existingPageWithLayout.layout.desktop) ?
-                        restoreItemsArray(newPageWithLayout.layout.desktop, existingPageWithLayout.layout.desktop) :
-                        (newPageWithLayout.layout.desktop || []),
-                    mobile: (newPageWithLayout.layout.mobile && existingPageWithLayout.layout.mobile) ?
-                        restoreItemsArray(newPageWithLayout.layout.mobile, existingPageWithLayout.layout.mobile) :
-                        (newPageWithLayout.layout.mobile || [])
-                }
-            };
-        });
-    }
-
-    return restoredConfig;
+    return restored;
 };
+
+/** Encrypts any credential that arrived in plain text, so the file never holds one. */
+const encryptSensitiveData = (config: Item): Item => {
+    eachItem(config, item => {
+        for (const { config: itemConfig, type, isHalfOfDualWidget } of configsOf(item)) {
+            for (const field of secretFieldsOf(type, isHalfOfDualWidget)) {
+                const value = itemConfig[field];
+                if (typeof value === 'string' && value && !isEncrypted(value)) {
+                    itemConfig[field] = encrypt(value);
+                }
+            }
+        }
+    });
+    return config;
+};
+
+const isPlainObject = (value: unknown): value is Record<string, unknown> => (
+    typeof value === 'object' && value !== null && !Array.isArray(value)
+);
+
+/**
+ * Merges a partial config into the stored one and saves it. Secrets the browser
+ * never received (it only gets `_has...` flags) are kept from the stored config.
+ */
+const saveConfigUpdates = (buildUpdates: (existingConfig: Config) => any): Config => (
+    updateConfig((existingConfig: Config) => {
+        // Restore sensitive data from existing config before saving
+        const configToSave = encryptSensitiveData(restoreSensitiveData(buildUpdates(existingConfig), existingConfig));
+
+        // Apply updates to existing config
+        Object.keys(configToSave).forEach((key) => {
+            if (configToSave[key] !== undefined) {
+                (existingConfig as any)[key] = configToSave[key];
+            }
+        });
+
+        // Ensure the config has all required properties
+        if (!existingConfig.layout) {
+            existingConfig.layout = { desktop: [], mobile: [] };
+        }
+        if (!existingConfig.pages) {
+            existingConfig.pages = [];
+        }
+    })
+);
+
+class PageNotFoundError extends Error {}
 
 // GET - Return the config file with sensitive data filtered and admin-only items filtered based on user role
 configRoute.get('/', async (req: Request, res: Response): Promise<void> => {
     try {
-        const config = loadConfig();
+        const config = getConfig();
 
         // Filter sensitive data (passwords/tokens) and add security flags
         let filteredConfig = filterSensitiveData(config);
@@ -576,7 +260,7 @@ configRoute.get('/', async (req: Request, res: Response): Promise<void> => {
 // GET - Export the config file as a download (admin only)
 configRoute.get('/export', [authenticateToken, requireAdmin], async (_req: Request, res: Response): Promise<void> => {
     try {
-        const config = loadConfig();
+        const config = getConfig();
         const fileName = `lab-dash-backup-${new Date().toISOString().slice(0, 10)}.json`;
 
         // Set headers to force download
@@ -596,32 +280,10 @@ configRoute.get('/export', [authenticateToken, requireAdmin], async (_req: Reque
 // POST - Save the incoming JSON layout to disk (admin only)
 configRoute.post('/', [authenticateToken, requireAdmin], async (req: Request, res: Response): Promise<void> => {
     try {
-        const updates = req.body;
-        const existingConfig: Config = loadConfig();
-
-        // Restore sensitive data from existing config before saving
-        const configToSave = restoreSensitiveData(updates, existingConfig);
-
-        // Apply updates to existing config
-        Object.keys(configToSave).forEach((key) => {
-            if (configToSave[key] !== undefined) {
-                (existingConfig as any)[key] = configToSave[key];
-            }
-        });
-
-        // Ensure the config has all required properties
-        if (!existingConfig.layout) {
-            existingConfig.layout = { desktop: [], mobile: [] };
-        }
-        if (!existingConfig.pages) {
-            existingConfig.pages = [];
-        }
-
-        // Save the updated config to file (with sensitive data preserved)
-        await fs.writeFile(CONFIG_FILE, JSON.stringify(existingConfig, null, 2), 'utf-8');
+        const savedConfig = saveConfigUpdates(() => req.body);
 
         // Return filtered config to frontend (without sensitive data)
-        const filteredConfig = filterSensitiveData(existingConfig);
+        const filteredConfig = filterSensitiveData(savedConfig);
 
         res.status(StatusCodes.OK).json({
             message: 'Config saved successfully',
@@ -629,6 +291,48 @@ configRoute.post('/', [authenticateToken, requireAdmin], async (req: Request, re
         });
     } catch (error) {
         console.error('Error saving config:', error);
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            message: 'Error saving config file',
+            error: (error as Error).message
+        });
+    }
+});
+
+// PUT - Save one layout of one page (admin only). Used when items are added, moved or
+// edited, so a save carries that layout instead of every page of the dashboard.
+configRoute.put('/layout', [authenticateToken, requireAdmin], (req: Request, res: Response): void => {
+    const { pageId, viewport, items } = req.body ?? {};
+
+    const validPage = pageId === null || pageId === undefined || typeof pageId === 'string';
+    if (!validPage || (viewport !== 'desktop' && viewport !== 'mobile') || !Array.isArray(items)) {
+        res.status(StatusCodes.BAD_REQUEST).json({ message: 'pageId, viewport and items are required' });
+        return;
+    }
+
+    try {
+        saveConfigUpdates(existingConfig => {
+            if (!pageId) {
+                return { layout: { ...existingConfig.layout, [viewport]: items } };
+            }
+
+            const pages = existingConfig.pages ?? [];
+            if (!pages.some(page => page.id === pageId)) throw new PageNotFoundError();
+
+            return {
+                pages: pages.map(page => (
+                    page.id === pageId ? { ...page, layout: { ...page.layout, [viewport]: items } } : page
+                ))
+            };
+        });
+
+        res.status(StatusCodes.OK).json({ message: 'Layout saved successfully' });
+    } catch (error) {
+        if (error instanceof PageNotFoundError) {
+            res.status(StatusCodes.NOT_FOUND).json({ message: 'Page not found' });
+            return;
+        }
+
+        console.error('Error saving layout:', error);
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
             message: 'Error saving config file',
             error: (error as Error).message
@@ -644,24 +348,30 @@ configRoute.post('/import', [authenticateToken, requireAdmin], async (req: Reque
 
         // console.log('Importing config:', importedConfig);
 
-        // Validate the imported config structure
-        if (!importedConfig || typeof importedConfig !== 'object') {
+        // Only an object with something in it, and a layout and pages of the right shape, is a dashboard
+        const shaped = isPlainObject(importedConfig)
+            && Object.keys(importedConfig).length > 0
+            && (importedConfig.layout === undefined || isPlainObject(importedConfig.layout))
+            && (importedConfig.pages === undefined || Array.isArray(importedConfig.pages));
+        if (!shaped) {
             res.status(StatusCodes.BAD_REQUEST).json({
                 message: 'Invalid configuration format'
             });
             return;
         }
 
-        // Ensure layout property exists to avoid errors
-        if (!importedConfig.layout) {
-            importedConfig.layout = { desktop: [], mobile: [] };
-        }
+        const layout = (importedConfig.layout ?? {}) as Record<string, unknown>;
+        importedConfig.layout = {
+            ...layout,
+            desktop: Array.isArray(layout.desktop) ? layout.desktop : [],
+            mobile: Array.isArray(layout.mobile) ? layout.mobile : []
+        };
 
-        // Write the imported config directly to the config file
-        await fs.writeFile(CONFIG_FILE, JSON.stringify(importedConfig, null, 2), 'utf-8');
+        // Replace the whole config with the imported one
+        const savedConfig = updateConfig(() => encryptSensitiveData(importedConfig) as Config);
 
         // Return filtered config to frontend
-        const filteredConfig = filterSensitiveData(importedConfig);
+        const filteredConfig = filterSensitiveData(savedConfig);
         res.status(StatusCodes.OK).json({
             message: 'Configuration imported successfully',
             updatedConfig: filteredConfig
@@ -673,6 +383,19 @@ configRoute.post('/import', [authenticateToken, requireAdmin], async (req: Reque
             error: (error as Error).message
         });
     }
+});
+
+// POST - Encrypt a secret (password, token, API key) before it is stored in the config (admin only)
+configRoute.post('/encrypt', [authenticateToken, requireAdmin], (req: Request, res: Response): void => {
+    const { value } = req.body ?? {};
+
+    if (typeof value !== 'string' || !value) {
+        res.status(StatusCodes.BAD_REQUEST).json({ message: 'A value to encrypt is required' });
+        return;
+    }
+
+    // Don't re-encrypt if already encrypted
+    res.status(StatusCodes.OK).json({ encrypted: isEncrypted(value) ? value : encrypt(value) });
 });
 
 // GET - Get backup status (admin only)

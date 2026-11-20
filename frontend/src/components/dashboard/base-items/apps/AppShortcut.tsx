@@ -15,10 +15,9 @@ type Props = {
     editMode?: boolean;
     config?: any;
     isPreview?: boolean;
-    size?: 'small' | 'medium' | 'large';
 }
 
-export const AppShortcut = ({ url, name, iconName, showLabel, editMode, config, isPreview, size = 'medium' }: Props) => {
+export const AppShortcut = ({ url, name, iconName, showLabel, editMode, config, isPreview }: Props) => {
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const isWolShortcut = config?.isWol === true;
 
@@ -34,13 +33,8 @@ export const AppShortcut = ({ url, name, iconName, showLabel, editMode, config, 
         return isMobile ? '0.8rem' : '0.9rem';
     }, [name, isMobile]);
 
-    // Calculate text width based on size prop to prevent overlap with status icons
-    const textWidth = useMemo(() => {
-        if (size === 'small') {
-            return '70%'; // Narrower for 4x2 layout to prevent overlap
-        }
-        return '80%'; // Default width for other layouts
-    }, [size]);
+    // The icon grows and shrinks with the cell it is in (the widget container is the query container)
+    const iconSize = `clamp(24px, min(60cqw, ${showLabel ? 48 : 64}cqh), 96px)`;
 
     const handleWakeOnLan = useCallback(async (e: React.MouseEvent) => {
         e.preventDefault();
@@ -81,19 +75,14 @@ export const AppShortcut = ({ url, name, iconName, showLabel, editMode, config, 
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                // Fixed height for icon container based on device
-                height: { xs: '60px', sm: '70px', md: '40px', lg: '50px', xl: '60px' },
                 width: '100%',
-                padding: '10px',
-                marginTop: showLabel ? '5px' : '0',
-                position: 'relative',
-                mt: isMobile ? -1.5 : 0
-
+                flexShrink: 0,
+                position: 'relative'
             }}>
                 <Box
                     sx={{
-                        width: { xs: '45px', sm: '50px', md: '45px', lg: '50px', xl: '55px' },
-                        height: { xs: '45px', sm: '50px', md: '45px', lg: '50px', xl: '55px' },
+                        width: iconSize,
+                        height: iconSize,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -134,9 +123,9 @@ export const AppShortcut = ({ url, name, iconName, showLabel, editMode, config, 
                             WebkitLineClamp: 1,
                             WebkitBoxOrient: 'vertical',
                             wordBreak: 'break-word',
-                            width: textWidth,
+                            width: '80%',
                             lineHeight: 1.2,
-                            mt: 1
+                            mt: 0.75
                         }}
                     >
                         {name}

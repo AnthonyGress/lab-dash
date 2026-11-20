@@ -1,5 +1,5 @@
 import { useMediaQuery } from '@mui/material';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import shortid from 'shortid';
 
@@ -8,8 +8,10 @@ import { DashApi } from '../api/dash-api';
 import { PopupManager } from '../components/modals/PopupManager';
 import { ToastManager } from '../components/toast/ToastManager';
 import { initialItems } from '../constants/constants';
+import { realtime } from '../realtime/socket';
 import { theme } from '../theme/theme';
 import { Config, DashboardItem, DashboardLayout, NewItem, Page } from '../types';
+import { DESKTOP_GRID_BREAKPOINTS, MOBILE_GRID_BREAKPOINTS, placeDashboardGridItem } from '../utils/dashboard-grid';
 import { checkForUpdates } from '../utils/updateChecker';
 import { getAppVersion } from '../utils/version';
 
@@ -46,32 +48,6 @@ export const AppContextProvider = ({ children }: Props) => {
 
     // Recently updated states
     const [recentlyUpdated, setRecentlyUpdated] = useState<boolean>(false);
-
-    // Performance optimization states
-    const [iconCache, setIconCache] = useState<{ [key: string]: string }>({});
-    const [widgetDataCache, setWidgetDataCache] = useState<{ [key: string]: any }>({});
-    const [isInitialLoading, setIsInitialLoading] = useState<boolean>(false);
-
-    // Bulk data loading function
-    const loadBulkData = async (items: DashboardItem[]) => {
-        if (items.length === 0) return;
-
-        setIsInitialLoading(true);
-        try {
-            // Load icons and widget data in parallel
-            const [icons, widgetData] = await Promise.all([
-                DashApi.getAllActiveIcons(items),
-                DashApi.getBulkWidgetData(items)
-            ]);
-
-            setIconCache(prev => ({ ...prev, ...icons }));
-            setWidgetDataCache(prev => ({ ...prev, ...widgetData }));
-        } catch (error) {
-            console.error('Failed to load bulk data:', error);
-        } finally {
-            setIsInitialLoading(false);
-        }
-    };
 
     // Initialize authentication state and check if first time setup
     useEffect(() => {
@@ -134,11 +110,6 @@ export const AppContextProvider = ({ children }: Props) => {
                 // Set the page ID and layout
                 setCurrentPageId(targetPageId);
                 setDashboardLayout(selectedLayout || []);
-
-                // Load bulk data for performance optimization
-                if (selectedLayout && selectedLayout.length > 0) {
-                    await loadBulkData(selectedLayout);
-                }
             }
         };
 
@@ -165,10 +136,6 @@ export const AppContextProvider = ({ children }: Props) => {
                     setCurrentPageId(null);
                     const selectedLayout = isMobile ? config.layout.mobile : config.layout.desktop;
                     setDashboardLayout(selectedLayout || []);
-                    // Load bulk data for home page
-                    if (selectedLayout && selectedLayout.length > 0) {
-                        loadBulkData(selectedLayout);
-                    }
                 }
             } else if (pathname.startsWith('/') && !pathname.includes('/settings') && !pathname.includes('/login')) {
                 // Page route
@@ -183,10 +150,6 @@ export const AppContextProvider = ({ children }: Props) => {
                     setCurrentPageId(page.id);
                     const selectedLayout = isMobile ? page.layout.mobile : page.layout.desktop;
                     setDashboardLayout(selectedLayout || []);
-                    // Load bulk data for page
-                    if (selectedLayout && selectedLayout.length > 0) {
-                        loadBulkData(selectedLayout);
-                    }
                 } else if (!page) {
                     // Page doesn't exist, redirect to home
                     navigate('/', { replace: true });
@@ -196,6 +159,47 @@ export const AppContextProvider = ({ children }: Props) => {
 
         handleURLChange();
     }, [location.pathname, config, pages, currentPageId, isFirstTimeSetup, isMobile, navigate, isMoveInProgress]);
+
+    // Live connection: follow changes made on other tabs or devices, and keep the session fresh
+    const liveHandlers = useRef({
+        editMode,
+        getLayout: async (): Promise<unknown> => undefined,
+        refreshSession: async (): Promise<unknown> => undefined
+    });
+    const configChangedWhileEditing = useRef(false);
+
+    useEffect(() => {
+        const refreshSession = () => {
+            // The socket was opened with the old token; reopen it with the refreshed one
+            void liveHandlers.current.refreshSession().finally(realtime.reconnect);
+        };
+
+        const stopListening = [
+            realtime.on('config.changed', () => {
+                // Reloading mid-edit would discard what is being arranged
+                if (liveHandlers.current.editMode) configChangedWhileEditing.current = true;
+                else void liveHandlers.current.getLayout();
+            }),
+            realtime.on('session.expiring', refreshSession),
+            realtime.on('session.ended', refreshSession)
+        ];
+
+        return () => stopListening.forEach(stop => stop());
+    }, []);
+
+    useEffect(() => {
+        if (editMode || !configChangedWhileEditing.current) return;
+        configChangedWhileEditing.current = false;
+        void liveHandlers.current.getLayout();
+    }, [editMode]);
+
+    // Logging in or out changes what the server may send over the socket
+    const wasLoggedIn = useRef(isLoggedIn);
+    useEffect(() => {
+        if (wasLoggedIn.current === isLoggedIn) return;
+        wasLoggedIn.current = isLoggedIn;
+        realtime.reconnect();
+    }, [isLoggedIn]);
 
     // Handle dashboard state based on login status
     useEffect(() => {
@@ -450,6 +454,8 @@ export const AppContextProvider = ({ children }: Props) => {
         return [];
     };
 
+    liveHandlers.current = { editMode, getLayout, refreshSession: refreshTokenAndValidate };
+
     const saveLayout = async (items: DashboardItem[]) => {
         // Use existing config state instead of fetching again
         if (!config) {
@@ -471,7 +477,8 @@ export const AppContextProvider = ({ children }: Props) => {
                 return page;
             }) || [];
 
-            await DashApi.saveConfig({ pages: updatedPages });
+            // Only this page's layout travels, not every page of the dashboard
+            await DashApi.saveLayout(currentPageId, isMobile ? 'mobile' : 'desktop', items);
 
             // Update the config state with the new pages data
             setConfig(prevConfig => ({
@@ -496,7 +503,11 @@ export const AppContextProvider = ({ children }: Props) => {
             updatedLayout = { layout: { desktop: items, mobile: items } };
         }
 
-        await DashApi.saveConfig(updatedLayout);
+        if (config.layout.mobile.length > 3) {
+            await DashApi.saveLayout(null, isMobile ? 'mobile' : 'desktop', items);
+        } else {
+            await DashApi.saveConfig(updatedLayout);
+        }
 
         // Update the config state with the new layout data
         setConfig(prevConfig => ({
@@ -1016,8 +1027,8 @@ export const AppContextProvider = ({ children }: Props) => {
                             return {
                                 ...page,
                                 layout: {
-                                    desktop: [...page.layout.desktop, itemCopy],
-                                    mobile: [...page.layout.mobile, itemCopy]
+                                    desktop: [...page.layout.desktop, placeDashboardGridItem(page.layout.desktop, itemCopy, DESKTOP_GRID_BREAKPOINTS)],
+                                    mobile: [...page.layout.mobile, placeDashboardGridItem(page.layout.mobile, itemCopy, MOBILE_GRID_BREAKPOINTS)]
                                 }
                             };
                         }
@@ -1051,8 +1062,8 @@ export const AppContextProvider = ({ children }: Props) => {
 
                     updatePayload = {
                         layout: {
-                            desktop: [...serverConfig.layout.desktop, itemCopy],
-                            mobile: [...serverConfig.layout.mobile, itemCopy]
+                            desktop: [...serverConfig.layout.desktop, placeDashboardGridItem(serverConfig.layout.desktop, itemCopy, DESKTOP_GRID_BREAKPOINTS)],
+                            mobile: [...serverConfig.layout.mobile, placeDashboardGridItem(serverConfig.layout.mobile, itemCopy, MOBILE_GRID_BREAKPOINTS)]
                         },
                         pages: updatedPages
                     };
@@ -1073,8 +1084,8 @@ export const AppContextProvider = ({ children }: Props) => {
                             return {
                                 ...page,
                                 layout: {
-                                    desktop: [...page.layout.desktop, itemCopy],
-                                    mobile: [...page.layout.mobile, itemCopy]
+                                    desktop: [...page.layout.desktop, placeDashboardGridItem(page.layout.desktop, itemCopy, DESKTOP_GRID_BREAKPOINTS)],
+                                    mobile: [...page.layout.mobile, placeDashboardGridItem(page.layout.mobile, itemCopy, MOBILE_GRID_BREAKPOINTS)]
                                 }
                             };
                         }
@@ -1182,10 +1193,6 @@ export const AppContextProvider = ({ children }: Props) => {
             pageNameToSlug,
             moveItemToPage,
             // Performance optimization
-            iconCache,
-            widgetDataCache,
-            loadBulkData,
-            isInitialLoading,
             // Authentication states
             isLoggedIn,
             setIsLoggedIn,

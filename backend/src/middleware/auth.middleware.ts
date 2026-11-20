@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.SECRET || '@jZCgtn^qg8So*^^6A2M'; // Same secret used in auth.route.ts
+import { verifyAccessToken } from '../services/users';
 
 // Define custom Request interface with user property
 
@@ -15,40 +14,41 @@ declare module 'express-serve-static-core' {
     }
 }
 
-export const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
+const getRequestToken = (req: Request): string | undefined => {
     // Check for token in cookies first (for login/logout/refresh routes)
-    // console.log('#### req', req);
     const tokenFromCookie = req.cookies?.access_token;
-    // console.log('#### req.token', req.cookies);
 
     // Then check Authorization header (for API routes that don't use cookies)
     const authHeader = req.headers.authorization;
     const tokenFromHeader = authHeader && authHeader.split(' ')[1];
 
     // Use cookie token if available, otherwise use header token
-    const token = tokenFromCookie || tokenFromHeader;
+    return tokenFromCookie || tokenFromHeader;
+};
 
-    if (!token) {
+/** Returns the caller's account, or undefined for guests and bad tokens. */
+export const getOptionalUser = (req: Request): Request['user'] => verifyAccessToken(getRequestToken(req));
+
+export const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
+    if (!getRequestToken(req)) {
         res.status(401).json({ message: 'Authentication required' });
         return;
     }
 
-    jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
-        if (err) {
-            res.status(401).json({ message: 'Invalid or expired token' });
-            return;
-        }
+    const user = getOptionalUser(req);
+    if (!user) {
+        res.status(401).json({ message: 'Invalid or expired token' });
+        return;
+    }
 
-        // Add user to request
-        req.user = user;
-        next();
-    });
+    // Add user to request
+    req.user = user;
+    next();
 };
 
 // Middleware to check if user is an admin
 export const requireAdmin = (req: Request, res: Response, next: NextFunction): void => {
     // authenticateToken must be called before this middleware
-    // console.log('#### req', req);
 
     if (!req.user) {
         res.status(401).json({ message: 'Authentication required' });

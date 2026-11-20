@@ -15,11 +15,19 @@ jobs:
       - name: Install Node and NPM
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install dependencies
         run: |
           npm install
+
+      - name: Test - Backend
+        run: |
+          npm run test:backend
+
+      - name: Test - Frontend
+        run: |
+          npm run test:frontend
 
       - name: Build - Backend
         run: |
@@ -34,4 +42,3 @@ jobs:
       - name: Build - Docker
         run: |
           npm run docker:build
-

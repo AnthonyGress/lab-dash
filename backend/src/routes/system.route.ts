@@ -7,9 +7,10 @@ import { promisify } from 'util';
 import wol from 'wol';
 
 import { UPLOAD_DIRECTORY } from '../constants/constants';
-import { authenticateToken, requireAdmin } from '../middleware/auth.middleware';
+import { authenticateToken, getOptionalUser, requireAdmin } from '../middleware/auth.middleware';
 import { getSystemInfo } from '../system-monitor';
 import { CustomError } from '../types/custom-error';
+import { isPublicWakeTarget } from '../utils/config-lookup';
 import { removeExistingFiles } from '../utils/utils';
 
 export const systemRoute: Router = Router();
@@ -60,9 +61,10 @@ systemRoute.get('/', async (req: Request, res: Response) => {
     }
 });
 
-systemRoute.post('/upload', upload.single('file'), (req: Request, res: Response, next: NextFunction) => {
+systemRoute.post('/upload', [authenticateToken, requireAdmin], upload.single('file'), (req: Request, res: Response, next: NextFunction) => {
     if (!req.file) {
         res.status(StatusCodes.BAD_REQUEST).json({ message: 'No file uploaded' });
+        return;
     }
 
     try {
@@ -88,7 +90,7 @@ systemRoute.post('/upload', upload.single('file'), (req: Request, res: Response,
 });
 
 // Clean up background images (removes all files at root level in uploads directory)
-systemRoute.post('/clean-background', (req: Request, res: Response) => {
+systemRoute.post('/clean-background', [authenticateToken, requireAdmin], (req: Request, res: Response) => {
     try {
         // Remove all files in the root of uploads directory
         removeExistingFiles();
@@ -149,6 +151,14 @@ systemRoute.post('/wol', (req: Request, res: Response) => {
                 return;
             }
 
+            // Guests may only wake a device that a publicly visible shortcut is configured for
+            if (getOptionalUser(req)?.role !== 'admin' && !isPublicWakeTarget(mac)) {
+                res.status(StatusCodes.UNAUTHORIZED).json({
+                    message: 'Authentication required'
+                });
+                return;
+            }
+
             // Set default options
             const options: { address?: string; port?: number } = {};
 
@@ -165,10 +175,10 @@ systemRoute.post('/wol', (req: Request, res: Response) => {
                 options.address = ip;
             }
 
-            if (port) {
-                // Validate port is a number and in valid range
-                const portNum = parseInt(port, 10);
-                if (isNaN(portNum) || portNum < 1 || portNum > 65535) {
+            if (port !== undefined && port !== null && port !== '') {
+                // A port is a whole number from 1 to 65535; 0 and '9abc' are refused rather than guessed at
+                const portNum = Number(port);
+                if (!Number.isInteger(portNum) || portNum < 1 || portNum > 65535) {
                     res.status(StatusCodes.BAD_REQUEST).json({
                         message: 'Invalid port. Port must be a number between 1 and 65535'
                     });

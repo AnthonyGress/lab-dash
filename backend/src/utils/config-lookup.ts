@@ -1,81 +1,102 @@
-import fsSync from 'fs';
-import path from 'path';
-
-import { Config, DashboardItem } from '../types';
+import { getConfig } from '../services/config-store';
+import { DashboardItem } from '../types';
 import { decrypt, isEncrypted } from './crypto';
 
-const CONFIG_FILE = path.join(__dirname, '../config/config.json');
+type ItemMatch = {
+    item: DashboardItem;
+    isPublic: boolean;
+};
 
 /**
- * Load the configuration from disk
+ * Visits every saved item, group children included, in lookup order: home desktop,
+ * home mobile, then each page. `isPublic` is false when the item, its group, or its
+ * page is admin-only, the same rule GET /api/config uses to hide items from guests.
  */
-export const loadConfig = (): Config => {
-    if (fsSync.existsSync(CONFIG_FILE)) {
-        return JSON.parse(fsSync.readFileSync(CONFIG_FILE, 'utf-8'));
+const walkItems = (visit: (item: any, isPublic: boolean) => void): void => {
+    const config = getConfig();
+
+    const walk = (items: any[] = [], parentIsPublic: boolean): void => {
+        for (const item of items) {
+            const isPublic = parentIsPublic && item.adminOnly !== true;
+            visit(item, isPublic);
+
+            if (item.type === 'group-widget') {
+                walk(item.config?.items, isPublic);
+            }
+        }
+    };
+
+    walk(config.layout?.desktop, true);
+    walk(config.layout?.mobile, true);
+    for (const page of config.pages ?? []) {
+        walk(page.layout?.desktop, !page.adminOnly);
+        walk(page.layout?.mobile, !page.adminOnly);
     }
-    return { layout: { desktop: [], mobile: [] } };
+};
+
+const findItemMatches = (itemId: string): ItemMatch[] => {
+    const matches: ItemMatch[] = [];
+
+    walkItems((item, isPublic) => {
+        // Direct match
+        if (item.id === itemId) {
+            matches.push({ item, isPublic });
+            return;
+        }
+
+        // Check if this is a dual widget and the itemId is for a position-specific widget
+        if (item.type === 'dual-widget' && itemId.startsWith(item.id + '-')) {
+            const position = itemId.endsWith('-top') ? 'top' : 'bottom';
+            const positionWidget = position === 'top' ? item.config?.topWidget : item.config?.bottomWidget;
+
+            if (positionWidget) {
+                // Use a synthetic item with the position-specific config
+                matches.push({
+                    item: {
+                        id: itemId,
+                        type: positionWidget.type,
+                        config: positionWidget.config
+                    } as DashboardItem,
+                    isPublic
+                });
+            }
+        }
+    });
+
+    return matches;
 };
 
 /**
  * Find a dashboard item by its ID across all layouts and pages
  */
 export const findItemById = (itemId: string): DashboardItem | null => {
-    const config = loadConfig();
+    return findItemMatches(itemId)[0]?.item ?? null;
+};
 
-    // Helper function to search for item in a layout array
-    const searchInLayout = (items: any[]): DashboardItem | null => {
-        for (const item of items) {
-            // Direct match
-            if (item.id === itemId) {
-                return item;
-            }
+/**
+ * True when a guest can see this item in at least one layout.
+ */
+export const isItemPublic = (itemId: string): boolean => {
+    return findItemMatches(itemId).some(match => match.isPublic);
+};
 
-            // Check if this is a dual widget and the itemId is for a position-specific widget
-            if (item.type === 'dual-widget' && itemId.startsWith(item.id + '-')) {
-                const position = itemId.endsWith('-top') ? 'top' : 'bottom';
-                const positionWidget = position === 'top' ? item.config?.topWidget : item.config?.bottomWidget;
+const normalizeMac = (mac: unknown): string => String(mac ?? '').toLowerCase().replace(/-/g, ':');
 
-                if (positionWidget) {
-                    // Return a synthetic item with the position-specific config
-                    return {
-                        id: itemId,
-                        type: positionWidget.type,
-                        config: positionWidget.config
-                    } as DashboardItem;
-                }
-            }
+/**
+ * True when a publicly visible shortcut is configured to wake this MAC address.
+ */
+export const isPublicWakeTarget = (mac: string): boolean => {
+    let allowed = false;
 
-            // Check group widgets
-            if (item.type === 'group-widget' && item.config?.items) {
-                const groupItem = searchInLayout(item.config.items);
-                if (groupItem) return groupItem;
-            }
+    walkItems((item, isPublic) => {
+        // Group children keep the address on the item itself
+        const savedMac = item.config?.macAddress ?? item.macAddress;
+        if (isPublic && savedMac && normalizeMac(savedMac) === normalizeMac(mac)) {
+            allowed = true;
         }
-        return null;
-    };
+    });
 
-    // Search in main desktop layout
-    let foundItem = searchInLayout(config.layout.desktop);
-    if (foundItem) return foundItem;
-
-    // Search in main mobile layout
-    foundItem = searchInLayout(config.layout.mobile);
-    if (foundItem) return foundItem;
-
-    // Search in pages if they exist
-    if (config.pages) {
-        for (const page of config.pages) {
-            // Search in page desktop layout
-            foundItem = searchInLayout(page.layout.desktop);
-            if (foundItem) return foundItem;
-
-            // Search in page mobile layout
-            foundItem = searchInLayout(page.layout.mobile);
-            if (foundItem) return foundItem;
-        }
-    }
-
-    return null;
+    return allowed;
 };
 
 /**

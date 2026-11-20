@@ -3,12 +3,12 @@ import fs from 'fs';
 import path from 'path';
 
 import { UPLOAD_DIRECTORY } from '../constants/constants';
-import { authenticateToken } from '../middleware/auth.middleware';
+import { authenticateToken, requireAdmin } from '../middleware/auth.middleware';
 
 export const uploadsRoute = Router();
 
 // Get list of all uploaded images
-uploadsRoute.get('/images', authenticateToken, (req: Request, res: Response) => {
+uploadsRoute.get('/images', authenticateToken, requireAdmin, (req: Request, res: Response) => {
     try {
         const images: Array<{
             name: string;
@@ -90,26 +90,27 @@ uploadsRoute.get('/images', authenticateToken, (req: Request, res: Response) => 
 });
 
 // Delete an uploaded image
-uploadsRoute.delete('/images', authenticateToken, (req: Request, res: Response) => {
+uploadsRoute.delete('/images', authenticateToken, requireAdmin, (req: Request, res: Response) => {
     try {
-        const { imagePath } = req.body;
+        const { imagePath } = req.body ?? {};
 
-        if (!imagePath) {
+        if (typeof imagePath !== 'string' || !imagePath) {
             res.status(400).json({ message: 'Image path is required' });
             return;
         }
 
-        // Validate that the path is within the uploads directory
-        const fullPath = path.join(process.cwd(), 'public', imagePath);
-        const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+        // Paths arrive as the URL the image is served from: /uploads/<file> or /uploads/app-icons/<file>
+        const uploadsDir = path.resolve(UPLOAD_DIRECTORY);
+        const fullPath = path.resolve(uploadsDir, imagePath.replace(/^\/?uploads\//, ''));
 
-        if (!fullPath.startsWith(uploadsDir)) {
+        // Resolved first, so '..' and absolute paths cannot point outside the uploads folder
+        if (!/^\/?uploads\//.test(imagePath) || !fullPath.startsWith(uploadsDir + path.sep)) {
             res.status(400).json({ message: 'Invalid image path' });
             return;
         }
 
         // Check if file exists
-        if (!fs.existsSync(fullPath)) {
+        if (!fs.existsSync(fullPath) || !fs.statSync(fullPath).isFile()) {
             res.status(404).json({ message: 'Image not found' });
             return;
         }

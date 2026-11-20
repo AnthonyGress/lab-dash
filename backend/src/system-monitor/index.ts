@@ -2,20 +2,50 @@ import si, { Systeminformation } from 'systeminformation';
 
 import { SysteminformationResponse } from '../types/system-information-response';
 
+const HOUR_MS = 60 * 60 * 1000;
+
+type CacheEntry = { expires: number; value: Promise<unknown> };
+const cache = new Map<string, CacheEntry>();
+
+/**
+ * Reuses a reading until it is older than `ttlMs`. Hardware facts (CPU model, OS,
+ * memory slots) do not change while the server runs, and collecting them spawns
+ * child processes, so reading them again on every 5 second tick was wasted work.
+ */
+const cached = <T>(key: string, ttlMs: number, load: () => Promise<T>): Promise<T> => {
+    const hit = cache.get(key);
+    if (hit && hit.expires > Date.now()) return hit.value as Promise<T>;
+
+    const entry: CacheEntry = { expires: Date.now() + ttlMs, value: load() };
+    cache.set(key, entry);
+    // A failed reading is retried on the next call instead of being remembered
+    entry.value.catch(() => {
+        if (cache.get(key) === entry) cache.delete(key);
+    });
+
+    return entry.value as Promise<T>;
+};
+
+/** Mounted filesystems and their usage. Changes slowly, so it is read at most every 30 seconds. */
+export const getDiskInfo = (): Promise<Systeminformation.FsSizeData[]> => cached('fsSize', 30_000, () => si.fsSize());
+
+// One collection serves every caller within the same second (several widgets, several tabs)
+const collect = () => cached('snapshot', 1000, () => Promise.allSettled([
+    cached('cpu', HOUR_MS, () => si.cpu()),
+    si.cpuTemperature(),
+    si.currentLoad(),
+    cached('osInfo', HOUR_MS, () => si.osInfo()),
+    Promise.resolve(si.time()), // synchronous
+    getDiskInfo(),
+    si.mem(),
+    cached('memLayout', HOUR_MS, () => si.memLayout()),
+    si.networkStats(),
+    cached('networkInterfaces', 60_000, () => si.networkInterfaces())
+]));
+
 export const getSystemInfo = async (networkInterface?: string): Promise<SysteminformationResponse | null> => {
     try {
-        const results = await Promise.allSettled([
-            si.cpu(),
-            si.cpuTemperature(),
-            si.currentLoad(),
-            si.osInfo(),
-            Promise.resolve(si.time()), // synchronous
-            si.fsSize(),
-            si.mem(),
-            si.memLayout(),
-            si.networkStats(),
-            si.networkInterfaces()
-        ]);
+        const results = await collect();
 
         // extract values
         const cpuInfo = results[0].status === 'fulfilled' ? (results[0].value as Systeminformation.CpuData) : null;

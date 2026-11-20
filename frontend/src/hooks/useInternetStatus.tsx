@@ -1,34 +1,8 @@
-import { useEffect, useState } from 'react';
-
-import { DashApi } from '../api/dash-api';
+import { useLiveData } from './useLiveData';
 
 export const useInternetStatus = () => {
-    const [internetStatus, setInternetStatus] = useState<'online' | 'offline' | 'checking'>('checking');
+    const { data, error } = useLiveData<{ status: 'online' | 'offline' }>('internet.status');
+    const internetStatus: 'online' | 'offline' | 'checking' = data?.status ?? (error ? 'offline' : 'checking');
 
-    const checkInternetConnectivity = async () => {
-        try {
-            setInternetStatus('checking');
-            const status = await DashApi.checkInternetConnectivity();
-            setInternetStatus(status);
-        } catch (error) {
-            console.error('Error checking internet connectivity:', error);
-            setInternetStatus('offline');
-        }
-    };
-
-    useEffect(() => {
-        // Initial check
-        checkInternetConnectivity();
-
-        // Check every 2 minutes
-        const internetCheckInterval = setInterval(() => {
-            checkInternetConnectivity();
-        }, 120000); // 120000 ms = 2 minutes
-
-        return () => {
-            clearInterval(internetCheckInterval);
-        };
-    }, []);
-
-    return { internetStatus, checkInternetConnectivity };
+    return { internetStatus };
 };

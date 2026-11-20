@@ -11,6 +11,8 @@ Lab Dash features a customizable grid layout where you can add various widgets:
 - Service health checks
 - Custom widgets and more
 
+Widgets update live: the server pushes new data to every open tab over a single WebSocket connection, and shares one request to each of your services between all viewers.
+
 ### Customization
 You can easily customize your dashboard by:
 - Dragging and reordering
@@ -38,8 +40,8 @@ services:
       ports:
         - 2022:2022
       environment:
-        - SECRET=YOUR_SECRET_KEY # any random string for used for encryption.
-        # You can run `openssl rand -base64 32` to generate a key
+        - SECRET=YOUR_SECRET_KEY # required: replace with a random string of at least 32 characters.
+        # Lab Dash does not start with this placeholder. Run `openssl rand -base64 32` to generate a key
       volumes:
         - /sys:/sys:ro
         - /docker/lab-dash/config:/config
@@ -47,6 +49,18 @@ services:
         - /var/run/docker.sock:/var/run/docker.sock
       restart: unless-stopped
 ```
+
+> [!IMPORTANT]
+> `SECRET` is required. It signs logins and encrypts the passwords and API keys of your widgets, so Lab Dash does not start without it or with the `YOUR_SECRET_KEY` placeholder, and it warns when the value is shorter than 32 characters. Set it once and keep it. If you change it later, saved widget credentials have to be entered again.
+
+### Environment variables
+| Variable | Purpose |
+| --- | --- |
+| `SECRET` | Required. Random string of at least 32 characters, see above |
+| `PORT` | Port the server listens on (default `2022`) |
+| `ALLOWED_ORIGINS` | Optional. Comma-separated origins (for example `https://dash.example.com`) allowed to log in, make changes and open the live connection when your reverse proxy does not pass the original host name through |
+| `VERIFY_CERTIFICATES` | Optional. Set to `true` to check the HTTPS certificates of the services your widgets and status checks connect to. Off by default, because services on a home network often use self-signed certificates. To trust your own certificate authority, also point Node's `NODE_EXTRA_CA_CERTS` at its certificate file |
+| `UPLOAD_DIRECTORY` | Optional. Folder for uploaded icons and backgrounds (default `public/uploads` inside the app folder, which the compose file mounts) |
 
 # Usage
 Lab Dash can aslo be accessed from any web browser via 
@@ -67,6 +81,25 @@ Lab Dash can also be installed as an app on your computer/phone as a PWA (Progre
 Simply copy/download the [docker-compose.yml](docker-compose.yml) or add it to an existing docker-compose file.
 
 
+## Using a reverse proxy
+Live widget data needs a WebSocket connection to `/api/ws`, on the same host and port as the rest of the app. If widgets stay empty and the dashboard shows "Live updates are unavailable", your proxy is not forwarding it.
+
+Lab Dash accepts logins, changes and the live connection only from pages served from its own address, so another website cannot act with your login. It works by IP address or host name, over HTTP or HTTPS, on any port, with nothing to set up. Behind a proxy it learns its public address from the `Host` or `X-Forwarded-Host` header, so the proxy has to pass the original host name through. If logging in or saving answers `403`, it does not: fix the proxy, or list the address in `ALLOWED_ORIGINS`.
+
+- **Nginx Proxy Manager**: turn on *Websockets Support* for the proxy host
+- **Caddy, Traefik**: works without extra settings
+- **nginx**: forward the upgrade headers and the original host
+
+```nginx
+location / {
+    proxy_pass http://127.0.0.1:2022;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+}
+```
+
 ## Running Docker compose file
 
 ```bash
@@ -80,10 +113,27 @@ This docker container will restart automatically after reboots unless it was man
 2. Run: `docker compose down`
 
 # Local Development
+The backend needs a `SECRET` of its own, read from `backend/.env`. Create it once:
+```
+echo "SECRET=$(openssl rand -base64 32)" > backend/.env
+```
+
 ```
 npm install
 npm run dev
 ```
+
+### Tests
+Both suites, from the repository root:
+```
+npm test
+```
+One side at a time with `npm run test:backend` or `npm run test:frontend`. Each package also has `npm run test:watch`.
+
+- `backend/test/` uses the Node test runner. `unit/` covers crypto, the config store, request tracking, poller naming, the certificate setting and file helpers, `api/` every HTTP route (auth, config, notes, uploads, app icons, system, health, timezone, rate limits), the access rules and the origin check, `realtime/` the WebSocket gateway and poller hub, and `integrations/` each service family (Sonarr/Radarr, Jellyfin/Jellyseerr, DNS blockers, download clients) against fake servers. `helpers/` holds the shared fixture config, HTTP and session helpers. Tests never touch the real config, users or uploads: the fixture points them at a temp folder.
+- `frontend/test/` uses Vitest with two projects. `unit/`, `realtime/` and `hooks/` run in Node (the dashboard grid, utilities, the shared socket client, the live-data hook). `components/` renders every React component in jsdom with the API and the socket replaced (`test/components/setup.ts`) and the app's providers around it (`test/components/render.tsx`). `npx vitest run --project components` runs just those.
+
+The deploy workflows run both suites before the Docker image is built, and pull requests run them in `quality-check`.
 
 # Updating
 ### Portainer
@@ -99,6 +149,14 @@ npm run dev
 - `docker compose down`
 - `docker compose pull`
 - `docker compose up -d`
+
+### Upgrading to 1.4
+- `SECRET` is now required. Lab Dash no longer falls back to a built-in value and does not start when `SECRET` is missing or still set to `YOUR_SECRET_KEY`. If your install ran that way, set a value of your own (`openssl rand -base64 32`) and enter the passwords and API keys of your widgets again: they were encrypted with a value anyone could look up.
+- Everyone has to log in again once after the upgrade.
+- Widgets now receive their data over a WebSocket. Behind a reverse proxy, see [Using a reverse proxy](#using-a-reverse-proxy).
+- Logins and changes are only accepted from the dashboard's own pages, and other websites can no longer read the API with your login. Access by IP address or through a reverse proxy that passes the host name on works as before. If logging in or saving answers `403` behind a proxy, see [Using a reverse proxy](#using-a-reverse-proxy).
+- The backend routes that passed requests through to your services (`/api/radarr`, `/api/sonarr`, `/api/jellyfin`, `/api/jellyseerr`, `/api/qbittorrent`, `/api/deluge`, `/api/transmission`, `/api/sabnzbd`, `/api/nzbget`, `/api/pihole`, `/api/adguard`, `/api/weather`) and the `/api/health?url=` checker were removed. Several of them worked without logging in. Scripts that called them will get a 404.
+- Visitors who are not logged in can still see widgets that are not marked admin-only, but only an admin can act on them: pausing downloads, removing queue items, disabling DNS blocking, creating or approving media requests.
 
 # Contributing
 Contributions to Lab Dash are welcome! Please follow these guidelines:

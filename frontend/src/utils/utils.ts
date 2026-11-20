@@ -24,7 +24,7 @@ export const getIconPath = (icon: string | { path: string; source?: string }) =>
  * @returns The size in GB as a string with specified decimal places.
  */
 export const convertBytesToGB = (bytes: number, decimalPlaces: number = 2): string => {
-    if (bytes <= 0) return '0.00 GB';
+    if (bytes <= 0) return `${(0).toFixed(decimalPlaces)} GB`;
 
     const gb = bytes / 1e9;
     return `${gb.toFixed(decimalPlaces)} GB`;
@@ -61,7 +61,10 @@ export const isValidHttpUrl = (url: string) => {
  * @returns Formatted number as string with commas
  */
 export const formatNumber = (value: number): string => {
-    return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    // Only the whole part is grouped; digits after the point stay as they are
+    const [whole, fraction] = value.toString().split('.');
+    const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return fraction === undefined ? grouped : `${grouped}.${fraction}`;
 };
 
 /**
@@ -80,12 +83,13 @@ export const isEncrypted = (text: string): boolean => {
  * @returns Formatted string with appropriate unit
  */
 export const formatBytes = (bytes: number, decimals: number = 2): string => {
-    if (bytes === 0) return '0 B';
+    if (!(bytes > 0)) return '0 B';
 
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
 
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    // Anything under one byte stays in bytes, anything past the table stays in its last unit
+    const i = Math.min(sizes.length - 1, Math.max(0, Math.floor(Math.log(bytes) / Math.log(k))));
 
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(decimals))} ${sizes[i]}`;
 };

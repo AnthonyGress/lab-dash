@@ -5,7 +5,31 @@ on:
     branches: [ main ]
 
 jobs:
+  test:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout git repo
+        uses: actions/checkout@v4
+
+      - name: Install Node and NPM
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Test - Backend
+        run: npm run test:backend
+
+      - name: Test - Frontend
+        run: npm run test:frontend
+
   publish:
+    # The image is only built once both test suites pass
+    needs: test
     permissions:
       contents: write
       packages: write
@@ -21,7 +45,7 @@ jobs:
       - name: Install Node and NPM
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - run: git fetch --all --tags
 

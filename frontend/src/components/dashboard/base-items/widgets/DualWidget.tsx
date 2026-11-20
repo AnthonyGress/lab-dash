@@ -1,4 +1,4 @@
-import { Box, Divider, Typography, useMediaQuery } from '@mui/material';
+import { Box, Divider, Typography } from '@mui/material';
 import React from 'react';
 
 import { AdGuardWidget } from './AdGuardWidget/AdGuardWidget';
@@ -8,9 +8,7 @@ import { DualWidgetContainer } from './DualWidgetContainer';
 import { PiholeWidget } from './PiholeWidget/PiholeWidget';
 import { SystemMonitorWidget } from './SystemMonitorWidget/SystemMonitorWidget';
 import { WeatherWidget } from './WeatherWidget';
-import { DUAL_WIDGET_SECTION_HEIGHT } from '../../../../constants/widget-dimensions';
 import { COLORS } from '../../../../theme/styles';
-import { theme } from '../../../../theme/theme';
 import { ITEM_TYPE } from '../../../../types';
 
 export interface DualWidgetProps {
@@ -41,8 +39,6 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
     onDuplicate,
     url
 }) => {
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
     const renderWidget = (widgetConfig: { type: string; config?: any } | undefined, position: 'top' | 'bottom') => {
         if (!widgetConfig || !widgetConfig.type) {
             return (
@@ -65,7 +61,7 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
         try {
             switch (widgetConfig.type) {
             case ITEM_TYPE.WEATHER_WIDGET:
-                return <WeatherWidget config={widgetConfig.config} />;
+                return <WeatherWidget config={widgetConfig.config} id={id ? `${id}-${position}` : undefined} />;
             case ITEM_TYPE.DATE_TIME_WIDGET:
                 return <DateTimeWidget config={widgetConfig.config} />;
             case ITEM_TYPE.SYSTEM_MONITOR_WIDGET:
@@ -75,6 +71,7 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
                         dualWidgetPosition: position
                     }}
                     editMode={editMode}
+                    id={id ? `${id}-${position}` : undefined}
                 />;
             case ITEM_TYPE.PIHOLE_WIDGET:
                 return <PiholeWidget
@@ -93,6 +90,7 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
                         dualWidgetPosition: position
                     }}
                     editMode={editMode}
+                    id={id ? `${id}-${position}` : undefined}
                 />;
             default:
                 return (
@@ -157,9 +155,7 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
                         mb: 0.5,
                         justifyContent: 'center',
                         position: 'relative',
-                        minHeight: isMobile ? 'unset' : DUAL_WIDGET_SECTION_HEIGHT.sm,
-                        maxHeight: isMobile ? 'none' : DUAL_WIDGET_SECTION_HEIGHT.sm,
-                        height: isMobile ? 'auto' : DUAL_WIDGET_SECTION_HEIGHT.sm
+                        minHeight: 0
                     }}
                 >
                     {renderWidget(config?.topWidget, 'top')}
@@ -183,9 +179,7 @@ export const DualWidget: React.FC<DualWidgetProps> = ({
                         mt: 0.5,
                         justifyContent: 'center',
                         position: 'relative',
-                        minHeight: isMobile ? 'unset' : DUAL_WIDGET_SECTION_HEIGHT.sm,
-                        maxHeight: isMobile ? 'none' : DUAL_WIDGET_SECTION_HEIGHT.sm,
-                        height: isMobile ? 'auto' : DUAL_WIDGET_SECTION_HEIGHT.sm
+                        minHeight: 0
                     }}
                 >
                     {renderWidget(config?.bottomWidget, 'bottom')}

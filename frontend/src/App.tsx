@@ -4,17 +4,21 @@ import { Box, Paper } from '@mui/material';
 import { useEffect } from 'react';
 import { Route, Routes, useNavigate } from 'react-router-dom';
 
-import { SetupForm } from './components/forms/SetupForm';
 import { GlobalCustomScrollbar } from './components/GlobalCustomScrollbar';
+import { lazyComponent } from './components/lazy';
 import { WithNav } from './components/navbar/WithNav';
+import { RealtimeStatusBanner } from './components/RealtimeStatusBanner';
 import { ScrollToTop } from './components/ScrollToTop';
 import { BACKEND_URL } from './constants/constants';
 import { useAppContext } from './context/useAppContext';
 import { useMobilePointer } from './hooks/useMobilePointer';
 import { DashboardPage } from './pages/DashboardPage';
-import { LoginPage } from './pages/LoginPage';
-import { SettingsPage } from './pages/SettingsPage';
 import { styles } from './theme/styles';
+
+// Screens most visits never open are downloaded when first shown
+const SetupForm = lazyComponent(() => import('./components/forms/SetupForm').then(module => module.SetupForm));
+const LoginPage = lazyComponent(() => import('./pages/LoginPage').then(module => module.LoginPage));
+const SettingsPage = lazyComponent(() => import('./pages/SettingsPage').then(module => module.SettingsPage));
 
 const SetupPage = () => {
     const { isFirstTimeSetup, setSetupComplete } = useAppContext();
@@ -42,20 +46,11 @@ export const App = () => {
         config,
         isFirstTimeSetup,
         setupComplete,
-        setSetupComplete,
         pages
     } = useAppContext();
 
     const navigate = useNavigate();
     const isMobilePointer = useMobilePointer();
-
-    // Check if setup is complete based on the config
-    useEffect(() => {
-        // If configuration has been loaded and isSetupComplete is true
-        if (config && config.isSetupComplete) {
-            setSetupComplete(true);
-        }
-    }, [config, setSetupComplete]);
 
     // Set the document title based on the custom title in config
     useEffect(() => {
@@ -171,6 +166,7 @@ export const App = () => {
             <div id='background-container' />
             <ScrollToTop />
             {!isMobilePointer && <GlobalCustomScrollbar />}
+            <RealtimeStatusBanner />
             <Routes>
                 <Route element={<WithNav />}>
                     <Route path='/' element={isFirstTimeSetup && !setupComplete ? <SetupPage /> : <DashboardPage />}/>

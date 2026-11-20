@@ -1,86 +1,11 @@
 import axios from 'axios';
-import { execFile } from 'child_process';
 import { Request, Response, Router } from 'express';
-import https from 'https';
-import { isIP } from 'net';
 import os from 'os';
 
 export const healthRoute = Router();
 
-const httpsAgent = new https.Agent({
-    rejectUnauthorized: false,
-});
-
-const isValidHostname = (hostname: string): boolean => {
-    if (hostname.length === 0 || hostname.length > 253) {
-        return false;
-    }
-
-    if (isIP(hostname) !== 0) {
-        return true;
-    }
-
-    return hostname.split('.').every((label) => (
-        /^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$/.test(label)
-    ));
-};
-
-// Helper function to ping a hostname
-const pingHost = (hostname: string): Promise<boolean> => {
-    return new Promise((resolve) => {
-        if (!isValidHostname(hostname)) {
-            resolve(false);
-            return;
-        }
-
-        execFile('ping', ['-c', '1', '-W', '1', hostname], (error) => {
-            resolve(!error);
-        });
-    });
-};
-
-healthRoute.get('/', async (req: Request, res: Response): Promise<void> => {
-    const { url, type } = req.query;
-
-    if (!url || typeof url !== 'string') {
-        res.status(400).json({ status: 'error', message: 'Invalid or missing URL' });
-        return;
-    }
-
-    const checkType = type as string || 'http';
-
-    try {
-        // For ping type health checks
-        if (checkType === 'ping') {
-            try {
-                // For ping, the URL parameter is just the hostname
-                const isReachable = await pingHost(url);
-                res.json({ status: isReachable ? 'online' : 'offline' });
-                return;
-            } catch (pingError) {
-                console.log('Ping failed for', url);
-                res.json({ status: 'offline' });
-                return;
-            }
-        }
-
-        // For HTTP health checks (default)
-        const response = await axios.get(url, {
-            timeout: 10000, // Increased to 10 seconds to handle slower services
-            httpsAgent,
-            responseType: 'text',
-            validateStatus: () => true // Accept any HTTP status code
-        });
-
-        if (response.status >= 200 && response.status < 400) {
-            res.json({ status: 'online' });
-            return;
-        }
-    } catch (error) {
-        console.log('service is offline', req.query.url);
-        res.json({ status: 'offline' });
-    }
-});
+// Overridable so tests can answer the lookup themselves instead of reaching the internet
+const WAN_IP_LOOKUP_URL = process.env.WAN_IP_LOOKUP_URL || 'https://api.ipify.org?format=json';
 
 // Helper function to get LAN IP address
 const getLanIP = (): string | null => {
@@ -125,7 +50,7 @@ healthRoute.get('/ip', async (req: Request, res: Response): Promise<void> => {
         // Get WAN IP asynchronously
         let wanIP: string | null = null;
         try {
-            const response = await axios.get('https://api.ipify.org?format=json', {
+            const response = await axios.get(WAN_IP_LOOKUP_URL, {
                 timeout: 5000
             });
             wanIP = response.data.ip;
