@@ -139,6 +139,13 @@ describe('deleting an uploaded image', () => {
         assert.equal(fs.existsSync(file), false);
     });
 
+    it('removes a file whose name merely starts with dots', async () => {
+        const file = seed('..wallpaper.jpg');
+
+        assert.equal((await remove('/uploads/..wallpaper.jpg')).status, 200);
+        assert.equal(fs.existsSync(file), false);
+    });
+
     it('needs a non-empty string image path', async () => {
         seed('wallpaper.jpg');
         const bodies = [undefined, {}, { imagePath: 42 }, { imagePath: '' }, { imagePath: null }, { imagePath: ['/uploads/wallpaper.jpg'] }];

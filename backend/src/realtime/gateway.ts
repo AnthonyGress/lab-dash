@@ -4,6 +4,7 @@ import WebSocket, { RawData, WebSocketServer } from 'ws';
 
 import { ConfigChange, onConfigChanged } from '../services/config-store';
 import { verifyAccessToken } from '../services/users';
+import { isAllowedOrigin } from '../utils/origin';
 import { Principal, RealtimeError } from './access';
 import { PollerHub } from './hub';
 import { Registry } from './registry';
@@ -77,40 +78,6 @@ const readAccessToken = (request: IncomingMessage): string | undefined => {
     } catch {
         return undefined;
     }
-};
-
-const hostnameOf = (host: string | undefined): string | undefined => {
-    try {
-        return host ? new URL(`http://${host.split(',')[0].trim()}`).hostname : undefined;
-    } catch {
-        return undefined;
-    }
-};
-
-/**
- * Browsers do not apply CORS to WebSockets, so another site could open one with
- * the visitor's cookies. Only pages served from this dashboard's own hostname may
- * connect. Scheme and port are ignored on purpose: behind a TLS-terminating proxy
- * the server sees plain HTTP on another port, and the dev frontend runs on its own.
- */
-export const isAllowedOrigin = (request: IncomingMessage): boolean => {
-    const { origin } = request.headers;
-    // Only browsers send Origin, and only browsers carry someone else's cookies
-    if (!origin) return true;
-
-    let originUrl: URL;
-    try {
-        originUrl = new URL(origin);
-    } catch {
-        return false;
-    }
-
-    const configured = (process.env.ALLOWED_ORIGINS ?? '').split(',').map(entry => entry.trim());
-    if (configured.includes(originUrl.origin)) return true;
-
-    const forwardedHost = request.headers['x-forwarded-host'];
-    return [request.headers.host, Array.isArray(forwardedHost) ? forwardedHost[0] : forwardedHost]
-        .some(host => hostnameOf(host) === originUrl.hostname);
 };
 
 const clientAddress = (request: IncomingMessage): string => {
@@ -189,6 +156,7 @@ export class RealtimeGateway {
             reject(socket, 404, 'Not Found');
             return;
         }
+        // Browsers do not apply CORS to WebSockets, so another site could open one with the visitor's cookies
         if (!isAllowedOrigin(request)) {
             reject(socket, 403, 'Forbidden');
             return;

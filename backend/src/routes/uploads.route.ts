@@ -101,18 +101,13 @@ uploadsRoute.delete('/images', authenticateToken, requireAdmin, (req: Request, r
 
         // Paths arrive as the URL the image is served from: /uploads/<file> or /uploads/app-icons/<file>
         const uploadsDir = path.resolve(UPLOAD_DIRECTORY);
-        const relativePath = path.relative(uploadsDir, path.resolve(uploadsDir, imagePath.replace(/^\/?uploads\//, '')));
-        const insideUploads = /^\/?uploads\//.test(imagePath)
-            && relativePath !== ''
-            && !relativePath.startsWith('..')
-            && !path.isAbsolute(relativePath);
+        const fullPath = path.resolve(uploadsDir, imagePath.replace(/^\/?uploads\//, ''));
 
-        if (!insideUploads) {
+        // Resolved first, so '..' and absolute paths cannot point outside the uploads folder
+        if (!/^\/?uploads\//.test(imagePath) || !fullPath.startsWith(uploadsDir + path.sep)) {
             res.status(400).json({ message: 'Invalid image path' });
             return;
         }
-
-        const fullPath = path.join(uploadsDir, relativePath);
 
         // Check if file exists
         if (!fs.existsSync(fullPath) || !fs.statSync(fullPath).isFile()) {

@@ -1,7 +1,5 @@
-import { createHash } from 'crypto';
-
 import { adguard, DnsBlocker, DnsStats, piholeV5, piholeV6 } from '../../services/dns-blockers';
-import { describeUpstreamError, readConnection, UpstreamConnection } from '../../services/upstream';
+import { describeUpstreamError, readConnection, sourceId, UpstreamConnection } from '../../services/upstream';
 import { DashboardItem } from '../../types';
 import { Principal, RealtimeError, resolveItem } from '../access';
 import { MethodContext, Registry } from '../registry';
@@ -25,12 +23,8 @@ const resolveTarget = (principal: Principal, itemId: string | undefined, mode: '
     const item = resolveItem(principal, itemId, DNS_WIDGET_TYPES, mode);
     const blocker = pickBlocker(item);
     const connection = readConnection(item, blocker.defaultPort);
-    const fingerprint = createHash('sha1')
-        .update(JSON.stringify([blocker === piholeV6, connection]))
-        .digest('hex')
-        .slice(0, 16);
 
-    return { blocker, connection, key: `dns.stats:${fingerprint}` };
+    return { blocker, connection, key: `dns.stats:${sourceId(blocker === piholeV6, connection)}` };
 };
 
 const action = (

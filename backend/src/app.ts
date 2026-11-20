@@ -8,6 +8,7 @@ import { UPLOAD_DIRECTORY } from './constants/constants';
 import { errorHandler } from './middleware/error-handler';
 import { generalLimiter } from './middleware/rate-limiter';
 import routes from './routes';
+import { isAllowedOrigin, rejectCrossSiteWrites } from './utils/origin';
 import { trackRequestOrigin } from './utils/request-origin';
 
 /**
@@ -24,12 +25,14 @@ export const createApp = (rootDir: string): Application => {
     app.set('trust proxy', 1);
 
     // Middleware
-    app.use(cors({
-        origin: true,
+    // Pages on another origin may only read the API with the visitor's login when they are the
+    // dashboard's own: the dev frontend on its own port, or an origin named in ALLOWED_ORIGINS
+    app.use(cors((req, callback) => callback(null, {
+        origin: isAllowedOrigin(req),
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization', 'X-Client-Id']
-    }));
+    })));
     // The frontend bundle and the config JSON shrink to about a third on the wire
     app.use(compression());
     app.use(cookieParser());
@@ -46,7 +49,7 @@ export const createApp = (rootDir: string): Application => {
     // The icon set only changes when the app is upgraded
     app.use('/icons', express.static(iconsPath, { maxAge: '1d' }));
     app.use('/uploads', express.static(UPLOAD_DIRECTORY));
-    app.use('/api', trackRequestOrigin, routes);
+    app.use('/api', rejectCrossSiteWrites, trackRequestOrigin, routes);
     app.use(express.static(path.join(rootDir, 'public'), {
         setHeaders: (res, filePath) => {
             // The build names these files after their content, so a given URL never changes

@@ -338,6 +338,10 @@ describe('realtime gateway', () => {
         await connect({ origin: 'http://127.0.0.1:2022' });
         await connect({ origin: 'https://127.0.0.1' });
         await connect({ origin: 'https://dash.example.com', 'x-forwarded-host': 'dash.example.com' });
+
+        // A proxy that hides the public host name: the browser's own verdict still counts
+        await assert.rejects(connect({ origin: 'https://dash.example.com' }), /HTTP 403/);
+        await connect({ origin: 'https://dash.example.com', 'sec-fetch-site': 'same-origin' });
     });
 
     it('answers 404 for other upgrade paths', async () => {

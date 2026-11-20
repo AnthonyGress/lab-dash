@@ -1,7 +1,7 @@
 import axios from 'axios';
-import https from 'https';
 
 import { RealtimeError } from '../realtime/access';
+import { upstreamAgent } from './tls';
 import { UpstreamConnection } from './upstream';
 
 export type ArrKind = 'sonarr' | 'radarr';
@@ -37,9 +37,6 @@ const TIMEOUT_MS = 10_000;
 const STATISTICS_TTL_MS = 10 * 60 * 1000;
 const ACTIVE_STATES = new Set(['downloading', 'active']);
 
-// Allow self-signed certificates: these services usually sit on the local network
-const httpsAgent = new https.Agent({ rejectUnauthorized: false, keepAlive: true });
-
 const statisticsCache = new Map<string, { expires: number; value: ArrSnapshot['statistics'] }>();
 // Instances whose last queue read showed a download in progress
 const busy = new Set<string>();
@@ -59,7 +56,7 @@ const api = async (
         method,
         headers: { 'X-Api-Key': connection.apiKey, 'Content-Type': 'application/json' },
         timeout: TIMEOUT_MS,
-        httpsAgent,
+        httpsAgent: upstreamAgent,
         ...options
     })).data;
 };

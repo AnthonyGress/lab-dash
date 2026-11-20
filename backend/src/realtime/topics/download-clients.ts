@@ -1,5 +1,3 @@
-import { createHash } from 'crypto';
-
 import { deluge } from '../../services/download-clients/deluge';
 import { nzbget } from '../../services/download-clients/nzbget';
 import { qbittorrent } from '../../services/download-clients/qbittorrent';
@@ -13,6 +11,7 @@ import {
     DownloadSnapshot,
     readConnection
 } from '../../services/download-clients/types';
+import { sourceId } from '../../services/upstream';
 import { Principal, RealtimeError, resolveItem } from '../access';
 import { MethodContext, Registry } from '../registry';
 
@@ -39,12 +38,8 @@ const resolveTarget = (principal: Principal, itemId: string | undefined, mode: '
     if (!client) throw new RealtimeError('BAD_REQUEST', 'Unsupported download client');
 
     const connection = readConnection(item, client.defaultPort);
-    const fingerprint = createHash('sha1')
-        .update(JSON.stringify([connection.origin, connection.username, connection.password, connection.apiKey]))
-        .digest('hex')
-        .slice(0, 16);
 
-    return { client, connection, key: `download.client:${clientType}:${fingerprint}` };
+    return { client, connection, key: `download.client:${clientType}:${sourceId(connection)}` };
 };
 
 // Downloading first, then least complete, then by name

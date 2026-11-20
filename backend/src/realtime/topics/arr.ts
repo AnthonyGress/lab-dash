@@ -1,7 +1,5 @@
-import { createHash } from 'crypto';
-
 import { ARR, ArrKind, ArrSnapshot, hasActiveDownloads, readArrSnapshot, removeFromArrQueue } from '../../services/arr';
-import { describeUpstreamError, readConnection, UpstreamConnection } from '../../services/upstream';
+import { describeUpstreamError, readConnection, sourceId, UpstreamConnection } from '../../services/upstream';
 import { Principal, RealtimeError, resolveItem } from '../access';
 import { Registry } from '../registry';
 
@@ -19,9 +17,8 @@ const resolveTarget = (principal: Principal, itemId: string | undefined, mode: '
     const item = resolveItem(principal, itemId, Object.keys(ARR_WIDGET_TYPES), mode);
     const kind = ARR_WIDGET_TYPES[item.type];
     const connection = readConnection(item, ARR[kind].defaultPort);
-    const fingerprint = createHash('sha1').update(JSON.stringify([kind, connection])).digest('hex').slice(0, 16);
 
-    return { kind, connection, key: `arr.queue:${fingerprint}` };
+    return { kind, connection, key: `arr.queue:${sourceId(kind, connection)}` };
 };
 
 export const registerArrTopics = (registry: Registry): void => {

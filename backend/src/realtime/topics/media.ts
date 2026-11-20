@@ -1,5 +1,3 @@
-import { createHash } from 'crypto';
-
 import {
     createMediaRequest,
     MediaServerSnapshot,
@@ -9,7 +7,7 @@ import {
     readTvDetails,
     searchMedia
 } from '../../services/media';
-import { describeUpstreamError, readConnection, UpstreamConnection } from '../../services/upstream';
+import { describeUpstreamError, readConnection, sourceId, UpstreamConnection } from '../../services/upstream';
 import { Principal, RealtimeError, resolveItem } from '../access';
 import { MethodContext, Registry } from '../registry';
 
@@ -17,10 +15,6 @@ const MEDIA_SERVER_TYPES = ['media-server-widget'];
 const REQUEST_MANAGER_TYPES = ['media-request-manager-widget'];
 
 type Target = { name: string; connection: UpstreamConnection; key: string };
-
-const fingerprint = (connection: UpstreamConnection): string => (
-    createHash('sha1').update(JSON.stringify(connection)).digest('hex').slice(0, 16)
-);
 
 const resolveMediaServer = (principal: Principal, itemId: string | undefined): Target => {
     const item = resolveItem(principal, itemId, MEDIA_SERVER_TYPES);
@@ -31,7 +25,7 @@ const resolveMediaServer = (principal: Principal, itemId: string | undefined): T
     }
 
     const connection = readConnection(item, '8096');
-    return { name: clientType === 'emby' ? 'Emby' : 'Jellyfin', connection, key: `media.sessions:${fingerprint(connection)}` };
+    return { name: clientType === 'emby' ? 'Emby' : 'Jellyfin', connection, key: `media.sessions:${sourceId(connection)}` };
 };
 
 const resolveRequestManager = (principal: Principal, itemId: string | undefined, mode: 'read' | 'write'): Target => {
@@ -39,7 +33,7 @@ const resolveRequestManager = (principal: Principal, itemId: string | undefined,
     const connection = readConnection(item, '5055');
     const name = item.config?.service === 'overseerr' ? 'Overseerr' : 'Jellyseerr';
 
-    return { name, connection, key: `media.requests:${fingerprint(connection)}` };
+    return { name, connection, key: `media.requests:${sourceId(connection)}` };
 };
 
 const readNumber = (value: unknown, field: string): number => {

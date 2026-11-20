@@ -42,6 +42,23 @@ export const readConnection = (item: DashboardItem, defaultPort: string): Upstre
     };
 };
 
+const sourceIds = new Map<string, string>();
+
+/**
+ * A short name for a connection, to tell pollers apart: equal parts give the same
+ * name for as long as the server runs. The name is a counter, not a hash of the
+ * parts, so nothing about the credentials can be worked out from it.
+ */
+export const sourceId = (...parts: unknown[]): string => {
+    const identity = JSON.stringify(parts);
+    let id = sourceIds.get(identity);
+    if (!id) {
+        id = String(sourceIds.size + 1);
+        sourceIds.set(identity, id);
+    }
+    return id;
+};
+
 const UNREACHABLE_CODES = new Set([
     'ECONNREFUSED', 'ECONNRESET', 'ECONNABORTED', 'ETIMEDOUT', 'ENOTFOUND', 'EAI_AGAIN', 'EHOSTUNREACH', 'ERR_CANCELED'
 ]);

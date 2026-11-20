@@ -1,7 +1,7 @@
 import axios from 'axios';
-import https from 'https';
 
 import { RealtimeError } from '../realtime/access';
+import { upstreamAgent } from './tls';
 import { UpstreamConnection } from './upstream';
 
 /** What a DNS blocker widget shows, in the shape Pi-hole v5 made familiar. */
@@ -27,9 +27,6 @@ export type DnsBlocker = {
 
 const TIMEOUT_MS = 5000;
 
-// Allow self-signed certificates: these services usually sit on the local network
-const httpsAgent = new https.Agent({ rejectUnauthorized: false, keepAlive: true });
-
 // ---------------------------------------------------------------- Pi-hole v5
 
 // v5 does not report when a timed disable ends, so remember it here
@@ -41,7 +38,7 @@ const v5Api = async (connection: UpstreamConnection, query: string, signal?: Abo
     }
 
     const url = `${connection.origin}/api.php?${query}&auth=${encodeURIComponent(connection.apiToken)}`;
-    return (await axios.get(url, { timeout: TIMEOUT_MS, httpsAgent, signal })).data;
+    return (await axios.get(url, { timeout: TIMEOUT_MS, httpsAgent: upstreamAgent, signal })).data;
 };
 
 export const piholeV5: DnsBlocker = {
@@ -104,7 +101,7 @@ const v6Login = async (connection: UpstreamConnection) => {
         const response = await axios.post(
             `${connection.origin}/api/auth`,
             { password: connection.password },
-            { headers: { 'Content-Type': 'application/json' }, timeout: 10_000, httpsAgent }
+            { headers: { 'Content-Type': 'application/json' }, timeout: 10_000, httpsAgent: upstreamAgent }
         );
         session = response.data?.session;
     } catch (error) {
@@ -146,7 +143,7 @@ const v6Api = async (
         params: { sid: session.sid },
         headers: { 'X-FTL-CSRF': session.csrf, 'Content-Type': 'application/json' },
         timeout: TIMEOUT_MS,
-        httpsAgent,
+        httpsAgent: upstreamAgent,
         signal
     })).data;
 
@@ -223,7 +220,7 @@ const adguardApi = async (
             'Content-Type': 'application/json'
         },
         timeout: TIMEOUT_MS,
-        httpsAgent,
+        httpsAgent: upstreamAgent,
         signal
     })).data;
 };

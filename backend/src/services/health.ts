@@ -1,18 +1,14 @@
 import axios from 'axios';
 import { execFile } from 'child_process';
-import https from 'https';
 import { isIP } from 'net';
+
+import { upstreamAgent } from './tls';
 
 export type HealthStatus = 'online' | 'offline';
 export type HealthCheckType = 'http' | 'ping';
 
 // Host pinged to detect internet connectivity
 export const INTERNET_CHECK_HOST = '8.8.8.8';
-
-const httpsAgent = new https.Agent({
-    rejectUnauthorized: false,
-    keepAlive: true
-});
 
 const isValidHostname = (hostname: string): boolean => {
     if (hostname.length === 0 || hostname.length > 253) {
@@ -58,7 +54,7 @@ export const checkHealth = async (
     try {
         const response = await axios.get(target, {
             timeout: 10000, // 10 seconds to handle slower services
-            httpsAgent,
+            httpsAgent: upstreamAgent,
             responseType: 'text',
             validateStatus: () => true, // Accept any HTTP status code
             signal
